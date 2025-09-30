@@ -1,4 +1,4 @@
-# 🟡 Komyut  
+# 🚗 Komyut  
 
 Komyut is a **mobile application** that modernizes public utility vehicle (PUV) services in Cebu City through secure, efficient, and convenient digital solutions.  
 
