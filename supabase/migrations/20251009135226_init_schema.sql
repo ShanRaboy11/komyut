@@ -1,6 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- Enums
 CREATE TYPE user_role AS ENUM ('admin','commuter','driver','operator');
 CREATE TYPE commuter_category AS ENUM ('regular','senior','student','pwd');
 CREATE TYPE report_category AS ENUM ('vehicle','driver','traffic','lost_item','safety_security','app','miscellaneous','route');
@@ -12,7 +11,6 @@ CREATE TYPE transaction_status AS ENUM ('pending','completed','failed');
 CREATE TYPE notification_type AS ENUM ('trip','wallet','rewards','verification','report','system');
 CREATE TYPE verification_status AS ENUM ('pending','approved','rejected','lacking');
 
--- Utility function for updated_at
 CREATE OR REPLACE FUNCTION komyut_update_timestamp()
 RETURNS trigger AS $$
 BEGIN
@@ -21,7 +19,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Profiles
 CREATE TABLE profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid UNIQUE, 
@@ -50,7 +47,6 @@ BEFORE UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
--- Attachments (must exist before commuters)
 CREATE TABLE attachments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -64,7 +60,6 @@ CREATE TABLE attachments (
 );
 CREATE INDEX idx_attachments_owner ON attachments(owner_profile_id);
 
--- Operators
 CREATE TABLE operators (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id uuid UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
@@ -81,7 +76,6 @@ BEFORE UPDATE ON operators
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
--- Drivers
 CREATE TABLE drivers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id uuid UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
@@ -105,7 +99,6 @@ EXECUTE FUNCTION komyut_update_timestamp();
 
 CREATE INDEX idx_drivers_operator ON drivers(operator_id);
 
--- Commuters
 CREATE TABLE commuters (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id uuid UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
@@ -121,7 +114,6 @@ BEFORE UPDATE ON commuters
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
--- Routes
 CREATE TABLE routes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text UNIQUE NOT NULL, 
@@ -151,7 +143,6 @@ CREATE TABLE route_stops (
 );
 CREATE INDEX idx_route_stops_route_seq ON route_stops(route_id, sequence);
 
--- Trips
 CREATE TABLE trips (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   driver_id uuid REFERENCES drivers(id) ON DELETE SET NULL,
@@ -175,7 +166,6 @@ BEFORE UPDATE ON trips
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
--- Transactions
 CREATE OR REPLACE FUNCTION komyut_generate_transaction_number()
 RETURNS text AS $$
 BEGIN
@@ -216,7 +206,6 @@ CREATE TABLE transactions (
 );
 
 
--- Trip Participants
 CREATE TABLE trip_participants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
@@ -234,7 +223,6 @@ ON trips(created_by_profile_id)
 WHERE status = 'ongoing';
 
 
--- Points
 CREATE TABLE points_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   commuter_id uuid REFERENCES commuters(id) ON DELETE CASCADE,
@@ -247,7 +235,6 @@ CREATE TABLE points_transactions (
 );
 CREATE INDEX idx_points_commuter ON points_transactions(commuter_id);
 
--- Ratings
 CREATE TABLE ratings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
@@ -263,7 +250,6 @@ CREATE TABLE ratings (
 );
 CREATE INDEX idx_ratings_driver ON ratings(driver_id);
 
--- Reports
 CREATE TABLE reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reporter_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -285,7 +271,6 @@ BEFORE UPDATE ON reports
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
--- Notifications
 CREATE TABLE notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_profile_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
@@ -298,7 +283,6 @@ CREATE TABLE notifications (
 );
 CREATE INDEX idx_notifications_recipient ON notifications(recipient_profile_id, read);
 
--- Verifications
 CREATE TABLE verifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
@@ -311,7 +295,6 @@ CREATE TABLE verifications (
   reviewed_at timestamptz
 );
 
--- Fare Policies
 CREATE TABLE fare_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text,
@@ -333,7 +316,6 @@ CREATE TABLE fare_brackets (
 );
 CREATE INDEX idx_fare_brackets_policy ON fare_brackets(fare_policy_id);
 
--- Audit Logs
 CREATE TABLE audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -344,7 +326,6 @@ CREATE TABLE audit_logs (
   created_at timestamptz DEFAULT now()
 );
 
--- Analytics Materialized View
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_driver_revenue AS
 SELECT
   d.id AS driver_id,
