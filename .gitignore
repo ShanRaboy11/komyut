@@ -44,8 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# env files (can opt-in for committing if needed)
-.env*
+.env
 
 # ...BUT DO NOT ignore the example file.
 !.env.example
