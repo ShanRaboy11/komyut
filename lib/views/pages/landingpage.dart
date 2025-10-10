@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/button.dart';
 import '../widgets/logo.dart';
-import '../pages/create_account.dart'; 
-import '../pages/login.dart';   
+import '../pages/create_account.dart';
+import '../pages/login.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -22,6 +22,7 @@ class LandingPage extends StatelessWidget {
         ),
         child: Stack(
           children: [
+            // Your Positioned background elements
             Positioned(
               top: 39,
               left: 172,
@@ -73,52 +74,53 @@ class LandingPage extends StatelessWidget {
               child: Image.asset("assets/images/Ellipse 5.png"),
             ),
 
-            // Foreground content
+            // Foreground content wrapped in SingleChildScrollView
             Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Welcome",
-                    style: TextStyle(
-                      fontSize: 50,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Manrope',
-                      color: Color(0xFF7B3CBF),
+              child: SingleChildScrollView( // Added SingleChildScrollView here
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Welcome",
+                      style: TextStyle(
+                        fontSize: 50,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Manrope',
+                        color: Color(0xFF7B3CBF),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 80),
+                    const SizedBox(height: 80),
 
-                  const Logo(),
+                    const Logo(),
 
-                  const SizedBox(height: 120),
-                  CustomButton(
-                    text: "Create Account",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const CreateAccountPage()),
-                      );
-                    },
-                    isFilled: true,
-                    textColor: Colors.white,
-                  ),
+                    const SizedBox(height: 120),
+                    CustomButton(
+                      text: "Create Account",
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const CreateAccountPage()),
+                        );
+                      },
+                      isFilled: true,
+                      textColor: Colors.white,
+                    ),
 
-                  const SizedBox(height: 20),
-                  CustomButton(
-                    text: "Log In",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const LoginPage()),
-                      );
-                    },
-                    isFilled: false,
-                  ),
-
-                ],
+                    const SizedBox(height: 20),
+                    CustomButton(
+                      text: "Log In",
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
+                        );
+                      },
+                      isFilled: false,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
