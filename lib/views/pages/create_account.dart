@@ -39,7 +39,26 @@ class CreateAccountPage extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // --- Komuyt Logo ---
+            Positioned(
+              top: 39,
+              left: 172,
+              child: Image.asset("assets/images/Ellipse 1.png"),
+            ),
+            Positioned(
+              top: 39,
+              left: 172,
+              child: Image.asset("assets/images/Ellipse 1.png"),
+            ),
+            Positioned(
+              top: -134,
+              left: 22,
+              child: Image.asset("assets/images/Ellipse 3.png"),
+            ),
+            Positioned(
+              top: -134,
+              left: 22,
+              child: Image.asset("assets/images/Ellipse 3.png"),
+            ),
             Positioned(
               top: screenSize.height * 0.13,
               left: 0,
