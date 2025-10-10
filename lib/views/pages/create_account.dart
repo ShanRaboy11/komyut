@@ -109,7 +109,7 @@ class CreateAccountPage extends StatelessWidget {
                         isFilled: true,
                         fillColor: Colors.white,
                         onPressed: () {
-                          print('Get Started Pressed!');
+
                         },
                         width: screenSize.width * 0.8,
                         height: 60,
@@ -181,7 +181,7 @@ class CreateAccountPage extends StatelessWidget {
   Widget _buildSocialButton(BuildContext context, String imagePath) {
     return GestureDetector(
       onTap: () {
-        print('Social button tapped: $imagePath');
+        
       },
       child: Container(
         width: 50,
