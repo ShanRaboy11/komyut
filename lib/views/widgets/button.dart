@@ -12,7 +12,7 @@ class CustomButton extends StatelessWidget {
     required this.text,
     required this.onPressed,
     this.isFilled = true,
-    this.width = 250,
+    this.width = 325,
     this.height = 50,
   }) : super(key: key);
 
@@ -62,8 +62,9 @@ class CustomButton extends StatelessWidget {
                   text,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito',
                   ),
                 ),
               ),
@@ -108,8 +109,9 @@ class CustomButton extends StatelessWidget {
                 child: Text(
                   text,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito',
                     // gradient text paint: maps same gradient to the text
                     foreground: Paint()
                       ..shader = _kGradient.createShader(
