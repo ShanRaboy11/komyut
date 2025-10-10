@@ -13,7 +13,7 @@ class Logo extends StatelessWidget {
     this.vectorHeight = 200, 
     this.vectorWidth = 250, 
     this.komyutHeight = 130.77, 
-    this.overlap = 45,      
+    this.overlap = 87,      
     this.overallWidth,       
     this.overallHeight,     
   });

@@ -95,12 +95,14 @@ class LandingPage extends StatelessWidget {
                     onPressed: () {},
                     isFilled: true,
                   ),
+
                   const SizedBox(height: 20),
                   CustomButton(
                     text: "Log In",
                     onPressed: () {},
                     isFilled: false,
                   ),
+
                 ],
               ),
             ),

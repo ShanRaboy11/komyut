@@ -4,22 +4,35 @@ class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isFilled;
+  final Color? fillColor;
   final double width;
   final double height;
+  final Color strokeColor;
+  final Color outlinedFillColor;
+  final Color? textColor;
+  final bool hasShadow;
+  final double borderRadius; 
 
   const CustomButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.isFilled = true,
+    this.fillColor,
     this.width = 325,
     this.height = 50,
+    this.strokeColor = Colors.transparent,
+    this.outlinedFillColor = Colors.white,
+    this.textColor,
+    this.hasShadow = true,
+    this.borderRadius = 50, 
   });
+
   static const Gradient _kGradient = LinearGradient(
     colors: [
-      Color(0xFFB945AA), // B945AA
-      Color(0xFF8E4CB6), // 8E4CB6
-      Color(0xFF5B53C2), // 5B53C2
+      Color(0xFFB945AA),
+      Color(0xFF8E4CB6),
+      Color(0xFF5B53C2),
     ],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -29,8 +42,24 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final double w = width;
     final double h = height;
-    final BorderRadius outerRadius = BorderRadius.circular(50);
-    final BorderRadius innerRadius = BorderRadius.circular(48);
+
+    final BorderRadius actualOuterRadius = BorderRadius.circular(borderRadius);
+    final BorderRadius actualInnerRadius = BorderRadius.circular(borderRadius > 2 ? borderRadius - 2 : 0);
+
+
+    final List<BoxShadow> buttonShadow = [
+      BoxShadow(
+        color: Colors.black.withAlpha(64),
+        offset: const Offset(0, 2),
+        blurRadius: 4,
+      ),
+    ];
+
+    TextStyle textStyle = TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      fontFamily: 'Nunito',
+    );
 
     // Filled gradient button
     if (isFilled) {
@@ -39,31 +68,23 @@ class CustomButton extends StatelessWidget {
         height: h,
         child: Material(
           color: Colors.transparent,
-          elevation: 4,
-          borderRadius: outerRadius,
+          elevation: hasShadow ? 4 : 0,
+          borderRadius: actualOuterRadius, 
           child: Ink(
             decoration: BoxDecoration(
-              gradient: _kGradient,
-              borderRadius: outerRadius,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(64),
-                  offset: const Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
+              color: fillColor, 
+              gradient: fillColor == null ? _kGradient : null,
+              borderRadius: actualOuterRadius, 
+              boxShadow: hasShadow ? buttonShadow : null,
             ),
             child: InkWell(
-              borderRadius: outerRadius,
+              borderRadius: actualOuterRadius, 
               onTap: onPressed,
               child: Center(
                 child: Text(
                   text,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Nunito',
+                  style: textStyle.copyWith(
+                    color: textColor ?? Colors.white,
                   ),
                 ),
               ),
@@ -73,49 +94,41 @@ class CustomButton extends StatelessWidget {
       );
     }
 
-    // Outlined button with gradient stroke
-    // We make an outer container with the gradient and a small inner white container
-    // to simulate a stroked button.
+    // Outlined button
     return SizedBox(
       width: w,
       height: h,
       child: Material(
         color: Colors.transparent,
-        elevation: 4,
-        borderRadius: outerRadius,
+        elevation: hasShadow ? 4 : 0,
+        borderRadius: actualOuterRadius, 
         child: Container(
-          padding: const EdgeInsets.all(2), // stroke thickness
+          padding: const EdgeInsets.all(2), 
           decoration: BoxDecoration(
-            gradient: _kGradient,
-            borderRadius: outerRadius,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(64),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ],
+            color: strokeColor != Colors.transparent ? strokeColor : null,
+            gradient: strokeColor == Colors.transparent ? _kGradient : null,
+            borderRadius: actualOuterRadius, 
+            boxShadow: hasShadow ? buttonShadow : null,
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: innerRadius,
+              color: outlinedFillColor,
+              borderRadius: actualInnerRadius, 
             ),
             child: InkWell(
-              borderRadius: innerRadius,
+              borderRadius: actualInnerRadius, 
               onTap: onPressed,
               child: Center(
                 child: Text(
                   text,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Nunito',
-                    // gradient text paint: maps same gradient to the text
-                    foreground: Paint()
-                      ..shader = _kGradient.createShader(
-                        Rect.fromLTWH(0, 0, w, h),
-                      ),
+                  style: textStyle.copyWith(
+                    foreground: textColor == null
+                        ? (Paint()
+                          ..shader = _kGradient.createShader(
+                            Rect.fromLTWH(0, 0, w, h),
+                          ))
+                        : null,
+                    color: textColor,
                   ),
                 ),
               ),
