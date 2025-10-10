@@ -84,7 +84,13 @@ class CustomButton extends StatelessWidget {
                 child: Text(
                   text,
                   style: textStyle.copyWith(
-                    color: textColor ?? Colors.white,
+                    foreground: textColor == null
+                        ? (Paint()
+                          ..shader = _kGradient.createShader(
+                            Rect.fromLTWH(0, 0, w, h),
+                          ))
+                        : null,
+                    color: textColor,
                   ),
                 ),
               ),

@@ -102,6 +102,7 @@ class LandingPage extends StatelessWidget {
                       );
                     },
                     isFilled: true,
+                    textColor: Colors.white,
                   ),
 
                   const SizedBox(height: 20),
