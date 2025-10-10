@@ -8,14 +8,13 @@ class CustomButton extends StatelessWidget {
   final double height;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.isFilled = true,
     this.width = 325,
     this.height = 50,
-  }) : super(key: key);
-
+  });
   static const Gradient _kGradient = LinearGradient(
     colors: [
       Color(0xFFB945AA), // B945AA
@@ -48,7 +47,7 @@ class CustomButton extends StatelessWidget {
               borderRadius: outerRadius,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withAlpha(64),
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                 ),
@@ -91,7 +90,7 @@ class CustomButton extends StatelessWidget {
             borderRadius: outerRadius,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
+                color: Colors.black.withAlpha(64),
                 offset: const Offset(0, 2),
                 blurRadius: 4,
               ),
