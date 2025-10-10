@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/button.dart';
 import '../widgets/logo.dart';
+import '../pages/create_account.dart'; 
+import '../pages/login.dart';   
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -92,14 +94,26 @@ class LandingPage extends StatelessWidget {
                   const SizedBox(height: 120),
                   CustomButton(
                     text: "Create Account",
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const CreateAccountPage()),
+                      );
+                    },
                     isFilled: true,
                   ),
 
                   const SizedBox(height: 20),
                   CustomButton(
                     text: "Log In",
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LoginPage()),
+                      );
+                    },
                     isFilled: false,
                   ),
 
