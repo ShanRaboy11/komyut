@@ -3,6 +3,7 @@ import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/option_card.dart'; 
 import '../widgets/button.dart'; 
+import '../pages/regis_commuter1.dart';
 
 class RegistrationRolePage extends StatefulWidget {
   const RegistrationRolePage({super.key});
@@ -28,7 +29,7 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
     void onNextPressed() {
       if (_selectedRole != null) {
         print('Selected Role: $_selectedRole');
-        // Navigator.of(context).push(MaterialPageRoute(builder: (_) => NextRegistrationStepPage()));
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationCommuterPersonalInfo()));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a role!')),
