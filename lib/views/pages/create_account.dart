@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../widgets/logo.dart';
 import '../widgets/button.dart'; 
 import '../widgets/big_card.dart'; 
+import '../widgets/social_button.dart';
 import '../pages/login.dart'; 
+import '../pages/registration_role.dart';
 
 class CreateAccountPage extends StatelessWidget {
   const CreateAccountPage({super.key});
@@ -109,36 +111,68 @@ class CreateAccountPage extends StatelessWidget {
                         isFilled: true,
                         fillColor: Colors.white,
                         onPressed: () {
-
-                        },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegistrationRolePage()),
+                        );
+                      },
                         width: screenSize.width * 0.8,
                         height: 60,
                       ),
 
-                      const SizedBox(height: 30),
-                      const Text(
-                        "Sign up with",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontFamily: 'Manrope',
-                        ),
+                      const SizedBox(height: 65),
+                      
+                       Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Colors.white.withAlpha(100), 
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                            child: Text(
+                              "Sign up with",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontFamily: 'Manrope',
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Colors.white.withAlpha(100), 
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 15),
 
-                      // --- Social Login Buttons (Facebook & Google) ---
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSocialButton(context, 'assets/images/facebook.png'),
+                          SocialButton(
+                            imagePath: 'assets/images/facebook.png',
+                            onPressed: () {
+                              // Handle Facebook login
+                            },
+                          ),
                           const SizedBox(width: 20),
-                          _buildSocialButton(context, 'assets/images/google.png'),
+                          SocialButton(
+                            imagePath: 'assets/images/google.png',
+                            onPressed: () {
+                              // Handle Google login
+                            },
+                          ),
                         ],
                       ),
 
                       const Spacer(),
 
-                      // --- "Already have an account?" text with "Log In" link ---
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -172,37 +206,6 @@ class CreateAccountPage extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // Helper Widget for Social Buttons (can remain here or be moved to a shared utility)
-  Widget _buildSocialButton(BuildContext context, String imagePath) {
-    return GestureDetector(
-      onTap: () {
-        
-      },
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Image.asset(
-            imagePath,
-            width: 30,
-            height: 30,
-          ),
         ),
       ),
     );
