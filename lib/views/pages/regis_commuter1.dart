@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../widgets/text_field.dart'; // Adjust path if necessary
-import '../widgets/dropdown.dart'; // Adjust path if necessary
-import '../widgets/background_circles.dart'; // Adjust path if necessary
-import '../widgets/progress_bar.dart'; // Adjust path if necessary
-import '../widgets/option_card.dart'; // Adjust path as option_card.dart is general
-import '../widgets/button.dart'; // Adjust path as button.dart (CustomButton) is general
+import '../widgets/text_field.dart'; 
+import '../widgets/dropdown.dart'; 
+import '../widgets/background_circles.dart'; 
+import '../widgets/progress_bar.dart'; 
+import '../widgets/option_card.dart'; 
+import '../widgets/button.dart'; 
 
 class RegistrationCommuterPersonalInfo extends StatefulWidget {
   const RegistrationCommuterPersonalInfo({super.key});
@@ -16,21 +16,19 @@ class RegistrationCommuterPersonalInfo extends StatefulWidget {
 
 class RegistrationCommuterPersonalInfoState
     extends State<RegistrationCommuterPersonalInfo> {
-  final _formKey = GlobalKey<FormState>(); // Key for form validation
+  final _formKey = GlobalKey<FormState>(); 
 
-  // Text Editing Controllers for input fields
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
-  String? _selectedSex; // For dropdown
-  String? _selectedCategory; // For OptionCard selection
+  String? _selectedSex; 
+  String? _selectedCategory; 
 
-  // Define steps for the progress bar
   final List<ProgressBarStep> _registrationSteps = [
-    ProgressBarStep(title: 'Choose Role', isCompleted: true), // Now completed
-    ProgressBarStep(title: 'Personal Info', isActive: true), // Current step
+    ProgressBarStep(title: 'Choose Role', isCompleted: true), 
+    ProgressBarStep(title: 'Personal Info', isActive: true), 
     ProgressBarStep(title: 'Set Login'),
     ProgressBarStep(title: 'Verify Email'),
   ];
@@ -46,13 +44,11 @@ class RegistrationCommuterPersonalInfoState
 
   void _onNextPressed() {
     if (_formKey.currentState!.validate()) {
-      // All fields are valid, process the data
 
       // TODO: Navigate to the next registration step (Set Login)
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Personal Info Submitted!')));
-      // Example navigation:
       // Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationSetLoginPage()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,7 +60,7 @@ class RegistrationCommuterPersonalInfoState
   }
 
   void _onBackPressed() {
-    Navigator.of(context).pop(); // Go back to the previous screen (Choose Role)
+    Navigator.of(context).pop();
   }
 
   @override
@@ -72,7 +68,7 @@ class RegistrationCommuterPersonalInfoState
     final Size screenSize = MediaQuery.of(context).size;
     final double buttonWidth = (screenSize.width - (25 * 2) - 20) / 2;
     final double fieldWidth =
-        screenSize.width - (25 * 2); // Full width minus horizontal padding
+        screenSize.width - (25 * 2); 
 
     return Scaffold(
       body: Container(
@@ -90,12 +86,11 @@ class RegistrationCommuterPersonalInfoState
             const BackgroundCircles(),
             Positioned.fill(
               child: SingleChildScrollView(
-                // Use SingleChildScrollView for scrollable content
                 padding: const EdgeInsets.symmetric(horizontal: 25.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 50),
                       Align(
@@ -110,7 +105,7 @@ class RegistrationCommuterPersonalInfoState
                           color: Color.fromRGBO(18, 18, 18, 1),
                           fontFamily: 'Manrope',
                           fontSize: 28,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: FontWeight.bold,
                           height: 1.5,
                         ),
                       ),
@@ -127,18 +122,21 @@ class RegistrationCommuterPersonalInfoState
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        '*All fields required unless noted.',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '*All fields required unless noted.',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
                       ),
                       const SizedBox(height: 15),
 
-                      // First Name
                       CustomTextField(
                         labelText: 'First Name',
                         controller: _firstNameController,
                         width: fieldWidth,
-                        height: 60, // Example height
+                        height: 60, 
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
                         focusedBorderColor: const Color.fromRGBO(
                           185,
@@ -155,7 +153,6 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 15),
 
-                      // Last Name
                       CustomTextField(
                         labelText: 'Last Name',
                         controller: _lastNameController,
@@ -177,7 +174,6 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 15),
 
-                      // Age and Sex in a Row
                       Row(
                         children: [
                           Expanded(
@@ -185,9 +181,6 @@ class RegistrationCommuterPersonalInfoState
                               labelText: 'Age',
                               controller: _ageController,
                               keyboardType: TextInputType.number,
-                              width:
-                                  (fieldWidth - 15) /
-                                  2, // Half width minus spacing
                               height: 60,
                               borderColor: const Color.fromRGBO(
                                 200,
@@ -217,7 +210,6 @@ class RegistrationCommuterPersonalInfoState
                             child: CustomDropdownField<String>(
                               labelText: 'Sex',
                               initialValue: _selectedSex,
-                              width: (fieldWidth - 15) / 2,
                               height: 60,
                               borderColor: const Color.fromRGBO(
                                 200,
@@ -252,7 +244,6 @@ class RegistrationCommuterPersonalInfoState
                               },
                               validator: (value) {
                                 if (value == null) {
-                                  // Remove the "|| value.isEmpty" check
                                   return 'Select sex';
                                 }
                                 return null;
@@ -267,7 +258,6 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 15),
 
-                      // Full Address
                       CustomTextField(
                         labelText: 'Full Address',
                         controller: _addressController,
@@ -289,50 +279,79 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 25),
 
-                      // Category
-                      const Text(
-                        'Category *',
-                        style: TextStyle(
-                          color: Color.fromRGBO(18, 18, 18, 1),
-                          fontFamily: 'Manrope',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Category *',
+                          style: TextStyle(
+                            color: Color.fromRGBO(18, 18, 18, 1),
+                            fontFamily: 'Manrope',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      OptionCard(
-                        title: 'Regular',
-                        isSelected: _selectedCategory == 'Regular',
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory = 'Regular';
-                          });
-                        },
-                        type: OptionCardType.radio,
-                        width: fieldWidth, // Match width of other fields
-                        height: 60,
-                        selectedColor: const Color.fromRGBO(185, 69, 170, 1),
-                        unselectedColor: const Color.fromRGBO(200, 200, 200, 1),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          OptionCard(
+                            title: 'Regular',
+                            isSelected: _selectedCategory == 'Regular',
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = 'Regular';
+                              });
+                            },
+                            type: OptionCardType.radio,
+                            margin: const EdgeInsets.only(right: 12.0),
+                            height: 50,
+                            width: 160,
+                            textSize: 16,
+                            selectedColor: const Color.fromRGBO(
+                              185,
+                              69,
+                              170,
+                              1,
+                            ),
+                            unselectedColor: const Color.fromRGBO(
+                              200,
+                              200,
+                              200,
+                              1,
+                            ),
+                          ),
+                          OptionCard(
+                            title: 'Student, PWD, Senior Citizen',
+                            isSelected: _selectedCategory == 'Discounted',
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = 'Discounted';
+                              });
+                            },
+                            type: OptionCardType.radio,
+                            margin: const EdgeInsets.only(left: 12.0),
+                            width: 160,
+                            height: 50,
+                            selectedColor: const Color.fromRGBO(
+                              185,
+                              69,
+                              170,
+                              1,
+                            ),
+                            unselectedColor: const Color.fromRGBO(
+                              200,
+                              200,
+                              200,
+                              1,
+                            ),
+                            textSize: 12,
+                          ),
+                        ],
                       ),
-                      OptionCard(
-                        title: 'Student, PWD, Senior Citizen',
-                        isSelected:
-                            _selectedCategory ==
-                            'Discounted', // You might want a different internal value
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory =
-                                'Discounted'; // Or 'StudentPWDSC'
-                          });
-                        },
-                        type: OptionCardType.radio,
-                        width: fieldWidth,
-                        height: 60,
-                        selectedColor: const Color.fromRGBO(185, 69, 170, 1),
-                        unselectedColor: const Color.fromRGBO(200, 200, 200, 1),
-                      ),
-                      const SizedBox(height: 30), // Space before buttons
-                      // Navigation Buttons
+                      const SizedBox(height: 65), 
+                      
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -363,7 +382,7 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(
                         height: 30,
-                      ), // Extra space at the bottom for scrolling
+                      ),
                     ],
                   ),
                 ),

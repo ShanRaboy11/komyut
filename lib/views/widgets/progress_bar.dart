@@ -1,4 +1,3 @@
-// lib/features/registration/widgets/progress_bar.dart
 import 'package:flutter/material.dart';
 
 class ProgressBarStep {
@@ -49,7 +48,6 @@ class ProgressBar extends StatelessWidget {
       final step = steps[i];
       final bool isLastStep = i == steps.length - 1;
 
-      // Wrap circle in Expanded to take equal space
       indicators.add(
         Expanded(
           child: Center(
@@ -78,7 +76,7 @@ class ProgressBar extends StatelessWidget {
       final step = steps[i];
 
       // Add the label - each label takes equal space
-      labels.add(_buildStepLabel(step));
+      labels.add(_buildStepLabel(step, i));
     }
     return labels;
   }
@@ -130,14 +128,24 @@ class ProgressBar extends StatelessWidget {
     );
   }
 
-  Widget _buildStepLabel(ProgressBarStep step) {
+  Widget _buildStepLabel(ProgressBarStep step, int index) {
     Color activeColor = const Color.fromRGBO(185, 69, 170, 1);
     Color inactiveColor = const Color.fromRGBO(198, 198, 198, 1);
+
+    // Determine alignment based on position
+    TextAlign alignment;
+    if (index == 0) {
+      alignment = TextAlign.left; // First step (Choose Role) - align left
+    } else if (index == steps.length - 1) {
+      alignment = TextAlign.right; // Last step (Verify Email) - align right
+    } else {
+      alignment = TextAlign.center; // Middle steps - center
+    }
 
     return Expanded(
       child: Text(
         step.title,
-        textAlign: TextAlign.center,
+        textAlign: alignment,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(

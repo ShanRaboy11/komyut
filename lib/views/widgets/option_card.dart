@@ -19,6 +19,7 @@ class OptionCard extends StatelessWidget {
   final double height; // New: Customizable height, now required
   final double borderRadius; // New: Customizable border radius
   final EdgeInsetsGeometry? margin; // New: Customizable margin
+  final double textSize; // Fixed text size for title
 
   const OptionCard({
     super.key, // Use super.key
@@ -48,6 +49,7 @@ class OptionCard extends StatelessWidget {
       horizontal: 25,
       vertical: 8,
     ), // Default margin
+    this.textSize = 18, // Default text size
   });
 
   @override
@@ -95,7 +97,7 @@ class OptionCard extends StatelessWidget {
                         // Changed: Active text color now matches selectedColor
                         color: isSelected ? selectedColor : Colors.grey[700],
                         fontFamily: 'Manrope',
-                        fontSize: 18,
+                        fontSize: textSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
