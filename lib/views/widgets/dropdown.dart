@@ -81,6 +81,7 @@ class CustomDropdownField<T> extends StatelessWidget {
           ),
           filled: fillColor != null,
           fillColor: fillColor,
+          errorStyle: const TextStyle(height: 0, fontSize: 0),
           contentPadding: contentPadding,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
