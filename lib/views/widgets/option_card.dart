@@ -13,7 +13,8 @@ class OptionCard extends StatelessWidget {
   final Color selectedColor; // New: for custom selected border/indicator color
   final Color unselectedColor; // New: for custom unselected border color
   final Widget? leadingIcon; // New: for an optional icon at the start
-  final Widget? trailingWidget; // New: for custom widget at the end (overrides default type indicator)
+  final Widget?
+  trailingWidget; // New: for custom widget at the end (overrides default type indicator)
   final double? width; // New: Customizable width
   final double height; // New: Customizable height, now required
   final double borderRadius; // New: Customizable border radius
@@ -26,14 +27,27 @@ class OptionCard extends StatelessWidget {
     this.isSelected = false,
     required this.onTap,
     this.type = OptionCardType.simple, // Default to a simple tappable card
-    this.selectedColor = const Color.fromRGBO(185, 69, 170, 1), // Default purple
-    this.unselectedColor = const Color.fromRGBO(200, 200, 200, 1), // Default grey
+    this.selectedColor = const Color.fromRGBO(
+      185,
+      69,
+      170,
+      1,
+    ), // Default purple
+    this.unselectedColor = const Color.fromRGBO(
+      200,
+      200,
+      200,
+      1,
+    ), // Default grey
     this.leadingIcon,
     this.trailingWidget,
     this.width, // Defaults to double.infinity if null in Container
     this.height = 70, // Default height, but now customizable
     this.borderRadius = 15, // Default border radius
-    this.margin = const EdgeInsets.symmetric(horizontal: 25, vertical: 8), // Default margin
+    this.margin = const EdgeInsets.symmetric(
+      horizontal: 25,
+      vertical: 8,
+    ), // Default margin
   });
 
   @override
@@ -46,7 +60,9 @@ class OptionCard extends StatelessWidget {
         margin: margin, // Use provided margin
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(borderRadius), // Use provided border radius
+          borderRadius: BorderRadius.circular(
+            borderRadius,
+          ), // Use provided border radius
           border: Border.all(
             color: isSelected ? selectedColor : unselectedColor,
             width: isSelected ? 2 : 1,
@@ -87,7 +103,9 @@ class OptionCard extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          color: isSelected ? Colors.grey[600] : Colors.grey[500],
+                          color: isSelected
+                              ? Colors.grey[600]
+                              : Colors.grey[500],
                           fontFamily: 'Manrope',
                           fontSize: 12,
                         ),
@@ -109,27 +127,39 @@ class OptionCard extends StatelessWidget {
   Widget _buildDefaultTrailingWidget() {
     switch (type) {
       case OptionCardType.radio:
-        // To avoid deprecated warnings for groupValue and onChanged,
-        // we simulate the radio button behavior directly.
-        // The actual `onTap` of the whole card handles the state change.
-        return Radio<bool>(
-          value: true, // This radio button represents the 'true' state for selection
-          groupValue: isSelected ? true : false, // Set groupValue based on isSelected
-          onChanged: (bool? value) {
-            // No-op here because the parent GestureDetector's onTap handles the logic.
-            // This prevents the warning about onChanged being deprecated with groupValue.
-          },
-          activeColor: selectedColor,
+        // Custom radio button visual indicator (no deprecated parameters)
+        return Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSelected ? selectedColor : unselectedColor,
+              width: 2,
+            ),
+          ),
+          child: isSelected
+              ? Center(
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: selectedColor,
+                    ),
+                  ),
+                )
+              : null,
         );
       case OptionCardType.checkbox:
         return Checkbox(
           value: isSelected,
-          onChanged: (bool? value) => onTap(), // Call onTap for selection
+          onChanged: (bool? value) => onTap(),
           activeColor: selectedColor,
         );
       case OptionCardType.simple:
         return Icon(
-          Icons.chevron_right, // A simple right arrow for a general tappable card
+          Icons.chevron_right,
           color: isSelected ? selectedColor : unselectedColor,
         );
     }

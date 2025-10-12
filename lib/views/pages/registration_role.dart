@@ -28,7 +28,7 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
 
     void onNextPressed() {
       if (_selectedRole != null) {
-        print('Selected Role: $_selectedRole');
+        debugPrint('Selected Role: $_selectedRole');
           Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationCommuterPersonalInfo()));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

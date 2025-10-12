@@ -6,15 +6,16 @@ import '../widgets/progress_bar.dart'; // Adjust path if necessary
 import '../widgets/option_card.dart'; // Adjust path as option_card.dart is general
 import '../widgets/button.dart'; // Adjust path as button.dart (CustomButton) is general
 
-
 class RegistrationCommuterPersonalInfo extends StatefulWidget {
   const RegistrationCommuterPersonalInfo({super.key});
 
   @override
-  State<RegistrationCommuterPersonalInfo> createState() => RegistrationCommuterPersonalInfoState();
+  State<RegistrationCommuterPersonalInfo> createState() =>
+      RegistrationCommuterPersonalInfoState();
 }
 
-class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPersonalInfo> {
+class RegistrationCommuterPersonalInfoState
+    extends State<RegistrationCommuterPersonalInfo> {
   final _formKey = GlobalKey<FormState>(); // Key for form validation
 
   // Text Editing Controllers for input fields
@@ -47,16 +48,17 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
     if (_formKey.currentState!.validate()) {
       // All fields are valid, process the data
 
-
       // TODO: Navigate to the next registration step (Set Login)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Personal Info Submitted!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Personal Info Submitted!')));
       // Example navigation:
       // Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationSetLoginPage()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields correctly!')),
+        const SnackBar(
+          content: Text('Please fill all required fields correctly!'),
+        ),
       );
     }
   }
@@ -69,7 +71,8 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
     final double buttonWidth = (screenSize.width - (25 * 2) - 20) / 2;
-    final double fieldWidth = screenSize.width - (25 * 2); // Full width minus horizontal padding
+    final double fieldWidth =
+        screenSize.width - (25 * 2); // Full width minus horizontal padding
 
     return Scaffold(
       body: Container(
@@ -86,7 +89,8 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
           children: [
             const BackgroundCircles(),
             Positioned.fill(
-              child: SingleChildScrollView( // Use SingleChildScrollView for scrollable content
+              child: SingleChildScrollView(
+                // Use SingleChildScrollView for scrollable content
                 padding: const EdgeInsets.symmetric(horizontal: 25.0),
                 child: Form(
                   key: _formKey,
@@ -125,10 +129,7 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                       const SizedBox(height: 20),
                       const Text(
                         '*All fields required unless noted.',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                       const SizedBox(height: 15),
 
@@ -139,7 +140,12 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                         width: fieldWidth,
                         height: 60, // Example height
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your first name';
@@ -156,12 +162,16 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                         width: fieldWidth,
                         height: 60,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
                           }
-                          return null;
                           return null;
                         },
                       ),
@@ -175,10 +185,22 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                               labelText: 'Age',
                               controller: _ageController,
                               keyboardType: TextInputType.number,
-                              width: (fieldWidth - 15) / 2, // Half width minus spacing
+                              width:
+                                  (fieldWidth - 15) /
+                                  2, // Half width minus spacing
                               height: 60,
-                              borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                              focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                              borderColor: const Color.fromRGBO(
+                                200,
+                                200,
+                                200,
+                                1,
+                              ),
+                              focusedBorderColor: const Color.fromRGBO(
+                                185,
+                                69,
+                                170,
+                                1,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Enter age';
@@ -194,15 +216,34 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                           Expanded(
                             child: CustomDropdownField<String>(
                               labelText: 'Sex',
-                              value: _selectedSex,
-                              width: (fieldWidth - 15) / 2, // Half width minus spacing
+                              initialValue: _selectedSex,
+                              width: (fieldWidth - 15) / 2,
                               height: 60,
-                              borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                              focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                              borderColor: const Color.fromRGBO(
+                                200,
+                                200,
+                                200,
+                                1,
+                              ),
+                              focusedBorderColor: const Color.fromRGBO(
+                                185,
+                                69,
+                                170,
+                                1,
+                              ),
                               items: const [
-                                DropdownMenuItem(value: 'Male', child: Text('Male')),
-                                DropdownMenuItem(value: 'Female', child: Text('Female')),
-                                DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
+                                DropdownMenuItem(
+                                  value: 'Male',
+                                  child: Text('Male'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Female',
+                                  child: Text('Female'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Prefer not to say',
+                                  child: Text('Prefer not to say'),
+                                ),
                               ],
                               onChanged: (String? newValue) {
                                 setState(() {
@@ -210,12 +251,16 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                                 });
                               },
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
+                                if (value == null) {
+                                  // Remove the "|| value.isEmpty" check
                                   return 'Select sex';
                                 }
                                 return null;
                               },
-                              icon: const Icon(Icons.keyboard_arrow_down, color: Color.fromRGBO(185, 69, 170, 1)), // Custom icon color
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down,
+                                color: Color.fromRGBO(185, 69, 170, 1),
+                              ),
                             ),
                           ),
                         ],
@@ -229,7 +274,12 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                         width: fieldWidth,
                         height: 60,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your address';
@@ -266,10 +316,13 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                       ),
                       OptionCard(
                         title: 'Student, PWD, Senior Citizen',
-                        isSelected: _selectedCategory == 'Discounted', // You might want a different internal value
+                        isSelected:
+                            _selectedCategory ==
+                            'Discounted', // You might want a different internal value
                         onTap: () {
                           setState(() {
-                            _selectedCategory = 'Discounted'; // Or 'StudentPWDSC'
+                            _selectedCategory =
+                                'Discounted'; // Or 'StudentPWDSC'
                           });
                         },
                         type: OptionCardType.radio,
@@ -279,7 +332,6 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                         unselectedColor: const Color.fromRGBO(200, 200, 200, 1),
                       ),
                       const SizedBox(height: 30), // Space before buttons
-
                       // Navigation Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -309,7 +361,9 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                           ),
                         ],
                       ),
-                      const SizedBox(height: 30), // Extra space at the bottom for scrolling
+                      const SizedBox(
+                        height: 30,
+                      ), // Extra space at the bottom for scrolling
                     ],
                   ),
                 ),
