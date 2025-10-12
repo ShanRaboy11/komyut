@@ -3,7 +3,7 @@ import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
-import 'regis_verify_email.dart'; 
+import '../pages/regis_verify_email.dart'; 
 
 class RegistrationSetLogin extends StatefulWidget {
   const RegistrationSetLogin({super.key});

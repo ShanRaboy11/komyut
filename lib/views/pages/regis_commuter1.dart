@@ -5,7 +5,7 @@ import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart'; 
 import '../widgets/option_card.dart'; 
 import '../widgets/button.dart'; 
-import '../pages/regis_setLogin.dart';
+import '../pages/regis_set_login.dart';
 import 'package:file_picker/file_picker.dart';
 
 class RegistrationCommuterPersonalInfo extends StatefulWidget {
