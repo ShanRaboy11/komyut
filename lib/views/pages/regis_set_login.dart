@@ -3,7 +3,7 @@ import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
-import '../pages/regis_verifyEmail.dart';
+import 'regis_verify_email.dart'; 
 
 class RegistrationSetLogin extends StatefulWidget {
   const RegistrationSetLogin({super.key});
@@ -18,7 +18,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
   // Text Editing Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   // Password visibility toggles
   bool _isPasswordVisible = false;
@@ -44,21 +45,19 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     bool formIsValid = _formKey.currentState!.validate();
 
     if (!formIsValid) {
-      // If the form is not valid, we need to determine the SnackBar message.
       String? firstError;
       int errorCount = 0;
 
-      // Manually check each validator to count errors and find the first one.
-      // We're essentially re-running the validation logic here to get the messages.
       String? emailError = _emailController.text.isEmpty
           ? 'Email address is required'
-          : (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text)
+          : (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                  .hasMatch(_emailController.text)
               ? 'Invalid email format. Please use a valid email address'
               : null);
 
       if (emailError != null) {
         errorCount++;
-        if (firstError == null) firstError = emailError;
+        firstError ??= emailError; // Replaced if statement with null-aware assignment
       }
 
       String? passwordError = _passwordController.text.isEmpty
@@ -69,7 +68,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       if (passwordError != null) {
         errorCount++;
-        if (firstError == null) firstError = passwordError;
+        firstError ??= passwordError; // Replaced if statement with null-aware assignment
       }
 
       String? confirmPasswordError = _confirmPasswordController.text.isEmpty
@@ -80,11 +79,11 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       if (confirmPasswordError != null) {
         errorCount++;
-        if (firstError == null) firstError = confirmPasswordError;
+        firstError ??= confirmPasswordError; // Replaced if statement with null-aware assignment
       }
 
       String snackBarMessage;
-      if (errorCount > 1) { 
+      if (errorCount > 1) {
         snackBarMessage = 'Please fill in all required fields correctly!';
       } else if (firstError != null) {
         snackBarMessage = firstError;
@@ -98,11 +97,11 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
           backgroundColor: Colors.red,
         ),
       );
-      return; 
+      return;
     }
 
     Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => RegistrationVerifyEmail()),
+      MaterialPageRoute(builder: (_) => const RegistrationVerifyEmail()),
     );
   }
 
@@ -164,7 +163,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -234,8 +233,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: const Color.fromRGBO(185, 69, 170, 1),
                           ),
                           onPressed: () {
@@ -281,13 +280,14 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isConfirmPasswordVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: const Color.fromRGBO(185, 69, 170, 1),
                           ),
                           onPressed: () {
                             setState(() {
-                              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                              _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible;
                             });
                           },
                         ),

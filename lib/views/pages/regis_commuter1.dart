@@ -101,12 +101,17 @@ class RegistrationCommuterPersonalInfoState
       type: FileType.image,
       allowMultiple: false,
     );
-    
+
+    // Check if the widget is still mounted before using context
+    if (!mounted) return;
+
     if (result != null && result.files.isNotEmpty) {
       setState(() {
         _uploadedFileName = result.files.first.name;
       });
-      
+
+      // Check mounted again before potentially showing a SnackBar after setState
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('ID uploaded: ${result.files.first.name}'),
@@ -115,6 +120,8 @@ class RegistrationCommuterPersonalInfoState
       );
     }
   } catch (e) {
+    // Check mounted again before showing a SnackBar in the catch block
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Failed to upload image'),
