@@ -7,7 +7,6 @@ import '../widgets/option_card.dart';
 import '../widgets/button.dart'; 
 import '../pages/regis_setLogin.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io'; 
 
 class RegistrationCommuterPersonalInfo extends StatefulWidget {
   const RegistrationCommuterPersonalInfo({super.key});

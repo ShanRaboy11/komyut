@@ -3,7 +3,7 @@ import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
-// import '../pages/regis_verifyEmail.dart';
+import '../pages/regis_verifyEmail.dart';
 
 class RegistrationSetLogin extends StatefulWidget {
   const RegistrationSetLogin({super.key});
@@ -101,12 +101,9 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       return; 
     }
 
-
-    // Navigate to Verify Email page
-    // TODO: Uncomment and replace with your actual Verify Email page:
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(builder: (_) => RegistrationVerifyEmail()),
-    // );
+    Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => RegistrationVerifyEmail()),
+    );
   }
 
   void _onBackPressed() {
@@ -151,7 +148,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                           color: Color.fromRGBO(18, 18, 18, 1),
                           fontFamily: 'Manrope',
                           fontSize: 28,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: FontWeight.bold,
                           height: 1.5,
                         ),
                       ),
