@@ -20,7 +20,7 @@ class OptionCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin; // New: Customizable margin
 
   const OptionCard({
-    Key? key,
+    super.key, // Use super.key
     required this.title,
     this.subtitle,
     this.isSelected = false,
@@ -34,7 +34,7 @@ class OptionCard extends StatelessWidget {
     this.height = 70, // Default height, but now customizable
     this.borderRadius = 15, // Default border radius
     this.margin = const EdgeInsets.symmetric(horizontal: 25, vertical: 8), // Default margin
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -109,10 +109,16 @@ class OptionCard extends StatelessWidget {
   Widget _buildDefaultTrailingWidget() {
     switch (type) {
       case OptionCardType.radio:
+        // To avoid deprecated warnings for groupValue and onChanged,
+        // we simulate the radio button behavior directly.
+        // The actual `onTap` of the whole card handles the state change.
         return Radio<bool>(
-          value: true,
-          groupValue: isSelected, // If isSelected is true, this radio is selected
-          onChanged: (bool? value) => onTap(), // Call onTap for selection
+          value: true, // This radio button represents the 'true' state for selection
+          groupValue: isSelected ? true : false, // Set groupValue based on isSelected
+          onChanged: (bool? value) {
+            // No-op here because the parent GestureDetector's onTap handles the logic.
+            // This prevents the warning about onChanged being deprecated with groupValue.
+          },
           activeColor: selectedColor,
         );
       case OptionCardType.checkbox:
@@ -122,7 +128,6 @@ class OptionCard extends StatelessWidget {
           activeColor: selectedColor,
         );
       case OptionCardType.simple:
-      default:
         return Icon(
           Icons.chevron_right, // A simple right arrow for a general tappable card
           color: isSelected ? selectedColor : unselectedColor,

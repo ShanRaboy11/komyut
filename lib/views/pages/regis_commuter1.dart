@@ -1,4 +1,3 @@
-// lib/features/registration/pages/registration_personal_info_page.dart
 import 'package:flutter/material.dart';
 import '../widgets/text_field.dart'; // Adjust path if necessary
 import '../widgets/dropdown.dart'; // Adjust path if necessary
@@ -47,12 +46,7 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
   void _onNextPressed() {
     if (_formKey.currentState!.validate()) {
       // All fields are valid, process the data
-      print('First Name: ${_firstNameController.text}');
-      print('Last Name: ${_lastNameController.text}');
-      print('Age: ${_ageController.text}');
-      print('Sex: $_selectedSex');
-      print('Full Address: ${_addressController.text}');
-      print('Category: $_selectedCategory');
+
 
       // TODO: Navigate to the next registration step (Set Login)
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,6 +161,7 @@ class RegistrationCommuterPersonalInfoState extends State<RegistrationCommuterPe
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
                           }
+                          return null;
                           return null;
                         },
                       ),

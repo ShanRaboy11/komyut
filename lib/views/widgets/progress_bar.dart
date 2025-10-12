@@ -16,7 +16,7 @@ class ProgressBarStep {
 class ProgressBar extends StatelessWidget {
   final List<ProgressBarStep> steps;
 
-  const ProgressBar({Key? key, required this.steps}) : super(key: key);
+  const ProgressBar({super.key, required this.steps});
 
   @override
   Widget build(BuildContext context) {
@@ -27,12 +27,15 @@ class ProgressBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Row for circles and lines
-          Row(
-            children: _buildStepIndicators(),
+          IntrinsicHeight(
+            child: Row(
+              children: _buildStepIndicators(),
+            ),
           ),
           const SizedBox(height: 6),
           // Row for labels
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: _buildStepLabels(),
           ),
         ],
@@ -46,13 +49,22 @@ class ProgressBar extends StatelessWidget {
       final step = steps[i];
       final bool isLastStep = i == steps.length - 1;
 
-      // Add the step circle
-      indicators.add(_buildStepCircle(step));
+      // Wrap circle in Expanded to take equal space
+      indicators.add(
+        Expanded(
+          child: Center(
+            child: _buildStepCircle(step),
+          ),
+        ),
+      );
 
       if (!isLastStep) {
         indicators.add(
-          _buildStepDivider(
-            steps[i].isCompleted || steps[i + 1].isActive || steps[i + 1].isCompleted,
+          Expanded(
+            flex: 1,
+            child: _buildStepDivider(
+              steps[i].isCompleted || steps[i + 1].isActive || steps[i + 1].isCompleted,
+            ),
           ),
         );
       }
@@ -64,15 +76,9 @@ class ProgressBar extends StatelessWidget {
     List<Widget> labels = [];
     for (int i = 0; i < steps.length; i++) {
       final step = steps[i];
-      final bool isLastStep = i == steps.length - 1;
 
-      // Add the label
+      // Add the label - each label takes equal space
       labels.add(_buildStepLabel(step));
-
-      if (!isLastStep) {
-        // Add spacer to match the divider width
-        labels.add(const Expanded(child: SizedBox()));
-      }
     }
     return labels;
   }
@@ -128,11 +134,12 @@ class ProgressBar extends StatelessWidget {
     Color activeColor = const Color.fromRGBO(185, 69, 170, 1);
     Color inactiveColor = const Color.fromRGBO(198, 198, 198, 1);
 
-    return SizedBox(
-      width: 24, // Match circle width
+    return Expanded(
       child: Text(
         step.title,
         textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: step.isActive || step.isCompleted
               ? activeColor
@@ -148,14 +155,11 @@ class ProgressBar extends StatelessWidget {
   }
 
   Widget _buildStepDivider(bool isConnected) {
-    return Expanded(
-      child: Container(
-        height: 1.5,
-        margin: const EdgeInsets.symmetric(horizontal: 0),
-        color: isConnected
-            ? const Color.fromRGBO(185, 69, 170, 1)
-            : const Color.fromRGBO(198, 198, 198, 1),
-      ),
+    return Container(
+      height: 1.5,
+      color: isConnected
+          ? const Color.fromRGBO(185, 69, 170, 1)
+          : const Color.fromRGBO(198, 198, 198, 1),
     );
   }
 }

@@ -24,7 +24,7 @@ class CustomTextField extends StatelessWidget {
   final EdgeInsetsGeometry contentPadding;
 
   const CustomTextField({
-    Key? key,
+    super.key, // Use super.key
     required this.labelText,
     this.hintText,
     this.controller,
@@ -45,13 +45,14 @@ class CustomTextField extends StatelessWidget {
     this.hintColor,
     this.borderRadius = 15.0, // Default border radius
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 15), // Default padding
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width, // Use provided width
-      height: height, // Use provided height (might be overridden by TextField internal sizing if too small)
+    // Replaced Container with SizedBox for whitespace and to apply width/height
+    return SizedBox( 
+      width: width,
+      height: height,
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,

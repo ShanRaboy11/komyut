@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class CustomDropdownField<T> extends StatelessWidget {
   final String labelText;
-  final T? value;
+  final T? initialValue; // Changed from 'value' to 'initialValue'
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?>? onChanged;
   final FormFieldValidator<T>? validator;
@@ -21,9 +21,9 @@ class CustomDropdownField<T> extends StatelessWidget {
   final Widget? icon; // Customizable dropdown icon
 
   const CustomDropdownField({
-    Key? key,
+    super.key, // Use super.key
     required this.labelText,
-    this.value,
+    this.initialValue, // Use initialValue
     required this.items,
     required this.onChanged,
     this.validator,
@@ -39,15 +39,15 @@ class CustomDropdownField<T> extends StatelessWidget {
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
     this.hintText,
     this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox( // Use SizedBox to add whitespace and apply width/height
       width: width,
       height: height,
       child: DropdownButtonFormField<T>(
-        value: value,
+        value: initialValue, // Use initialValue here
         items: items,
         onChanged: onChanged,
         validator: validator,

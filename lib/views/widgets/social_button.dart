@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 
 class SocialButton extends StatelessWidget {
   final String imagePath;
-  final VoidCallback onPressed; 
+  final VoidCallback onPressed;
 
   const SocialButton({
-    Key? key,
+    super.key, // Use super.key here
     required this.imagePath,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onPressed, 
+      onTap: onPressed,
       child: Container(
         width: 50,
         height: 50,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          boxShadow: const [ 
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 5,
