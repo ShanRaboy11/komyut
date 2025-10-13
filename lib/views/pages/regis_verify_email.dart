@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; 
-import 'package:flutter/scheduler.dart'; 
+import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
-// import 'dashboard_page.dart';
+import '../providers/registration_provider.dart';
 
 class RegistrationVerifyEmail extends StatefulWidget {
-  const RegistrationVerifyEmail({super.key});
+  final String email;
+  
+  const RegistrationVerifyEmail({
+    super.key,
+    required this.email,
+  });
 
   @override
   State<RegistrationVerifyEmail> createState() => _RegistrationVerifyEmailState();
 }
 
-// Add SingleTickerProviderStateMixin here
 class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     with SingleTickerProviderStateMixin {
   final List<TextEditingController> _otpControllers =
@@ -21,33 +27,93 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
   final List<FocusNode> _otpFocusNodes =
       List.generate(6, (index) => FocusNode());
 
-  // Timer for resend code
-  static const int _resendCooldownSeconds = 180; 
+  static const int _resendCooldownSeconds = 60;
   int _remainingSeconds = _resendCooldownSeconds;
-  late Ticker _ticker; 
+  late Ticker _ticker;
+  
+  bool _isVerifying = false;
+  bool _isResending = false;
+  bool _emailSent = false;
+
+  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
     super.initState();
     _ticker = createTicker(_handleTick);
-    _startResendTimer();
+    _sendInitialOTP();
+  }
+
+  // Send initial OTP when page loads
+  Future<void> _sendInitialOTP() async {
+    setState(() {
+      _isResending = true;
+    });
+
+    try {
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final password = registrationProvider.registrationData['password'] ?? 'TempPass123!';
+      
+      debugPrint('Sending OTP to: ${widget.email}');
+      debugPrint('Using password: ${password.substring(0, 3)}***'); // Debug
+      
+      // Sign up the user with email verification OTP
+      final response = await supabase.auth.signUp(
+        email: widget.email,
+        password: password,
+      );
+
+      debugPrint('SignUp response: ${response.user?.id}'); // Debug
+
+      if (mounted) {
+        setState(() {
+          _emailSent = true;
+          _isResending = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification code sent to your email!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        _startResendTimer();
+      }
+    } catch (e) {
+      debugPrint('Error sending OTP: $e'); // Debug
+      
+      if (mounted) {
+        setState(() {
+          _isResending = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send code: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _handleTick(Duration elapsed) {
-    if (!mounted) return; 
+    if (!mounted) return;
     setState(() {
       _remainingSeconds = _resendCooldownSeconds - elapsed.inSeconds;
       if (_remainingSeconds <= 0) {
         _ticker.stop();
-        _remainingSeconds = 0; 
+        _remainingSeconds = 0;
       }
     });
   }
 
   void _startResendTimer() {
-    // Calling stop() is safe even if the ticker is not animating.
-    // This ensures any previous timer is stopped before starting a new one.
     _ticker.stop();
+    setState(() {
+      _remainingSeconds = _resendCooldownSeconds;
+    });
     _ticker.start();
   }
 
@@ -57,20 +123,56 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}s';
   }
 
-  void _onResendCode() {
-    if (_remainingSeconds == 0) {
-      // Logic to resend the code (e.g., API call)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Resending code...')),
-      );
-      // Reset and restart the timer
-      _remainingSeconds = _resendCooldownSeconds;
-      _startResendTimer();
+  Future<void> _onResendCode() async {
+    if (_remainingSeconds == 0 && !_isResending) {
+      setState(() {
+        _isResending = true;
+      });
+
+      try {
+        debugPrint('Resending OTP to: ${widget.email}'); // Debug
+        
+        // Resend verification email
+        await supabase.auth.resend(
+          type: OtpType.signup,
+          email: widget.email,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('New code sent to your email!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          _startResendTimer();
+          setState(() {
+            _isResending = false;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error resending OTP: $e'); // Debug
+        
+        if (mounted) {
+          setState(() {
+            _isResending = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to resend code: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
-  void _onVerifyCode() {
+  Future<void> _onVerifyCode() async {
     String otp = _otpControllers.map((controller) => controller.text).join();
+    
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -81,26 +183,110 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       return;
     }
 
-    // TODO: Implement your actual code verification logic (e.g., API call)
-    // For demonstration:
-    if (otp == "123456") { // Replace with actual verification
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Code verified successfully!'),
-          backgroundColor: Colors.green,
-        ),
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      debugPrint('Verifying OTP: $otp for email: ${widget.email}'); // Debug
+      
+      // Verify OTP with Supabase using type: signup
+      final response = await supabase.auth.verifyOTP(
+        email: widget.email,
+        token: otp,
+        type: OtpType.signup, // Changed from OtpType.email to OtpType.signup
       );
-      // TODO: Navigate to the next page after successful verification
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (_) => DashboardPage()),
-      // );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid code. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      debugPrint('Verify response: ${response.session != null}'); // Debug
+
+      if (response.session != null && mounted) {
+        // OTP verified successfully, now complete registration
+        final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+        
+        // Show processing message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email verified! Creating your account...'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Complete the registration (create profile, wallet, etc.)
+        final result = await registrationProvider.completeRegistration();
+
+        debugPrint('Registration result: ${result['success']}'); // Debug
+
+        if (mounted) {
+          setState(() {
+            _isVerifying = false;
+          });
+
+          if (result['success']) {
+            // Registration successful
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            // Navigate to home/dashboard
+            // Replace this with your actual home page
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/home', // or your home route
+              (route) => false,
+            );
+          } else {
+            // Registration failed
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Failed to create account'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } on AuthException catch (e) {
+      debugPrint('Auth Exception: ${e.message}'); // Debug
+      
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+
+        String errorMessage = 'Invalid code. Please try again.';
+        if (e.message.contains('expired')) {
+          errorMessage = 'Code expired. Please request a new one.';
+        } else if (e.message.contains('invalid')) {
+          errorMessage = 'Invalid code. Please check and try again.';
+        } else if (e.message.contains('Email not confirmed')) {
+          errorMessage = 'Please check your email and enter the correct code.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('General Exception: $e'); // Debug
+      
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -108,12 +294,11 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     Navigator.of(context).pop();
   }
 
-  // Define steps for the progress bar
   final List<ProgressBarStep> _registrationSteps = [
     ProgressBarStep(title: 'Choose Role', isCompleted: true),
     ProgressBarStep(title: 'Personal Info', isCompleted: true),
     ProgressBarStep(title: 'Set Login', isCompleted: true),
-    ProgressBarStep(title: 'Verify Email', isActive: true), // Current step
+    ProgressBarStep(title: 'Verify Email', isActive: true),
   ];
 
   @override
@@ -124,14 +309,14 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     for (var focusNode in _otpFocusNodes) {
       focusNode.dispose();
     }
-    _ticker.dispose(); // Dispose the ticker
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    final double buttonWidth = screenSize.width - (25 * 2); // Full width for single button
+    final double buttonWidth = screenSize.width - (25 * 2);
 
     return Scaffold(
       body: Container(
@@ -168,10 +353,10 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Please enter the code we just sent\nto your email.',
+                    Text(
+                      'Please enter the code we just sent\nto ${widget.email}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
                         fontFamily: 'Nunito',
                         fontSize: 14,
@@ -181,14 +366,30 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                     ),
                     const SizedBox(height: 40),
 
+                    // Loading indicator while sending initial email
+                    if (_isResending && !_emailSent) ...[
+                      const CircularProgressIndicator(
+                        color: Color.fromRGBO(185, 69, 170, 1),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Sending verification code...',
+                        style: TextStyle(
+                          color: Color.fromRGBO(0, 0, 0, 0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+
                     // OTP Input Fields
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(6, (index) {
                         return SizedBox(
-                          width: (screenSize.width - (25 * 2) - (5 * 5)) / 6, 
+                          width: (screenSize.width - (25 * 2) - (5 * 5)) / 6,
                           child: AspectRatio(
-                            aspectRatio: 1, // Make boxes square
+                            aspectRatio: 1,
                             child: TextField(
                               controller: _otpControllers[index],
                               focusNode: _otpFocusNodes[index],
@@ -199,7 +400,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                                 LengthLimitingTextInputFormatter(1),
                               ],
                               decoration: InputDecoration(
-                                counterText: '', // Hide default character counter
+                                counterText: '',
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   borderSide: const BorderSide(
@@ -226,7 +427,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                                   if (index < _otpControllers.length - 1) {
                                     _otpFocusNodes[index + 1].requestFocus();
                                   } else {
-                                    _otpFocusNodes[index].unfocus(); // Last field, unfocus
+                                    _otpFocusNodes[index].unfocus();
                                   }
                                 } else if (value.isEmpty) {
                                   if (index > 0) {
@@ -244,33 +445,45 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                     // Resend Code
                     GestureDetector(
                       onTap: _onResendCode,
-                      child: Text(
-                        _remainingSeconds == 0
-                            ? 'Resend Code' // Text changes when timer is 0
-                            : 'Resend code in ${_formatDuration(_remainingSeconds)}',
-                        style: TextStyle(
-                          color: _remainingSeconds == 0
-                              ? const Color.fromRGBO(185, 69, 170, 1) // Active color
-                              : const Color.fromRGBO(0, 0, 0, 0.699999988079071), // Disabled color
-                          fontFamily: 'Nunito', // Corrected to Nunito based on image text style
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
+                      child: _isResending
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color.fromRGBO(185, 69, 170, 1),
+                              ),
+                            )
+                          : Text(
+                              _remainingSeconds == 0
+                                  ? 'Resend Code'
+                                  : 'Resend code in ${_formatDuration(_remainingSeconds)}',
+                              style: TextStyle(
+                                color: _remainingSeconds == 0
+                                    ? const Color.fromRGBO(185, 69, 170, 1)
+                                    : const Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                                fontFamily: 'Nunito',
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                     ),
-                    const SizedBox(height: 270), // Spacer before buttons
+                    const SizedBox(height: 200),
 
                     // Verify Code Button
-                    CustomButton(
-                      text: 'Verify Code',
-                      onPressed: _onVerifyCode,
-                      isFilled: true,
-                      width: buttonWidth,
-                      height: 60,
-                      borderRadius: 15,
-                      textColor: Colors.white,
-                      hasShadow: true,
+                    Opacity(
+                      opacity: _isVerifying ? 0.5 : 1.0,
+                      child: CustomButton(
+                        text: _isVerifying ? 'Verifying...' : 'Verify Code',
+                        onPressed: _isVerifying ? () {} : _onVerifyCode,
+                        isFilled: true,
+                        width: buttonWidth,
+                        height: 60,
+                        borderRadius: 15,
+                        textColor: Colors.white,
+                        hasShadow: true,
+                      ),
                     ),
                     const SizedBox(height: 20),
 
