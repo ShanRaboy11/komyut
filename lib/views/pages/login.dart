@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_provider.dart';
+// import '../pages/home.dart';
 import '../widgets/button.dart';
 import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
@@ -46,9 +49,65 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _handleLogin() async {
+    // Hide keyboard
+    FocusScope.of(context).unfocus();
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // 1. Validation (similar to your sample)
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in both email and password.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // 2. Access the provider (listen: false inside a function)
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    // 3. Call the signIn method from the provider
+    final success = await authProvider.signIn(email: email, password: password);
+
+    // Check if the widget is still mounted after async operation
+    if (!mounted) return;
+
+    // 4. Handle success or failure
+    if (success) {
+      // On success, show a green snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login Successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // TODO: Navigate to the home page when ready
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => const HomePage()),
+      // );
+    } else {
+      // On failure, show a red snackbar with the error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authProvider.errorMessage ?? 'An unknown error occurred.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
+
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -346,7 +405,9 @@ class _LoginPageState extends State<LoginPage> {
                               isFilled: true,
                               fillColor: Colors.white,
                               textColor: const Color(0xFFB945AA),
-                              onPressed: () {},
+                              onPressed: authProvider.isLoading
+                                  ? () {}
+                                  : _handleLogin,
                               width: screenSize.width * 0.87,
                               height: 60,
                             ),
