@@ -133,6 +133,10 @@ Format:
 * [Git](https://git-scm.com/)
 * [Docker Desktop](https://www.docker.com/products/docker-desktop)
 * [Supabase CLI](https://supabase.com/docs/guides/cli)
+* [Flutter SDK](https://docs.flutter.dev/get-started) 
+
+> **Note:** After installing Flutter, run `flutter doctor` in your terminal to verify your setup. Make sure it displays no errors before proceeding.
+
 
 ### Setup
 
