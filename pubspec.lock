@@ -73,8 +73,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
-<<<<<<< Updated upstream
-=======
   cross_file:
     dependency: transitive
     description:
@@ -91,10 +89,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -111,8 +105,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
-<<<<<<< Updated upstream
-=======
   ffi:
     dependency: transitive
     description:
@@ -137,7 +129,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.3.7"
->>>>>>> Stashed changes
   flutter:
     dependency: "direct main"
     description: flutter
@@ -159,13 +150,19 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      sha256: c2fe1001710127dfa7da89977a08d591398370d099aacdaa6d44da7eb14b8476
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.31"
   flutter_test:
     dependency: "direct dev"
     description: flutter
     source: sdk
     version: "0.0.0"
-<<<<<<< Updated upstream
-=======
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -219,10 +216,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   leak_tracker:
     dependency: transitive
     description:
@@ -303,11 +296,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
   path_provider:
     dependency: transitive
     description:
@@ -460,10 +448,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   sky_engine:
     dependency: transitive
     description: flutter
@@ -629,11 +613,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
-<<<<<<< Updated upstream
-sdks:
-  dart: ">=3.9.2 <4.0.0"
-  flutter: ">=3.18.0-18.0.pre.54"
-=======
   web:
     dependency: transitive
     description:
@@ -685,7 +664,3 @@ sdks:
 sdks:
   dart: ">=3.9.2 <4.0.0"
   flutter: ">=3.35.0"
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
