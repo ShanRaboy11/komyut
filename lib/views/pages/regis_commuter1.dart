@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 import '../widgets/text_field.dart'; 
 import '../widgets/dropdown.dart'; 
 import '../widgets/background_circles.dart'; 
@@ -6,6 +8,7 @@ import '../widgets/progress_bar.dart';
 import '../widgets/option_card.dart'; 
 import '../widgets/button.dart'; 
 import '../pages/regis_set_login.dart';
+import '../providers/registration_provider.dart';
 import 'package:file_picker/file_picker.dart';
 
 class RegistrationCommuterPersonalInfo extends StatefulWidget {
@@ -28,6 +31,7 @@ class RegistrationCommuterPersonalInfoState
   String? _selectedSex; 
   String? _selectedCategory;
   String? _uploadedFileName;
+  File? _idProofFile;
 
   final List<ProgressBarStep> _registrationSteps = [
     ProgressBarStep(title: 'Choose Role', isCompleted: true), 
@@ -35,6 +39,46 @@ class RegistrationCommuterPersonalInfoState
     ProgressBarStep(title: 'Set Login'),
     ProgressBarStep(title: 'Verify Email'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final data = registrationProvider.registrationData;
+      
+      if (data['first_name'] != null) {
+        _firstNameController.text = data['first_name'];
+      }
+      if (data['last_name'] != null) {
+        _lastNameController.text = data['last_name'];
+      }
+      if (data['age'] != null) {
+        _ageController.text = data['age'].toString();
+      }
+      if (data['sex'] != null) {
+        setState(() {
+          _selectedSex = data['sex'];
+        });
+      }
+      if (data['address'] != null) {
+        _addressController.text = data['address'];
+      }
+      if (data['category'] != null) {
+        setState(() {
+          // Capitalize first letter for display
+          final cat = data['category'].toString();
+          _selectedCategory = cat == 'regular' ? 'Regular' : 'Discounted';
+        });
+      }
+      if (data['id_proof_path'] != null) {
+        setState(() {
+          _uploadedFileName = data['id_proof_path'].split('/').last;
+          _idProofFile = File(data['id_proof_path']);
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -46,10 +90,8 @@ class RegistrationCommuterPersonalInfoState
   }
 
   void _onNextPressed() {
-    // Validate form fields first
     bool isFormValid = _formKey.currentState!.validate();
     
-    // If form is valid but category is not selected
     if (isFormValid && _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -60,8 +102,7 @@ class RegistrationCommuterPersonalInfoState
       return;
     }
 
-    // If category is Discounted but no ID uploaded
-    if (isFormValid && _selectedCategory == 'Discounted' && _uploadedFileName == null) {
+    if (isFormValid && _selectedCategory == 'Discounted' && _idProofFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please upload proof of ID'),
@@ -71,7 +112,6 @@ class RegistrationCommuterPersonalInfoState
       return;
     }
 
-    // If form is invalid (multiple fields empty)
     if (!isFormValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -82,11 +122,34 @@ class RegistrationCommuterPersonalInfoState
       return;
     }
 
-    // If everything is valid, navigate
     if (isFormValid && _selectedCategory != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
-      );
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      
+      // Save synchronously (the provider method handles async internally)
+      registrationProvider.savePersonalInfo(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        age: int.parse(_ageController.text.trim()),
+        sex: _selectedSex!,
+        address: _addressController.text.trim(),
+        category: _selectedCategory!,
+        idProofFile: _idProofFile,
+      ).then((success) {
+        if (success && mounted) {
+          debugPrint('Personal info saved: ${registrationProvider.registrationData}');
+          
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(registrationProvider.errorMessage ?? 'Failed to save information'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
     }
   }
 
@@ -94,48 +157,48 @@ class RegistrationCommuterPersonalInfoState
     Navigator.of(context).pop();
   }
 
-  // Function to handle image upload
   Future<void> _handleFileUpload() async {
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
 
-    // Check if the widget is still mounted before using context
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        _uploadedFileName = result.files.first.name;
-      });
+      if (result != null && result.files.isNotEmpty) {
+        final PlatformFile file = result.files.first;
+        
+        setState(() {
+          _uploadedFileName = file.name;
+          _idProofFile = File(file.path!);
+        });
 
-      // Check mounted again before potentially showing a SnackBar after setState
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ID uploaded: ${file.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ID uploaded: ${result.files.first.name}'),
-          backgroundColor: Colors.green,
+        const SnackBar(
+          content: Text('Failed to upload image'),
+          backgroundColor: Colors.red,
         ),
       );
     }
-  } catch (e) {
-    // Check mounted again before showing a SnackBar in the catch block
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Failed to upload image'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
     final double buttonWidth = (screenSize.width - (25 * 2) - 20) / 2;
-    final double fieldWidth = screenSize.width - (25 * 2); 
+    final double fieldWidth = screenSize.width - (25 * 2);
+    final registrationProvider = Provider.of<RegistrationProvider>(context);
 
     return Scaffold(
       body: Container(
@@ -242,8 +305,12 @@ class RegistrationCommuterPersonalInfoState
                                 if (value == null || value.isEmpty) {
                                   return 'Enter age';
                                 }
-                                if (int.tryParse(value) == null) {
+                                final age = int.tryParse(value);
+                                if (age == null) {
                                   return 'Invalid age';
+                                }
+                                if (age < 13 || age > 120) {
+                                  return 'Age must be 13-120';
                                 }
                                 return null;
                               },
@@ -331,6 +398,8 @@ class RegistrationCommuterPersonalInfoState
                             onTap: () {
                               setState(() {
                                 _selectedCategory = 'Regular';
+                                _idProofFile = null;
+                                _uploadedFileName = null;
                               });
                             },
                             type: OptionCardType.radio,
@@ -361,7 +430,6 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 30), 
                       
-                      // Conditionally show Upload ID section
                       if (_selectedCategory == 'Discounted') ...[
                         const Align(
                           alignment: Alignment.centerLeft,
@@ -436,8 +504,8 @@ class RegistrationCommuterPersonalInfoState
                           ),
                           const SizedBox(width: 20),
                           CustomButton(
-                            text: 'Next',
-                            onPressed: _onNextPressed,
+                            text: registrationProvider.isLoading ? 'Saving...' : 'Next',
+                            onPressed: registrationProvider.isLoading ? () {} : _onNextPressed,
                             isFilled: true,
                             width: buttonWidth,
                             height: 60,

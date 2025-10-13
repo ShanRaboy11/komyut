@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'views/pages/landingpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'views/providers/registration_provider.dart';
 
 
 Future<void> main() async {
@@ -22,13 +24,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'komyut',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => RegistrationProvider()),
+      ],
+      child: MaterialApp(
+        title: 'KOMYUT',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.purple,
+        ),
+        home: const LandingPage(), 
       ),
-      home: const LandingPage(), 
     );
   }
 }
