@@ -54,8 +54,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
       final password = registrationProvider.registrationData['password'] ?? 'TempPass123!';
       
-      print('Sending OTP to: ${widget.email}');
-      print('Using password: ${password.substring(0, 3)}***'); // Debug
+      debugPrint('Sending OTP to: ${widget.email}');
+      debugPrint('Using password: ${password.substring(0, 3)}***'); // Debug
       
       // Sign up the user with email verification OTP
       final response = await supabase.auth.signUp(
@@ -63,7 +63,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         password: password,
       );
 
-      print('SignUp response: ${response.user?.id}'); // Debug
+      debugPrint('SignUp response: ${response.user?.id}'); // Debug
 
       if (mounted) {
         setState(() {
@@ -81,7 +81,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         _startResendTimer();
       }
     } catch (e) {
-      print('Error sending OTP: $e'); // Debug
+      debugPrint('Error sending OTP: $e'); // Debug
       
       if (mounted) {
         setState(() {
@@ -130,7 +130,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       });
 
       try {
-        print('Resending OTP to: ${widget.email}'); // Debug
+        debugPrint('Resending OTP to: ${widget.email}'); // Debug
         
         // Resend verification email
         await supabase.auth.resend(
@@ -152,7 +152,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           });
         }
       } catch (e) {
-        print('Error resending OTP: $e'); // Debug
+        debugPrint('Error resending OTP: $e'); // Debug
         
         if (mounted) {
           setState(() {
@@ -188,7 +188,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      print('Verifying OTP: $otp for email: ${widget.email}'); // Debug
+      debugPrint('Verifying OTP: $otp for email: ${widget.email}'); // Debug
       
       // Verify OTP with Supabase using type: signup
       final response = await supabase.auth.verifyOTP(
@@ -197,7 +197,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         type: OtpType.signup, // Changed from OtpType.email to OtpType.signup
       );
 
-      print('Verify response: ${response.session != null}'); // Debug
+      debugPrint('Verify response: ${response.session != null}'); // Debug
 
       if (response.session != null && mounted) {
         // OTP verified successfully, now complete registration
@@ -215,7 +215,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         // Complete the registration (create profile, wallet, etc.)
         final result = await registrationProvider.completeRegistration();
 
-        print('Registration result: ${result['success']}'); // Debug
+        debugPrint('Registration result: ${result['success']}'); // Debug
 
         if (mounted) {
           setState(() {
@@ -249,7 +249,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         }
       }
     } on AuthException catch (e) {
-      print('Auth Exception: ${e.message}'); // Debug
+      debugPrint('Auth Exception: ${e.message}'); // Debug
       
       if (mounted) {
         setState(() {
@@ -273,7 +273,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         );
       }
     } catch (e) {
-      print('General Exception: $e'); // Debug
+      debugPrint('General Exception: $e'); // Debug
       
       if (mounted) {
         setState(() {
