@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Colors.green,
         ),
       );
-      // TODO: Navigate to the home page when ready
+
       // Navigator.pushReplacement(
       //   context,
       //   MaterialPageRoute(builder: (context) => const HomePage()),
