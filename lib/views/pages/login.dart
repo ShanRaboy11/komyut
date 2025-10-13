@@ -63,380 +63,382 @@ class _LoginPageState extends State<LoginPage> {
         title: const Text('Back', style: TextStyle(color: Colors.black)),
       ),
       extendBodyBehindAppBar: true,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 39,
-              left: 172,
-              child: Image.asset("assets/images/Ellipse 1.png"),
-            ),
-            Positioned(
-              top: -134,
-              left: 22,
-              child: Image.asset("assets/images/Ellipse 3.png"),
-            ),
-            Positioned(
-              top: screenSize.height * 0.10,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/komyut small logo.png',
-                  width: screenSize.width * 0.5,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 39,
+                left: 172,
+                child: Image.asset("assets/images/Ellipse 1.png"),
+              ),
+              Positioned(
+                top: -134,
+                left: 22,
+                child: Image.asset("assets/images/Ellipse 3.png"),
+              ),
+              Positioned(
+                top: screenSize.height * 0.10,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/komyut small logo.png',
+                    width: screenSize.width * 0.5,
+                  ),
                 ),
               ),
-            ),
 
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: screenSize.height * 0.78,
-              child: Container(
-                decoration: const ShapeDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment(0.50, 0.00),
-                    end: Alignment(0.50, 1.00),
-                    colors: [
-                      Color(0xFFB945AA),
-                      Color(0xFF8E4CB6),
-                      Color(0xFF5B53C2),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: screenSize.height * 0.78,
+                child: Container(
+                  decoration: const ShapeDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment(0.50, 0.00),
+                      end: Alignment(0.50, 1.00),
+                      colors: [
+                        Color(0xFFB945AA),
+                        Color(0xFF8E4CB6),
+                        Color(0xFF5B53C2),
+                      ],
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(60),
+                        topRight: Radius.circular(60),
+                      ),
+                    ),
+                    shadows: [
+                      BoxShadow(
+                        color: Color(0x3F000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
                     ],
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(60),
-                      topRight: Radius.circular(60),
-                    ),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 4),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(26.0, 50.0, 26.0, 30.0),
-                  child: SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: screenSize.height * 0.78 - 80,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Welcome Back",
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Manrope',
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Column(
-                            children: [
-                              Text(
-                                'Ready to make your rides smoother and smarter?',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontFamily: 'Nunito',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.5,
-                                ),
-                              ),
-                              Text(
-                                'Your next trip starts here.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontFamily: 'Nunito',
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 30),
-
-                          TextFormField(
-                            controller: _emailController,
-                            focusNode: _emailFocusNode,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontFamily: 'Nunito',
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Email Address',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontFamily: 'Nunito',
-                              ),
-                              filled: true,
-                              fillColor:
-                                  _emailFocusNode.hasFocus ||
-                                      _emailController.text.isNotEmpty
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.transparent,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 20,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  width: 1,
-                                  color: Color(0xFFC6C7C7),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  width: 1,
-                                  color: Colors.white,
-                                ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(26.0, 50.0, 26.0, 30.0),
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: screenSize.height * 0.78 - 80,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              "Welcome Back",
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Manrope',
+                                color: Colors.white,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: _passwordController,
-                            focusNode: _passwordFocusNode,
-                            obscureText: !_isPasswordVisible,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontFamily: 'Nunito',
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Password',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontFamily: 'Nunito',
-                              ),
-                              filled: true,
-                              fillColor:
-                                  _passwordFocusNode.hasFocus ||
-                                      _passwordController.text.isNotEmpty
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.transparent,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 20,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  width: 1,
-                                  color: Color(0xFFC6C7C7),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  width: 1,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              suffixIcon: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _isPasswordVisible = !_isPasswordVisible;
-                                  });
-                                },
-                                child: Icon(
-                                  _isPasswordVisible
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4.0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            const SizedBox(height: 10),
+                            const Column(
                               children: [
-                                Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 24, // Sized for easier tapping
-                                      height: 24,
-                                      child: Checkbox(
-                                        value: _rememberMe,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _rememberMe = value ?? false;
-                                          });
-                                        },
-                                        activeColor: Colors.white,
-                                        checkColor: const Color(0xFFB945AA),
-                                        side: const BorderSide(
-                                          color: Colors.white,
-                                          width: 1.5,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            5,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _rememberMe = !_rememberMe;
-                                        });
-                                      },
-                                      child: const Text(
-                                        'Remember me',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'Nunito',
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  'Ready to make your rides smoother and smarter?',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontFamily: 'Nunito',
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.5,
+                                  ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    // Handle forgot password
-                                  },
-                                  child: const Text(
-                                    'Forgot password?',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontFamily: 'Nunito',
-                                    ),
+                                Text(
+                                  'Your next trip starts here.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontFamily: 'Nunito',
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.5,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 30),
+                            const SizedBox(height: 30),
 
-                          // Log In Button
-                          CustomButton(
-                            text: "Log In",
-                            isFilled: true,
-                            fillColor: Colors.white,
-                            textColor: const Color(0xFFB945AA),
-                            onPressed: () {},
-                            width: screenSize.width * 0.87,
-                            height: 60,
-                          ),
-                          const SizedBox(height: 65),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withAlpha(100),
-                                  thickness: 1,
-                                ),
+                            TextFormField(
+                              controller: _emailController,
+                              focusNode: _emailFocusNode,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Nunito',
                               ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10.0),
-                                child: Text(
-                                  "Sign in with",
-                                  style: TextStyle(
-                                    fontSize: 14,
+                              decoration: InputDecoration(
+                                hintText: 'Email Address',
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontFamily: 'Nunito',
+                                ),
+                                filled: true,
+                                fillColor: _emailFocusNode.hasFocus
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.transparent,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 20,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(
+                                    width: 1,
+                                    color: Color(0xFFC6C7C7),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(
+                                    width: 1,
                                     color: Colors.white,
-                                    fontFamily: 'Nunito',
                                   ),
                                 ),
                               ),
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withAlpha(100),
-                                  thickness: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 15),
+                            ),
+                            const SizedBox(height: 12),
 
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SocialButton(
-                                imagePath: 'assets/images/facebook.png',
-                                onPressed: () {},
+                            TextFormField(
+                              controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              obscureText: !_isPasswordVisible,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Nunito',
                               ),
-                              const SizedBox(width: 20),
-                              SocialButton(
-                                imagePath: 'assets/images/google.png',
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CreateAccountPage(),
-                                ),
-                              );
-                            },
-                            child: RichText(
-                              text: TextSpan(
-                                text: "Don't have an account? ",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withAlpha(204),
+                              decoration: InputDecoration(
+                                hintText: 'Password',
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
                                   fontFamily: 'Nunito',
                                 ),
-                                children: const [
-                                  TextSpan(
-                                    text: "Sign up",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                filled: true,
+                                fillColor: _passwordFocusNode.hasFocus
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.transparent,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 20,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(
+                                    width: 1,
+                                    color: Color(0xFFC6C7C7),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(
+                                    width: 1,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                suffixIcon: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
+                                  child: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 24, // Sized for easier tapping
+                                        height: 24,
+                                        child: Checkbox(
+                                          value: _rememberMe,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _rememberMe = value ?? false;
+                                            });
+                                          },
+                                          activeColor: Colors.white,
+                                          checkColor: const Color(0xFFB945AA),
+                                          side: const BorderSide(
+                                            color: Colors.white,
+                                            width: 1.5,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _rememberMe = !_rememberMe;
+                                          });
+                                        },
+                                        child: const Text(
+                                          'Remember me',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontFamily: 'Nunito',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      // Handle forgot password
+                                    },
+                                    child: const Text(
+                                      'Forgot password?',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontFamily: 'Nunito',
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 30),
+
+                            // Log In Button
+                            CustomButton(
+                              text: "Log In",
+                              isFilled: true,
+                              fillColor: Colors.white,
+                              textColor: const Color(0xFFB945AA),
+                              onPressed: () {},
+                              width: screenSize.width * 0.87,
+                              height: 60,
+                            ),
+                            const SizedBox(height: 65),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(
+                                    color: Colors.white.withAlpha(100),
+                                    thickness: 1,
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10.0,
+                                  ),
+                                  child: Text(
+                                    "Sign in with",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      fontFamily: 'Nunito',
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(
+                                    color: Colors.white.withAlpha(100),
+                                    thickness: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SocialButton(
+                                  imagePath: 'assets/images/facebook.png',
+                                  onPressed: () {},
+                                ),
+                                const SizedBox(width: 20),
+                                SocialButton(
+                                  imagePath: 'assets/images/google.png',
+                                  onPressed: () {},
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 40),
+
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CreateAccountPage(),
+                                  ),
+                                );
+                              },
+                              child: RichText(
+                                text: TextSpan(
+                                  text: "Don't have an account? ",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withAlpha(204),
+                                    fontFamily: 'Nunito',
+                                  ),
+                                  children: const [
+                                    TextSpan(
+                                      text: "Sign up",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
