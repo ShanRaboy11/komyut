@@ -3,6 +3,8 @@ name: Flutter CI
 on:
   pull_request:
     branches: [develop, main]
+  push:
+    branches: [develop, main]
 
 jobs:
   analyze:
@@ -12,6 +14,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.5'
+          cache: true
       - run: flutter pub get
       - run: flutter analyze
 
@@ -22,15 +25,22 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.5'
+          cache: true
       - run: flutter pub get
       - run: flutter test
 
-  build:
+  build_apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.5'
+          cache: true
       - run: flutter pub get
-      - run: flutter build apk --debug
+      - name: Build APK (Debug) with Supabase Secrets
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
