@@ -22,7 +22,6 @@ class RegistrationService {
     required String sex,
     required String address,
     required String category,
-    String? phone,
     String? idProofPath,
   }) {
     registrationData['first_name'] = firstName;
@@ -31,7 +30,6 @@ class RegistrationService {
     registrationData['sex'] = sex;
     registrationData['address'] = address;
     registrationData['category'] = category.toLowerCase();
-    registrationData['phone'] = phone;
     
     if (idProofPath != null) {
       registrationData['id_proof_path'] = idProofPath;
@@ -42,13 +40,9 @@ class RegistrationService {
   void saveLoginInfo({
     required String email,
     required String password,
-    String? phone,
   }) {
     registrationData['email'] = email;
     registrationData['password'] = password;
-    if (phone != null) {
-      registrationData['phone'] = phone;
-    }
   }
 
   // Upload ID proof to Supabase Storage
@@ -133,7 +127,6 @@ class RegistrationService {
         'last_name': registrationData['last_name'],
         'age': registrationData['age'],
         'sex': registrationData['sex'],
-        'phone': registrationData['phone'],
         'address': registrationData['address'],
         'is_verified': false,
         'metadata': {},
@@ -184,7 +177,6 @@ class RegistrationService {
           'company_name': registrationData['company_name'] ?? '',
           'company_address': registrationData['company_address'] ?? '',
           'contact_email': registrationData['email'],
-          'contact_phone': registrationData['phone'],
           'metadata': {},
         });
       }

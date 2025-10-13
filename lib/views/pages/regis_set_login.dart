@@ -20,7 +20,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -43,9 +42,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       if (data['email'] != null) {
         _emailController.text = data['email'];
       }
-      if (data['phone'] != null) {
-        _phoneController.text = data['phone'];
-      }
     });
   }
 
@@ -54,7 +50,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -123,7 +118,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     registrationProvider.saveLoginInfo(
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
     );
 
     debugPrint('Login info saved: ${registrationProvider.registrationData}');
@@ -236,39 +230,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(value)) {
                             return 'Invalid email format';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 15),
-
-                      // Phone Number (Optional)
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Phone Number (Optional)',
-                          style: TextStyle(
-                            color: Color.fromRGBO(18, 18, 18, 1),
-                            fontFamily: 'Manrope',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        labelText: '',
-                        controller: _phoneController,
-                        width: fieldWidth,
-                        height: 60,
-                        borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
-                        keyboardType: TextInputType.phone,
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            if (!RegExp(r'^(\+639|09)\d{9}$').hasMatch(value)) {
-                              return 'Invalid phone number (e.g., +639123456789)';
-                            }
                           }
                           return null;
                         },

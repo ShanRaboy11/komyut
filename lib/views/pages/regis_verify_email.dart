@@ -51,11 +51,19 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      // Send OTP to email using Supabase Auth
-      await supabase.auth.signInWithOtp(
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final password = registrationProvider.registrationData['password'] ?? 'TempPass123!';
+      
+      print('Sending OTP to: ${widget.email}');
+      print('Using password: ${password.substring(0, 3)}***'); // Debug
+      
+      // Sign up the user with email verification OTP
+      final response = await supabase.auth.signUp(
         email: widget.email,
-        emailRedirectTo: null, // No redirect needed for OTP
+        password: password,
       );
+
+      print('SignUp response: ${response.user?.id}'); // Debug
 
       if (mounted) {
         setState(() {
@@ -73,6 +81,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         _startResendTimer();
       }
     } catch (e) {
+      print('Error sending OTP: $e'); // Debug
+      
       if (mounted) {
         setState(() {
           _isResending = false;
@@ -120,9 +130,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       });
 
       try {
-        await supabase.auth.signInWithOtp(
+        print('Resending OTP to: ${widget.email}'); // Debug
+        
+        // Resend verification email
+        await supabase.auth.resend(
+          type: OtpType.signup,
           email: widget.email,
-          emailRedirectTo: null,
         );
 
         if (mounted) {
@@ -139,6 +152,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           });
         }
       } catch (e) {
+        print('Error resending OTP: $e'); // Debug
+        
         if (mounted) {
           setState(() {
             _isResending = false;
@@ -173,12 +188,16 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      // Verify OTP with Supabase
+      print('Verifying OTP: $otp for email: ${widget.email}'); // Debug
+      
+      // Verify OTP with Supabase using type: signup
       final response = await supabase.auth.verifyOTP(
         email: widget.email,
         token: otp,
-        type: OtpType.email,
+        type: OtpType.signup, // Changed from OtpType.email to OtpType.signup
       );
+
+      print('Verify response: ${response.session != null}'); // Debug
 
       if (response.session != null && mounted) {
         // OTP verified successfully, now complete registration
@@ -195,6 +214,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
         // Complete the registration (create profile, wallet, etc.)
         final result = await registrationProvider.completeRegistration();
+
+        print('Registration result: ${result['success']}'); // Debug
 
         if (mounted) {
           setState(() {
@@ -228,6 +249,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         }
       }
     } on AuthException catch (e) {
+      print('Auth Exception: ${e.message}'); // Debug
+      
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -238,6 +261,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           errorMessage = 'Code expired. Please request a new one.';
         } else if (e.message.contains('invalid')) {
           errorMessage = 'Invalid code. Please check and try again.';
+        } else if (e.message.contains('Email not confirmed')) {
+          errorMessage = 'Please check your email and enter the correct code.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -248,6 +273,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         );
       }
     } catch (e) {
+      print('General Exception: $e'); // Debug
+      
       if (mounted) {
         setState(() {
           _isVerifying = false;

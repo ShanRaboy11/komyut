@@ -68,12 +68,10 @@ class RegistrationProvider extends ChangeNotifier {
   void saveLoginInfo({
     required String email,
     required String password,
-    String? phone,
   }) {
     _registrationService.saveLoginInfo(
       email: email,
       password: password,
-      phone: phone,
     );
     notifyListeners();
   }
