@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
-import '../pages/regis_verify_email.dart'; 
+import '../pages/regis_verify_email.dart';
+import '../providers/registration_provider.dart';
 
 class RegistrationSetLogin extends StatefulWidget {
   const RegistrationSetLogin({super.key});
@@ -15,29 +17,44 @@ class RegistrationSetLogin extends StatefulWidget {
 class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
   final _formKey = GlobalKey<FormState>();
 
-  // Text Editing Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  // Password visibility toggles
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  // Define steps for the progress bar
   final List<ProgressBarStep> _registrationSteps = [
     ProgressBarStep(title: 'Choose Role', isCompleted: true),
     ProgressBarStep(title: 'Personal Info', isCompleted: true),
-    ProgressBarStep(title: 'Set Login', isActive: true), // Current step
+    ProgressBarStep(title: 'Set Login', isActive: true),
     ProgressBarStep(title: 'Verify Email'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load previously entered data if exists
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final data = registrationProvider.registrationData;
+      
+      if (data['email'] != null) {
+        _emailController.text = data['email'];
+      }
+      if (data['phone'] != null) {
+        _phoneController.text = data['phone'];
+      }
+    });
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -57,7 +74,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       if (emailError != null) {
         errorCount++;
-        firstError ??= emailError; // Replaced if statement with null-aware assignment
+        firstError ??= emailError;
       }
 
       String? passwordError = _passwordController.text.isEmpty
@@ -68,7 +85,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       if (passwordError != null) {
         errorCount++;
-        firstError ??= passwordError; // Replaced if statement with null-aware assignment
+        firstError ??= passwordError;
       }
 
       String? confirmPasswordError = _confirmPasswordController.text.isEmpty
@@ -79,7 +96,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       if (confirmPasswordError != null) {
         errorCount++;
-        firstError ??= confirmPasswordError; // Replaced if statement with null-aware assignment
+        firstError ??= confirmPasswordError;
       }
 
       String snackBarMessage;
@@ -100,8 +117,24 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       return;
     }
 
+    // Save login info to provider
+    final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+    
+    registrationProvider.saveLoginInfo(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+    );
+
+    debugPrint('Login info saved: ${registrationProvider.registrationData}');
+
+    // Navigate to verification page
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RegistrationVerifyEmail()),
+      MaterialPageRoute(
+        builder: (_) => RegistrationVerifyEmail(
+          email: _emailController.text.trim(),
+        ),
+      ),
     );
   }
 
@@ -114,6 +147,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     final Size screenSize = MediaQuery.of(context).size;
     final double buttonWidth = (screenSize.width - (25 * 2) - 20) / 2;
     final double fieldWidth = screenSize.width - (25 * 2);
+    final registrationProvider = Provider.of<RegistrationProvider>(context);
 
     return Scaffold(
       body: Container(
@@ -201,7 +235,40 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                           }
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(value)) {
-                            return 'Invalid email format. Please use a valid email address';
+                            return 'Invalid email format';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Phone Number (Optional)
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Phone Number (Optional)',
+                          style: TextStyle(
+                            color: Color.fromRGBO(18, 18, 18, 1),
+                            fontFamily: 'Manrope',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        labelText: '',
+                        controller: _phoneController,
+                        width: fieldWidth,
+                        height: 60,
+                        borderColor: const Color.fromRGBO(200, 200, 200, 1),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            if (!RegExp(r'^(\+639|09)\d{9}$').hasMatch(value)) {
+                              return 'Invalid phone number (e.g., +639123456789)';
+                            }
                           }
                           return null;
                         },
@@ -248,7 +315,7 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                             return 'Password is required';
                           }
                           if (value.length < 8) {
-                            return 'Password must be at least 8 characters long';
+                            return 'Password must be at least 8 characters';
                           }
                           return null;
                         },
@@ -296,12 +363,12 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                             return 'Please confirm your password';
                           }
                           if (value != _passwordController.text) {
-                            return 'Passwords do not match. Please try again';
+                            return 'Passwords do not match';
                           }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 120), // Extra space before buttons
+                      const SizedBox(height: 60),
 
                       // Navigation Buttons
                       Row(
@@ -320,15 +387,18 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                             hasShadow: true,
                           ),
                           const SizedBox(width: 20),
-                          CustomButton(
-                            text: 'Next',
-                            onPressed: _onNextPressed,
-                            isFilled: true,
-                            width: buttonWidth,
-                            height: 60,
-                            borderRadius: 15,
-                            textColor: Colors.white,
-                            hasShadow: true,
+                          Opacity(
+                            opacity: registrationProvider.isLoading ? 0.5 : 1.0,
+                            child: CustomButton(
+                              text: registrationProvider.isLoading ? 'Saving...' : 'Next',
+                              onPressed: registrationProvider.isLoading ? () {} : _onNextPressed,
+                              isFilled: true,
+                              width: buttonWidth,
+                              height: 60,
+                              borderRadius: 15,
+                              textColor: Colors.white,
+                              hasShadow: true,
+                            ),
                           ),
                         ],
                       ),

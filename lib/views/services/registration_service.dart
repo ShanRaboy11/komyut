@@ -1,3 +1,4 @@
+// lib/views/services/registration_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 
@@ -29,7 +30,7 @@ class RegistrationService {
     registrationData['age'] = age;
     registrationData['sex'] = sex;
     registrationData['address'] = address;
-    registrationData['category'] = category.toLowerCase(); // regular or discounted -> senior/student/pwd
+    registrationData['category'] = category.toLowerCase();
     registrationData['phone'] = phone;
     
     if (idProofPath != null) {
@@ -50,13 +51,12 @@ class RegistrationService {
     }
   }
 
-  // Upload ID proof to Supabase Storage (attachments)
+  // Upload ID proof to Supabase Storage
   Future<String?> uploadIdProof(File file, String userId) async {
     try {
       final String fileName = 'id_proof_${userId}_${DateTime.now().millisecondsSinceEpoch}.${file.path.split('.').last}';
       final String filePath = 'id-proofs/$userId/$fileName';
 
-      // Upload file to Supabase storage bucket
       await _supabase.storage.from('komyut-attachments').upload(
         filePath,
         file,
@@ -66,7 +66,6 @@ class RegistrationService {
         ),
       );
 
-      // Get public URL
       final String publicUrl = _supabase.storage
           .from('komyut-attachments')
           .getPublicUrl(filePath);
@@ -106,7 +105,6 @@ class RegistrationService {
   // Map category to commuter_category enum
   String _mapToCommuterCategory(String category) {
     if (category.toLowerCase() == 'discounted') {
-      // Default to 'student' - you can make this more specific based on user selection
       return 'student';
     }
     return 'regular';
@@ -115,27 +113,19 @@ class RegistrationService {
   // Final registration - create user account and profile
   Future<Map<String, dynamic>> completeRegistration() async {
     try {
-      // Step 1: Create auth user
-      final AuthResponse authResponse = await _supabase.auth.signUp(
-        email: registrationData['email'],
-        password: registrationData['password'],
-        data: {
-          'role': registrationData['role'],
-          'first_name': registrationData['first_name'],
-          'last_name': registrationData['last_name'],
-        },
-      );
-
-      if (authResponse.user == null) {
+      // Get current authenticated user (should be authenticated via OTP)
+      final currentUser = _supabase.auth.currentUser;
+      
+      if (currentUser == null) {
         return {
           'success': false,
-          'message': 'Failed to create user account',
+          'message': 'No authenticated user found. Please verify your email first.',
         };
       }
 
-      final String authUserId = authResponse.user!.id;
+      final String authUserId = currentUser.id;
 
-      // Step 2: Create profile record
+      // Step 1: Create profile record
       final profileResponse = await _supabase.from('profiles').insert({
         'user_id': authUserId,
         'role': registrationData['role'],
@@ -151,7 +141,7 @@ class RegistrationService {
 
       final String profileId = profileResponse['id'] as String;
 
-      // Step 3: Upload ID proof if exists and create attachment
+      // Step 2: Upload ID proof if exists
       String? attachmentId;
       if (registrationData['id_proof_path'] != null) {
         final file = File(registrationData['id_proof_path']);
@@ -169,7 +159,7 @@ class RegistrationService {
         }
       }
 
-      // Step 4: Create role-specific record (commuter, driver, or operator)
+      // Step 3: Create role-specific record
       final String role = registrationData['role'];
       
       if (role == 'commuter') {
@@ -199,7 +189,7 @@ class RegistrationService {
         });
       }
 
-      // Step 5: Create wallet for user
+      // Step 4: Create wallet
       await _supabase.from('wallets').insert({
         'owner_profile_id': profileId,
         'balance': 0,
@@ -207,13 +197,12 @@ class RegistrationService {
         'metadata': {},
       });
 
-      // Clear registration data after successful registration
       registrationData.clear();
 
       return {
         'success': true,
         'message': 'Registration successful',
-        'user': authResponse.user,
+        'user': currentUser,
         'profile_id': profileId,
       };
     } catch (e) {
@@ -225,7 +214,7 @@ class RegistrationService {
     }
   }
 
-  // Clear registration data (if user cancels)
+  // Clear registration data
   void clearRegistrationData() {
     registrationData.clear();
   }
