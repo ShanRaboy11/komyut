@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'views/pages/landingpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 Future<void> main() async {
@@ -32,6 +35,7 @@ class MyApp extends StatelessWidget {
 =======
       debugShowCheckedModeBanner: false,
       title: 'KOMYUT',
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -39,6 +43,12 @@ class MyApp extends StatelessWidget {
 <<<<<<< Updated upstream
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
 =======
+      home: const LandingPage(), // Your landing page
+>>>>>>> Stashed changes
+=======
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
       home: const LandingPage(), // Your landing page
 >>>>>>> Stashed changes
     );

@@ -37,6 +37,9 @@ dependencies:
   flutter_dotenv: ^5.1.0
   shared_preferences: ^2.2.2
   http: ^1.1.0
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
   # The following adds the Cupertino Icons font to your application.
@@ -72,6 +75,9 @@ flutter:
   assets:
     - assets/images/
     - .env
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

@@ -91,6 +91,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   cupertino_icons:
     dependency: "direct main"
@@ -216,6 +219,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   leak_tracker:
     dependency: transitive
@@ -298,7 +304,10 @@ packages:
     source: hosted
     version: "1.9.1"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   path_provider:
     dependency: transitive
     description:
@@ -451,6 +460,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   sky_engine:
     dependency: transitive
@@ -673,4 +685,7 @@ sdks:
 sdks:
   dart: ">=3.9.2 <4.0.0"
   flutter: ">=3.35.0"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
