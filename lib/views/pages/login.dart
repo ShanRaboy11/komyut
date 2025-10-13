@@ -5,6 +5,8 @@ import '../services/auth_provider.dart';
 import '../widgets/button.dart';
 import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
+import '../widgets/shake_widget.dart';
+import '../../utils/toast_utils.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,11 +20,15 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  // 1. Controllers and FocusNodes for TextFields
+  // Controllers and FocusNodes for TextFields
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
+
+  // NEW: Create separate keys for each text field to shake them individually
+  final _emailShakeKey = GlobalKey<ShakeWidgetState>();
+  final _passwordShakeKey = GlobalKey<ShakeWidgetState>();
 
   @override
   void initState() {
@@ -50,55 +56,45 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    // Hide keyboard
     FocusScope.of(context).unfocus();
-
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // 1. Validation (similar to your sample)
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in both email and password.'),
-          backgroundColor: Colors.red,
-        ),
+      _emailShakeKey.currentState?.shake();
+      _passwordShakeKey.currentState?.shake();
+
+      // UPDATED: Pass context to the toast utility
+      ToastUtils.showCustomToast(
+        context, // Pass the context
+        'Please fill in both email and password.',
+        Colors.redAccent,
       );
       return;
     }
 
-    // 2. Access the provider (listen: false inside a function)
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    // 3. Call the signIn method from the provider
     final success = await authProvider.signIn(email: email, password: password);
 
-    // Check if the widget is still mounted after async operation
     if (!mounted) return;
 
-    // 4. Handle success or failure
     if (success) {
-      // On success, show a green snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login Successful!'),
-          backgroundColor: Colors.green,
-        ),
+      // UPDATED: Pass context to the toast utility
+      ToastUtils.showCustomToast(
+        context, // Pass the context
+        'Login Successful!',
+        Colors.green,
       );
-
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const HomePage()),
-      // );
+      // Navigator.pushReplacement(...);
     } else {
-      // On failure, show a red snackbar with the error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            authProvider.errorMessage ?? 'An unknown error occurred.',
-          ),
-          backgroundColor: Colors.red,
-        ),
+      _emailShakeKey.currentState?.shake();
+      _passwordShakeKey.currentState?.shake();
+
+      // UPDATED: Pass context to the toast utility
+      ToastUtils.showCustomToast(
+        context, // Pass the context
+        authProvider.errorMessage ?? 'An unknown error occurred.',
+        Colors.redAccent,
       );
     }
   }
@@ -106,7 +102,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
@@ -237,93 +232,102 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 30),
 
-                            TextFormField(
-                              controller: _emailController,
-                              focusNode: _emailFocusNode,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Nunito',
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Email Address',
-                                hintStyle: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                            ShakeWidget(
+                              key: _emailShakeKey,
+                              child: TextFormField(
+                                controller: _emailController,
+                                focusNode: _emailFocusNode,
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontFamily: 'Nunito',
                                 ),
-                                filled: true,
-                                fillColor: _emailFocusNode.hasFocus
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.transparent,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 20,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    width: 1,
-                                    color: Color(0xFFC6C7C7),
+                                decoration: InputDecoration(
+                                  hintText: 'Email Address',
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withAlpha(204),
+                                    fontFamily: 'Nunito',
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    width: 1,
-                                    color: Colors.white,
+                                  filled: true,
+                                  fillColor: _emailFocusNode.hasFocus
+                                      ? Colors.white.withAlpha(26)
+                                      : Colors.transparent,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 20,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      width: 1,
+                                      color: Color(0xFFC6C7C7),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      width: 1.5,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 12),
 
-                            TextFormField(
-                              controller: _passwordController,
-                              focusNode: _passwordFocusNode,
-                              obscureText: !_isPasswordVisible,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Nunito',
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Password',
-                                hintStyle: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                            ShakeWidget(
+                              key: _passwordShakeKey,
+                              child: TextFormField(
+                                controller: _passwordController,
+                                focusNode: _passwordFocusNode,
+                                obscureText: !_isPasswordVisible,
+                                style: const TextStyle(
+                                  // REMOVED: Error color logic
+                                  color: Colors.white,
                                   fontFamily: 'Nunito',
                                 ),
-                                filled: true,
-                                fillColor: _passwordFocusNode.hasFocus
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.transparent,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 20,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    width: 1,
-                                    color: Color(0xFFC6C7C7),
+                                decoration: InputDecoration(
+                                  hintText: 'Password',
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withAlpha(204),
+                                    fontFamily: 'Nunito',
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    width: 1,
-                                    color: Colors.white,
+                                  filled: true,
+                                  fillColor: _passwordFocusNode.hasFocus
+                                      ? Colors.white.withAlpha(26)
+                                      : Colors.transparent,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 20,
                                   ),
-                                ),
-                                suffixIcon: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isPasswordVisible = !_isPasswordVisible;
-                                    });
-                                  },
-                                  child: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
-                                    color: Colors.white,
-                                    size: 20,
+                                  // REMOVED: Error border logic
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      width: 1,
+                                      color: Color(0xFFC6C7C7),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      width: 1.5,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  suffixIcon: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isPasswordVisible =
+                                            !_isPasswordVisible;
+                                      });
+                                    },
+                                    child: Icon(
+                                      _isPasswordVisible
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
                               ),

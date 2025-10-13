@@ -36,6 +36,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   shared_preferences: ^2.2.2
   provider: ^6.1.1
+  another_flushbar: ^1.12.30
   http: ^1.1.0
 
   # The following adds the Cupertino Icons font to your application.
