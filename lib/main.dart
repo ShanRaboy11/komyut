@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'views/pages/landingpage.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
+//import 'views/pages/landingpage.dart';
+import 'views/widgets/navbar.dart';
+import 'views/pages/home_commuter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,7 +35,9 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LandingPage(),
+      //home: const LandingPage(),
+      //home: const CommuterDashboard(),
+      home: NavBarCommuter(),
     );
   }
 }
@@ -119,6 +124,30 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class NavBarCommuter extends StatelessWidget {
+  const NavBarCommuter ({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBottomNavBar(
+      pages: const [
+        Center(child: Text("🏠 Home")),
+        Center(child: Text("📋 Activity")),
+        Center(child: Text("✍️ QR Scan")),
+        Center(child: Text("🔔 Notifications")),
+        Center(child: Text("👤 Profile")),
+      ],
+      items: const [
+        NavItem(icon: Icons.home_rounded, label: 'Home'),
+        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
+        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
+        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
+        NavItem(icon: Icons.person_rounded, label: 'Profile'),
+      ],
     );
   }
 }
