@@ -12,11 +12,6 @@
 -- RIGHT: user_id = auth.uid() ✅
 -- OR: profile_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()) ✅
 
--- ========================================
--- STEP 1: Drop ALL existing policies
--- ========================================
-
--- Profiles
 DROP POLICY IF EXISTS "Users can read their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
@@ -25,20 +20,17 @@ DROP POLICY IF EXISTS "Allow authenticated users to insert own profile" ON profi
 DROP POLICY IF EXISTS "Allow users to view own profile" ON profiles;
 DROP POLICY IF EXISTS "Allow users to update own profile" ON profiles;
 
--- Commuters
 DROP POLICY IF EXISTS "Commuters can manage own record" ON commuters;
 DROP POLICY IF EXISTS "Admins can manage all commuters" ON commuters;
 DROP POLICY IF EXISTS "Allow authenticated users to insert commuter" ON commuters;
 DROP POLICY IF EXISTS "Allow users to view own commuter" ON commuters;
 
--- Drivers
 DROP POLICY IF EXISTS "Admins full access to drivers" ON drivers;
 DROP POLICY IF EXISTS "Operators access own drivers" ON drivers;
 DROP POLICY IF EXISTS "Drivers access own record" ON drivers;
 DROP POLICY IF EXISTS "Allow authenticated users to insert driver" ON drivers;
 DROP POLICY IF EXISTS "Allow users to view own driver" ON drivers;
 
--- Operators
 DROP POLICY IF EXISTS "Operators: admin full access" ON operators;
 DROP POLICY IF EXISTS "Operators: self access" ON operators;
 DROP POLICY IF EXISTS "Operators: self update" ON operators;
@@ -46,78 +38,58 @@ DROP POLICY IF EXISTS "Operators: self insert" ON operators;
 DROP POLICY IF EXISTS "Allow authenticated users to insert operator" ON operators;
 DROP POLICY IF EXISTS "Allow users to view own operator" ON operators;
 
--- Wallets
 DROP POLICY IF EXISTS "Users can access own wallet" ON wallets;
 DROP POLICY IF EXISTS "Admins can access all wallets" ON wallets;
 DROP POLICY IF EXISTS "Allow authenticated users to insert wallet" ON wallets;
 DROP POLICY IF EXISTS "Allow users to view own wallet" ON wallets;
 DROP POLICY IF EXISTS "Allow users to update own wallet" ON wallets;
 
--- Attachments
 DROP POLICY IF EXISTS "Users can access own attachments" ON attachments;
 DROP POLICY IF EXISTS "Admins can access all attachments" ON attachments;
 DROP POLICY IF EXISTS "Allow authenticated users to insert attachment" ON attachments;
 DROP POLICY IF EXISTS "Allow users to view own attachments" ON attachments;
 
--- Transactions
 DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
 DROP POLICY IF EXISTS "Admins can view all transactions" ON transactions;
 
--- Trip Participants
 DROP POLICY IF EXISTS "Commuters can view their trips" ON trip_participants;
 DROP POLICY IF EXISTS "Drivers can view their trips" ON trip_participants;
 DROP POLICY IF EXISTS "Admins can view all trip participants" ON trip_participants;
 
--- Routes
 DROP POLICY IF EXISTS "Public can view routes" ON routes;
 DROP POLICY IF EXISTS "Admins can manage routes" ON routes;
 
--- Route Stops
 DROP POLICY IF EXISTS "Public can view route stops" ON route_stops;
 DROP POLICY IF EXISTS "Admins can manage route stops" ON route_stops;
 
--- Trips
 DROP POLICY IF EXISTS "Drivers can view own trips" ON trips;
 DROP POLICY IF EXISTS "Commuters can view own trips" ON trips;
 DROP POLICY IF EXISTS "Admins can manage all trips" ON trips;
 
--- Ratings
 DROP POLICY IF EXISTS "Commuters can manage their ratings" ON ratings;
 DROP POLICY IF EXISTS "Drivers can view ratings" ON ratings;
 DROP POLICY IF EXISTS "Admins can manage all ratings" ON ratings;
 
--- Reports
 DROP POLICY IF EXISTS "Users can manage their own reports" ON reports;
 DROP POLICY IF EXISTS "Admins can manage all reports" ON reports;
 
--- Notifications
 DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 DROP POLICY IF EXISTS "Admins can manage notifications" ON notifications;
 
--- Verifications
 DROP POLICY IF EXISTS "Users can view own verifications" ON verifications;
 DROP POLICY IF EXISTS "Admins can manage verifications" ON verifications;
 
--- Fare Policies
 DROP POLICY IF EXISTS "Admins can manage fare policies" ON fare_policies;
 
--- Fare Brackets
 DROP POLICY IF EXISTS "Admins can manage fare brackets" ON fare_brackets;
 
--- Points Transactions
 DROP POLICY IF EXISTS "Points Transactions: admin full access" ON points_transactions;
 DROP POLICY IF EXISTS "Points Transactions: commuter access" ON points_transactions;
 DROP POLICY IF EXISTS "Points Transactions: commuter insert" ON points_transactions;
 
--- Audit Logs
 DROP POLICY IF EXISTS "Audit Logs: admin full access" ON audit_logs;
 
--- ========================================
--- STEP 2: Create CORRECT policies
--- ========================================
 
--- Helper function to check if user is admin (optional, but helps avoid recursion)
--- Helper function to check if user is admin (optional, but helps avoid recursion)
 DROP FUNCTION IF EXISTS is_admin();
 
 CREATE FUNCTION is_admin()
@@ -133,10 +105,6 @@ BEGIN
 END;
 $$;
 
--- The rest of your script follows correctly from here.
--- ... (rest of your script) ...
-
--- ============= PROFILES =============
 CREATE POLICY "profiles_insert_own"
 ON profiles FOR INSERT
 TO authenticated
@@ -153,7 +121,6 @@ TO authenticated
 USING (user_id = auth.uid() OR is_admin())
 WITH CHECK (user_id = auth.uid() OR is_admin());
 
--- ============= COMMUTERS =============
 CREATE POLICY "commuters_insert_own"
 ON commuters FOR INSERT
 TO authenticated
@@ -177,7 +144,6 @@ USING (
   OR is_admin()
 );
 
--- ============= DRIVERS =============
 CREATE POLICY "drivers_insert_own"
 ON drivers FOR INSERT
 TO authenticated
@@ -201,7 +167,6 @@ USING (
   OR is_admin()
 );
 
--- ============= OPERATORS =============
 CREATE POLICY "operators_insert_own"
 ON operators FOR INSERT
 TO authenticated
@@ -225,7 +190,6 @@ USING (
   OR is_admin()
 );
 
--- ============= WALLETS =============
 CREATE POLICY "wallets_insert_own"
 ON wallets FOR INSERT
 TO authenticated
@@ -249,7 +213,6 @@ USING (
   OR is_admin()
 );
 
--- ============= ATTACHMENTS =============
 CREATE POLICY "attachments_insert_own"
 ON attachments FOR INSERT
 TO authenticated
@@ -265,7 +228,6 @@ USING (
   OR is_admin()
 );
 
--- ============= TRANSACTIONS =============
 CREATE POLICY "transactions_select_own"
 ON transactions FOR SELECT
 TO authenticated
@@ -278,7 +240,6 @@ USING (
   OR is_admin()
 );
 
--- ============= ROUTES & STOPS (Public) =============
 CREATE POLICY "routes_public_select"
 ON routes FOR SELECT
 TO authenticated
@@ -301,7 +262,6 @@ TO authenticated
 USING (is_admin())
 WITH CHECK (is_admin());
 
--- ============= TRIPS =============
 CREATE POLICY "trips_select_involved"
 ON trips FOR SELECT
 TO authenticated
@@ -315,7 +275,6 @@ USING (
   OR is_admin()
 );
 
--- ============= POINTS TRANSACTIONS =============
 CREATE POLICY "points_transactions_select_own"
 ON points_transactions FOR SELECT
 TO authenticated
@@ -339,7 +298,6 @@ WITH CHECK (
   )
 );
 
--- ============= NOTIFICATIONS =============
 CREATE POLICY "notifications_select_own"
 ON notifications FOR SELECT
 TO authenticated
@@ -348,7 +306,6 @@ USING (
   OR is_admin()
 );
 
--- ============= REPORTS =============
 CREATE POLICY "reports_manage_own"
 ON reports FOR ALL
 TO authenticated
@@ -357,7 +314,6 @@ USING (
   OR is_admin()
 );
 
--- ============= RATINGS =============
 CREATE POLICY "ratings_commuter_manage"
 ON ratings FOR ALL
 TO authenticated
@@ -382,7 +338,6 @@ USING (
   OR is_admin()
 );
 
--- ============= VERIFICATIONS =============
 CREATE POLICY "verifications_select_own"
 ON verifications FOR SELECT
 TO authenticated
@@ -397,7 +352,6 @@ TO authenticated
 USING (is_admin())
 WITH CHECK (is_admin());
 
--- ============= FARE POLICIES & BRACKETS =============
 CREATE POLICY "fare_policies_admin_all"
 ON fare_policies FOR ALL
 TO authenticated
@@ -410,14 +364,12 @@ TO authenticated
 USING (is_admin())
 WITH CHECK (is_admin());
 
--- ============= AUDIT LOGS (Admin only) =============
 CREATE POLICY "audit_logs_admin_all"
 ON audit_logs FOR ALL
 TO authenticated
 USING (is_admin())
 WITH CHECK (is_admin());
 
--- ============= TRIP PARTICIPANTS =============
 CREATE POLICY "trip_participants_select_own"
 ON trip_participants FOR SELECT
 TO authenticated
@@ -436,9 +388,7 @@ USING (
   OR is_admin()
 );
 
--- ========================================
--- STEP 3: Verify policies
--- ========================================
+
 SELECT
   tablename,
   policyname,
@@ -455,7 +405,6 @@ FROM pg_policies
 WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 
--- Success message
 DO $$
 BEGIN
     RAISE NOTICE '✅ All RLS policies fixed! Infinite recursion eliminated.';

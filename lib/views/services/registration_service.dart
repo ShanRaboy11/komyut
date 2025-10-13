@@ -1,20 +1,23 @@
 // lib/views/services/registration_service.dart
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'dart:io';
 
 class RegistrationService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  static const String _baseUrl = 'YOUR_API_BASE_URL'; // Update with your API URL
+  
+  // Store registration data temporarily
+  final Map<String, dynamic> _registrationData = {};
 
-  // Store registration data temporarily during the flow
-  Map<String, dynamic> registrationData = {};
+  Map<String, dynamic> getRegistrationData() => Map.from(_registrationData);
 
-  // Step 1: Save role selection
+  // Step 1: Save role
   void saveRole(String role) {
-    // Convert to lowercase to match enum in database
-    registrationData['role'] = role.toLowerCase();
+    // Store role as lowercase to match ENUM in database
+    _registrationData['role'] = role.toLowerCase();
   }
 
-  // Step 2: Save personal information
+  // Step 2a: Save commuter personal info
   void savePersonalInfo({
     required String firstName,
     required String lastName,
@@ -24,195 +27,174 @@ class RegistrationService {
     required String category,
     String? idProofPath,
   }) {
-    registrationData['first_name'] = firstName;
-    registrationData['last_name'] = lastName;
-    registrationData['age'] = age;
-    registrationData['sex'] = sex;
-    registrationData['address'] = address;
-    registrationData['category'] = category.toLowerCase();
+    _registrationData['first_name'] = firstName;
+    _registrationData['last_name'] = lastName;
+    _registrationData['age'] = age;
+    _registrationData['sex'] = sex;
+    _registrationData['address'] = address;
+    
+    // Map UI category to database enum: 'Regular' -> 'regular', 'Discounted' -> handle subcategories
+    // For now, defaulting 'Discounted' to 'student' - you may want to add more granular selection
+    if (category.toLowerCase() == 'regular') {
+      _registrationData['category'] = 'regular';
+    } else {
+      // If discounted, you might want to add a field to select senior/student/pwd
+      _registrationData['category'] = 'student'; // Default to student for now
+    }
     
     if (idProofPath != null) {
-      registrationData['id_proof_path'] = idProofPath;
+      _registrationData['id_proof_path'] = idProofPath;
     }
   }
 
-  // Step 3: Save login credentials
+  // Step 2b: Save driver personal info
+  void saveDriverPersonalInfo({
+    required String firstName,
+    required String lastName,
+    required int age,
+    required String sex,
+    required String address,
+    required String licenseNumber,
+    String? assignedOperator,
+    required String driverLicensePath,
+  }) {
+    _registrationData['first_name'] = firstName;
+    _registrationData['last_name'] = lastName;
+    _registrationData['age'] = age;
+    _registrationData['sex'] = sex;
+    _registrationData['address'] = address;
+    _registrationData['license_number'] = licenseNumber;
+    _registrationData['driver_license_path'] = driverLicensePath;
+    
+    if (assignedOperator != null && assignedOperator.isNotEmpty) {
+      _registrationData['operator_name'] = assignedOperator;
+    }
+  }
+
+  // Step 2c: Save operator personal info
+  // Step 2c: Save operator personal info
+void saveOperatorPersonalInfo({
+  required String firstName,
+  required String lastName,
+  required String companyName,
+  required String companyAddress,
+  required String contactEmail,
+}) {
+  _registrationData['first_name'] = firstName;
+  _registrationData['last_name'] = lastName;
+  _registrationData['company_name'] = companyName;
+  _registrationData['company_address'] = companyAddress;
+  _registrationData['contact_email'] = contactEmail;
+}
+
+  // Step 3: Save login info
   void saveLoginInfo({
     required String email,
     required String password,
   }) {
-    registrationData['email'] = email;
-    registrationData['password'] = password;
+    _registrationData['email'] = email;
+    _registrationData['password'] = password;
   }
 
-  // Upload ID proof to Supabase Storage
-  Future<String?> uploadIdProof(File file, String userId) async {
-    try {
-      final String fileName = 'id_proof_${userId}_${DateTime.now().millisecondsSinceEpoch}.${file.path.split('.').last}';
-      final String filePath = 'id-proofs/$userId/$fileName';
-
-      await _supabase.storage.from('komyut-attachments').upload(
-        filePath,
-        file,
-        fileOptions: const FileOptions(
-          cacheControl: '3600',
-          upsert: false,
-        ),
-      );
-
-      final String publicUrl = _supabase.storage
-          .from('komyut-attachments')
-          .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (e) {
-      print('Error uploading ID proof: $e');
-      return null;
-    }
-  }
-
-  // Create attachment record in database
-  Future<String?> createAttachmentRecord({
-    required String ownerProfileId,
-    required String url,
-    required String path,
-    required File file,
-  }) async {
-    try {
-      final response = await _supabase.from('attachments').insert({
-        'owner_profile_id': ownerProfileId,
-        'bucket': 'komyut-attachments',
-        'path': path,
-        'url': url,
-        'content_type': 'image/${file.path.split('.').last}',
-        'size_bytes': await file.length(),
-        'metadata': {},
-      }).select().single();
-
-      return response['id'] as String;
-    } catch (e) {
-      print('Error creating attachment record: $e');
-      return null;
-    }
-  }
-
-  // Map category to commuter_category enum
-  String _mapToCommuterCategory(String category) {
-    if (category.toLowerCase() == 'discounted') {
-      return 'student';
-    }
-    return 'regular';
-  }
-
-  // Final registration - create user account and profile
+  // Step 4: Complete registration and send to backend
   Future<Map<String, dynamic>> completeRegistration() async {
     try {
-      // Get current authenticated user (should be authenticated via OTP)
-      final currentUser = _supabase.auth.currentUser;
-      
-      if (currentUser == null) {
-        return {
-          'success': false,
-          'message': 'No authenticated user found. Please verify your email first.',
-        };
-      }
+      // Prepare multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/auth/register'),
+      );
 
-      final String authUserId = currentUser.id;
+      final role = _registrationData['role'];
 
-      // Step 1: Create profile record
-      final profileResponse = await _supabase.from('profiles').insert({
-        'user_id': authUserId,
-        'role': registrationData['role'],
-        'first_name': registrationData['first_name'],
-        'last_name': registrationData['last_name'],
-        'age': registrationData['age'],
-        'sex': registrationData['sex'],
-        'address': registrationData['address'],
-        'is_verified': false,
-        'metadata': {},
-      }).select().single();
+      // Add common fields
+      request.fields['email'] = _registrationData['email'];
+      request.fields['password'] = _registrationData['password'];
+      request.fields['role'] = role;
+      request.fields['first_name'] = _registrationData['first_name'];
+      request.fields['last_name'] = _registrationData['last_name'];
+      request.fields['age'] = _registrationData['age'].toString();
+      request.fields['sex'] = _registrationData['sex'];
+      request.fields['address'] = _registrationData['address'];
 
-      final String profileId = profileResponse['id'] as String;
-
-      // Step 2: Upload ID proof if exists
-      String? attachmentId;
-      if (registrationData['id_proof_path'] != null) {
-        final file = File(registrationData['id_proof_path']);
-        final filePath = 'id-proofs/$profileId/${DateTime.now().millisecondsSinceEpoch}.${file.path.split('.').last}';
+      // Add role-specific fields and files
+      if (role == 'commuter') {
+        request.fields['category'] = _registrationData['category'];
         
-        final idProofUrl = await uploadIdProof(file, profileId);
+        // Upload ID proof if category is not regular (senior, student, pwd)
+        if (_registrationData['category'] != 'regular' && 
+            _registrationData['id_proof_path'] != null) {
+          final idProofFile = File(_registrationData['id_proof_path']);
+          if (await idProofFile.exists()) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                'id_proof',
+                idProofFile.path,
+              ),
+            );
+          }
+        }
+      } else if (role == 'driver') {
+        request.fields['license_number'] = _registrationData['license_number'];
         
-        if (idProofUrl != null) {
-          attachmentId = await createAttachmentRecord(
-            ownerProfileId: profileId,
-            url: idProofUrl,
-            path: filePath,
-            file: file,
-          );
+        if (_registrationData['operator_name'] != null) {
+          request.fields['operator_name'] = _registrationData['operator_name'];
+        }
+        
+        // Upload driver license (required)
+        if (_registrationData['driver_license_path'] != null) {
+          final licenseFile = File(_registrationData['driver_license_path']);
+          if (await licenseFile.exists()) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                'license_image',
+                licenseFile.path,
+              ),
+            );
+          }
+        }
+      } else if (role == 'operator') {
+        if (_registrationData['company_name'] != null) {
+          request.fields['company_name'] = _registrationData['company_name'];
+        }
+        if (_registrationData['company_address'] != null) {
+          request.fields['company_address'] = _registrationData['company_address'];
+        }
+        if (_registrationData['contact_phone'] != null) {
+          request.fields['contact_phone'] = _registrationData['contact_phone'];
         }
       }
 
-      // Step 3: Create role-specific record
-      final String role = registrationData['role'];
-      
-      if (role == 'commuter') {
-        await _supabase.from('commuters').insert({
-          'profile_id': profileId,
-          'category': _mapToCommuterCategory(registrationData['category']),
-          'attachment_id': attachmentId,
-          'id_verified': attachmentId != null ? false : null,
-          'wheel_tokens': 0,
-        });
-      } else if (role == 'driver') {
-        await _supabase.from('drivers').insert({
-          'profile_id': profileId,
-          'license_number': registrationData['license_number'] ?? '',
-          'status': false,
-          'active': true,
-          'metadata': {},
-        });
-      } else if (role == 'operator') {
-        await _supabase.from('operators').insert({
-          'profile_id': profileId,
-          'company_name': registrationData['company_name'] ?? '',
-          'company_address': registrationData['company_address'] ?? '',
-          'contact_email': registrationData['email'],
-          'metadata': {},
-        });
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        clearRegistrationData(); // Clear data after successful registration
+        
+        return {
+          'success': true,
+          'message': 'Registration successful',
+          'data': responseData,
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Registration failed',
+        };
       }
-
-      // Step 4: Create wallet
-      await _supabase.from('wallets').insert({
-        'owner_profile_id': profileId,
-        'balance': 0,
-        'locked': false,
-        'metadata': {},
-      });
-
-      registrationData.clear();
-
-      return {
-        'success': true,
-        'message': 'Registration successful',
-        'user': currentUser,
-        'profile_id': profileId,
-      };
     } catch (e) {
-      print('Registration error: $e');
       return {
         'success': false,
-        'message': 'Registration failed: ${e.toString()}',
+        'message': 'Network error: ${e.toString()}',
       };
     }
   }
 
-  // Clear registration data
+  // Clear all registration data
   void clearRegistrationData() {
-    registrationData.clear();
-  }
-
-  // Get current registration data
-  Map<String, dynamic> getRegistrationData() {
-    return Map.from(registrationData);
+    _registrationData.clear();
   }
 }
