@@ -9,7 +9,7 @@ import 'views/services/auth_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-   try {
+  try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint("⚠️ No .env file found — skipping dotenv load.");
@@ -40,6 +40,30 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.purple),
         home: const LandingPage(),
       ),
+    );
+  }
+}
+
+class NavBarCommuter extends StatelessWidget {
+  const NavBarCommuter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBottomNavBar(
+      pages: const [
+        Center(child: Text("🏠 Home")),
+        Center(child: Text("📋 Activity")),
+        Center(child: Text("✍️ QR Scan")),
+        Center(child: Text("🔔 Notifications")),
+        Center(child: Text("👤 Profile")),
+      ],
+      items: const [
+        NavItem(icon: Icons.home_rounded, label: 'Home'),
+        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
+        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
+        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
+        NavItem(icon: Icons.person_rounded, label: 'Profile'),
+      ],
     );
   }
 }
