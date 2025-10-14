@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-//import 'views/pages/landingpage.dart';
+import 'views/pages/landingpage.dart';
 import 'views/widgets/navbar.dart';
 import 'views/pages/home_commuter.dart';
 
@@ -36,8 +36,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       //home: const LandingPage(),
-      //home: const CommuterDashboard(),
-      home: NavBarCommuter(),
+      home: const CommuterDashboard(),
+      //home: NavBarCommuter(),
     );
   }
 }

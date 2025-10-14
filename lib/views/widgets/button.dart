@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isFilled;
+  final bool isTextOnly;
+  final IconData? icon; // 👈 optional icon
+  final String? imagePath;
   final Color? fillColor;
   final double width;
   final double height;
@@ -11,13 +15,18 @@ class CustomButton extends StatelessWidget {
   final Color outlinedFillColor;
   final Color? textColor;
   final bool hasShadow;
-  final double borderRadius; 
+  final double borderRadius;
+  final double fontSize;
+  final FontWeight fontWeight;
 
   const CustomButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.isFilled = true,
+    this.isTextOnly = false,
+    this.icon, // 👈 optional icon param
+    this.imagePath,
     this.fillColor,
     this.width = 325,
     this.height = 50,
@@ -25,7 +34,9 @@ class CustomButton extends StatelessWidget {
     this.outlinedFillColor = Colors.white,
     this.textColor,
     this.hasShadow = true,
-    this.borderRadius = 50, 
+    this.borderRadius = 50,
+    this.fontSize = 18.0,
+    this.fontWeight = FontWeight.bold,
   });
 
   static const Gradient _kGradient = LinearGradient(
@@ -44,8 +55,8 @@ class CustomButton extends StatelessWidget {
     final double h = height;
 
     final BorderRadius actualOuterRadius = BorderRadius.circular(borderRadius);
-    final BorderRadius actualInnerRadius = BorderRadius.circular(borderRadius > 2 ? borderRadius - 2 : 0);
-
+    final BorderRadius actualInnerRadius =
+        BorderRadius.circular(borderRadius > 2 ? borderRadius - 2 : 0);
 
     final List<BoxShadow> buttonShadow = [
       BoxShadow(
@@ -55,86 +66,124 @@ class CustomButton extends StatelessWidget {
       ),
     ];
 
-    TextStyle textStyle = TextStyle(
-      fontSize: 18,
+    final textStyle = TextStyle(
+      fontSize: fontSize,
       fontWeight: FontWeight.bold,
       fontFamily: 'Nunito',
     );
 
-    // Filled gradient button
+    // 🟣 Text-only variant
+    if (isTextOnly) {
+      return GestureDetector(
+        onTap: onPressed,
+        child: Text(
+          text,
+          style: textStyle.copyWith(
+            foreground: Paint()
+              ..shader = _kGradient.createShader(
+                Rect.fromLTWH(0, 0, w, h),
+              ),
+          ),
+        ),
+      );
+    }
+
+    // 🟢 Filled gradient button (with optional icon)
     if (isFilled) {
-      return SizedBox(
-        width: w,
-        height: h,
-        child: Material(
-          color: Colors.transparent,
-          elevation: hasShadow ? 4 : 0,
-          borderRadius: actualOuterRadius, 
-          child: Ink(
-            decoration: BoxDecoration(
-              color: fillColor, 
-              gradient: fillColor == null ? _kGradient : null,
-              borderRadius: actualOuterRadius, 
-              boxShadow: hasShadow ? buttonShadow : null,
-            ),
-            child: InkWell(
-              borderRadius: actualOuterRadius, 
-              onTap: onPressed,
-              child: Center(
-                child: Text(
+  return SizedBox(
+    width: w,
+    height: h,
+    child: Material(
+      color: Colors.transparent,
+      elevation: hasShadow ? 4 : 0,
+      borderRadius: actualOuterRadius,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: fillColor,
+          gradient: fillColor == null ? _kGradient : null,
+          borderRadius: actualOuterRadius,
+          boxShadow: hasShadow ? buttonShadow : null,
+        ),
+        child: InkWell(
+          borderRadius: actualOuterRadius,
+          onTap: onPressed,
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (imagePath != null) ...[
+                  SvgPicture.asset(
+                    imagePath!,
+                    height: 20,
+                    width: 20,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    color: textColor ?? Colors.white,
+                    size: fontSize + 2,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
                   text,
                   style: textStyle.copyWith(
+                    color: textColor,
                     foreground: textColor == null
                         ? (Paint()
                           ..shader = _kGradient.createShader(
                             Rect.fromLTWH(0, 0, w, h),
                           ))
                         : null,
-                    color: textColor,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
-      );
-    }
+      ),
+    ),
+  );
+}
 
-    // Outlined button
+    // 🟡 Outlined button
     return SizedBox(
       width: w,
       height: h,
       child: Material(
         color: Colors.transparent,
         elevation: hasShadow ? 4 : 0,
-        borderRadius: actualOuterRadius, 
+        borderRadius: actualOuterRadius,
         child: Container(
-          padding: const EdgeInsets.all(2), 
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: strokeColor != Colors.transparent ? strokeColor : null,
             gradient: strokeColor == Colors.transparent ? _kGradient : null,
-            borderRadius: actualOuterRadius, 
+            borderRadius: actualOuterRadius,
             boxShadow: hasShadow ? buttonShadow : null,
           ),
           child: Container(
             decoration: BoxDecoration(
               color: outlinedFillColor,
-              borderRadius: actualInnerRadius, 
+              borderRadius: actualInnerRadius,
             ),
             child: InkWell(
-              borderRadius: actualInnerRadius, 
+              borderRadius: actualInnerRadius,
               onTap: onPressed,
               child: Center(
                 child: Text(
                   text,
                   style: textStyle.copyWith(
+                    color: textColor,
                     foreground: textColor == null
                         ? (Paint()
                           ..shader = _kGradient.createShader(
                             Rect.fromLTWH(0, 0, w, h),
                           ))
                         : null,
-                    color: textColor,
                   ),
                 ),
               ),
