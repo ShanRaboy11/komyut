@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class AnimatedBottomNavBar extends StatefulWidget {
   final List<Widget> pages;

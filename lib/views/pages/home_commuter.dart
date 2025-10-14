@@ -384,38 +384,80 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
   // ---------------- Analytics Section ----------------
   Widget _buildAnalyticsSection(bool isSmallScreen) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6), width: 1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Commute Analytics',
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 4),
-          const Text('This week', style: TextStyle(color: Color(0xFF8E4CB6))),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildAnalyticsItem(Icons.directions_bus, 'Trips', '12 trips',
-                    subtitle: '12.6 mi'),
-                _buildAnalyticsItem(Icons.account_balance_wallet_outlined,
-                    'Spend', '₱300 total'),
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xFF8E4CB6), width: 1),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top row: Title + button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Commute Analytics',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                SizedBox(height: 4),
+                Text('This week', style: TextStyle(color: Color(0xFF8E4CB6))),
               ],
             ),
-          ),
+            IconButton(
+  onPressed: () {},
+  icon: Container(
+    width: 30, // adjust size as needed
+    height: 30,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xFF8E4CB6),
+          Color(0xFF5B53C2),
         ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
       ),
-    );
-  }
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: const Center(
+      child: Icon(
+        Icons.arrow_forward_ios,
+        color: Colors.white,
+        size: 14,
+      ),
+    ),
+  ),
+),
+
+
+          ],
+        ),
+        const Divider(),
+        // Analytics items row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildAnalyticsItem(Icons.directions_bus, 'Trips', '12 trips',
+                  subtitle: '12.6 mi'),
+              _buildAnalyticsItem(Icons.account_balance_wallet_outlined,
+                  'Spend', '₱300 total'),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildAnalyticsItem(IconData icon, String title, String value,
       {String? subtitle}) {
