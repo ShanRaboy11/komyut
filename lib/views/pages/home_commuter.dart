@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 
 class CommuterDashboard extends StatefulWidget {
@@ -11,12 +13,20 @@ class CommuterDashboard extends StatefulWidget {
 class _CommuterDashboardState extends State<CommuterDashboard>
     with SingleTickerProviderStateMixin {
   bool showWallet = true;
+  bool _previousShowWallet = true;
 
   final gradientColors = const [
     Color(0xFFB945AA),
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
+
+ void _switchTab(bool goWallet) {
+  setState(() {
+    _previousShowWallet = showWallet;
+    showWallet = goWallet;
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +35,6 @@ class _CommuterDashboardState extends State<CommuterDashboard>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -36,7 +45,11 @@ class _CommuterDashboardState extends State<CommuterDashboard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.asset('assets/images/logo.svg', height: 40),
+                  SvgPicture.asset(
+      'assets/images/logo.svg',
+      height: 80,
+      width: 80,
+    ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: const [
@@ -49,19 +62,19 @@ class _CommuterDashboardState extends State<CommuterDashboard>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
 
               // Wallet / Points Tabs
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => showWallet = true),
+                        onTap: () => _switchTab(true),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -72,9 +85,9 @@ class _CommuterDashboardState extends State<CommuterDashboard>
                                 : null,
                             color: showWallet ? null : Colors.transparent,
                             borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
+                              topLeft: Radius.circular(10),
                               bottomLeft: Radius.circular(0),
-                              topRight: Radius.circular(0),
+                              topRight: Radius.circular(10),
                               bottomRight: Radius.circular(0),
                             ),
                           ),
@@ -94,7 +107,7 @@ class _CommuterDashboardState extends State<CommuterDashboard>
                     ),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => showWallet = false),
+                        onTap: () => _switchTab(false),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -105,9 +118,9 @@ class _CommuterDashboardState extends State<CommuterDashboard>
                                 : null,
                             color: !showWallet ? null : Colors.transparent,
                             borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(16),
+                              topRight: Radius.circular(10),
                               bottomRight: Radius.circular(0),
-                              topLeft: Radius.circular(0),
+                              topLeft: Radius.circular(10),
                               bottomLeft: Radius.circular(0),
                             ),
                           ),
@@ -129,22 +142,50 @@ class _CommuterDashboardState extends State<CommuterDashboard>
                 ),
               ),
 
-              // Wallet / Points Card
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                switchInCurve: Curves.easeInOut,
-                switchOutCurve: Curves.easeInOut,
-                transitionBuilder: (child, animation) {
-    final offsetAnimation = Tween<Offset>(
-      begin: showWallet ? const Offset(-1.0, 0) : const Offset(1.0, 0),
-      end: Offset.zero,
-    ).animate(animation);
-    return SlideTransition(position: offsetAnimation, child: child);
-                },
-                child: showWallet
-                    ? _buildWalletCard(key: const ValueKey(1))
-                    : _buildPointsCard(key: const ValueKey(2)),
-              ),
+              // Wallet / Points Card Container
+              Container(
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: showWallet ? gradientColors : gradientColors,
+    ),
+    borderRadius: BorderRadius.only(
+      bottomLeft: const Radius.circular(20),
+      bottomRight: const Radius.circular(20),
+      topRight: showWallet ? const Radius.circular(10) : Radius.zero,
+      topLeft: showWallet ? Radius.zero : const Radius.circular(10),
+    ),
+  ),
+  child: ClipRRect(
+    borderRadius: BorderRadius.only(
+      bottomLeft: const Radius.circular(20),
+      bottomRight: const Radius.circular(20),
+      topRight: showWallet ? const Radius.circular(10) : Radius.zero,
+      topLeft: showWallet ? Radius.zero : const Radius.circular(10),
+    ),
+    child: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      transitionBuilder: (child, animation) {
+        final bool isWalletToPoints = _previousShowWallet && !showWallet;
+
+        final incomingOffset = isWalletToPoints
+            ? const Offset(-1.0, 0)   // Points come from right
+            : const Offset(-1.0, 0); // Wallet comes from left
+
+        final offsetAnimation = Tween<Offset>(
+          begin: incomingOffset,
+          end: Offset.zero,
+        ).animate(animation);
+
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+      child: showWallet
+          ? _buildWalletContent(key: const ValueKey(1))
+          : _buildPointsContent(key: const ValueKey(2)),
+    ),
+  ),
+),
               const SizedBox(height: 20),
 
               // Analytics
@@ -164,87 +205,175 @@ class _CommuterDashboardState extends State<CommuterDashboard>
     );
   }
 
-  // 🟣 Wallet Card
-  Widget _buildWalletCard({Key? key}) {
-    return Container(
-      key: key,
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Available Balance',
-              style: TextStyle(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 8),
-          const Text('₱500.00',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          CustomButton(
-            text: 'Cash In',
-            onPressed: () {},
-            isFilled: true,
-            fillColor: Colors.white,
-            textColor: const Color(0xFF5B53C2),
-            width: double.infinity,
-            height: 45,
-            borderRadius: 30,
-            hasShadow: false,
-          ),
-        ],
-      ),
-    );
-  }
+  // 🟣 Wallet Content
+  bool _isBalanceVisible = true;
+  bool _isPointsVisible = true;
 
-  // 🟣 Points Card
-  Widget _buildPointsCard({Key? key}) {
-    return Container(
-      key: key,
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors.reversed.toList()),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
+Widget _buildWalletContent({Key? key}) {
+  return Container(
+    key: key,
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Left side: Points info
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Available Balance',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _isBalanceVisible
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isBalanceVisible = !_isBalanceVisible;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            Row(
+  children: [
+    Text(
+      '₱ ',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    const SizedBox(width: 8),
+    Text(
+      _isBalanceVisible ? '500.00' : '••••••',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ],
+)
+          ],
         ),
+
+        // Right side: Redeem button
+        CustomButton(
+          text: 'Cash In',
+              icon: Icons.add_rounded,
+              onPressed: () {},
+              isFilled: true,
+              fillColor: Colors.white,
+              textColor: const Color(0xFF5B53C2),
+              width: 120,
+              height: 45,
+              borderRadius: 30,
+              hasShadow: false,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+        ),
+      ],
+    ),
+  );
+}
+
+
+  // 🟣 Points Content
+Widget _buildPointsContent({Key? key}) {
+  return Container(
+    key: key,
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Left side: Points info
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Available Points',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _isPointsVisible
+                      ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPointsVisible = !_isPointsVisible;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            Row(
+  children: [
+    Image.asset(
+      'assets/images/wheel token.png',
+      height: 40,
+      width: 40,
+    ),
+    const SizedBox(width: 8),
+    Text(
+      _isPointsVisible ? '59 pts' : '••••••',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Available Points',
-              style: TextStyle(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 8),
-          const Text('59 pts',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          CustomButton(
-            text: 'Redeem',
-            onPressed: () {},
-            isFilled: true,
-            fillColor: Colors.white,
-            textColor: const Color(0xFFB945AA),
-            width: double.infinity,
-            height: 45,
-            borderRadius: 30,
-            hasShadow: false,
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  ],
+)
+          ],
+        ),
+
+        // Right side: Redeem button
+        CustomButton(
+          text: 'Redeem',
+          onPressed: () {},
+          isFilled: true,
+          fillColor: Colors.white,
+          textColor: const Color(0xFFB945AA),
+          width: 120,
+          height: 45,
+          borderRadius: 30,
+          hasShadow: false,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          imagePath: 'assets/images/redeem.svg',
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildAnalyticsSection(bool isSmallScreen) {
     return Container(
@@ -302,8 +431,9 @@ class _CommuterDashboardState extends State<CommuterDashboard>
   }
 
   Widget _buildPromoCard() {
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(16),
@@ -311,9 +441,15 @@ class _CommuterDashboardState extends State<CommuterDashboard>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Expanded(
+          Icon(
+      Symbols.featured_seasonal_and_gifts_rounded,
+      color: const Color(0xFFB3A11B),
+    ),
+    const SizedBox(width: 15),
+          Expanded(
             child: Text('Get 50% off your next ride!\nUse Code: KOMYUTIE50',
-                style: TextStyle(fontWeight: FontWeight.w500)),
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                
           ),
           CustomButton(
             text: 'Claim Now',
@@ -325,6 +461,7 @@ class _CommuterDashboardState extends State<CommuterDashboard>
             height: 40,
             borderRadius: 20,
             hasShadow: false,
+            fontSize: 14,
           )
         ],
       ),
@@ -349,34 +486,18 @@ class _CommuterDashboardState extends State<CommuterDashboard>
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-        leading: Icon(icon, color: Colors.white),
-        onTap: () {},
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      backgroundColor: const Color(0xFF8E4CB6),
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.white70,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none), label: 'Alerts'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
-    );
-  }
+  Widget _buildActionButton(String title, IconData icon, {double iconSize = 20}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.15),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: ListTile(
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
+      leading: Icon(icon, color: Colors.white, size: iconSize),
+      onTap: () {},
+    ),
+  );
+}
 }
