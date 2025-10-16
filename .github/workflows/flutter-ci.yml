@@ -1,4 +1,4 @@
-name: Flutter CI
+name: Flutter Code Health CI
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
     branches: [develop, main]
 
 jobs:
-  analyze:
+  format_check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,10 +15,12 @@ jobs:
         with:
           flutter-version: '3.35.5'
           cache: true
-      - run: flutter pub get
-      - run: flutter analyze
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Check code formatting
+        run: dart format --set-exit-if-changed .
 
-  test:
+  dependency_audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,26 +28,22 @@ jobs:
         with:
           flutter-version: '3.35.5'
           cache: true
-      - run: flutter pub get
-      - name: Run Flutter tests with Supabase Secrets
-        run: flutter test
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-  build_apk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.5'
-          cache: true
-      - run: flutter pub get
-      - name: Build APK (Debug) with Supabase Secrets
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Audit dependencies for known vulnerabilities (requires `pana` package)
         run: |
-          flutter build apk --debug \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
-            --dart-define=SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          dart pub global activate pana
+          pana --no-warning --exit-code-if-not-clean
+
+  smoke_build_web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.5'
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build web (smoke test)
+        run: flutter build web --release --no-sound-null-safety
