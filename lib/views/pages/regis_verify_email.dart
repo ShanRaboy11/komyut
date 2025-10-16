@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; 
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
@@ -35,8 +34,6 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
   bool _isResending = false;
   bool _emailSent = false;
 
-  final supabase = Supabase.instance.client;
-
   @override
   void initState() {
     super.initState();
@@ -52,18 +49,11 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
     try {
       final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-      final password = registrationProvider.registrationData['password'] ?? 'TempPass123!';
       
-      debugPrint('Sending OTP to: ${widget.email}');
-      debugPrint('Using password: ${password.substring(0, 3)}***'); // Debug
+      debugPrint('📧 Sending OTP to: ${widget.email}');
       
-      // Sign up the user with email verification OTP
-      final response = await supabase.auth.signUp(
-        email: widget.email,
-        password: password,
-      );
-
-      debugPrint('SignUp response: ${response.user?.id}'); // Debug
+      // Send OTP without creating account
+      final result = await registrationProvider.sendEmailVerificationOTP(widget.email);
 
       if (mounted) {
         setState(() {
@@ -71,17 +61,26 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           _isResending = false;
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification code sent to your email!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Verification code sent to your email!'),
+              backgroundColor: Colors.green,
+            ),
+          );
 
-        _startResendTimer();
+          _startResendTimer();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to send code'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
-      debugPrint('Error sending OTP: $e'); // Debug
+      debugPrint('Error sending OTP: $e');
       
       if (mounted) {
         setState(() {
@@ -130,29 +129,37 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       });
 
       try {
-        debugPrint('Resending OTP to: ${widget.email}'); // Debug
+        final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
         
-        // Resend verification email
-        await supabase.auth.resend(
-          type: OtpType.signup,
-          email: widget.email,
-        );
+        debugPrint('🔄 Resending OTP to: ${widget.email}');
+        
+        final result = await registrationProvider.resendOTP(widget.email);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('New code sent to your email!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (result['success']) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('New code sent to your email!'),
+                backgroundColor: Colors.green,
+              ),
+            );
 
-          _startResendTimer();
+            _startResendTimer();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Failed to resend code'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          
           setState(() {
             _isResending = false;
           });
         }
       } catch (e) {
-        debugPrint('Error resending OTP: $e'); // Debug
+        debugPrint('Error resending OTP: $e');
         
         if (mounted) {
           setState(() {
@@ -188,21 +195,35 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      debugPrint('Verifying OTP: $otp for email: ${widget.email}'); // Debug
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
       
-      // Verify OTP with Supabase using type: signup
-      final response = await supabase.auth.verifyOTP(
-        email: widget.email,
-        token: otp,
-        type: OtpType.signup, // Changed from OtpType.email to OtpType.signup
+      debugPrint('🔍 Verifying OTP: $otp for email: ${widget.email}');
+      
+      // Verify OTP and create account
+      final verifyResult = await registrationProvider.verifyOTPAndCreateAccount(
+        widget.email,
+        otp,
       );
 
-      debugPrint('Verify response: ${response.session != null}'); // Debug
+      if (!verifyResult['success']) {
+        if (mounted) {
+          setState(() {
+            _isVerifying = false;
+          });
 
-      if (response.session != null && mounted) {
-        // OTP verified successfully, now complete registration
-        final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-        
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(verifyResult['message'] ?? 'Verification failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('✅ Email verified, creating profile...');
+
+      if (mounted) {
         // Show processing message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -215,7 +236,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         // Complete the registration (create profile, wallet, etc.)
         final result = await registrationProvider.completeRegistration();
 
-        debugPrint('Registration result: ${result['success']}'); // Debug
+        debugPrint('Registration result: ${result['success']}');
 
         if (mounted) {
           setState(() {
@@ -232,7 +253,6 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
             );
 
             // Navigate to home/dashboard
-            // Replace this with your actual home page
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/home', // or your home route
               (route) => false,
@@ -248,32 +268,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           }
         }
       }
-    } on AuthException catch (e) {
-      debugPrint('Auth Exception: ${e.message}'); // Debug
-      
-      if (mounted) {
-        setState(() {
-          _isVerifying = false;
-        });
-
-        String errorMessage = 'Invalid code. Please try again.';
-        if (e.message.contains('expired')) {
-          errorMessage = 'Code expired. Please request a new one.';
-        } else if (e.message.contains('invalid')) {
-          errorMessage = 'Invalid code. Please check and try again.';
-        } else if (e.message.contains('Email not confirmed')) {
-          errorMessage = 'Please check your email and enter the correct code.';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     } catch (e) {
-      debugPrint('General Exception: $e'); // Debug
+      debugPrint('General Exception: $e');
       
       if (mounted) {
         setState(() {

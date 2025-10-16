@@ -2,9 +2,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../config/api_config.dart';
 
 class RegistrationService {
-  static const String _baseUrl = 'YOUR_API_BASE_URL'; // Update with your API URL
+  final supabase = Supabase.instance.client;
   
   // Store registration data temporarily
   final Map<String, dynamic> _registrationData = {};
@@ -13,7 +16,6 @@ class RegistrationService {
 
   // Step 1: Save role
   void saveRole(String role) {
-    // Store role as lowercase to match ENUM in database
     _registrationData['role'] = role.toLowerCase();
   }
 
@@ -33,13 +35,10 @@ class RegistrationService {
     _registrationData['sex'] = sex;
     _registrationData['address'] = address;
     
-    // Map UI category to database enum: 'Regular' -> 'regular', 'Discounted' -> handle subcategories
-    // For now, defaulting 'Discounted' to 'student' - you may want to add more granular selection
     if (category.toLowerCase() == 'regular') {
       _registrationData['category'] = 'regular';
     } else {
-      // If discounted, you might want to add a field to select senior/student/pwd
-      _registrationData['category'] = 'student'; // Default to student for now
+      _registrationData['category'] = 'student';
     }
     
     if (idProofPath != null) {
@@ -72,20 +71,19 @@ class RegistrationService {
   }
 
   // Step 2c: Save operator personal info
-  // Step 2c: Save operator personal info
-void saveOperatorPersonalInfo({
-  required String firstName,
-  required String lastName,
-  required String companyName,
-  required String companyAddress,
-  required String contactEmail,
-}) {
-  _registrationData['first_name'] = firstName;
-  _registrationData['last_name'] = lastName;
-  _registrationData['company_name'] = companyName;
-  _registrationData['company_address'] = companyAddress;
-  _registrationData['contact_email'] = contactEmail;
-}
+  void saveOperatorPersonalInfo({
+    required String firstName,
+    required String lastName,
+    required String companyName,
+    required String companyAddress,
+    required String contactEmail,
+  }) {
+    _registrationData['first_name'] = firstName;
+    _registrationData['last_name'] = lastName;
+    _registrationData['company_name'] = companyName;
+    _registrationData['company_address'] = companyAddress;
+    _registrationData['contact_email'] = contactEmail;
+  }
 
   // Step 3: Save login info
   void saveLoginInfo({
@@ -96,100 +94,283 @@ void saveOperatorPersonalInfo({
     _registrationData['password'] = password;
   }
 
-  // Step 4: Complete registration and send to backend
-  Future<Map<String, dynamic>> completeRegistration() async {
+  // NEW: Send OTP for email verification (no account created yet)
+  Future<Map<String, dynamic>> sendEmailVerificationOTP(String email) async {
     try {
-      // Prepare multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$_baseUrl/auth/register'),
+      debugPrint('📧 Sending verification OTP to: $email (no signup yet)');
+      
+      // Use signInWithOtp for email verification without creating account
+      await supabase.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: null, // We'll use OTP code instead
       );
 
-      final role = _registrationData['role'];
-
-      // Add common fields
-      request.fields['email'] = _registrationData['email'];
-      request.fields['password'] = _registrationData['password'];
-      request.fields['role'] = role;
-      request.fields['first_name'] = _registrationData['first_name'];
-      request.fields['last_name'] = _registrationData['last_name'];
-      request.fields['age'] = _registrationData['age'].toString();
-      request.fields['sex'] = _registrationData['sex'];
-      request.fields['address'] = _registrationData['address'];
-
-      // Add role-specific fields and files
-      if (role == 'commuter') {
-        request.fields['category'] = _registrationData['category'];
-        
-        // Upload ID proof if category is not regular (senior, student, pwd)
-        if (_registrationData['category'] != 'regular' && 
-            _registrationData['id_proof_path'] != null) {
-          final idProofFile = File(_registrationData['id_proof_path']);
-          if (await idProofFile.exists()) {
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                'id_proof',
-                idProofFile.path,
-              ),
-            );
-          }
-        }
-      } else if (role == 'driver') {
-        request.fields['license_number'] = _registrationData['license_number'];
-        
-        if (_registrationData['operator_name'] != null) {
-          request.fields['operator_name'] = _registrationData['operator_name'];
-        }
-        
-        // Upload driver license (required)
-        if (_registrationData['driver_license_path'] != null) {
-          final licenseFile = File(_registrationData['driver_license_path']);
-          if (await licenseFile.exists()) {
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                'license_image',
-                licenseFile.path,
-              ),
-            );
-          }
-        }
-      } else if (role == 'operator') {
-        if (_registrationData['company_name'] != null) {
-          request.fields['company_name'] = _registrationData['company_name'];
-        }
-        if (_registrationData['company_address'] != null) {
-          request.fields['company_address'] = _registrationData['company_address'];
-        }
-        if (_registrationData['contact_phone'] != null) {
-          request.fields['contact_phone'] = _registrationData['contact_phone'];
-        }
-      }
-
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        clearRegistrationData(); // Clear data after successful registration
-        
-        return {
-          'success': true,
-          'message': 'Registration successful',
-          'data': responseData,
-        };
-      } else {
-        final errorData = json.decode(response.body);
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Registration failed',
-        };
-      }
-    } catch (e) {
+      debugPrint('✅ OTP sent successfully');
+      return {
+        'success': true,
+        'message': 'Verification code sent to your email',
+      };
+    } on AuthException catch (e) {
+      debugPrint('❌ Auth Exception: ${e.message}');
       return {
         'success': false,
-        'message': 'Network error: ${e.toString()}',
+        'message': e.message,
       };
+    } catch (e) {
+      debugPrint('❌ Error sending OTP: $e');
+      return {
+        'success': false,
+        'message': 'Failed to send verification code: ${e.toString()}',
+      };
+    }
+  }
+
+  // NEW: Verify OTP and create account
+  Future<Map<String, dynamic>> verifyOTPAndCreateAccount(
+    String email,
+    String otp,
+  ) async {
+    try {
+      debugPrint('🔍 Verifying OTP: $otp for email: $email');
+      
+      // Step 1: Verify OTP
+      final verifyResponse = await supabase.auth.verifyOTP(
+        email: email,
+        token: otp,
+        type: OtpType.email,
+      );
+
+      if (verifyResponse.session == null) {
+        debugPrint('❌ OTP verification failed - no session');
+        return {
+          'success': false,
+          'message': 'Invalid verification code',
+        };
+      }
+
+      debugPrint('✅ OTP verified successfully');
+      
+      // Step 2: Get the user ID from the session
+      final userId = verifyResponse.user?.id;
+      if (userId == null) {
+        debugPrint('❌ No user ID after OTP verification');
+        return {
+          'success': false,
+          'message': 'Verification failed',
+        };
+      }
+
+      debugPrint('✅ User authenticated: $userId');
+
+      // Step 3: Update the user's password (since we used OTP login, not signup)
+      final password = _registrationData['password'];
+      if (password != null) {
+        debugPrint('🔐 Setting user password...');
+        await supabase.auth.updateUser(
+          UserAttributes(password: password),
+        );
+        debugPrint('✅ Password set successfully');
+      }
+
+      return {
+        'success': true,
+        'message': 'Email verified successfully',
+        'userId': userId,
+      };
+    } on AuthException catch (e) {
+      debugPrint('❌ Auth Exception: ${e.message}');
+      
+      String errorMessage = 'Invalid code. Please try again.';
+      if (e.message.contains('expired')) {
+        errorMessage = 'Code expired. Please request a new one.';
+      } else if (e.message.contains('invalid')) {
+        errorMessage = 'Invalid code. Please check and try again.';
+      }
+
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
+    } catch (e) {
+      debugPrint('❌ General Exception: $e');
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+      };
+    }
+  }
+
+  // Step 4: Complete registration - Create profile and role-specific data
+  Future<Map<String, dynamic>> completeRegistration() async {
+    try {
+      debugPrint('🔍 Starting completeRegistration');
+      
+      // Get the current authenticated user
+      final user = supabase.auth.currentUser;
+      
+      if (user == null) {
+        debugPrint('❌ No authenticated user found');
+        return {
+          'success': false,
+          'message': 'User not authenticated. Please verify your email first.',
+        };
+      }
+
+      debugPrint('✅ User authenticated: ${user.id}');
+      debugPrint('📋 Registration data: $_registrationData');
+
+      final role = _registrationData['role'];
+      
+      // Step 1: Create profile
+      final profileData = {
+        'user_id': user.id,
+        'role': role,
+        'first_name': _registrationData['first_name'],
+        'last_name': _registrationData['last_name'],
+        'age': _registrationData['age'],
+        'sex': _registrationData['sex'],
+        'address': _registrationData['address'],
+        'is_verified': false,
+      };
+
+      debugPrint('💾 Inserting profile...');
+      final profileResponse = await supabase
+          .from('profiles')
+          .insert(profileData)
+          .select()
+          .single();
+      
+      final profileId = profileResponse['id'];
+      debugPrint('✅ Profile created with ID: $profileId');
+
+      // Step 2: Create role-specific records
+      if (role == 'commuter') {
+        debugPrint('👤 Creating commuter record...');
+        await supabase.from('commuters').insert({
+          'profile_id': profileId,
+          'category': _registrationData['category'],
+          'id_verified': false,
+          'wheel_tokens': 0,
+        });
+        
+        debugPrint('💰 Creating wallet for commuter...');
+        await supabase.from('wallets').insert({
+          'owner_profile_id': profileId,
+          'balance': 0.0,
+          'locked': false,
+        });
+        
+        debugPrint('✅ Commuter and wallet created!');
+        
+      } else if (role == 'driver') {
+        debugPrint('🚗 Creating driver record...');
+        await supabase.from('drivers').insert({
+          'profile_id': profileId,
+          'license_number': _registrationData['license_number'],
+          'operator_name': _registrationData['operator_name'],
+          'status': false,
+          'active': true,
+        });
+        
+        debugPrint('✅ Driver created!');
+        
+      } else if (role == 'operator') {
+        debugPrint('🏢 Creating operator record...');
+        await supabase.from('operators').insert({
+          'profile_id': profileId,
+          'company_name': _registrationData['company_name'],
+          'company_address': _registrationData['company_address'],
+          'contact_email': _registrationData['contact_email'],
+        });
+        
+        debugPrint('✅ Operator created!');
+      }
+
+      clearRegistrationData();
+      
+      debugPrint('🎉 Registration completed successfully!');
+      return {
+        'success': true,
+        'message': 'Registration completed successfully',
+        'data': {
+          'userId': user.id,
+          'profileId': profileId,
+          'role': role,
+        },
+      };
+
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Supabase Error: ${e.message}');
+      debugPrint('❌ Error code: ${e.code}');
+      debugPrint('❌ Error details: ${e.details}');
+      
+      String userMessage = 'Database error occurred';
+      if (e.code == '23505') {
+        userMessage = 'This account already exists';
+      } else if (e.code == '23503') {
+        userMessage = 'Invalid data provided';
+      }
+      
+      return {
+        'success': false,
+        'message': userMessage,
+      };
+    } catch (e) {
+      debugPrint('❌ General Exception: $e');
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+      };
+    }
+  }
+
+  // Resend OTP
+  Future<Map<String, dynamic>> resendOTP(String email) async {
+    try {
+      debugPrint('🔄 Resending OTP to: $email');
+      
+      await supabase.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: null,
+      );
+
+      debugPrint('✅ OTP resent successfully');
+      return {
+        'success': true,
+        'message': 'New code sent to your email',
+      };
+    } on AuthException catch (e) {
+      debugPrint('❌ Auth Exception: ${e.message}');
+      return {
+        'success': false,
+        'message': e.message,
+      };
+    } catch (e) {
+      debugPrint('❌ Error resending OTP: $e');
+      return {
+        'success': false,
+        'message': 'Failed to resend code: ${e.toString()}',
+      };
+    }
+  }
+
+  // Upload file to Supabase Storage
+  Future<String?> uploadFile(File file, String bucket, String path) async {
+    try {
+      final fileName = path.split('/').last;
+      final filePath = '$path/$fileName';
+      
+      await supabase.storage.from(bucket).upload(
+        filePath,
+        file,
+        fileOptions: const FileOptions(upsert: true),
+      );
+
+      final url = supabase.storage.from(bucket).getPublicUrl(filePath);
+      return url;
+    } catch (e) {
+      debugPrint('Error uploading file: $e');
+      return null;
     }
   }
 

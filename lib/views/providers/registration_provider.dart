@@ -1,4 +1,4 @@
-// lib/views/providers/registration_provider.dart
+// lib/providers/registration_provider.dart
 import 'package:flutter/foundation.dart';
 import '../services/registration_service.dart';
 import 'dart:io';
@@ -108,37 +108,36 @@ class RegistrationProvider extends ChangeNotifier {
   }
 
   // Step 2c: Save operator personal info
-  // Step 2c: Save operator personal info
-Future<bool> saveOperatorPersonalInfo({
-  required String firstName,
-  required String lastName,
-  required String companyName,
-  required String companyAddress,
-  required String contactEmail,
-}) async {
-  try {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<bool> saveOperatorPersonalInfo({
+    required String firstName,
+    required String lastName,
+    required String companyName,
+    required String companyAddress,
+    required String contactEmail,
+  }) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
 
-    _registrationService.saveOperatorPersonalInfo(
-      firstName: firstName,
-      lastName: lastName,
-      companyName: companyName,
-      companyAddress: companyAddress,
-      contactEmail: contactEmail,
-    );
+      _registrationService.saveOperatorPersonalInfo(
+        firstName: firstName,
+        lastName: lastName,
+        companyName: companyName,
+        companyAddress: companyAddress,
+        contactEmail: contactEmail,
+      );
 
-    _isLoading = false;
-    notifyListeners();
-    return true;
-  } catch (e) {
-    _errorMessage = e.toString();
-    _isLoading = false;
-    notifyListeners();
-    return false;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
-}
 
   // Step 3: Save login info
   void saveLoginInfo({
@@ -152,7 +151,97 @@ Future<bool> saveOperatorPersonalInfo({
     notifyListeners();
   }
 
-  // Complete registration (Step 4)
+  // NEW: Send email verification OTP (no account created yet)
+  Future<Map<String, dynamic>> sendEmailVerificationOTP(String email) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final result = await _registrationService.sendEmailVerificationOTP(email);
+
+      _isLoading = false;
+      
+      if (!result['success']) {
+        _errorMessage = result['message'];
+      }
+      
+      notifyListeners();
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'message': _errorMessage,
+      };
+    }
+  }
+
+  // NEW: Verify OTP and create account
+  Future<Map<String, dynamic>> verifyOTPAndCreateAccount(
+    String email,
+    String otp,
+  ) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final result = await _registrationService.verifyOTPAndCreateAccount(
+        email,
+        otp,
+      );
+
+      _isLoading = false;
+      
+      if (!result['success']) {
+        _errorMessage = result['message'];
+      }
+      
+      notifyListeners();
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'message': _errorMessage,
+      };
+    }
+  }
+
+  // NEW: Resend OTP
+  Future<Map<String, dynamic>> resendOTP(String email) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final result = await _registrationService.resendOTP(email);
+
+      _isLoading = false;
+      
+      if (!result['success']) {
+        _errorMessage = result['message'];
+      }
+      
+      notifyListeners();
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'message': _errorMessage,
+      };
+    }
+  }
+
+  // Complete registration (Step 4 - after email verification)
   Future<Map<String, dynamic>> completeRegistration() async {
     try {
       _isLoading = true;
