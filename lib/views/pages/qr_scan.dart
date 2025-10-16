@@ -338,7 +338,7 @@ class ScannerOverlay extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withAlpha(204)
       ..style = PaintingStyle.fill;
 
     final centerSquareSize = 250.0;
@@ -390,8 +390,8 @@ class ScannerLinePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF9C27B0).withOpacity(0.0),
-          const Color(0xFF9C27B0).withOpacity(0.3),
+          const Color(0xFF9C27B0).withAlpha(0),
+          const Color(0xFF9C27B0).withAlpha(77),
         ],
       ).createShader(Rect.fromLTWH(left, lineY - 30, centerSquareSize, 30));
 
