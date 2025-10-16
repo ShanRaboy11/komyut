@@ -9,12 +9,12 @@ class SuccessPage extends StatefulWidget {
   final VoidCallback? onClose;
 
   const SuccessPage({
-    Key? key,
+    super.key, // Fixed: use_super_parameters
     this.title = 'Payment Successful!',
     this.subtitle = 'Thank you for paying!',
     this.autoCloseDuration = 3,
     this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   State<SuccessPage> createState() => _SuccessPageState();

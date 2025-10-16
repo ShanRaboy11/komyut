@@ -3,7 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 
 class QRScannerScreen extends StatefulWidget {
-  const QRScannerScreen({Key? key}) : super(key: key);
+  const QRScannerScreen({super.key}); // Fixed: use_super_parameters
 
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
@@ -184,7 +184,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                       // Scanning Overlay
                       CustomPaint(
                         painter: ScannerOverlay(),
-                        child: Container(),
+                        child: const SizedBox.expand(), // Fixed: sized_box_for_whitespace
                       ),
 
                       // Animated Scanning Line
@@ -193,14 +193,14 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                         builder: (context, child) {
                           return CustomPaint(
                             painter: ScannerLinePainter(_animation.value),
-                            child: Container(),
+                            child: const SizedBox.expand(), // Fixed: sized_box_for_whitespace
                           );
                         },
                       ),
 
                       // Center Icon
                       Center(
-                        child: Container(
+                        child: SizedBox( // Fixed: sized_box_for_whitespace
                           width: 250,
                           height: 250,
                           child: Stack(

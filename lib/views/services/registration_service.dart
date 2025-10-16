@@ -1,10 +1,6 @@
-// lib/views/services/registration_service.dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../config/api_config.dart';
 
 class RegistrationService {
   final supabase = Supabase.instance.client;
