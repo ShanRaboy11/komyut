@@ -1,35 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
+import '../pages/success_page.dart';
 import '../providers/registration_provider.dart';
 
 class RegistrationVerifyEmail extends StatefulWidget {
   final String email;
-  
-  const RegistrationVerifyEmail({
-    super.key,
-    required this.email,
-  });
+
+  const RegistrationVerifyEmail({super.key, required this.email});
 
   @override
-  State<RegistrationVerifyEmail> createState() => _RegistrationVerifyEmailState();
+  State<RegistrationVerifyEmail> createState() =>
+      _RegistrationVerifyEmailState();
 }
 
 class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     with SingleTickerProviderStateMixin {
-  final List<TextEditingController> _otpControllers =
-      List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _otpFocusNodes =
-      List.generate(6, (index) => FocusNode());
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
+  final List<FocusNode> _otpFocusNodes = List.generate(
+    6,
+    (index) => FocusNode(),
+  );
 
   static const int _resendCooldownSeconds = 60;
   int _remainingSeconds = _resendCooldownSeconds;
   late Ticker _ticker;
-  
+
   bool _isVerifying = false;
   bool _isResending = false;
   bool _emailSent = false;
@@ -48,19 +51,24 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-      
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
+      );
+
       debugPrint('📧 Sending OTP to: ${widget.email}');
-      
+
       // Send OTP without creating account
-      final result = await registrationProvider.sendEmailVerificationOTP(widget.email);
+      final result = await registrationProvider.sendEmailVerificationOTP(
+        widget.email,
+      );
 
       if (mounted) {
         setState(() {
           _emailSent = true;
           _isResending = false;
         });
-        
+
         if (result['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -81,12 +89,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       }
     } catch (e) {
       debugPrint('Error sending OTP: $e');
-      
+
       if (mounted) {
         setState(() {
           _isResending = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send code: ${e.toString()}'),
@@ -129,10 +137,13 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       });
 
       try {
-        final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-        
+        final registrationProvider = Provider.of<RegistrationProvider>(
+          context,
+          listen: false,
+        );
+
         debugPrint('🔄 Resending OTP to: ${widget.email}');
-        
+
         final result = await registrationProvider.resendOTP(widget.email);
 
         if (mounted) {
@@ -153,19 +164,19 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
               ),
             );
           }
-          
+
           setState(() {
             _isResending = false;
           });
         }
       } catch (e) {
         debugPrint('Error resending OTP: $e');
-        
+
         if (mounted) {
           setState(() {
             _isResending = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to resend code: ${e.toString()}'),
@@ -179,7 +190,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
   Future<void> _onVerifyCode() async {
     String otp = _otpControllers.map((controller) => controller.text).join();
-    
+
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -195,10 +206,13 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-      
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
+      );
+
       debugPrint('🔍 Verifying OTP: $otp for email: ${widget.email}');
-      
+
       // Verify OTP and create account
       final verifyResult = await registrationProvider.verifyOTPAndCreateAccount(
         widget.email,
@@ -245,18 +259,28 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
           if (result['success']) {
             // Registration successful
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Account created successfully!'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            // You can uncomment the SnackBar if you want a brief message before navigating
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   const SnackBar(
+            //     content: Text('Account created successfully!'),
+            //     backgroundColor: Colors.green,
+            //   ),
+            // );
 
-            // Navigate to home/dashboard
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/home', // or your home route
-              (route) => false,
-            );
+            // Navigate to the SuccessPage
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SuccessPage(
+                  title: 'Registration Complete!',
+                  subtitle: 'Welcome to komyut!',
+
+                  onClose: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                ),
+              ),
+            ); // Semicolon for the Navigator.pushReplacement statement
           } else {
             // Registration failed
             ScaffoldMessenger.of(context).showSnackBar(
@@ -270,7 +294,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       }
     } catch (e) {
       debugPrint('General Exception: $e');
-      
+
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -457,7 +481,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                               style: TextStyle(
                                 color: _remainingSeconds == 0
                                     ? const Color.fromRGBO(185, 69, 170, 1)
-                                    : const Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                                    : const Color.fromRGBO(
+                                        0,
+                                        0,
+                                        0,
+                                        0.699999988079071,
+                                      ),
                                 fontFamily: 'Nunito',
                                 fontSize: 16,
                                 fontWeight: FontWeight.normal,

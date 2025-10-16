@@ -266,17 +266,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
             // Upload QR Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: OutlinedButton.icon(
                 onPressed: () {
-                  // Implement image picker for QR code
+                  _pickImageFromGallery();
                 },
                 icon: const Icon(
-                  Icons.upload_outlined,
+                  Icons.image,
                   color: Color(0xFF9C27B0),
                 ),
                 label: const Text(
@@ -312,21 +312,21 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
 
   Widget _buildCorner(bool isTop, bool isLeft) {
     return Container(
-      width: 30,
-      height: 30,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         border: Border(
           top: isTop
-              ? const BorderSide(color: Color(0xFF9C27B0), width: 6)
+              ? const BorderSide(color: Color(0xFF9C27B0), width: 8)
               : BorderSide.none,
           left: isLeft
-              ? const BorderSide(color: Color(0xFF9C27B0), width: 6)
+              ? const BorderSide(color: Color(0xFF9C27B0), width: 8)
               : BorderSide.none,
           bottom: !isTop
-              ? const BorderSide(color: Color(0xFF9C27B0), width: 6)
+              ? const BorderSide(color: Color(0xFF9C27B0), width: 8)
               : BorderSide.none,
           right: !isLeft
-              ? const BorderSide(color: Color(0xFF9C27B0), width: 6)
+              ? const BorderSide(color: Color(0xFF9C27B0), width: 8)
               : BorderSide.none,
         ),
       ),
@@ -348,7 +348,7 @@ class ScannerOverlay extends CustomPainter {
 
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(20)))
+      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(0)))
       ..fillType = PathFillType.evenOdd;
 
     canvas.drawPath(path, paint);
@@ -374,7 +374,7 @@ class ScannerLinePainter extends CustomPainter {
 
     final paint = Paint()
       ..color = const Color(0xFF9C27B0)
-      ..strokeWidth = 3
+      ..strokeWidth = 5
       ..style = PaintingStyle.stroke;
 
     // Draw the scanning line
