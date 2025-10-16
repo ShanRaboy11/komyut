@@ -1,13 +1,14 @@
-name: Flutter Code Health CI
+name: Flutter CI
 
 on:
-  pull_request:
-    branches: [develop, main]
   push:
+    branches: [develop, main]
+  pull_request:
     branches: [develop, main]
 
 jobs:
-  format_check:
+  analyze:
+    name: Analyze Project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,12 +16,11 @@ jobs:
         with:
           flutter-version: '3.35.5'
           cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Check code formatting
-        run: dart format --set-exit-if-changed .
+      - run: flutter pub get
+      - run: flutter analyze
 
-  dependency_audit:
+  test:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,22 +28,24 @@ jobs:
         with:
           flutter-version: '3.35.5'
           cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Audit dependencies for known vulnerabilities (requires `pana` package)
-        run: |
-          dart pub global activate pana
-          pana --no-warning --exit-code-if-not-clean
+      - run: flutter pub get
+      - run: flutter test --no-pub --coverage
 
-  smoke_build_web:
+  build:
+    name: Build Debug APK
     runs-on: ubuntu-latest
+    needs: [analyze, test]
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.5'
           cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Build web (smoke test)
-        run: flutter build web --release --no-sound-null-safety
+      - run: flutter pub get
+      - name: Build Debug APK
+        run: flutter build apk --debug
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
