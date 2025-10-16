@@ -5,13 +5,6 @@
 import FlutterMacOS
 import Foundation
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-import path_provider_foundation
-
-func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
-=======
 import app_links
 import file_picker
 import path_provider_foundation
@@ -24,9 +17,4 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
->>>>>>> 810a9ed271431df853d6e2883a09e673ae6dc349
-=======
-
-func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
->>>>>>> parent of 0ea8162 (feat(home driver):initialized home driver - Macatual)
 }
