@@ -27,7 +27,12 @@ jobs:
           flutter-version: '3.35.5'
           cache: true
       - run: flutter pub get
-      - run: flutter test
+      - name: Run Flutter tests with Supabase Secrets
+        run: flutter test
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   build_apk:
     runs-on: ubuntu-latest
