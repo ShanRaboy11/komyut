@@ -5,33 +5,33 @@ import '../widgets/text_field.dart';
 import '../widgets/dropdown.dart'; 
 import '../widgets/background_circles.dart'; 
 import '../widgets/progress_bar.dart'; 
-import '../widgets/option_card.dart'; 
 import '../widgets/button.dart'; 
 import '../pages/regis_set_login.dart';
 import '../providers/registration_provider.dart';
 import 'package:file_picker/file_picker.dart';
 
-class RegistrationCommuterPersonalInfo extends StatefulWidget {
-  const RegistrationCommuterPersonalInfo({super.key});
+class RegistrationDriverPersonalInfo extends StatefulWidget {
+  const RegistrationDriverPersonalInfo({super.key});
 
   @override
-  State<RegistrationCommuterPersonalInfo> createState() =>
-      RegistrationCommuterPersonalInfoState();
+  State<RegistrationDriverPersonalInfo> createState() =>
+      RegistrationDriverPersonalInfoState();
 }
 
-class RegistrationCommuterPersonalInfoState
-    extends State<RegistrationCommuterPersonalInfo> {
+class RegistrationDriverPersonalInfoState
+    extends State<RegistrationDriverPersonalInfo> {
   final _formKey = GlobalKey<FormState>(); 
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _licenseNumberController = TextEditingController();
+  final TextEditingController _assignedOperatorController = TextEditingController();
 
   String? _selectedSex; 
-  String? _selectedCategory;
-  String? _uploadedFileName;
-  File? _idProofFile;
+  String? _uploadedLicenseFileName;
+  File? _driverLicenseFile;
 
   final List<ProgressBarStep> _registrationSteps = [
     ProgressBarStep(title: 'Choose Role', isCompleted: true), 
@@ -64,17 +64,16 @@ class RegistrationCommuterPersonalInfoState
       if (data['address'] != null) {
         _addressController.text = data['address'];
       }
-      if (data['category'] != null) {
-        setState(() {
-          // Capitalize first letter for display
-          final cat = data['category'].toString();
-          _selectedCategory = cat == 'regular' ? 'Regular' : 'Discounted';
-        });
+      if (data['license_number'] != null) {
+        _licenseNumberController.text = data['license_number'];
       }
-      if (data['id_proof_path'] != null) {
+      if (data['assigned_operator'] != null) {
+        _assignedOperatorController.text = data['assigned_operator'];
+      }
+      if (data['driver_license_path'] != null) {
         setState(() {
-          _uploadedFileName = data['id_proof_path'].split('/').last;
-          _idProofFile = File(data['id_proof_path']);
+          _uploadedLicenseFileName = data['driver_license_path'].split('/').last;
+          _driverLicenseFile = File(data['driver_license_path']);
         });
       }
     });
@@ -86,26 +85,18 @@ class RegistrationCommuterPersonalInfoState
     _lastNameController.dispose();
     _ageController.dispose();
     _addressController.dispose();
+    _licenseNumberController.dispose();
+    _assignedOperatorController.dispose();
     super.dispose();
   }
 
   void _onNextPressed() {
     bool isFormValid = _formKey.currentState!.validate();
     
-    if (isFormValid && _selectedCategory == null) {
+    if (isFormValid && _driverLicenseFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a category'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (isFormValid && _selectedCategory == 'Discounted' && _idProofFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload proof of ID'),
+          content: Text('Please upload your driver license'),
           backgroundColor: Colors.red,
         ),
       );
@@ -122,21 +113,23 @@ class RegistrationCommuterPersonalInfoState
       return;
     }
 
-    if (isFormValid && _selectedCategory != null) {
+    if (isFormValid) {
       final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
       
-      // Save synchronously (the provider method handles async internally)
-      registrationProvider.savePersonalInfo(
+      registrationProvider.saveDriverPersonalInfo(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         age: int.parse(_ageController.text.trim()),
         sex: _selectedSex!,
         address: _addressController.text.trim(),
-        category: _selectedCategory!,
-        idProofFile: _idProofFile,
+        licenseNumber: _licenseNumberController.text.trim(),
+        assignedOperator: _assignedOperatorController.text.trim().isEmpty 
+            ? null 
+            : _assignedOperatorController.text.trim(),
+        driverLicenseFile: _driverLicenseFile!,
       ).then((success) {
         if (success && mounted) {
-          debugPrint('Personal info saved: ${registrationProvider.registrationData}');
+          debugPrint('Driver personal info saved: ${registrationProvider.registrationData}');
           
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
@@ -157,7 +150,7 @@ class RegistrationCommuterPersonalInfoState
     Navigator.of(context).pop();
   }
 
-  Future<void> _handleFileUpload() async {
+  Future<void> _handleLicenseUpload() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
@@ -170,8 +163,8 @@ class RegistrationCommuterPersonalInfoState
         final PlatformFile file = result.files.first;
         
         setState(() {
-          _uploadedFileName = file.name;
-          _idProofFile = File(file.path!);
+          _uploadedLicenseFileName = file.name;
+          _driverLicenseFile = File(file.path!);
         });
 
         if (!mounted) return;
@@ -303,8 +296,8 @@ class RegistrationCommuterPersonalInfoState
                                 if (age == null) {
                                   return 'Invalid age';
                                 }
-                                if (age < 13 || age > 120) {
-                                  return 'Age must be 13-120';
+                                if (age < 18 || age > 120) {
+                                  return 'Age must be 18-120';
                                 }
                                 return null;
                               },
@@ -367,12 +360,38 @@ class RegistrationCommuterPersonalInfoState
                           return null;
                         },
                       ),
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 15),
+
+                      CustomTextField(
+                        labelText: 'Assigned Operator (optional)',
+                        controller: _assignedOperatorController,
+                        width: fieldWidth,
+                        height: 60,
+                        borderColor: const Color.fromRGBO(200, 200, 200, 1),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                      ),
+                      const SizedBox(height: 15),
+
+                      CustomTextField(
+                        labelText: 'Driver\'s License Number',
+                        controller: _licenseNumberController,
+                        width: fieldWidth,
+                        height: 60,
+                        borderColor: const Color.fromRGBO(200, 200, 200, 1),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your license number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 15),
 
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Category *',
+                          'Upload Driver License *',
                           style: TextStyle(
                             color: Color.fromRGBO(18, 18, 18, 1),
                             fontFamily: 'Manrope',
@@ -382,104 +401,47 @@ class RegistrationCommuterPersonalInfoState
                         ),
                       ),
                       const SizedBox(height: 10),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          OptionCard(
-                            title: 'Regular',
-                            isSelected: _selectedCategory == 'Regular',
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = 'Regular';
-                                _idProofFile = null;
-                                _uploadedFileName = null;
-                              });
-                            },
-                            type: OptionCardType.radio,
-                            margin: const EdgeInsets.only(right: 12.0),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: SizedBox(
+                          width: 150,
+                          child: CustomButton(
+                            text: 'Upload License',
+                            onPressed: _handleLicenseUpload,
+                            isFilled: true,
+                            width: 150,
                             height: 50,
-                            width: 160,
-                            textSize: 16,
-                            selectedColor: const Color.fromRGBO(185, 69, 170, 1),
-                            unselectedColor: const Color.fromRGBO(200, 200, 200, 1),
-                          ),
-                          OptionCard(
-                            title: 'Student, PWD, Senior Citizen',
-                            isSelected: _selectedCategory == 'Discounted',
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = 'Discounted';
-                              });
-                            },
-                            type: OptionCardType.radio,
-                            margin: const EdgeInsets.only(left: 12.0),
-                            width: 160,
-                            height: 50,
-                            selectedColor: const Color.fromRGBO(185, 69, 170, 1),
-                            unselectedColor: const Color.fromRGBO(200, 200, 200, 1),
-                            textSize: 12,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30), 
-                      
-                      if (_selectedCategory == 'Discounted') ...[
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Upload Proof of ID *',
-                            style: TextStyle(
-                              color: Color.fromRGBO(18, 18, 18, 1),
-                              fontFamily: 'Manrope',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            borderRadius: 15,
+                            textColor: Colors.white,
+                            hasShadow: true,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                      ),
+                      if (_uploadedLicenseFileName != null) ...[
+                        const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: SizedBox(
-                            width: 150,
-                            child: CustomButton(
-                              text: 'Upload ID',
-                              onPressed: _handleFileUpload,
-                              isFilled: true,
-                              width: 150,
-                              height: 50,
-                              borderRadius: 15,
-                              textColor: Colors.white,
-                              hasShadow: true,
-                            ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'License uploaded successfully',
+                                style: const TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 12,
+                                  fontFamily: 'Nunito',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        if (_uploadedFileName != null) ...[
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'ID uploaded successfully',
-                                  style: const TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 12,
-                                    fontFamily: 'Nunito',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 50),
                       ],
+                      const SizedBox(height: 40),                    
                       
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

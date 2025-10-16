@@ -36,14 +36,18 @@ class CustomDropdownField<T> extends StatelessWidget {
     this.labelColor,
     this.hintColor,
     this.borderRadius = 15.0,
-    this.contentPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 10,
+      vertical: 15,
+    ),
     this.hintText,
     this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox( // Use SizedBox to add whitespace and apply width/height
+    return SizedBox(
+      // Use SizedBox to add whitespace and apply width/height
       width: width,
       height: height,
       child: DropdownButtonFormField<T>(
@@ -56,7 +60,12 @@ class CustomDropdownField<T> extends StatelessWidget {
           fontSize: 16,
           fontFamily: 'Manrope',
         ),
-        icon: icon ?? const Icon(Icons.keyboard_arrow_down, color: Colors.grey), // Customizable icon
+        icon:
+            icon ??
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: Colors.grey,
+            ), // Customizable icon
         decoration: InputDecoration(
           labelText: labelText,
           hintText: hintText,
@@ -72,6 +81,7 @@ class CustomDropdownField<T> extends StatelessWidget {
           ),
           filled: fillColor != null,
           fillColor: fillColor,
+          errorStyle: const TextStyle(height: 0, fontSize: 0),
           contentPadding: contentPadding,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
@@ -90,23 +100,18 @@ class CustomDropdownField<T> extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
             borderSide: BorderSide(
-              color: focusedBorderColor ?? const Color.fromRGBO(185, 69, 170, 1),
+              color:
+                  focusedBorderColor ?? const Color.fromRGBO(185, 69, 170, 1),
               width: 2,
             ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
           ),
         ),
       ),
