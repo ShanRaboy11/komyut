@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
@@ -8,12 +9,28 @@ class QRScannerScreen extends StatefulWidget {
   State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
-class _QRScannerScreenState extends State<QRScannerScreen> {
+class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProviderStateMixin {
   MobileScannerController cameraController = MobileScannerController();
   bool isScanning = true;
+  bool isFlashOn = false;
+  final ImagePicker _imagePicker = ImagePicker();
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
+  }
 
   @override
   void dispose() {
+    _animationController.dispose();
     cameraController.dispose();
     super.dispose();
   }
@@ -36,6 +53,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   void _handleScannedCode(String code) {
+    // Pause animation when code is scanned
+    _animationController.stop();
+    
     // Show dialog with scanned result
     showDialog(
       context: context,
@@ -49,6 +69,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               setState(() {
                 isScanning = true;
               });
+              _animationController.repeat(reverse: true);
             },
             child: const Text('Scan Again'),
           ),
@@ -62,6 +83,45 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      
+      if (image != null) {
+        // Analyze the picked image for QR code
+        final BarcodeCapture? barcodes = await cameraController.analyzeImage(image.path);
+        
+        if (barcodes != null && barcodes.barcodes.isNotEmpty) {
+          final String? code = barcodes.barcodes.first.rawValue;
+          if (code != null) {
+            _handleScannedCode(code);
+          }
+        } else {
+          // No QR code found in image
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No QR code found in the selected image'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -113,7 +173,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
                       // Camera View
@@ -128,21 +187,24 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                         child: Container(),
                       ),
 
+                      // Animated Scanning Line
+                      AnimatedBuilder(
+                        animation: _animation,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            painter: ScannerLinePainter(_animation.value),
+                            child: Container(),
+                          );
+                        },
+                      ),
+
                       // Center Icon
                       Center(
                         child: Container(
                           width: 250,
                           height: 250,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: const Color(0xFF9C27B0),
-                              width: 3,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
                           child: Stack(
                             children: [
-                              // Corner decorations
                               Positioned(
                                 top: -3,
                                 left: -3,
@@ -175,33 +237,24 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                         right: 0,
                         child: Column(
                           children: [
-                            const Text(
-                              'Hold',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'or enter mobile number',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.flip_camera_android,
-                                color: Color(0xFF9C27B0),
-                                size: 30,
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  isFlashOn = !isFlashOn;
+                                });
+                                cameraController.toggleTorch();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isFlashOn ? Icons.flash_on : Icons.flash_off,
+                                  color: const Color(0xFF9C27B0),
+                                  size: 30,
+                                ),
                               ),
                             ),
                           ],
@@ -303,4 +356,53 @@ class ScannerOverlay extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class ScannerLinePainter extends CustomPainter {
+  final double animationValue;
+
+  ScannerLinePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centerSquareSize = 250.0;
+    final left = (size.width - centerSquareSize) / 2;
+    final top = (size.height - centerSquareSize) / 2;
+    
+    // Calculate the Y position of the scanning line
+    final lineY = top + (centerSquareSize * animationValue);
+
+    final paint = Paint()
+      ..color = const Color(0xFF9C27B0)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+
+    // Draw the scanning line
+    canvas.drawLine(
+      Offset(left, lineY),
+      Offset(left + centerSquareSize, lineY),
+      paint,
+    );
+
+    // Draw a gradient effect above the line
+    final gradientPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF9C27B0).withOpacity(0.0),
+          const Color(0xFF9C27B0).withOpacity(0.3),
+        ],
+      ).createShader(Rect.fromLTWH(left, lineY - 30, centerSquareSize, 30));
+
+    canvas.drawRect(
+      Rect.fromLTWH(left, lineY - 30, centerSquareSize, 30),
+      gradientPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(ScannerLinePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
 }

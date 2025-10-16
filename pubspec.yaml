@@ -38,6 +38,7 @@ dependencies:
   http: ^1.1.0
   mobile_scanner: ^5.2.3
   another_flushbar: ^1.12.30
+  image_picker: ^1.0.7
 
 
 

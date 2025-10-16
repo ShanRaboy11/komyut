@@ -5,6 +5,7 @@ import '../widgets/big_card.dart';
 import '../widgets/social_button.dart';
 import '../pages/login.dart'; 
 import '../pages/registration_role.dart';
+import '../pages/qr_scan.dart';
 
 class CreateAccountPage extends StatelessWidget {
   const CreateAccountPage({super.key});
@@ -114,7 +115,8 @@ class CreateAccountPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const RegistrationRolePage()),
+                            //builder: (context) => const RegistrationRolePage()),
+                            builder: (context) => const QRScannerScreen()),
                         );
                       },
                         width: screenSize.width * 0.8,
