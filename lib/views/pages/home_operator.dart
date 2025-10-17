@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 
@@ -210,20 +211,18 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.manrope(
               fontWeight: FontWeight.bold,
               fontSize: 35,
               color: color,
-              fontFamily: 'Manrope',
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: GoogleFonts.manrope(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Manrope',
             ),
           ),
           const SizedBox(height: 6),
@@ -231,19 +230,17 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
             onPressed: () {},
             style: TextButton.styleFrom(
               foregroundColor: color,
-              textStyle: const TextStyle(
+              textStyle: GoogleFonts.manrope(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Manrope',
               ),
             ),
             child: Text(
               "View details",
-              style: TextStyle(
+              style: GoogleFonts.nunito(
                 fontWeight: FontWeight.normal,
                 fontSize: 14,
                 color: color,
-                fontFamily: 'Nunito',
               ),
             ),
           ),
@@ -258,7 +255,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.black,
@@ -269,7 +266,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
             onPressed: () {},
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey[700],
-              textStyle: const TextStyle(
+              textStyle: GoogleFonts.manrope(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -300,14 +297,14 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     'Revenue $revenue  •  Rating $rating',
-                    style: const TextStyle(
+                    style: GoogleFonts.nunito(
                       fontSize: 13,
                       color: Color.fromARGB(255, 123, 123, 123),
                     ),
@@ -352,7 +349,10 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 2),
           Row(
@@ -360,7 +360,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
             children: [
               Text(
                 'Plate No. $plate • Status: $status',
-                style: const TextStyle(
+                style: GoogleFonts.nunito(
                   fontSize: 13,
                   color: Color.fromARGB(255, 123, 123, 123),
                 ),

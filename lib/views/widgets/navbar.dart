@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AnimatedBottomNavBar extends StatefulWidget {
   final List<Widget> pages;
@@ -150,11 +151,11 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                               AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeInOutCubic,
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: isSelected
                                       ? Colors.white
                                       : Colors.white.withValues(alpha: 0.0),
-                                  fontSize: isSmall ? 13 : 12,
+                                  fontSize: isSmall ? 16 : 14,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.w500,

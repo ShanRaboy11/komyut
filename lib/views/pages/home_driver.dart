@@ -100,18 +100,19 @@ class _DriverDashboardState extends State<DriverDashboard> {
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
-                              children: const [
+                              children: [
                                 Text(
                                   'Hi, Juan',
-                                  style: TextStyle(
+                                  style: GoogleFonts.manrope(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 24,
                                     color: Color.fromARGB(255, 255, 255, 255),
                                   ),
                                 ),
                                 Text(
                                   'Welcome back!',
                                   style: TextStyle(
+                                    fontSize: 20,
                                     color: Color.fromARGB(255, 255, 255, 255),
                                   ),
                                 ),
@@ -183,13 +184,12 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'QR Code',
-                                    style: TextStyle(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 26,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1F2937),
-                                      fontFamily: 'Manrope',
                                     ),
                                   ),
                                   GestureDetector(
@@ -221,12 +221,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                     color: const Color(0xFFF4E9FF),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Use your QR code for quick and secure payments',
-                                    style: TextStyle(
+                                    style: GoogleFonts.nunito(
                                       color: Color(0xFF5B53C2),
                                       fontSize: 12,
-                                      fontFamily: 'Nunito',
                                     ),
                                   ),
                                 ),
@@ -336,11 +335,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
                               ),
                               const SizedBox(height: 16),
 
-                              const Text(
+                              Text(
                                 'Use your QR for quick payments.',
-                                style: TextStyle(
+                                style: GoogleFonts.nunito(
                                   fontSize: 14,
-                                  fontFamily: 'Nunito',
                                   color: Color(0xFF6D6D6D),
                                 ),
                               ),
@@ -421,7 +419,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -446,9 +444,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
           // 🔹 Amount row with ₱ and value
           Row(
             children: [
-              const Text(
+              Text(
                 '₱ ',
-                style: TextStyle(
+                style: GoogleFonts.manrope(
                   color: Colors.white,
                   fontSize: 32,
                   fontWeight: FontWeight.normal,
@@ -457,7 +455,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               const SizedBox(width: 8),
               Text(
                 isBalanceVisible ? amount : '••••••',
-                style: const TextStyle(
+                style: GoogleFonts.manrope(
                   color: Colors.white,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,

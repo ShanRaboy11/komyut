@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -63,10 +64,9 @@ class CustomButton extends StatelessWidget {
       ),
     ];
 
-    final textStyle = TextStyle(
+    final textStyle = GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: FontWeight.bold,
-      fontFamily: 'Nunito',
     );
 
     // 🟣 Text-only variant
