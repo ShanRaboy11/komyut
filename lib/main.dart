@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:komyut/views/pages/privacypolicy.dart';
 import 'views/pages/landingpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

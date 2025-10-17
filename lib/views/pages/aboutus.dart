@@ -11,7 +11,7 @@ class AboutPage extends StatelessWidget {
     final isSmall = width < 400;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF7F4FF),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(

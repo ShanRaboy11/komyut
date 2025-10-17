@@ -11,7 +11,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     final horizontalPadding = width * 0.07;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF7F4FF),
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
