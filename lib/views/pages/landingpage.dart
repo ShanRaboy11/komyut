@@ -76,7 +76,8 @@ class LandingPage extends StatelessWidget {
 
             // Foreground content wrapped in SingleChildScrollView
             Center(
-              child: SingleChildScrollView( // Added SingleChildScrollView here
+              child: SingleChildScrollView(
+                // Added SingleChildScrollView here
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -100,7 +101,8 @@ class LandingPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const CreateAccountPage()),
+                            builder: (context) => const CreateAccountPage(),
+                          ),
                         );
                       },
                       isFilled: true,
@@ -114,7 +116,8 @@ class LandingPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const LoginPage()),
+                            builder: (context) => const LoginPage(),
+                          ),
                         );
                       },
                       isFilled: false,
