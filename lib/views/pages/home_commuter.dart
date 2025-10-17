@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
@@ -68,7 +69,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     final isSmallScreen = size.width < 400;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
+      padding: EdgeInsets.fromLTRB(30, 10, 30, 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -79,14 +80,20 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               SvgPicture.asset('assets/images/logo.svg', height: 80, width: 80),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: const [
+                children: [
                   Text(
                     'Hi, Naomi',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                   Text(
                     'Welcome back!',
-                    style: TextStyle(color: Color(0xFF8E4CB6)),
+                    style: GoogleFonts.manrope(
+                      color: Color(0xFF8E4CB6),
+                      fontSize: 18,
+                    ),
                   ),
                 ],
               ),
@@ -127,9 +134,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       child: Center(
                         child: Text(
                           'Wallet',
-                          style: TextStyle(
+                          style: GoogleFonts.manrope(
                             color: showWallet ? Colors.white : Colors.black87,
                             fontWeight: FontWeight.bold,
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -158,9 +166,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       child: Center(
                         child: Text(
                           'Points',
-                          style: TextStyle(
+                          style: GoogleFonts.manrope(
                             color: !showWallet ? Colors.white : Colors.black87,
                             fontWeight: FontWeight.bold,
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -239,7 +248,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     return Container(
       key: key,
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -249,9 +258,12 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             children: [
               Row(
                 children: [
-                  const Text(
+                  Text(
                     'Available Balance',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    style: GoogleFonts.nunito(
+                      color: Colors.white70,
+                      fontSize: 18,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   IconButton(
@@ -275,9 +287,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               const SizedBox(height: 15),
               Row(
                 children: [
-                  const Text(
+                  Text(
                     '₱ ',
-                    style: TextStyle(
+                    style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -286,7 +298,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   const SizedBox(width: 8),
                   Text(
                     _isBalanceVisible ? '500.00' : '••••••',
-                    style: const TextStyle(
+                    style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -330,9 +342,12 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             children: [
               Row(
                 children: [
-                  const Text(
+                  Text(
                     'Available Points',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    style: GoogleFonts.nunito(
+                      color: Colors.white70,
+                      fontSize: 18,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   IconButton(
@@ -364,7 +379,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   const SizedBox(width: 8),
                   Text(
                     _isPointsVisible ? '59 pts' : '••••••',
-                    style: const TextStyle(
+                    style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -411,16 +426,23 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Commute Analytics',
-                    style: TextStyle(
+                    style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
+                      fontSize: 20,
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text('This week', style: TextStyle(color: Color(0xFF8E4CB6))),
+                  Text(
+                    'This week',
+                    style: GoogleFonts.nunito(
+                      color: Color(0xFF8E4CB6),
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
               IconButton(
@@ -488,11 +510,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
-            Text(value, style: const TextStyle(color: Colors.black87)),
+            Text(value, style: GoogleFonts.nunito(color: Colors.black87)),
             if (subtitle != null)
-              Text(subtitle, style: const TextStyle(color: Colors.black54)),
+              Text(subtitle, style: GoogleFonts.nunito(color: Colors.black54)),
           ],
         ),
       ],
@@ -518,7 +543,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           Expanded(
             child: Text(
               'Get 50% off your next ride!\nUse Code: KOMYUTIE50',
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
             ),
           ),
           CustomButton(
@@ -543,7 +571,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      margin: EdgeInsets.fromLTRB(0, 0, 0, 30),
+      margin: EdgeInsets.fromLTRB(0, 0, 0, 40),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: gradientColors),
         borderRadius: BorderRadius.circular(16),
@@ -569,7 +597,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        title: Text(
+          title,
+          style: GoogleFonts.manrope(color: Colors.white, fontSize: 18),
+        ),
         trailing: const Icon(
           Icons.arrow_forward_ios,
           color: Colors.white,
