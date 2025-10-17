@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'profile.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -21,24 +22,37 @@ class AboutPage extends StatelessWidget {
           child: Column(
             children: [
               // --- Back Arrow + Title ---
-              Row(
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                  // Back button (aligned to the left)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfilePage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                    ),
                   ),
-                  Center(
-                    child: Text(
-                      "About Komyut",
-                      style: GoogleFonts.manrope(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+
+                  // Centered title
+                  Text(
+                    "About Us",
+                    style: GoogleFonts.manrope(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 20),
 
               // --- Logo ---

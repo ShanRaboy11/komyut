@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'personalinfo_commuter.dart';
+import 'aboutus.dart';
+import 'privacypolicy.dart';
 
 /*class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -122,21 +125,42 @@ class ProfilePage extends StatelessWidget {
                   icon: Icons.person_outline,
                   title: "Personal Info",
                   subtitle: "Manage your personal details",
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PersonalInfoPage(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 _ProfileCard(
                   icon: Icons.info_outline,
                   title: "About Us",
                   subtitle: "About Komyut",
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AboutPage(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 _ProfileCard(
                   icon: Icons.privacy_tip_outlined,
                   title: "Privacy Policy",
                   subtitle: "Privacy terms and conditions",
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyPolicyPage(),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 100), // space before bottom button
