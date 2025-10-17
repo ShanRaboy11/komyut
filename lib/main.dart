@@ -9,7 +9,11 @@ import 'views/services/auth_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
+   try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("⚠️ No .env file found — skipping dotenv load.");
+  }
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
