@@ -128,8 +128,8 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.25,
+                                              color: Colors.black.withValues(
+                                                alpha: 0.25,
                                               ),
                                               blurRadius: 8,
                                               offset: const Offset(0, 3),
@@ -153,7 +153,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                 style: TextStyle(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.white.withOpacity(0.0),
+                                      : Colors.white.withValues(alpha: 0.0),
                                   fontSize: isSmall ? 13 : 12,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
@@ -248,7 +248,7 @@ class _MovingCurvePainter extends CustomPainter {
     path.lineTo(0, size.height);
     path.close();
 
-    canvas.drawShadow(path, Colors.black.withOpacity(0.25), 6, true);
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.25), 6, true);
     canvas.drawPath(path, paint);
   }
 

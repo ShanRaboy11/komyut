@@ -565,7 +565,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

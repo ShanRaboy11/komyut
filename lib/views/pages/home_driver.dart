@@ -43,7 +43,6 @@ class DriverDashboard extends StatefulWidget {
 }
 
 class _DriverDashboardState extends State<DriverDashboard> {
-  bool _isVisible = true;
   bool _isBalanceVisible = true;
   bool _isEarningsVisible = true;
 
@@ -399,7 +398,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
       height: 150,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
@@ -506,16 +505,15 @@ class _DriverDashboardState extends State<DriverDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  child: Text(
-                    'Ratings',
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.left,
+                Text(
+                  'Ratings',
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
+                  textAlign: TextAlign.left,
                 ),
+
                 const SizedBox(height: 10),
                 Container(
                   alignment: Alignment.center,
@@ -579,15 +577,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  child: Text(
-                    'Reports',
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.left,
+                Text(
+                  'Reports',
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
+                  textAlign: TextAlign.left,
                 ),
                 const SizedBox(height: 10),
                 Container(
