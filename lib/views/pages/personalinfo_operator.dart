@@ -24,10 +24,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   final TextEditingController lastNameController = TextEditingController(
     text: "Dela Cruz",
   );
-  final TextEditingController CompanyController = TextEditingController(
+  final TextEditingController companyController = TextEditingController(
     text: "El Pardo Transport",
   );
-  final TextEditingController CompanyAddressController = TextEditingController(
+  final TextEditingController companyAddressController = TextEditingController(
     text: "Bulacao, Cebu City, Cebu 6000",
   );
 
@@ -106,11 +106,11 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
 
                 // --- Company Name ---
                 _buildLabel("Company/Business Name "),
-                _buildTextField(CompanyController),
+                _buildTextField(companyController),
 
                 // --- Company Address ---
                 _buildLabel("Company Address "),
-                _buildTextField(CompanyAddressController),
+                _buildTextField(companyAddressController),
               ],
             ),
           ),
