@@ -3,7 +3,6 @@ import '../widgets/button.dart';
 import '../widgets/logo.dart';
 import '../pages/create_account.dart';
 import '../pages/login.dart';
-import '../pages/qr_scan.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
