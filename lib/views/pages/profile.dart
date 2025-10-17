@@ -85,7 +85,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 30),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
