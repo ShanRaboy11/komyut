@@ -59,7 +59,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
@@ -71,7 +70,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   // HEADER SECTION
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(30),
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -156,200 +155,212 @@ class _DriverDashboardState extends State<DriverDashboard> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // MAIN QR DISPLAY AREA
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 255, 253, 253),
-                      borderRadius: const BorderRadius.all(Radius.circular(24)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(64),
-                          offset: const Offset(0, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(24),
+                  const SizedBox(height: 15),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 30.0, right: 30.0),
                     child: Column(
                       children: [
-                        // Header with Info Icon
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'QR Code',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1F2937),
-                                fontFamily: 'Manrope',
+                        // MAIN QR DISPLAY AREA
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 255, 253, 253),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(24),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(64),
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
                               ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  showTooltip = !showTooltip;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Icon(
-                                  Icons.info_outline,
-                                  size: 20,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (showTooltip)
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF4E9FF),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Use your QR code for quick and secure payments',
-                              style: TextStyle(
-                                color: Color(0xFF5B53C2),
-                                fontSize: 12,
-                                fontFamily: 'Nunito',
-                              ),
-                            ),
+                            ],
                           ),
-                        const SizedBox(height: 24),
-
-                        // QR Code Display Area
-                        DottedBorder(
-                          color: const Color(0xFFB945AA),
-                          strokeWidth: 1,
-                          dashPattern: const [6, 3], // dash length, gap length
-                          borderType: BorderType.RRect,
-                          radius: const Radius.circular(16),
-                          child: Container(
-                            height: 280,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color.fromARGB(255, 246, 238, 250),
-                                  Color(0xFFF4E9FF),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(child: _buildQRContent()),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Action Buttons
-                        Row(
-                          children: qrGenerated
-                              ? [
-                                  Expanded(
-                                    child: CustomButton(
-                                      text: 'Download',
-                                      icon: Icons.download_rounded,
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Download QR'),
-                                          ),
-                                        );
-                                      },
-                                      height: 45,
-                                      borderRadius: 20,
-                                      isFilled: true,
-                                      textColor: Colors.white,
-                                      fontSize: 16,
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              // Header with Info Icon
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'QR Code',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1F2937),
+                                      fontFamily: 'Manrope',
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: CustomButton(
-                                      text: 'Share',
-                                      icon: Icons.share_rounded,
-                                      isFilled: false,
-                                      outlinedFillColor: Colors.white,
-                                      textColor: Colors.black,
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Share QR'),
-                                          ),
-                                        );
-                                      },
-                                      height: 45,
-                                      borderRadius: 20,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ]
-                              : [
-                                  Expanded(
-                                    child: CustomButton(
-                                      text: 'Generate QR',
-                                      onPressed: isGenerating
-                                          ? () {}
-                                          : handleGenerateQR,
-                                      height: 45,
-                                      borderRadius: 20,
-                                      textColor: Colors.white,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: CustomButton(
-                                      text: 'Import',
-                                      isFilled: false,
-                                      outlinedFillColor: Colors.white,
-                                      textColor: Colors.black,
-                                      onPressed: handleImport,
-                                      height: 45,
-                                      borderRadius: 20,
-                                      fontSize: 16,
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        showTooltip = !showTooltip;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Icon(
+                                        Icons.info_outline,
+                                        size: 20,
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ),
                                 ],
-                        ),
-                        const SizedBox(height: 16),
+                              ),
+                              if (showTooltip)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4E9FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Use your QR code for quick and secure payments',
+                                    style: TextStyle(
+                                      color: Color(0xFF5B53C2),
+                                      fontSize: 12,
+                                      fontFamily: 'Nunito',
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 24),
 
-                        const Text(
-                          'Use your QR for quick payments.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Nunito',
-                            color: Color(0xFF6D6D6D),
+                              // QR Code Display Area
+                              DottedBorder(
+                                color: const Color(0xFFB945AA),
+                                strokeWidth: 1,
+                                dashPattern: const [
+                                  6,
+                                  3,
+                                ], // dash length, gap length
+                                borderType: BorderType.RRect,
+                                radius: const Radius.circular(16),
+                                child: Container(
+                                  height: 280,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color.fromARGB(255, 246, 238, 250),
+                                        Color(0xFFF4E9FF),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Center(child: _buildQRContent()),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Action Buttons
+                              Row(
+                                children: qrGenerated
+                                    ? [
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: 'Download',
+                                            icon: Icons.download_rounded,
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Download QR'),
+                                                ),
+                                              );
+                                            },
+                                            height: 45,
+                                            borderRadius: 20,
+                                            isFilled: true,
+                                            textColor: Colors.white,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: 'Share',
+                                            icon: Icons.share_rounded,
+                                            isFilled: false,
+                                            outlinedFillColor: Colors.white,
+                                            textColor: Colors.black,
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Share QR'),
+                                                ),
+                                              );
+                                            },
+                                            height: 45,
+                                            borderRadius: 20,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ]
+                                    : [
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: 'Generate QR',
+                                            onPressed: isGenerating
+                                                ? () {}
+                                                : handleGenerateQR,
+                                            height: 45,
+                                            borderRadius: 20,
+                                            textColor: Colors.white,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: 'Import',
+                                            isFilled: false,
+                                            outlinedFillColor: Colors.white,
+                                            textColor: Colors.black,
+                                            onPressed: handleImport,
+                                            height: 45,
+                                            borderRadius: 20,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              const Text(
+                                'Use your QR for quick payments.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Nunito',
+                                  color: Color(0xFF6D6D6D),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                  // ANALYTICS & FEEDBACK
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 30),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildAnalyticsCard()),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildFeedbackCard()),
+                        // ANALYTICS & FEEDBACK
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _buildAnalyticsCard()),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildFeedbackCard()),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -394,8 +405,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
     required VoidCallback onToggleVisibility,
   }) {
     return Container(
-      width: 200,
-      height: 150,
+      width: double.infinity,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
