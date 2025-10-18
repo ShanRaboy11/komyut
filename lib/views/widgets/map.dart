@@ -35,10 +35,20 @@ class _MapWidgetState extends State<MapWidget> {
           ),
           width: 40,
           height: 40,
-          child: const Icon(
-            Icons.location_on,
-            color: Colors.blue,
-            size: 40,
+          child: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF8E4CB6), // Light (top)
+                Color(0xFFB945AA), // Dark (bottom)
+              ],
+            ).createShader(bounds),
+            child: const Icon(
+              Icons.location_on,
+              color: Colors.white,
+              size: 40,
+            ),
           ),
         ),
       );
@@ -92,7 +102,8 @@ class _MapWidgetState extends State<MapWidget> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+          subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.example.app',
           maxZoom: 19,
         ),
@@ -102,7 +113,7 @@ class _MapWidgetState extends State<MapWidget> {
         RichAttributionWidget(
           attributions: [
             TextSourceAttribution(
-              'OpenStreetMap contributors',
+              '© OpenStreetMap contributors © CARTO',
               onTap: () {}, // Can add URL launcher here
             ),
           ],

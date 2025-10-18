@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class BookingBottomSheet extends StatelessWidget {
+class BookingBottomSheet extends StatefulWidget {
   final int passengerCount;
   final Function(int) onPassengerCountChanged;
   final VoidCallback onProceed;
@@ -13,49 +13,116 @@ class BookingBottomSheet extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BookingBottomSheet> createState() => _BookingBottomSheetState();
+}
+
+class _BookingBottomSheetState extends State<BookingBottomSheet> {
+  double _sheetPosition = 0; // 0 = fully expanded, positive = moved down
+  final double _maxDragDown = 400; // Maximum pixels to drag down
+  final double _minHeight = 120; // Minimum visible height when collapsed
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _sheetPosition += details.delta.dy;
+      if (_sheetPosition < 0) _sheetPosition = 0;
+      if (_sheetPosition > _maxDragDown) _sheetPosition = _maxDragDown;
+    });
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    // Snap to positions based on velocity or position
+    final velocity = details.velocity.pixelsPerSecond.dy;
+    
+    if (velocity > 500) {
+      // Fast swipe down - collapse
+      setState(() => _sheetPosition = _maxDragDown);
+    } else if (velocity < -500) {
+      // Fast swipe up - expand
+      setState(() => _sheetPosition = 0);
+    } else {
+      // Snap to nearest position
+      if (_sheetPosition > _maxDragDown / 2) {
+        setState(() => _sheetPosition = _maxDragDown);
+      } else {
+        setState(() => _sheetPosition = 0);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const DriverInfoCard(),
-          const SizedBox(height: 20),
-          const Text(
-            'How many are you?',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      bottom: -_sheetPosition,
+      left: 0,
+      right: 0,
+      child: GestureDetector(
+        onVerticalDragUpdate: _onVerticalDragUpdate,
+        onVerticalDragEnd: _onVerticalDragEnd,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, -2),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          PassengerCounter(
-            count: passengerCount,
-            onChanged: onPassengerCountChanged,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const DriverInfoCard(),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'How many are you?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    PassengerCounter(
+                      count: widget.passengerCount,
+                      onChanged: widget.onPassengerCountChanged,
+                    ),
+                    const SizedBox(height: 24),
+                    const TripDetailsSection(),
+                    const SizedBox(height: 20),
+                    const PaymentSection(),
+                    const SizedBox(height: 20),
+                    ProceedButton(onPressed: widget.onProceed),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          const TripDetailsSection(),
-          const SizedBox(height: 20),
-          const PaymentSection(),
-          const SizedBox(height: 20),
-          ProceedButton(onPressed: onProceed),
-          const SizedBox(height: 10),
-        ],
+        ),
       ),
     );
   }
@@ -336,13 +403,58 @@ class PaymentSection extends StatelessWidget {
   }
 }
 
-class ProceedButton extends StatelessWidget {
+class ProceedButton extends StatefulWidget {
   final VoidCallback onPressed;
 
   const ProceedButton({
     Key? key,
     required this.onPressed,
   }) : super(key: key);
+
+  @override
+  State<ProceedButton> createState() => _ProceedButtonState();
+}
+
+class _ProceedButtonState extends State<ProceedButton> {
+  double _dragPosition = 0;
+  bool _isDragging = false;
+  final double _buttonWidth = 70;
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _isDragging = true;
+      _dragPosition += details.delta.dx;
+      if (_dragPosition < 0) _dragPosition = 0;
+      
+      // Get max width (container width - button width)
+      final maxDrag = MediaQuery.of(context).size.width - 40 - _buttonWidth;
+      if (_dragPosition > maxDrag) _dragPosition = maxDrag;
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final maxDrag = MediaQuery.of(context).size.width - 40 - _buttonWidth;
+    
+    // If dragged more than 80% of the way, trigger action
+    if (_dragPosition > maxDrag * 0.8) {
+      widget.onPressed();
+      // Reset after a delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _dragPosition = 0;
+            _isDragging = false;
+          });
+        }
+      });
+    } else {
+      // Animate back to start
+      setState(() {
+        _dragPosition = 0;
+        _isDragging = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,37 +472,53 @@ class ProceedButton extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.credit_card, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text(
+      child: Stack(
+        children: [
+          // Text in center
+          Center(
+            child: Text(
               'Swipe to Proceed',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(_isDragging ? 0.5 : 1.0),
               ),
             ),
-          ],
-        ),
+          ),
+          // Draggable button
+          AnimatedPositioned(
+            duration: _isDragging 
+                ? Duration.zero 
+                : const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            left: _dragPosition + 4,
+            top: 4,
+            bottom: 4,
+            child: GestureDetector(
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              child: Container(
+                width: _buttonWidth,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Color(0xFF8E4CB6),
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
