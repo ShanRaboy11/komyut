@@ -188,6 +188,28 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     }
   }
 
+  // Helper method to get the correct home route based on user role
+  String _getHomeRouteForRole(String? userRole) {
+    if (userRole == null || userRole.isEmpty) {
+      debugPrint('⚠️ User role is null or empty, defaulting to commuter');
+      return '/home_commuter';
+    }
+    
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        return '/home_admin';
+      case 'commuter':
+        return '/home_commuter';
+      case 'driver':
+        return '/home_driver';
+      case 'operator':
+        return '/home_operator';
+      default:
+        debugPrint('⚠️ Unknown user role: $userRole, defaulting to commuter');
+        return '/home_commuter'; // Default fallback
+    }
+  }
+
   Future<void> _onVerifyCode() async {
     String otp = _otpControllers.map((controller) => controller.text).join();
 
@@ -258,29 +280,28 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           });
 
           if (result['success']) {
-            // Registration successful
-            // You can uncomment the SnackBar if you want a brief message before navigating
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   const SnackBar(
-            //     content: Text('Account created successfully!'),
-            //     backgroundColor: Colors.green,
-            //   ),
-            // );
+            // Get user role from registration provider using getField method
+            final userRole = registrationProvider.getField('role');
+            debugPrint('👤 User role: $userRole');
 
-            // Navigate to the SuccessPage
+            // Get the appropriate home route based on role
+            final homeRoute = _getHomeRouteForRole(userRole);
+            debugPrint('🏠 Navigating to: $homeRoute');
+
+            // Navigate to the SuccessPage with role-specific onClose callback
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => SuccessPage(
                   title: 'Registration Complete!',
-                  subtitle: 'Welcome to komyut!',
-
+                  subtitle: 'Welcome to komyut',
                   onClose: () {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    // Navigate to role-specific dashboard
+                    Navigator.pushReplacementNamed(context, homeRoute);
                   },
                 ),
               ),
-            ); // Semicolon for the Navigator.pushReplacement statement
+            );
           } else {
             // Registration failed
             ScaffoldMessenger.of(context).showSnackBar(

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
-// import '../pages/home.dart';
 import '../widgets/button.dart';
 import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
 import '../widgets/shake_widget.dart';
 import '../../utils/toast_utils.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -55,6 +55,57 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // Helper method to get the correct home route based on user role
+  String _getHomeRouteForRole(String? userRole) {
+    if (userRole == null || userRole.isEmpty) {
+      debugPrint('⚠️ User role is null or empty, defaulting to commuter');
+      return '/home_commuter';
+    }
+    
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        return '/home_admin';
+      case 'commuter':
+        return '/home_commuter';
+      case 'driver':
+        return '/home_driver';
+      case 'operator':
+        return '/home_operator';
+      default:
+        debugPrint('⚠️ Unknown user role: $userRole, defaulting to commuter');
+        return '/home_commuter';
+    }
+  }
+
+  // Fetch user role from Supabase profiles table
+  Future<String?> _fetchUserRole() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        debugPrint('⚠️ No authenticated user found');
+        return null;
+      }
+
+      debugPrint('🔍 Fetching profile for user ID: $userId');
+
+      final response = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
+
+      final role = response['role'] as String?;
+      debugPrint('✅ User role fetched: $role');
+      
+      return role;
+    } catch (e) {
+      debugPrint('❌ Error fetching user role: $e');
+      return null;
+    }
+  }
+
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
     final email = _emailController.text.trim();
@@ -64,9 +115,8 @@ class _LoginPageState extends State<LoginPage> {
       _emailShakeKey.currentState?.shake();
       _passwordShakeKey.currentState?.shake();
 
-      // UPDATED: Pass context to the toast utility
       ToastUtils.showCustomToast(
-        context, // Pass the context
+        context,
         'Please fill in both email and password.',
         Colors.redAccent,
       );
@@ -79,20 +129,38 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      // UPDATED: Pass context to the toast utility
+      // Fetch user role from database
+      final userRole = await _fetchUserRole();
+      
+      if (!mounted) return;
+
+      if (userRole == null) {
+        ToastUtils.showCustomToast(
+          context,
+          'Unable to retrieve user role. Please try again.',
+          Colors.redAccent,
+        );
+        return;
+      }
+
+      // Get the appropriate route based on role
+      final homeRoute = _getHomeRouteForRole(userRole);
+      debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
+
       ToastUtils.showCustomToast(
-        context, // Pass the context
+        context,
         'Login Successful!',
         Colors.green,
       );
-      // Navigator.pushReplacement(...);
+
+      // Navigate to role-specific dashboard
+      Navigator.pushReplacementNamed(context, homeRoute);
     } else {
       _emailShakeKey.currentState?.shake();
       _passwordShakeKey.currentState?.shake();
 
-      // UPDATED: Pass context to the toast utility
       ToastUtils.showCustomToast(
-        context, // Pass the context
+        context,
         authProvider.errorMessage ?? 'An unknown error occurred.',
         Colors.redAccent,
       );
@@ -281,7 +349,6 @@ class _LoginPageState extends State<LoginPage> {
                                 focusNode: _passwordFocusNode,
                                 obscureText: !_isPasswordVisible,
                                 style: const TextStyle(
-                                  // REMOVED: Error color logic
                                   color: Colors.white,
                                   fontFamily: 'Nunito',
                                 ),
@@ -299,7 +366,6 @@ class _LoginPageState extends State<LoginPage> {
                                     horizontal: 16,
                                     vertical: 20,
                                   ),
-                                  // REMOVED: Error border logic
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
                                     borderSide: const BorderSide(
@@ -345,7 +411,7 @@ class _LoginPageState extends State<LoginPage> {
                                   Row(
                                     children: [
                                       SizedBox(
-                                        width: 24, // Sized for easier tapping
+                                        width: 24,
                                         height: 24,
                                         child: Checkbox(
                                           value: _rememberMe,

@@ -6,6 +6,12 @@ import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/services/auth_provider.dart';
 
+// Import your dashboard pages here
+import 'views/pages/home_admin.dart';
+import 'views/pages/home_commuter.dart';
+import 'views/pages/home_driver.dart';
+import 'views/pages/home_operator.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -31,7 +37,6 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => RegistrationProvider()),
-
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
@@ -39,6 +44,13 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.purple),
         home: const LandingPage(),
+        // Add routes configuration here
+        routes: {
+          '/home_admin': (context) => const AdminDashboard(),
+          '/home_commuter': (context) => const CommuterDashboardPage(),
+          '/home_driver': (context) => const DriverDashboard(),
+          '/home_operator': (context) => const OperatorDashboard(),
+        },
       ),
     );
   }
