@@ -7,7 +7,16 @@ import '../widgets/map.dart';
 import '../widgets/booking.dart';
 
 class RideBookingScreen extends StatefulWidget {
-  const RideBookingScreen({Key? key}) : super(key: key);
+  final String? tripId;
+  final double? fareAmount;
+  final int? distanceMeters;
+
+  const RideBookingScreen({
+    super.key,
+    this.tripId,
+    this.fareAmount,
+    this.distanceMeters,
+  });
 
   @override
   State<RideBookingScreen> createState() => _RideBookingScreenState();
@@ -24,7 +33,13 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    
+    // Use the trip data
+    if (widget.tripId != null) {
+      debugPrint('Trip ID: ${widget.tripId}');
+      debugPrint('Fare: ${widget.fareAmount}');
+      debugPrint('Distance: ${widget.distanceMeters}m');
+    }
   }
 
   Future<void> _getCurrentLocation() async {

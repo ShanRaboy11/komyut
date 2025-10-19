@@ -95,8 +95,8 @@ class _MapWidgetState extends State<MapWidget> {
     return FlutterMap(
       mapController: widget.mapController,
       options: MapOptions(
-        center: initialCenter,
-        zoom: 15.0,
+        initialCenter: initialCenter,
+        initialZoom: 15.0,
         minZoom: 5.0,
         maxZoom: 18.0,
       ),
@@ -106,6 +106,8 @@ class _MapWidgetState extends State<MapWidget> {
           subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.example.app',
           maxZoom: 19,
+          // FIX: Add retinaMode to handle {r} placeholder
+          retinaMode: RetinaMode.isHighDensity(context),
         ),
         MarkerLayer(
           markers: _buildMarkers(),

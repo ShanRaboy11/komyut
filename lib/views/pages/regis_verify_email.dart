@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
@@ -280,9 +281,9 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           });
 
           if (result['success']) {
-            // Get user role from registration provider using getField method
-            final userRole = registrationProvider.getField('role');
-            debugPrint('👤 User role: $userRole');
+            // Get role from the registration result instead of database
+            final userRole = result['role'] as String?;
+            debugPrint('👤 User role from registration: $userRole');
 
             // Get the appropriate home route based on role
             final homeRoute = _getHomeRouteForRole(userRole);
@@ -296,6 +297,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                   title: 'Registration Complete!',
                   subtitle: 'Welcome to komyut',
                   onClose: () {
+                    // Clear registration data after successful navigation
+                    registrationProvider.clearRegistration();
                     // Navigate to role-specific dashboard
                     Navigator.pushReplacementNamed(context, homeRoute);
                   },
@@ -328,6 +331,40 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           ),
         );
       }
+    }
+  }
+
+  // Fetch user role directly from Supabase database
+  Future<String?> _fetchUserRoleFromDatabase() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        debugPrint('⚠️ No authenticated user found');
+        return null;
+      }
+
+      debugPrint('🔍 Fetching profile for user ID: $userId');
+
+      final response = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response == null) {
+        debugPrint('⚠️ No profile found for user');
+        return null;
+      }
+
+      final role = response['role'] as String?;
+      debugPrint('✅ User role fetched from database: $role');
+      
+      return role;
+    } catch (e) {
+      debugPrint('❌ Error fetching user role: $e');
+      return null;
     }
   }
 
