@@ -9,7 +9,7 @@ import 'views/services/auth_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-   try {
+  try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint("⚠️ No .env file found — skipping dotenv load.");
