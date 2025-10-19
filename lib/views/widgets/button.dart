@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -40,11 +41,7 @@ class CustomButton extends StatelessWidget {
   });
 
   static const Gradient _kGradient = LinearGradient(
-    colors: [
-      Color(0xFFB945AA),
-      Color(0xFF8E4CB6),
-      Color(0xFF5B53C2),
-    ],
+    colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -55,8 +52,9 @@ class CustomButton extends StatelessWidget {
     final double h = height;
 
     final BorderRadius actualOuterRadius = BorderRadius.circular(borderRadius);
-    final BorderRadius actualInnerRadius =
-        BorderRadius.circular(borderRadius > 2 ? borderRadius - 2 : 0);
+    final BorderRadius actualInnerRadius = BorderRadius.circular(
+      borderRadius > 2 ? borderRadius - 2 : 0,
+    );
 
     final List<BoxShadow> buttonShadow = [
       BoxShadow(
@@ -66,10 +64,9 @@ class CustomButton extends StatelessWidget {
       ),
     ];
 
-    final textStyle = TextStyle(
+    final textStyle = GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: FontWeight.bold,
-      fontFamily: 'Nunito',
     );
 
     // 🟣 Text-only variant
@@ -80,9 +77,7 @@ class CustomButton extends StatelessWidget {
           text,
           style: textStyle.copyWith(
             foreground: Paint()
-              ..shader = _kGradient.createShader(
-                Rect.fromLTWH(0, 0, w, h),
-              ),
+              ..shader = _kGradient.createShader(Rect.fromLTWH(0, 0, w, h)),
           ),
         ),
       );
@@ -90,55 +85,53 @@ class CustomButton extends StatelessWidget {
 
     // 🟢 Filled gradient button (with optional icon)
     if (isFilled) {
-  return SizedBox(
-    width: w,
-    height: h,
-    child: Material(
-      color: Colors.transparent,
-      elevation: hasShadow ? 4 : 0,
-      borderRadius: actualOuterRadius,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: fillColor,
-          gradient: fillColor == null ? _kGradient : null,
+      return SizedBox(
+        width: w,
+        height: h,
+        child: Material(
+          color: Colors.transparent,
+          elevation: hasShadow ? 4 : 0,
           borderRadius: actualOuterRadius,
-          boxShadow: hasShadow ? buttonShadow : null,
-        ),
-        child: InkWell(
-          borderRadius: actualOuterRadius,
-          onTap: onPressed,
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (imagePath != null) ...[
-                  SvgPicture.asset(
-                    imagePath!,
-                    height: 20,
-                    width: 20,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                if (icon != null) ...[
-                  Icon(
-                    icon,
-                    color: textColor ?? Colors.white,
-                    size: fontSize + 2,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  text,
-                  style: textStyle.copyWith(
-                    color: textColor,
-                    foreground: textColor == null
-                        ? (Paint()
-                          ..shader = _kGradient.createShader(
-                            Rect.fromLTWH(0, 0, w, h),
-                          ))
-                        : null,
-                  ),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: fillColor,
+              gradient: fillColor == null ? _kGradient : null,
+              borderRadius: actualOuterRadius,
+              boxShadow: hasShadow ? buttonShadow : null,
+            ),
+            child: InkWell(
+              borderRadius: actualOuterRadius,
+              onTap: onPressed,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (imagePath != null) ...[
+                      SvgPicture.asset(imagePath!, height: 20, width: 20),
+                      const SizedBox(width: 6),
+                    ],
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        color: textColor ?? Colors.white,
+                        size: fontSize + 2,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      text,
+                      style: textStyle.copyWith(
+                        color: textColor,
+                        foreground: textColor == null
+                            ? (Paint()
+                                ..shader = _kGradient.createShader(
+                                  Rect.fromLTWH(0, 0, w, h),
+                                ))
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -180,9 +173,9 @@ class CustomButton extends StatelessWidget {
                     color: textColor,
                     foreground: textColor == null
                         ? (Paint()
-                          ..shader = _kGradient.createShader(
-                            Rect.fromLTWH(0, 0, w, h),
-                          ))
+                            ..shader = _kGradient.createShader(
+                              Rect.fromLTWH(0, 0, w, h),
+                            ))
                         : null,
                   ),
                 ),

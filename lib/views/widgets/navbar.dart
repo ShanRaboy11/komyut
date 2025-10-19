@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AnimatedBottomNavBar extends StatefulWidget {
   final List<Widget> pages;
@@ -58,15 +59,14 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: widget.pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: widget.pages),
       bottomNavigationBar: AnimatedBuilder(
         animation: _animation,
         builder: (context, _) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0.0),// ⬅ horizontal padding added
+            padding: const EdgeInsets.symmetric(
+              horizontal: 0.0,
+            ), // ⬅ horizontal padding added
             child: CustomPaint(
               painter: _MovingCurvePainter(
                 colorStops: const [
@@ -90,7 +90,8 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
 
                     return Expanded(
                       child: GestureDetector(
-                        behavior: HitTestBehavior.translucent, // 👈 makes tapping easier
+                        behavior: HitTestBehavior
+                            .translucent, // 👈 makes tapping easier
                         onTap: () => _onItemTapped(index),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -102,7 +103,10 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                 duration: const Duration(milliseconds: 400),
                                 curve: Curves.easeInOutCubic,
                                 transform: Matrix4.translationValues(
-                                    0, isSelected ? -25 : 0, 0),
+                                  0,
+                                  isSelected ? -25 : 0,
+                                  0,
+                                ),
                                 child: Container(
                                   width: isSelected ? 44 : 40,
                                   height: isSelected ? 44 : 40,
@@ -125,8 +129,9 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color:
-                                                  Colors.black.withOpacity(0.25),
+                                              color: Colors.black.withValues(
+                                                alpha: 0.25,
+                                              ),
                                               blurRadius: 8,
                                               offset: const Offset(0, 3),
                                             ),
@@ -146,18 +151,20 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                               AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeInOutCubic,
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.white.withOpacity(0.0),
-                                  fontSize: isSmall ? 13 : 12,
+                                      : Colors.white.withValues(alpha: 0.0),
+                                  fontSize: isSmall ? 20 : 14,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.w500,
                                 ),
                                 child: Transform.translate(
-                                  offset:
-                                      const Offset(0, -8), // lift label a bit
+                                  offset: const Offset(
+                                    0,
+                                    -8,
+                                  ), // lift label a bit
                                   child: Text(item.label),
                                 ),
                               ),
@@ -220,28 +227,35 @@ class _MovingCurvePainter extends CustomPainter {
 
     // 👇 Centered, smooth curve
     path.quadraticBezierTo(
-        centerX - notchWidth / 2, 0, centerX - notchWidth / 2 + 6, 10);
+      centerX - notchWidth / 2,
+      0,
+      centerX - notchWidth / 2 + 6,
+      10,
+    );
     path.arcToPoint(
       Offset(centerX + notchWidth / 2 - 6, 10),
       radius: const Radius.circular(notchRadius),
       clockwise: false,
     );
     path.quadraticBezierTo(
-        centerX + notchWidth / 2, 0, centerX + notchWidth / 2 + 10, 0);
+      centerX + notchWidth / 2,
+      0,
+      centerX + notchWidth / 2 + 10,
+      0,
+    );
 
     path.lineTo(size.width, 0);
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();
 
-    canvas.drawShadow(path, Colors.black.withOpacity(0.25), 6, true);
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.25), 6, true);
     canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(covariant _MovingCurvePainter oldDelegate) => true;
 }
-
 
 /*class NavBarCommuter extends StatelessWidget {
   const NavBarCommuter ({super.key});
