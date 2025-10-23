@@ -1,42 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'personalinfo_commuter.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
-import '../widgets/navbar.dart';
-import '../pages/home_commuter.dart';
 
-class CommuterProfileNav extends StatefulWidget {
-  const CommuterProfileNav({super.key});
-  @override
-  State<CommuterProfileNav> createState() => _CommuterProfileNavState();
-}
-
-class _CommuterProfileNavState extends State<CommuterProfileNav> {
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        CommuterDashboardPage(), // Home Page
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
-        Center(child: Text("🔔 Notifications")),
-        CommuterProfilePage(),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
-
-// ------------------- Dashboard Page -------------------
 class CommuterProfilePage extends StatefulWidget {
   const CommuterProfilePage({super.key});
   @override
@@ -55,7 +23,7 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
           SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: width * 0.07,
-              vertical: width * 0.12,
+              vertical: 20,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -6,11 +6,20 @@ class NotificationPage extends StatefulWidget {
   const NotificationPage({Key? key}) : super(key: key);
 
   @override
-  State<NotificationPage> createState() => _NotificationPageState();
+  State<NotificationPage> createState() => NotificationPageState();
 }
 
-class _NotificationPageState extends State<NotificationPage>
+class NotificationPageState extends State<NotificationPage>
     with SingleTickerProviderStateMixin {
+  void resetToDefault() {
+    setState(() {
+      activeTab = 'Trips';
+      for (var n in allNotifications) {
+        n.isRead = n.isRead;
+      }
+    });
+  }
+
   final Color primary1 = const Color(0xFF9C6BFF);
   final List<String> tabs = ['Trips', 'Wallet', 'Others'];
 
@@ -117,27 +126,30 @@ class _NotificationPageState extends State<NotificationPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       floatingActionButton: hasUnread
-          ? FloatingActionButton.extended(
-              backgroundColor: primary1,
-              onPressed: () {
-                setState(() {
-                  for (var n in filtered) {
-                    n.isRead = true;
-                  }
-                });
-              },
-              label: Row(
-                children: [
-                  const Icon(Icons.done_all_rounded, color: Colors.white),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Mark all as read",
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 100),
+              child: FloatingActionButton.extended(
+                backgroundColor: primary1,
+                onPressed: () {
+                  setState(() {
+                    for (var n in filtered) {
+                      n.isRead = true;
+                    }
+                  });
+                },
+                label: Row(
+                  children: [
+                    const Icon(Icons.done_all_rounded, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Mark all as read",
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             )
           : null,
@@ -227,7 +239,7 @@ class _NotificationPageState extends State<NotificationPage>
                           _buildSectionList(grouped['Older']!, olderMode: true),
                           const SizedBox(height: 18),
                         ],
-                        const SizedBox(height: 80),
+                        const SizedBox(height: 50),
                       ],
                     ),
                   ),

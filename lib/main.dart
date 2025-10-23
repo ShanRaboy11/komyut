@@ -5,7 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/services/auth_provider.dart';
-import 'views/pages/profile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,8 +38,7 @@ class MyApp extends StatelessWidget {
         title: 'KOMYUT',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.purple),
-        //home: const LandingPage(),
-        home: CommuterProfileNav(),
+        home: const LandingPage(),
       ),
     );
   }
