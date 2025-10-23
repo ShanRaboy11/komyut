@@ -1,4 +1,4 @@
-// lib/pages/driver_dashboard.dart - UPDATED VERSION
+// lib/pages/driver_dashboard.dart - FINAL FIXED VERSION
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +7,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../services/qr_service.dart';
-import './gr_generate.dart';
+import 'qr_generate.dart'; 
 
 class DriverDashboardNav extends StatefulWidget {
   const DriverDashboardNav({super.key});
@@ -47,12 +47,14 @@ class DriverDashboard extends StatefulWidget {
 
 class _DriverDashboardState extends State<DriverDashboard> {
   final QRService _qrService = QRService();
+  final GlobalKey _qrKey = GlobalKey();
   
   bool _isBalanceVisible = true;
   bool _isEarningsVisible = true;
   bool showTooltip = false;
   bool qrGenerated = false;
   bool isGenerating = false;
+  bool _isDownloading = false;
   String? currentQRCode;
   Map<String, dynamic>? qrData;
 
@@ -74,15 +76,33 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   void _navigateToQRGeneration() {
+    // Navigate to the wrapper that includes the navbar
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const DriverQRGeneratePage(),
+        builder: (context) => const DriverQRGenerateNav(),
       ),
     ).then((_) {
       // Refresh QR code status after returning
       _loadCurrentQR();
     });
+  }
+
+  Future<void> _downloadQRFromDashboard() async {
+    if (currentQRCode == null) return;
+
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      // Navigate to QR page for download (it has the full QR display)
+      _navigateToQRGeneration();
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+    }
   }
 
   @override
@@ -221,9 +241,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                   Text(
                                     'QR Code',
                                     style: GoogleFonts.manrope(
-                                      fontSize: 26,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1F2937),
+                                      fontSize: 20,
                                     ),
                                   ),
                                   GestureDetector(
@@ -231,180 +250,203 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                       setState(() {
                                         showTooltip = !showTooltip;
                                       });
+                                      Future.delayed(
+                                          const Duration(seconds: 3), () {
+                                        if (mounted) {
+                                          setState(() {
+                                            showTooltip = false;
+                                          });
+                                        }
+                                      });
                                     },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Icon(
-                                        Icons.info_outline,
-                                        size: 20,
-                                        color: Colors.grey.shade600,
-                                      ),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        const Icon(
+                                          Icons.info_outline_rounded,
+                                          color: Color(0xFF8E4CB6),
+                                          size: 24,
+                                        ),
+                                        if (showTooltip)
+                                          Positioned(
+                                            top: -60,
+                                            right: -20,
+                                            child: Container(
+                                              width: 200,
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black87,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                'Show your QR to passengers for easy payment',
+                                                style: GoogleFonts.nunito(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                              if (showTooltip)
-                                Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.blue[200]!,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.lightbulb_outline,
-                                        size: 20,
-                                        color: Colors.blue[700],
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Generate a QR code for passengers to scan and pay their fare',
-                                          style: GoogleFonts.nunito(
-                                            fontSize: 13,
-                                            color: Colors.blue[900],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 16),
 
-                              // QR Code Area
-                              if (qrGenerated) ...[
-                                // QR Code Generated State
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFF8E4CB6).withOpacity(0.1),
-                                        const Color(0xFFB945AA).withOpacity(0.1),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: const Color(0xFF8E4CB6).withOpacity(0.3),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.qr_code_2_rounded,
-                                        size: 80,
-                                        color: const Color(0xFF8E4CB6),
+                              // QR Code Display or Placeholder
+                              if (!qrGenerated)
+                                // No QR Generated Yet - Show Placeholder
+                                GestureDetector(
+                                  onTap: _navigateToQRGeneration,
+                                  child: DottedBorder(
+                                    color: const Color(0xFF8E4CB6),
+                                    strokeWidth: 2,
+                                    dashPattern: const [8, 4],
+                                    borderType: BorderType.RRect,
+                                    radius: const Radius.circular(16),
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 240,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(16),
                                       ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'QR Code Active',
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF1F2937),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Ready for scanning',
-                                        style: GoogleFonts.nunito(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                      if (currentQRCode != null) ...[
-                                        const SizedBox(height: 12),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.qr_code_2_rounded,
+                                            size: 80,
+                                            color: Colors.grey[400],
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            currentQRCode!.length > 30
-                                                ? '${currentQRCode!.substring(0, 30)}...'
-                                                : currentQRCode!,
-                                            style: GoogleFonts.sourceCodePro(
-                                              fontSize: 10,
-                                              color: Colors.grey[700],
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Tap to generate\nyour QR code',
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.nunito(
+                                              color: Colors.grey[600],
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ] else ...[
-                                // No QR Code State
-                                DottedBorder(
-                                  color: Colors.grey.shade300,
-                                  strokeWidth: 2,
-                                  dashPattern: const [8, 4],
-                                  borderType: BorderType.RRect,
-                                  radius: const Radius.circular(16),
+                                )
+                              else
+                                // QR Code Generated - Show Preview
+                                GestureDetector(
+                                  onTap: _navigateToQRGeneration,
                                   child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 40,
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFF8E4CB6)
+                                              .withValues(alpha: 0.1),
+                                          const Color(0xFFB945AA)
+                                              .withValues(alpha: 0.1),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: const Color(0xFF8E4CB6)
+                                            .withValues(alpha: 0.3),
+                                        width: 2,
+                                      ),
                                     ),
                                     child: Column(
                                       children: [
-                                        Icon(
-                                          Icons.qr_code_scanner_rounded,
-                                          size: 60,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'No QR Code',
-                                          style: GoogleFonts.manrope(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey.shade600,
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            Icons.qr_code_2_rounded,
+                                            size: 120,
+                                            color: const Color(0xFF8E4CB6),
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.1),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle_rounded,
+                                                color: Colors.green,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'QR Code Active',
+                                                style: GoogleFonts.manrope(
+                                                  color: Colors.green,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
                                         Text(
-                                          'Generate to start accepting payments',
+                                          'Tap to view full QR code',
                                           style: GoogleFonts.nunito(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade500,
+                                            color: const Color(0xFF8E4CB6),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              ],
 
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 16),
 
-                              // Generate/View QR Button
-                              CustomButton(
-                                text: qrGenerated ? "View QR Code" : "Generate QR",
-                                onPressed: _navigateToQRGeneration,
-                                isFilled: true,
-                                fillColor: const Color(0xFF8E4CB6),
-                                textColor: Colors.white,
+                              // Action Button
+                              SizedBox(
                                 width: double.infinity,
-                                height: 50,
-                                borderRadius: 30,
-                                fontSize: 16,
+                                child: CustomButton(
+                                  text: qrGenerated
+                                      ? 'View QR Code'
+                                      : 'Generate QR Code',
+                                  onPressed: _navigateToQRGeneration,
+                                  isFilled: true,
+                                  textColor: Colors.white,
+                                  width: double.infinity,
+                                  height: 50,
+                                  borderRadius: 30,
+                                  fontSize: 16,
+                                ),
                               ),
                             ],
                           ),
@@ -412,12 +454,12 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
                         const SizedBox(height: 15),
 
-                        // Analytics Card
+                        // ANALYTICS CARD
                         _buildAnalyticsCard(),
 
                         const SizedBox(height: 15),
 
-                        // Feedback Card
+                        // FEEDBACK CARD
                         _buildFeedbackCard(),
 
                         const SizedBox(height: 30),
