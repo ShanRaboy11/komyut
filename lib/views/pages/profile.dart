@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'personalinfo_commuter.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
+import '../widgets/navbar.dart';
+import '../pages/home_commuter.dart';
 
-/*class CommuterProfileNav extends StatefulWidget {
+class CommuterProfileNav extends StatefulWidget {
   const CommuterProfileNav({super.key});
   @override
   State<CommuterProfileNav> createState() => _CommuterProfileNavState();
 }
+
 class _CommuterProfileNavState extends State<CommuterProfileNav> {
   @override
   Widget build(BuildContext context) {
@@ -19,7 +23,7 @@ class _CommuterProfileNavState extends State<CommuterProfileNav> {
         Center(child: Text("📋 Activity")),
         Center(child: Text("✍️ QR Scan")),
         Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+        CommuterProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -31,17 +35,15 @@ class _CommuterProfileNavState extends State<CommuterProfileNav> {
     );
   }
 }
+
 // ------------------- Dashboard Page -------------------
 class CommuterProfilePage extends StatefulWidget {
   const CommuterProfilePage({super.key});
   @override
   State<CommuterProfilePage> createState() => _CommuterProfilePageState();
 }
-class _CommuterProfilePageState extends State<CommuterProfilePage> {
-  */
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
 
+class _CommuterProfilePageState extends State<CommuterProfilePage> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
