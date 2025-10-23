@@ -5,12 +5,12 @@ import 'personalinfo_commuter.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
 
-/*class CommuterDashboardNav extends StatefulWidget {
-  const CommuterDashboardNav({super.key});
+/*class CommuterProfileNav extends StatefulWidget {
+  const CommuterProfileNav({super.key});
   @override
-  State<CommuterDashboardNav> createState() => _CommuterDashboardNavState();
+  State<CommuterProfileNav> createState() => _CommuterProfileNavState();
 }
-class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
+class _CommuterProfileNavState extends State<CommuterProfileNav> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
@@ -32,12 +32,12 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
   }
 }
 // ------------------- Dashboard Page -------------------
-class CommuterDashboardPage extends StatefulWidget {
-  const CommuterDashboardPage({super.key});
+class CommuterProfilePage extends StatefulWidget {
+  const CommuterProfilePage({super.key});
   @override
-  State<CommuterDashboardPage> createState() => _CommuterDashboardPageState();
+  State<CommuterProfilePage> createState() => _CommuterProfilePageState();
 }
-class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
+class _CommuterProfilePageState extends State<CommuterProfilePage> {
   */
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});

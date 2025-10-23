@@ -21,7 +21,7 @@ class NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // primary border color
-    final Color borderColor = const Color(0xFF9C6BFF);
+    final Color borderColor = const Color(0xFF8E4CB6);
 
     final Map<String, Map<String, dynamic>> variants = {
       'trips': {
@@ -52,17 +52,16 @@ class NotificationCard extends StatelessWidget {
     };
 
     final selected = variants[variant.toLowerCase()] ?? variants['general']!;
-    final Color cardColor = isRead ? const Color(0xFFF6F3FF) : Colors.white;
+    final Color cardColor = isRead ? Colors.transparent : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         decoration: BoxDecoration(
           color: cardColor,
-          border: Border.all(color: borderColor, width: 1.4),
+          border: Border.all(color: borderColor, width: 1.0),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -82,7 +81,7 @@ class NotificationCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 15),
 
             // Texts
             Expanded(
@@ -91,9 +90,9 @@ class NotificationCard extends StatelessWidget {
                 children: [
                   Text(
                     description,
-                    style: GoogleFonts.manrope(
+                    style: GoogleFonts.nunito(
                       fontSize: 15,
-                      fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
+                      fontWeight: isRead ? FontWeight.w400 : FontWeight.w700,
                       color: Colors.black87,
                     ),
                   ),
