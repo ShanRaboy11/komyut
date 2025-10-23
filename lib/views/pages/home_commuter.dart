@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import './qr_scan.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -17,9 +18,9 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
       pages: const [
-        CommuterDashboardPage(), // Home Page
+        CommuterDashboardPage(), 
         Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
+        QRScannerScreen(),
         Center(child: Text("🔔 Notifications")),
         Center(child: Text("👤 Profile")),
       ],

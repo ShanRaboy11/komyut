@@ -68,7 +68,7 @@ class RegistrationCommuterPersonalInfoState
         setState(() {
           // Capitalize first letter for display
           final cat = data['category'].toString();
-          _selectedCategory = cat == 'regular' ? 'Regular' : 'Discounted';
+          _selectedCategory = cat == 'regular' ? 'regular' : 'Discounted';
         });
       }
       if (data['id_proof_path'] != null) {
@@ -388,10 +388,10 @@ class RegistrationCommuterPersonalInfoState
                         children: [
                           OptionCard(
                             title: 'Regular',
-                            isSelected: _selectedCategory == 'Regular',
+                            isSelected: _selectedCategory == 'regular',
                             onTap: () {
                               setState(() {
-                                _selectedCategory = 'Regular';
+                                _selectedCategory = 'regular';
                                 _idProofFile = null;
                                 _uploadedFileName = null;
                               });

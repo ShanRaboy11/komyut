@@ -48,6 +48,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     if (barcodes.isNotEmpty) {
       final String? code = barcodes.first.rawValue;
       if (code != null) {
+        debugPrint('📱 QR Code detected: $code');
         setState(() {
           isScanning = false;
           _isProcessing = true;
@@ -62,16 +63,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     _animationController.stop();
     
     try {
+      debugPrint('🔍 Processing QR code: $qrCode');
+      debugPrint('🔍 QR code length: ${qrCode.length}');
+      debugPrint('🔍 QR code type: ${qrCode.runtimeType}');
+      
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
 
       if (userId == null) {
         _showError('Please log in to continue');
-        setState(() {
-          isScanning = true;
-          _isProcessing = false;
-        });
-        _animationController.repeat(reverse: true);
+        _resetScanner();
         return;
       }
 
@@ -84,178 +85,231 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
 
       if (profileResponse == null) {
         _showError('User profile not found. Please complete registration.');
-        setState(() {
-          isScanning = true;
-          _isProcessing = false;
-        });
-        _animationController.repeat(reverse: true);
+        _resetScanner();
         return;
       }
 
       final profileId = profileResponse['id'] as String;
+      debugPrint('✅ Profile ID: $profileId');
 
-      // Get driver info from QR code
+      // ✅ FIRST: Check what QR codes exist in the database
+      debugPrint('🔍 Querying drivers table for QR code...');
+      
+      // Query with exact match
       final driverResponse = await supabase
           .from('drivers')
-          .select('id, route_code, profile_id')
+          .select('''
+            id, 
+            route_id,
+            profile_id,
+            current_qr,
+            routes:route_id (
+              id,
+              code,
+              name
+            )
+          ''')
           .eq('current_qr', qrCode)
           .maybeSingle();
 
+      debugPrint('📊 Query result: ${driverResponse != null ? "Found driver" : "No driver found"}');
+      
+      if (driverResponse != null) {
+        debugPrint('✅ Driver data: $driverResponse');
+        debugPrint('✅ Stored QR in DB: ${driverResponse['current_qr']}');
+        debugPrint('✅ Scanned QR: $qrCode');
+        debugPrint('✅ QR codes match: ${driverResponse['current_qr'] == qrCode}');
+      }
+
       if (driverResponse == null) {
+        // ✅ DIAGNOSTIC: Try to find ANY QR codes in the database
+        debugPrint('❌ No driver found with exact match');
+        debugPrint('🔍 Checking all QR codes in database...');
+        
+        final allDrivers = await supabase
+            .from('drivers')
+            .select('id, current_qr')
+            .not('current_qr', 'is', null)
+            .limit(5);
+        
+        debugPrint('📊 Sample QR codes in database:');
+        for (var driver in allDrivers) {
+          debugPrint('   - Driver ${driver['id']}: ${driver['current_qr']}');
+        }
+        
         _showError('Invalid QR code. Please scan a valid driver QR code.');
-        setState(() {
-          isScanning = true;
-          _isProcessing = false;
-        });
-        _animationController.repeat(reverse: true);
+        _resetScanner();
         return;
       }
 
       final driverId = driverResponse['id'] as String;
-      final routeCode = driverResponse['route_code'] as String?;
+      final routeId = driverResponse['route_id'] as String?;
+      final routeData = driverResponse['routes'];
+      final routeCode = routeData?['code'] as String?;
+      
+      debugPrint('✅ Driver found: $driverId');
+      debugPrint('✅ Route ID: $routeId');
+      debugPrint('✅ Route Code: $routeCode');
 
       // Check for existing ongoing trip
       final existingTrip = await supabase
           .from('trips')
-          .select('id, origin_stop_id, started_at, driver_id')
+          .select('id, origin_stop_id, started_at, driver_id, route_id')
           .eq('created_by_profile_id', profileId)
           .eq('status', 'ongoing')
           .maybeSingle();
 
       if (existingTrip != null) {
+        debugPrint('🔄 Found existing trip: ${existingTrip['id']}');
         // SECOND SCAN - Arrival at destination
         await _handleArrivalScan(
           existingTrip['id'],
           existingTrip['origin_stop_id'],
+          existingTrip['route_id'],
           qrCode,
-          routeCode,
           profileId,
         );
       } else {
+        debugPrint('🚌 First scan - Creating new trip');
         // FIRST SCAN - Boarding/Takeoff
-        await _handleTakeoffScan(driverId, routeCode, profileId, qrCode);
+        await _handleTakeoffScan(driverId, routeId, profileId, qrCode);
       }
-    } catch (e) {
-      debugPrint('Error handling scanned code: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling scanned code: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       _showError('Error: ${e.toString()}');
-      setState(() {
-        isScanning = true;
-        _isProcessing = false;
-      });
-      _animationController.repeat(reverse: true);
+      _resetScanner();
     }
+  }
+
+  void _resetScanner() {
+    setState(() {
+      isScanning = true;
+      _isProcessing = false;
+    });
+    _animationController.repeat(reverse: true);
   }
 
   Future<void> _handleTakeoffScan(
     String driverId,
-    String? routeCode,
+    String? routeId,
     String profileId,
     String qrCode,
   ) async {
     final supabase = Supabase.instance.client;
 
-    // Get route_id from route_code
-    String? routeId;
-    if (routeCode != null) {
-      final routeResponse = await supabase
-          .from('routes')
-          .select('id')
-          .eq('code', routeCode)
-          .maybeSingle();
-      routeId = routeResponse?['id'];
+    debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
+
+    try {
+      // Create trip with 'ongoing' status
+      final result = await supabase.from('trips').insert({
+        'driver_id': driverId,
+        'route_id': routeId,
+        'created_by_profile_id': profileId,
+        'status': 'ongoing',
+        'started_at': DateTime.now().toIso8601String(),
+        'metadata': {
+          'takeoff_qr': qrCode,
+        },
+      }).select().single();
+
+      debugPrint('✅ Trip created successfully: ${result['id']}');
+
+      if (!mounted) return;
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Boarding recorded! Scan again when you arrive.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // Return to previous screen
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint('❌ Error creating trip: $e');
+      _showError('Failed to create trip: ${e.toString()}');
+      _resetScanner();
     }
-
-    // Create trip with 'ongoing' status
-    await supabase.from('trips').insert({
-      'driver_id': driverId,
-      'route_id': routeId,
-      'created_by_profile_id': profileId,
-      'status': 'ongoing',
-      'started_at': DateTime.now().toIso8601String(),
-      'metadata': {
-        'takeoff_qr': qrCode,
-      },
-    });
-
-    if (!mounted) return;
-
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ Boarding recorded! Scan again when you arrive.'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
-      ),
-    );
-
-    // Return to previous screen
-    Navigator.pop(context);
   }
 
   Future<void> _handleArrivalScan(
     String tripId,
     String? originStopId,
+    String? routeId,
     String qrCode,
-    String? routeCode,
     String profileId,
   ) async {
     final supabase = Supabase.instance.client;
 
-    // Get destination stop (for now, we'll use a placeholder approach)
-    // You might want to show a stop selection UI here
-    String? destinationStopId;
-    if (routeCode != null && originStopId != null) {
-      // Get the next stop in sequence after origin
-      final originStop = await supabase
-          .from('route_stops')
-          .select('sequence, route_id')
-          .eq('id', originStopId)
-          .maybeSingle();
+    debugPrint('🏁 Completing trip: $tripId');
 
-      if (originStop != null) {
-        final nextStop = await supabase
+    try {
+      // Get destination stop (for now, we'll use a placeholder approach)
+      String? destinationStopId;
+      if (routeId != null && originStopId != null) {
+        // Get the next stop in sequence after origin
+        final originStop = await supabase
             .from('route_stops')
-            .select('id')
-            .eq('route_id', originStop['route_id'])
-            .gt('sequence', originStop['sequence'])
-            .order('sequence')
-            .limit(1)
+            .select('sequence, route_id')
+            .eq('id', originStopId)
             .maybeSingle();
-        
-        destinationStopId = nextStop?['id'];
+
+        if (originStop != null) {
+          final nextStop = await supabase
+              .from('route_stops')
+              .select('id')
+              .eq('route_id', originStop['route_id'])
+              .gt('sequence', originStop['sequence'])
+              .order('sequence')
+              .limit(1)
+              .maybeSingle();
+          
+          destinationStopId = nextStop?['id'];
+        }
       }
-    }
 
-    // Calculate distance and fare (you'll need to implement fare calculation logic)
-    // For now, using placeholder values
-    const int distanceMeters = 5000; // 5km placeholder
-    const double fareAmount = 15.00; // Placeholder fare
+      // Calculate distance and fare
+      const int distanceMeters = 5000; // 5km placeholder
+      const double fareAmount = 15.00; // Placeholder fare
 
-    // Update trip to completed
-    await supabase.from('trips').update({
-      'destination_stop_id': destinationStopId,
-      'distance_meters': distanceMeters,
-      'fare_amount': fareAmount,
-      'status': 'completed',
-      'ended_at': DateTime.now().toIso8601String(),
-      'metadata': {
-        'arrival_qr': qrCode,
-      },
-    }).eq('id', tripId);
+      debugPrint('📍 Destination stop: $destinationStopId');
+      debugPrint('💰 Fare: ₱$fareAmount');
 
-    if (!mounted) return;
+      // Update trip to completed
+      await supabase.from('trips').update({
+        'destination_stop_id': destinationStopId,
+        'distance_meters': distanceMeters,
+        'fare_amount': fareAmount,
+        'status': 'completed',
+        'ended_at': DateTime.now().toIso8601String(),
+        'metadata': {
+          'arrival_qr': qrCode,
+        },
+      }).eq('id', tripId);
 
-    // Navigate to fare payment page
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RideBookingScreen(
-          tripId: tripId,
-          fareAmount: fareAmount,
-          distanceMeters: distanceMeters,
+      debugPrint('✅ Trip completed successfully');
+
+      if (!mounted) return;
+
+      // Navigate to fare payment page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RideBookingScreen(
+            tripId: tripId,
+            fareAmount: fareAmount,
+            distanceMeters: distanceMeters,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('❌ Error completing trip: $e');
+      _showError('Failed to complete trip: ${e.toString()}');
+      _resetScanner();
+    }
   }
 
   void _showError(String message) {
@@ -299,6 +353,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
         }
       }
     } catch (e) {
+      debugPrint('❌ Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

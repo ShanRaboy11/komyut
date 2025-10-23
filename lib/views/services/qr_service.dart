@@ -1,305 +1,278 @@
-// lib/services/qr_service.dart - WITH DATABASE INTEGRATION
+// lib/services/qr_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
+import 'dart:math';
 
 class QRService {
   final _supabase = Supabase.instance.client;
 
-  /// Generate a new QR code for the driver
+  /// Generate a unique QR code for a driver
+  /// Format: KOMYUT-[DRIVER_ID]-[TIMESTAMP]-[RANDOM]
   Future<Map<String, dynamic>> generateQRCode() async {
     try {
-      debugPrint('📱 Generating QR code...');
+      debugPrint('🔄 Starting QR code generation...');
 
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+      // Get current user
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
         return {
           'success': false,
           'message': 'No authenticated user found',
         };
       }
 
-      // Get profile
-      final profile = await _supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .eq('user_id', userId)
-          .maybeSingle();
+      debugPrint('✅ User authenticated: ${user.id}');
 
-      if (profile == null) {
+      // Get driver's profile
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id, first_name, last_name, role')
+          .eq('user_id', user.id)
+          .single();
+
+      final profileId = profileResponse['id'];
+      final role = profileResponse['role'];
+
+      if (role != 'driver') {
         return {
           'success': false,
-          'message': 'Profile not found',
+          'message': 'Only drivers can generate QR codes',
         };
       }
 
-      // Get driver info with route details
-      final driverData = await _supabase
+      debugPrint('✅ Profile found: $profileId');
+
+      // ✅ UPDATED: Get driver record with route details using FK
+      final driverResponse = await _supabase
           .from('drivers')
           .select('''
-            id,
-            vehicle_plate,
-            license_number,
+            id, 
+            license_number, 
+            vehicle_plate, 
             current_qr,
             routes:route_id (
               code,
               name
             )
           ''')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
+          .eq('profile_id', profileId)
+          .single();
 
-      if (driverData == null) {
-        return {
-          'success': false,
-          'message': 'Driver record not found',
-        };
-      }
+      final driverId = driverResponse['id'];
+      final licenseNumber = driverResponse['license_number'];
+      final vehiclePlate = driverResponse['vehicle_plate'] ?? 'N/A';
+      
+      // ✅ UPDATED: Get route info from nested query
+      final routeData = driverResponse['routes'];
+      final routeCode = routeData?['code'] ?? 'N/A';
+      final routeName = routeData?['name'] ?? 'N/A';
+      final existingQR = driverResponse['current_qr'];
 
-      // Generate unique QR code data
-      final qrData = {
-        'driverId': driverData['id'],
-        'driverName': '${profile['first_name']} ${profile['last_name']}',
-        'plateNumber': driverData['vehicle_plate'] ?? 'N/A',
-        'routeNumber': driverData['routes']?['code'] ?? 'N/A',
-        'routeName': driverData['routes']?['name'] ?? '',
-        'timestamp': DateTime.now().toIso8601String(),
-      };
+      debugPrint('✅ Driver found: $driverId');
+      debugPrint('✅ Route: $routeCode - $routeName');
+      debugPrint('✅ Vehicle Plate: $vehiclePlate');
 
-      final qrCodeString = jsonEncode(qrData);
+      // Generate unique QR code
+      final qrCode = _generateUniqueQRCode(driverId);
+      debugPrint('✅ Generated QR code: $qrCode');
 
-      // Save QR code to driver record
+      // Update driver's current_qr
       await _supabase
           .from('drivers')
-          .update({'current_qr': qrCodeString})
-          .eq('id', driverData['id']);
+          .update({
+            'current_qr': qrCode,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', driverId);
 
-      debugPrint('✅ QR code generated successfully');
-      debugPrint('📊 Driver data: $qrData');
+      debugPrint('✅ QR code saved to database');
 
+      // ✅ UPDATED: Return data with proper field names for UI
       return {
         'success': true,
-        'qrCode': qrCodeString,
-        'data': qrData,
+        'qrCode': qrCode,
+        'data': {
+          'driverId': driverId,
+          'profileId': profileId,
+          'driverName': '${profileResponse['first_name']} ${profileResponse['last_name']}',
+          'licenseNumber': licenseNumber,
+          'plateNumber': vehiclePlate,      // ✅ Changed to plateNumber
+          'routeNumber': routeCode,         // ✅ Changed to routeNumber
+          'routeName': routeName,           // ✅ Added routeName
+          'generatedAt': DateTime.now().toIso8601String(),
+          'previousQR': existingQR,
+        },
       };
     } catch (e) {
       debugPrint('❌ Error generating QR code: $e');
       return {
         'success': false,
-        'message': 'Failed to generate QR code: ${e.toString()}',
+        'message': e.toString(),
       };
     }
   }
 
-  /// Get the current QR code if it exists
+  /// Get current QR code for driver
   Future<Map<String, dynamic>> getCurrentQRCode() async {
     try {
-      debugPrint('🔍 Checking for existing QR code...');
-
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
         return {
           'success': false,
-          'hasQR': false,
-          'message': 'No authenticated user',
+          'message': 'No authenticated user found',
         };
       }
 
-      // Get profile
-      final profile = await _supabase
+      // Get driver's profile
+      final profileResponse = await _supabase
           .from('profiles')
           .select('id, first_name, last_name')
-          .eq('user_id', userId)
-          .maybeSingle();
+          .eq('user_id', user.id)
+          .single();
 
-      if (profile == null) {
-        return {
-          'success': false,
-          'hasQR': false,
-          'message': 'Profile not found',
-        };
-      }
+      final profileId = profileResponse['id'];
 
-      // Get driver info with current QR and route
-      final driverData = await _supabase
+      // ✅ UPDATED: Get driver record with route details using FK
+      final driverResponse = await _supabase
           .from('drivers')
           .select('''
-            id,
-            current_qr,
-            vehicle_plate,
+            id, 
+            license_number, 
+            vehicle_plate, 
+            current_qr, 
+            updated_at,
             routes:route_id (
               code,
               name
             )
           ''')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
+          .eq('profile_id', profileId)
+          .single();
 
-      if (driverData == null) {
+      final qrCode = driverResponse['current_qr'];
+
+      if (qrCode == null || qrCode.isEmpty) {
         return {
           'success': false,
           'hasQR': false,
-          'message': 'Driver record not found',
+          'message': 'No QR code generated yet',
         };
       }
 
-      final currentQR = driverData['current_qr'];
-      
-      if (currentQR == null || currentQR.toString().isEmpty) {
-        debugPrint('📭 No existing QR code found');
-        return {
-          'success': true,
-          'hasQR': false,
-        };
-      }
+      // ✅ UPDATED: Get route info from nested query
+      final routeData = driverResponse['routes'];
+      final routeCode = routeData?['code'] ?? 'N/A';
+      final routeName = routeData?['name'] ?? 'N/A';
 
-      // Parse existing QR data
-      Map<String, dynamic> qrData;
-      try {
-        qrData = jsonDecode(currentQR);
-        
-        // Update with latest driver info
-        qrData['driverName'] = '${profile['first_name']} ${profile['last_name']}';
-        qrData['plateNumber'] = driverData['vehicle_plate'] ?? 'N/A';
-        qrData['routeNumber'] = driverData['routes']?['code'] ?? 'N/A';
-        qrData['routeName'] = driverData['routes']?['name'] ?? '';
-      } catch (e) {
-        debugPrint('⚠️ Invalid QR data format, will regenerate');
-        return {
-          'success': true,
-          'hasQR': false,
-        };
-      }
+      debugPrint('✅ Current QR found');
+      debugPrint('✅ Route: $routeCode - $routeName');
+      debugPrint('✅ Vehicle Plate: ${driverResponse['vehicle_plate']}');
 
-      debugPrint('✅ Existing QR code found');
-      debugPrint('📊 Driver data: $qrData');
-
+      // ✅ UPDATED: Return data with proper field names for UI
       return {
         'success': true,
         'hasQR': true,
-        'qrCode': currentQR,
-        'data': qrData,
+        'qrCode': qrCode,
+        'data': {
+          'driverId': driverResponse['id'],
+          'driverName': '${profileResponse['first_name']} ${profileResponse['last_name']}',
+          'licenseNumber': driverResponse['license_number'],
+          'plateNumber': driverResponse['vehicle_plate'] ?? 'N/A',  // ✅ Changed to plateNumber
+          'routeNumber': routeCode,                                   // ✅ Changed to routeNumber
+          'routeName': routeName,                                     // ✅ Added routeName
+          'lastGenerated': driverResponse['updated_at'],
+        },
       };
     } catch (e) {
       debugPrint('❌ Error getting current QR code: $e');
       return {
         'success': false,
         'hasQR': false,
-        'message': 'Failed to get QR code: ${e.toString()}',
+        'message': e.toString(),
       };
     }
   }
 
-  /// Refresh QR code data (update plate/route without generating new QR)
-  Future<Map<String, dynamic>> refreshQRData() async {
+  /// Generate unique QR code string
+  String _generateUniqueQRCode(String driverId) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(9999).toString().padLeft(4, '0');
+    
+    // Format: KOMYUT-DRIVER-[SHORT_ID]-[TIMESTAMP]-[RANDOM]
+    final shortId = driverId.substring(0, 8).toUpperCase();
+    return 'KOMYUT-DRIVER-$shortId-$timestamp-$random';
+  }
+
+  /// Validate QR code format
+  bool validateQRCode(String qrCode) {
+    // Check if QR code matches expected format
+    final pattern = RegExp(r'^KOMYUT-DRIVER-[A-Z0-9]{8}-\d+-\d{4}$');
+    return pattern.hasMatch(qrCode);
+  }
+
+  /// Verify QR code belongs to active driver
+  Future<Map<String, dynamic>> verifyQRCode(String qrCode) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        return {
-          'success': false,
-          'message': 'No authenticated user',
-        };
-      }
-
-      // Get profile
-      final profile = await _supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .eq('user_id', userId)
-          .single();
-
-      // Get driver with route
-      final driverData = await _supabase
+      // ✅ UPDATED: Find driver with route details using FK
+      final response = await _supabase
           .from('drivers')
           .select('''
             id,
-            current_qr,
+            license_number,
             vehicle_plate,
+            active,
+            status,
+            profile_id,
             routes:route_id (
               code,
               name
+            ),
+            profiles!inner(
+              id,
+              first_name,
+              last_name,
+              role
             )
           ''')
-          .eq('profile_id', profile['id'])
-          .single();
+          .eq('current_qr', qrCode)
+          .maybeSingle();
 
-      if (driverData['current_qr'] == null) {
+      if (response == null) {
         return {
           'success': false,
-          'message': 'No QR code to refresh',
+          'valid': false,
+          'message': 'Invalid QR code',
         };
       }
 
-      // Update QR data with latest info
-      final qrData = jsonDecode(driverData['current_qr']);
-      qrData['driverName'] = '${profile['first_name']} ${profile['last_name']}';
-      qrData['plateNumber'] = driverData['vehicle_plate'] ?? 'N/A';
-      qrData['routeNumber'] = driverData['routes']?['code'] ?? 'N/A';
-      qrData['routeName'] = driverData['routes']?['name'] ?? '';
-
-      final updatedQRString = jsonEncode(qrData);
-
-      // Update in database
-      await _supabase
-          .from('drivers')
-          .update({'current_qr': updatedQRString})
-          .eq('id', driverData['id']);
-
-      debugPrint('✅ QR data refreshed');
+      final isActive = response['active'] ?? false;
+      final status = response['status'] ?? false;
+      
+      // ✅ UPDATED: Get route info
+      final routeData = response['routes'];
+      final routeCode = routeData?['code'] ?? 'N/A';
+      final routeName = routeData?['name'] ?? 'N/A';
 
       return {
         'success': true,
-        'qrCode': updatedQRString,
-        'data': qrData,
+        'valid': true,
+        'isActive': isActive,
+        'isOnline': status,
+        'data': {
+          'driverId': response['id'],
+          'driverName': '${response['profiles']['first_name']} ${response['profiles']['last_name']}',
+          'licenseNumber': response['license_number'],
+          'plateNumber': response['vehicle_plate'] ?? 'N/A',  
+          'routeNumber': routeCode,                            
+          'routeName': routeName,                              
+        },
       };
     } catch (e) {
-      debugPrint('❌ Error refreshing QR data: $e');
+      debugPrint('❌ Error verifying QR code: $e');
       return {
         'success': false,
-        'message': 'Failed to refresh QR data: ${e.toString()}',
-      };
-    }
-  }
-
-  /// Delete current QR code
-  Future<Map<String, dynamic>> deleteQRCode() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        return {
-          'success': false,
-          'message': 'No authenticated user',
-        };
-      }
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .single();
-
-      await _supabase
-          .from('drivers')
-          .update({'current_qr': null})
-          .eq('id', driver['id']);
-
-      debugPrint('✅ QR code deleted');
-
-      return {
-        'success': true,
-        'message': 'QR code deleted successfully',
-      };
-    } catch (e) {
-      debugPrint('❌ Error deleting QR code: $e');
-      return {
-        'success': false,
-        'message': 'Failed to delete QR code: ${e.toString()}',
+        'valid': false,
+        'message': e.toString(),
       };
     }
   }

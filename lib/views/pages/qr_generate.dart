@@ -565,7 +565,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                           data: _qrCode!,
                           version: QrVersions.auto,
                           size: 250,
-                          backgroundColor: Colors.white,
+                          //backgroundColor: Colors.white,
                           eyeStyle: const QrEyeStyle(
                             eyeShape: QrEyeShape.square,
                             color: Color(0xFF8E4CB6),
@@ -577,28 +577,28 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                           embeddedImage: null,
                         ),
 
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(color: Colors.white),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(5),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Image.asset(
-                                'assets/images/logo.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.qr_code_2_rounded,
-                                    size: 35,
-                                    color: const Color(0xFF8E4CB6),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
+                        //Container(
+                        //  width: 60,
+                        //  height: 60,
+                        //  decoration: BoxDecoration(color: Colors.white),
+                        //  child: ClipRRect(
+                        //    borderRadius: BorderRadius.circular(5),
+                            //child: Padding(
+                            //  padding: const EdgeInsets.all(8),
+                            //  child: Image.asset(
+                            //    'assets/images/logo.png',
+                            //    fit: BoxFit.contain,
+                            //    errorBuilder: (context, error, stackTrace) {
+                            //      return Icon(
+                            //        Icons.qr_code_2_rounded,
+                           //         size: 35,
+                           //         color: const Color(0xFF8E4CB6),
+                             //     );
+                              //  },
+                            //  ),
+                           // ),
+                         // ),
+                       // ),
                       ],
                     ),
                   ],
@@ -642,6 +642,27 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
             Row(
               children: [
+                 Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _generateQRCode,
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  label: Text(
+                    'Regenerate',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8E4CB6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ),
+
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _isDownloading ? null : _downloadQRCode,
