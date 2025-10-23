@@ -133,14 +133,12 @@ class CustomButton extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    ),
-  );
-}
+      );
+    }
 
     // 🟡 Outlined button
     return SizedBox(

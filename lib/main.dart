@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/services/auth_provider.dart';
+import 'views/pages/notification_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,32 +39,9 @@ class MyApp extends StatelessWidget {
         title: 'KOMYUT',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.purple),
-        home: const LandingPage(),
+        //home: const LandingPage(),
+        home: NotificationPage(),
       ),
-    );
-  }
-}
-
-class NavBarCommuter extends StatelessWidget {
-  const NavBarCommuter({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        Center(child: Text("🏠 Home")),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
     );
   }
 }
