@@ -334,39 +334,6 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     }
   }
 
-  // Fetch user role directly from Supabase database
-  Future<String?> _fetchUserRoleFromDatabase() async {
-    try {
-      final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
-
-      if (userId == null) {
-        debugPrint('⚠️ No authenticated user found');
-        return null;
-      }
-
-      debugPrint('🔍 Fetching profile for user ID: $userId');
-
-      final response = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response == null) {
-        debugPrint('⚠️ No profile found for user');
-        return null;
-      }
-
-      final role = response['role'] as String?;
-      debugPrint('✅ User role fetched from database: $role');
-      
-      return role;
-    } catch (e) {
-      debugPrint('❌ Error fetching user role: $e');
-      return null;
-    }
-  }
 
   void _onBackPressed() {
     Navigator.of(context).pop();

@@ -47,14 +47,12 @@ class DriverDashboard extends StatefulWidget {
 
 class _DriverDashboardState extends State<DriverDashboard> {
   final QRService _qrService = QRService();
-  final GlobalKey _qrKey = GlobalKey();
   
   bool _isBalanceVisible = true;
   bool _isEarningsVisible = true;
   bool showTooltip = false;
   bool qrGenerated = false;
   bool isGenerating = false;
-  bool _isDownloading = false;
   String? currentQRCode;
   Map<String, dynamic>? qrData;
 
@@ -86,23 +84,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
       // Refresh QR code status after returning
       _loadCurrentQR();
     });
-  }
-
-  Future<void> _downloadQRFromDashboard() async {
-    if (currentQRCode == null) return;
-
-    setState(() {
-      _isDownloading = true;
-    });
-
-    try {
-      // Navigate to QR page for download (it has the full QR display)
-      _navigateToQRGeneration();
-    } finally {
-      setState(() {
-        _isDownloading = false;
-      });
-    }
   }
 
   @override

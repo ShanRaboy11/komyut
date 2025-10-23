@@ -1,12 +1,10 @@
 // lib/pages/driver_qr_generate_page.dart - WITH NAVIGATION BAR & DOWNLOAD
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/qr_service.dart';
@@ -613,7 +611,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Color(0xFF8E4CB6).withAlpha(25)
+                color: Color(0xFF8E4CB6).withAlpha(25),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Color(0xFF8E4CB6)),
               ),

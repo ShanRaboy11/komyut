@@ -6,11 +6,11 @@ class BookingBottomSheet extends StatefulWidget {
   final VoidCallback onProceed;
 
   const BookingBottomSheet({
-    Key? key,
+    super.key,
     required this.passengerCount,
     required this.onPassengerCountChanged,
     required this.onProceed,
-  }) : super(key: key);
+  });
 
   @override
   State<BookingBottomSheet> createState() => _BookingBottomSheetState();
@@ -129,7 +129,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
 }
 
 class DriverInfoCard extends StatelessWidget {
-  const DriverInfoCard({Key? key}) : super(key: key);
+  const DriverInfoCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -197,10 +197,10 @@ class PassengerCounter extends StatelessWidget {
   final Function(int) onChanged;
 
   const PassengerCounter({
-    Key? key,
+    super.key,
     required this.count,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +246,7 @@ class PassengerCounter extends StatelessWidget {
 }
 
 class TripDetailsSection extends StatelessWidget {
-  const TripDetailsSection({Key? key}) : super(key: key);
+  const TripDetailsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +318,7 @@ class TripDetailsSection extends StatelessWidget {
 }
 
 class PaymentSection extends StatelessWidget {
-  const PaymentSection({Key? key}) : super(key: key);
+  const PaymentSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +377,7 @@ class PaymentSection extends StatelessWidget {
               'PHP 13.00',
               style: TextStyle(
                 fontSize: 14,
-                color: const Color(0xFF8E4CB6).withAlpha(153),
+                color: const Color(0xFF8E4CB6).withAlpha(153), // Corrected: withAlpha instead of withOpacity
               ),
             ),
           ],
@@ -407,9 +407,9 @@ class ProceedButton extends StatefulWidget {
   final VoidCallback onPressed;
 
   const ProceedButton({
-    Key? key,
+    super.key,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<ProceedButton> createState() => _ProceedButtonState();
