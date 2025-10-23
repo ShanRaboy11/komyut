@@ -311,7 +311,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                        color: const Color(0xFF8E4CB6).withAlpha(76),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -486,7 +486,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                    color: const Color(0xFF8E4CB6).withAlpha(76),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -497,7 +497,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withAlpha(51),
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: const Icon(
@@ -552,7 +552,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                   border: Border.all(color: const Color(0xFF8E4CB6), width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withAlpha(25),
                       blurRadius: 20,
                       offset: const Offset(0, 5),
                     ),
@@ -613,7 +613,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Color(0xFF8E4CB6).withOpacity(0.1),
+                color: Color(0xFF8E4CB6).withAlpha(25)
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Color(0xFF8E4CB6)),
               ),
@@ -685,7 +685,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withAlpha(51),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -716,7 +716,7 @@ class QRLoadingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF8E4CB6).withOpacity(0.1)
+      ..color = const Color(0xFF8E4CB6).withAlpha(25)
       ..style = PaintingStyle.fill;
 
     final gridSize = 20;
@@ -727,8 +727,8 @@ class QRLoadingPainter extends CustomPainter {
         final progress = ((i + j) / (gridSize * 2)) * animationValue;
         if (progress > 0 && progress <= 1) {
           paint.color = Color.lerp(
-            const Color(0xFF8E4CB6).withOpacity(0.1),
-            const Color(0xFF8E4CB6).withOpacity(0.4),
+            const Color(0xFF8E4CB6).withAlpha(25),
+            const Color(0xFF8E4CB6).withAlpha(102),
             progress,
           )!;
 

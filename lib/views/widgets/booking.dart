@@ -377,7 +377,7 @@ class PaymentSection extends StatelessWidget {
               'PHP 13.00',
               style: TextStyle(
                 fontSize: 14,
-                color: const Color(0xFF8E4CB6).withOpacity(0.6),
+                color: const Color(0xFF8E4CB6).withAlpha(153),
               ),
             ),
           ],
@@ -504,7 +504,7 @@ class _ProceedButtonState extends State<ProceedButton> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withAlpha(51),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
