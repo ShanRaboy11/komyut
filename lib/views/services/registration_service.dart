@@ -41,7 +41,7 @@ class RegistrationService {
     debugPrint('Current data: $_registrationData');
   }
 
-  // Step 2b: Save driver personal info
+  // Step 2b: Save driver personal info (UPDATED with vehicle and route)
   void saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -51,6 +51,8 @@ class RegistrationService {
     required String licenseNumber,
     String? assignedOperator,
     required String driverLicensePath,
+    required String vehiclePlate,  // ✨ NEW
+    required String routeCode,     // ✨ NEW
   }) {
     _registrationData['first_name'] = firstName;
     _registrationData['last_name'] = lastName;
@@ -60,6 +62,8 @@ class RegistrationService {
     _registrationData['license_number'] = licenseNumber;
     _registrationData['assigned_operator'] = assignedOperator;
     _registrationData['driver_license_path'] = driverLicensePath;
+    _registrationData['vehicle_plate'] = vehiclePlate;  // ✨ NEW
+    _registrationData['route_code'] = routeCode;        // ✨ NEW
     debugPrint('✅ Driver personal info saved');
     debugPrint('Current data: $_registrationData');
   }
@@ -175,6 +179,24 @@ class RegistrationService {
         'success': false,
         'message': e.toString(),
       };
+    }
+  }
+
+  // ✨ NEW: Fetch available routes for dropdown
+  Future<List<Map<String, dynamic>>> getAvailableRoutes() async {
+    try {
+      debugPrint('🔍 Fetching available routes...');
+      
+      final routes = await _supabase
+          .from('routes')
+          .select('code, name, description')
+          .order('code');
+
+      debugPrint('✅ Fetched ${routes.length} routes');
+      return List<Map<String, dynamic>>.from(routes);
+    } catch (e) {
+      debugPrint('❌ Error fetching routes: $e');
+      return [];
     }
   }
 
@@ -310,12 +332,33 @@ class RegistrationService {
             .maybeSingle();
 
         if (existingDriver == null) {
+          // ✨ CRITICAL FIX: Get route_id from route_code
+          String? routeId;
+          if (_registrationData['route_code'] != null) {
+            debugPrint('🔍 Fetching route_id for code: ${_registrationData['route_code']}');
+            final routeResponse = await _supabase
+                .from('routes')
+                .select('id')
+                .eq('code', _registrationData['route_code'])
+                .maybeSingle();
+            
+            if (routeResponse != null) {
+              routeId = routeResponse['id'];
+              debugPrint('✅ Found route_id: $routeId');
+            } else {
+              debugPrint('⚠️ Route not found for code: ${_registrationData['route_code']}');
+            }
+          }
+
+          // ✨ UPDATED: Use route_id instead of route_code
           await _supabase.from('drivers').insert({
             'profile_id': profileId,
             'license_number': _registrationData['license_number'] ?? '',
             'operator_name': _registrationData['assigned_operator'],
+            'vehicle_plate': _registrationData['vehicle_plate'] ?? '',  // ✨ NEW
+            'route_id': routeId,  // ✨ Use route_id (FK) instead of route_code
           });
-          debugPrint('✅ Driver created!');
+          debugPrint('✅ Driver created with route_id: $routeId');
         } else {
           debugPrint('✅ Driver already exists');
         }

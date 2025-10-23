@@ -10,12 +10,12 @@ class MapWidget extends StatefulWidget {
   final bool isLoading;
 
   const MapWidget({
-    Key? key,
+    super.key,
     required this.mapController,
     required this.currentPosition,
     required this.defaultLocation,
     required this.isLoading,
-  }) : super(key: key);
+  });
 
   @override
   State<MapWidget> createState() => _MapWidgetState();

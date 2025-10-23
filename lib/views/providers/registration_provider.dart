@@ -10,12 +10,14 @@ class RegistrationProvider extends ChangeNotifier {
   String? _errorMessage;
   File? _idProofFile;
   File? _driverLicenseFile;
+  List<Map<String, dynamic>> _availableRoutes = [];  // ✨ NEW
 
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   File? get idProofFile => _idProofFile;
   File? get driverLicenseFile => _driverLicenseFile;
+  List<Map<String, dynamic>> get availableRoutes => _availableRoutes;  // ✨ NEW
   Map<String, dynamic> get registrationData => _registrationService.getRegistrationData();
 
   // Step 1: Save role
@@ -66,7 +68,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // Step 2b: Save driver personal info
+  // Step 2b: Save driver personal info (UPDATED with vehicle and route)
   Future<bool> saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -76,6 +78,8 @@ class RegistrationProvider extends ChangeNotifier {
     required String licenseNumber,
     String? assignedOperator,
     required File driverLicenseFile,
+    required String vehiclePlate,  // ✨ NEW
+    required String routeCode,     // ✨ NEW
   }) async {
     try {
       _isLoading = true;
@@ -94,6 +98,8 @@ class RegistrationProvider extends ChangeNotifier {
         licenseNumber: licenseNumber,
         assignedOperator: assignedOperator,
         driverLicensePath: driverLicenseFile.path,
+        vehiclePlate: vehiclePlate,  // ✨ NEW
+        routeCode: routeCode,        // ✨ NEW
       );
 
       _isLoading = false;
@@ -149,6 +155,23 @@ class RegistrationProvider extends ChangeNotifier {
       password: password,
     );
     notifyListeners();
+  }
+
+  // ✨ NEW: Load available routes for dropdown
+  Future<void> loadAvailableRoutes() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      _availableRoutes = await _registrationService.getAvailableRoutes();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to load routes: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // NEW: Send email verification OTP (no account created yet)
@@ -274,6 +297,7 @@ class RegistrationProvider extends ChangeNotifier {
     _registrationService.clearRegistrationData();
     _idProofFile = null;
     _driverLicenseFile = null;
+    _availableRoutes = [];  // ✨ NEW
     _errorMessage = null;
     notifyListeners();
   }

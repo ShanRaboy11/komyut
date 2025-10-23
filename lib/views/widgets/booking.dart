@@ -19,7 +19,6 @@ class BookingBottomSheet extends StatefulWidget {
 class _BookingBottomSheetState extends State<BookingBottomSheet> {
   double _sheetPosition = 0; // 0 = fully expanded, positive = moved down
   final double _maxDragDown = 400; // Maximum pixels to drag down
-  final double _minHeight = 120; // Minimum visible height when collapsed
 
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     setState(() {
