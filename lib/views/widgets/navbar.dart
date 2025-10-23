@@ -59,7 +59,28 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _selectedIndex, children: widget.pages),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, animation) {
+          final offsetAnimation =
+              Tween<Offset>(
+                begin: const Offset(0.1, 0), // slide slightly from right
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+              );
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: widget.pages[_selectedIndex],
+        ),
+      ),
+
       bottomNavigationBar: AnimatedBuilder(
         animation: _animation,
         builder: (context, _) {
