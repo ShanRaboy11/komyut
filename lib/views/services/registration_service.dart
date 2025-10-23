@@ -178,21 +178,22 @@ class RegistrationService {
     }
   }
 
-  // Complete registration after email verification
+  // FIXED: Complete registration after email verification
   Future<Map<String, dynamic>> completeRegistration() async {
     try {
       debugPrint('🔍 Starting completeRegistration');
+      debugPrint('📋 Registration data: $_registrationData');
       
       final user = _supabase.auth.currentUser;
       if (user == null) {
+        debugPrint('❌ No authenticated user found');
         return {
           'success': false,
-          'message': 'No authenticated user found',
+          'message': 'No authenticated user found. Please try logging in again.',
         };
       }
 
       debugPrint('✅ User authenticated: ${user.id}');
-      debugPrint('📋 Registration data: $_registrationData');
 
       // Verify role exists
       final role = _registrationData['role'];
@@ -206,60 +207,137 @@ class RegistrationService {
 
       debugPrint('✅ Role found: $role');
 
-      // Create profile
-      debugPrint('💾 Inserting profile...');
-      final profileData = {
-        'user_id': user.id,
-        'role': role,
-        'first_name': _registrationData['first_name'],
-        'last_name': _registrationData['last_name'],
-        'age': _registrationData['age'],
-        'sex': _registrationData['sex'],
-        'address': _registrationData['address'],
-      };
-
-      final profileResponse = await _supabase
+      // CRITICAL FIX: Check if profile already exists
+      debugPrint('🔍 Checking if profile already exists...');
+      final existingProfile = await _supabase
           .from('profiles')
-          .insert(profileData)
-          .select()
-          .single();
+          .select('id, role')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      final profileId = profileResponse['id'];
-      debugPrint('✅ Profile created with ID: $profileId');
+      String profileId;
 
-      // Create wallet
-      debugPrint('💰 Creating wallet...');
-      await _supabase.from('wallets').insert({
-        'owner_profile_id': profileId,
-        'balance': 0,
-      });
-      debugPrint('✅ Wallet created!');
+      if (existingProfile != null) {
+        debugPrint('⚠️ Profile already exists for user ${user.id}');
+        profileId = existingProfile['id'];
+        debugPrint('✅ Using existing profile ID: $profileId');
+      } else {
+        // Create profile
+        debugPrint('💾 Creating new profile...');
+        
+        // FIX: Ensure all required fields are present
+        final profileData = <String, dynamic>{
+          'user_id': user.id,
+          'role': role,
+          'first_name': _registrationData['first_name'] ?? '',
+          'last_name': _registrationData['last_name'] ?? '',
+          'age': _registrationData['age'],
+          'sex': _registrationData['sex'],
+          'address': _registrationData['address'],
+        };
+
+        debugPrint('📤 Profile data to insert: $profileData');
+
+        try {
+          final profileResponse = await _supabase
+              .from('profiles')
+              .insert(profileData)
+              .select('id')
+              .single();
+
+          profileId = profileResponse['id'];
+          debugPrint('✅ Profile created with ID: $profileId');
+        } catch (insertError) {
+          debugPrint('❌ Error inserting profile: $insertError');
+          
+          // If insert fails due to RLS, try with service role or check RLS policies
+          if (insertError is PostgrestException) {
+            debugPrint('❌ PostgrestException code: ${insertError.code}');
+            debugPrint('❌ PostgrestException message: ${insertError.message}');
+            debugPrint('❌ PostgrestException details: ${insertError.details}');
+            
+            return {
+              'success': false,
+              'message': 'Failed to create profile. Error: ${insertError.message}',
+            };
+          }
+          rethrow;
+        }
+      }
+
+      // Create wallet if it doesn't exist
+      debugPrint('💰 Checking/creating wallet...');
+      final existingWallet = await _supabase
+          .from('wallets')
+          .select('id')
+          .eq('owner_profile_id', profileId)
+          .maybeSingle();
+
+      if (existingWallet == null) {
+        await _supabase.from('wallets').insert({
+          'owner_profile_id': profileId,
+          'balance': 0,
+        });
+        debugPrint('✅ Wallet created!');
+      } else {
+        debugPrint('✅ Wallet already exists');
+      }
 
       // Create role-specific records
       if (role == 'commuter') {
-        debugPrint('🚶 Creating commuter record...');
-        await _supabase.from('commuters').insert({
-          'profile_id': profileId,
-          'category': _registrationData['category'] ?? 'regular',
-        });
-        debugPrint('✅ Commuter created!');
+        debugPrint('🚶 Checking/creating commuter record...');
+        final existingCommuter = await _supabase
+            .from('commuters')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingCommuter == null) {
+          await _supabase.from('commuters').insert({
+            'profile_id': profileId,
+            'category': _registrationData['category'] ?? 'regular',
+          });
+          debugPrint('✅ Commuter created!');
+        } else {
+          debugPrint('✅ Commuter already exists');
+        }
       } else if (role == 'driver') {
-        debugPrint('🚗 Creating driver record...');
-        await _supabase.from('drivers').insert({
-          'profile_id': profileId,
-          'license_number': _registrationData['license_number'],
-          'operator_name': _registrationData['assigned_operator'],
-        });
-        debugPrint('✅ Driver created!');
+        debugPrint('🚗 Checking/creating driver record...');
+        final existingDriver = await _supabase
+            .from('drivers')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingDriver == null) {
+          await _supabase.from('drivers').insert({
+            'profile_id': profileId,
+            'license_number': _registrationData['license_number'] ?? '',
+            'operator_name': _registrationData['assigned_operator'],
+          });
+          debugPrint('✅ Driver created!');
+        } else {
+          debugPrint('✅ Driver already exists');
+        }
       } else if (role == 'operator') {
-        debugPrint('🏢 Creating operator record...');
-        await _supabase.from('operators').insert({
-          'profile_id': profileId,
-          'company_name': _registrationData['company_name'],
-          'company_address': _registrationData['company_address'],
-          'contact_email': _registrationData['contact_email'],
-        });
-        debugPrint('✅ Operator created!');
+        debugPrint('🏢 Checking/creating operator record...');
+        final existingOperator = await _supabase
+            .from('operators')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingOperator == null) {
+          await _supabase.from('operators').insert({
+            'profile_id': profileId,
+            'company_name': _registrationData['company_name'] ?? '',
+            'company_address': _registrationData['company_address'] ?? '',
+            'contact_email': _registrationData['contact_email'] ?? '',
+          });
+          debugPrint('✅ Operator created!');
+        } else {
+          debugPrint('✅ Operator already exists');
+        }
       }
 
       debugPrint('🎉 Registration completed successfully!');
@@ -275,17 +353,18 @@ class RegistrationService {
           'role': role,
         },
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is PostgrestException) {
         debugPrint('❌ Supabase Error: ${e.message}');
         debugPrint('❌ Error code: ${e.code}');
         debugPrint('❌ Error details: ${e.details}');
       } else {
         debugPrint('❌ Error completing registration: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
       }
       return {
         'success': false,
-        'message': e.toString(),
+        'message': 'Registration failed: ${e.toString()}',
       };
     }
   }

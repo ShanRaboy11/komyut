@@ -77,8 +77,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Fetch user role from Supabase profiles table
-  Future<String?> _fetchUserRole() async {
+   Future<String?> _fetchUserRole() async {
     try {
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
@@ -90,18 +89,54 @@ class _LoginPageState extends State<LoginPage> {
 
       debugPrint('🔍 Fetching profile for user ID: $userId');
 
-      final response = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', userId)
-          .single();
+      // FIX 1: Try both 'id' and 'user_id' column names
+      // First, try with 'id' (most common in Supabase)
+      try {
+        final response = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle(); // Use maybeSingle() instead of single() to avoid exceptions
 
-      final role = response['role'] as String?;
-      debugPrint('✅ User role fetched: $role');
+        if (response != null && response['role'] != null) {
+          final role = response['role'] as String;
+          debugPrint('✅ User role fetched (using id): $role');
+          return role;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to fetch with "id" column, trying "user_id": $e');
+      }
+
+      // If that fails, try with 'user_id'
+      try {
+        final response = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (response != null && response['role'] != null) {
+          final role = response['role'] as String;
+          debugPrint('✅ User role fetched (using user_id): $role');
+          return role;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to fetch with "user_id" column: $e');
+      }
+
+      // FIX 2: If no profile found, check if profile exists at all
+      final profileCheck = await supabase
+          .from('profiles')
+          .select('id, user_id')
+          .limit(1);
       
-      return role;
-    } catch (e) {
+      debugPrint('📊 Profile table structure check: $profileCheck');
+      debugPrint('❌ No profile found for user ID: $userId');
+      
+      return null;
+    } catch (e, stackTrace) {
       debugPrint('❌ Error fetching user role: $e');
+      debugPrint('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -129,17 +164,23 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
+      // Add a small delay to ensure the user session is fully established
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       // Fetch user role from database
       final userRole = await _fetchUserRole();
       
       if (!mounted) return;
 
       if (userRole == null) {
+        // IMPROVED: Provide more helpful error message
         ToastUtils.showCustomToast(
           context,
-          'Unable to retrieve user role. Please try again.',
-          Colors.redAccent,
+          'Unable to retrieve user profile. Please contact support.',
+          Colors.orangeAccent,
         );
+        // Still navigate but to default route
+        Navigator.pushReplacementNamed(context, '/home_commuter');
         return;
       }
 
@@ -166,6 +207,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
