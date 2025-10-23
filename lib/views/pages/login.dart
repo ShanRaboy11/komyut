@@ -142,71 +142,84 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    FocusScope.of(context).unfocus();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  FocusScope.of(context).unfocus();
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      _emailShakeKey.currentState?.shake();
-      _passwordShakeKey.currentState?.shake();
+  if (email.isEmpty || password.isEmpty) {
+    _emailShakeKey.currentState?.shake();
+    _passwordShakeKey.currentState?.shake();
 
-      ToastUtils.showCustomToast(
-        context,
-        'Please fill in both email and password.',
-        Colors.redAccent,
-      );
-      return;
-    }
+    ToastUtils.showCustomToast(
+      context,
+      'Please fill in both email and password.',
+      Colors.redAccent,
+    );
+    return;
+  }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.signIn(email: email, password: password);
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final success = await authProvider.signIn(email: email, password: password);
+
+  if (!mounted) return;
+
+  if (success) {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final userRole = await _fetchUserRole();
 
     if (!mounted) return;
 
-    if (success) {
-      // Add a small delay to ensure the user session is fully established
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Fetch user role from database
-      final userRole = await _fetchUserRole();
-      
-      if (!mounted) return;
-
-      if (userRole == null) {
-        // IMPROVED: Provide more helpful error message
-        ToastUtils.showCustomToast(
-          context,
-          'Unable to retrieve user profile. Please contact support.',
-          Colors.orangeAccent,
-        );
-        // Still navigate but to default route
-        Navigator.pushReplacementNamed(context, '/home_commuter');
-        return;
-      }
-
-      // Get the appropriate route based on role
-      final homeRoute = _getHomeRouteForRole(userRole);
-      debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
-
+    if (userRole == null) {
       ToastUtils.showCustomToast(
         context,
-        'Login Successful!',
-        Colors.green,
+        'Unable to retrieve your profile. Please contact support.',
+        Colors.orangeAccent,
       );
-
-      // Navigate to role-specific dashboard
-      Navigator.pushReplacementNamed(context, homeRoute);
-    } else {
-      _emailShakeKey.currentState?.shake();
-      _passwordShakeKey.currentState?.shake();
-
-      ToastUtils.showCustomToast(
-        context,
-        authProvider.errorMessage ?? 'An unknown error occurred.',
-        Colors.redAccent,
-      );
+      Navigator.pushReplacementNamed(context, '/home_commuter');
+      return;
     }
+
+    final homeRoute = _getHomeRouteForRole(userRole);
+    debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
+
+    ToastUtils.showCustomToast(
+      context,
+      'Login Successful!',
+      Colors.green,
+    );
+
+    Navigator.pushReplacementNamed(context, homeRoute);
+  } else {
+    _emailShakeKey.currentState?.shake();
+    _passwordShakeKey.currentState?.shake();
+
+    // Convert technical error to friendly message
+    String errorMsg;
+    final error = authProvider.errorMessage?.toLowerCase() ?? '';
+
+    if (error.contains('user-not-found')) {
+      errorMsg = 'No account found with this email.';
+    } else if (error.contains('wrong-password')) {
+      errorMsg = 'Incorrect password. Please try again.';
+    } else if (error.contains('invalid-email')) {
+      errorMsg = 'Please enter a valid email address.';
+    } else if (error.contains('network-request-failed')) {
+      errorMsg = 'Network error. Please check your internet connection.';
+    } else if (error.contains('too-many-requests')) {
+      errorMsg = 'Too many failed attempts. Please try again later.';
+    } else {
+      errorMsg = 'Login failed. Please check your credentials and try again.';
+    }
+
+    ToastUtils.showCustomToast(
+      context,
+      errorMsg,
+      Colors.redAccent,
+    );
   }
+}
+
 
 
   @override

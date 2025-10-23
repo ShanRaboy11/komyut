@@ -377,7 +377,7 @@ class PaymentSection extends StatelessWidget {
               'PHP 13.00',
               style: TextStyle(
                 fontSize: 14,
-                color: const Color(0xFF8E4CB6).withAlpha(153), // Corrected: withAlpha instead of withOpacity
+                color: const Color(0xFF8E4CB6).withAlpha(153),
               ),
             ),
           ],
@@ -481,7 +481,7 @@ class _ProceedButtonState extends State<ProceedButton> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(_isDragging ? 0.5 : 1.0),
+               color: Colors.white.withAlpha(_isDragging ? 128 : 255),
               ),
             ),
           ),

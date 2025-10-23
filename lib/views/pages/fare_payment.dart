@@ -28,7 +28,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   bool _isLoading = true;
   int _passengerCount = 1;
   
-  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854); // Cebu City
+  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854); 
 
   @override
   void initState() {
@@ -40,6 +40,8 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       debugPrint('Fare: ${widget.fareAmount}');
       debugPrint('Distance: ${widget.distanceMeters}m');
     }
+
+    _getCurrentLocation();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -58,10 +60,13 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         
         // Animate to user location
         Future.delayed(const Duration(milliseconds: 300), () {
-          _mapController.move(
-            LatLng(position.latitude, position.longitude),
-            15.0,
-          );
+          // Check if the widget is still mounted before performing UI updates
+          if (mounted) {
+            _mapController.move(
+              LatLng(position.latitude, position.longitude),
+              15.0,
+            );
+          }
         });
       } else {
         setState(() {
