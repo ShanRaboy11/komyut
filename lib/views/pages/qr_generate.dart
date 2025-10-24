@@ -6,7 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:gal/gal.dart';
 import '../services/qr_service.dart';
 import '../widgets/navbar.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
@@ -134,47 +134,66 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   }
 
   Future<void> _downloadQRCode() async {
-    if (_qrCode == null) return;
+  if (_qrCode == null) return;
 
-    setState(() {
-      _isDownloading = true;
-    });
+  setState(() {
+    _isDownloading = true;
+  });
 
-    try {
-      // Capture QR code as image
-      final boundary =
-          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final pngBytes = byteData!.buffer.asUint8List();
+  try {
+    // Capture QR code as image
+    final boundary =
+        _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 3.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final pngBytes = byteData!.buffer.asUint8List();
 
-      // Save to device
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Get temporary directory
-        final directory = await getTemporaryDirectory();
+    if (Platform.isAndroid || Platform.isIOS) {
+      // Save to temporary directory first
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final driverName = _driverData?['driverName'] ?? 'Driver';
+      final fileName = 'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
+      final filePath = '${directory.path}/$fileName';
+
+      // Write file
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+
+      // Save to gallery using gal - handles all permissions automatically
+      await Gal.putImage(filePath);
+      
+      _showSnackBar('QR Code saved to gallery!', Colors.green);
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      // For desktop platforms
+      final directory = await getDownloadsDirectory();
+      if (directory != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final filePath = '${directory.path}/qr_code_$timestamp.png';
+        final driverName = _driverData?['driverName'] ?? 'Driver';
+        final fileName = 'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
+        final filePath = '${directory.path}/$fileName';
 
-        // Write file
         final file = File(filePath);
         await file.writeAsBytes(pngBytes);
 
-        // Share the file (which will show save/share options)
-        await Share.shareXFiles([
-          XFile(filePath),
-        ], text: 'My QR Code - ${_driverData?['driverName']}');
+        _showSnackBar('QR Code saved to Downloads folder!', Colors.green);
       } else {
-        _showSnackBar('Platform not supported', Colors.orange);
+        _showSnackBar('Could not access Downloads folder', Colors.red);
       }
-    } catch (e) {
-      debugPrint('Error downloading QR code: $e');
-      _showSnackBar('Failed to download QR code', Colors.red);
-    } finally {
-      setState(() {
-        _isDownloading = false;
-      });
+    } else {
+      _showSnackBar('Platform not supported', Colors.orange);
     }
+  } catch (e) {
+    debugPrint('Error downloading QR code: $e');
+    _showSnackBar('Failed to download QR code: $e', Colors.red);
+  } finally {
+    setState(() {
+      _isDownloading = false;
+    });
   }
+}
+
+
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;

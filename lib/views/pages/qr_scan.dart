@@ -48,24 +48,34 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     if (barcodes.isNotEmpty) {
       final String? code = barcodes.first.rawValue;
       if (code != null) {
-        debugPrint('📱 QR Code detected: $code');
+        // ✅ Trim whitespace immediately
+        final cleanCode = code.trim();
+        debugPrint('📱 QR Code detected (raw): "$code"');
+        debugPrint('📱 QR Code detected (clean): "$cleanCode"');
         setState(() {
           isScanning = false;
           _isProcessing = true;
         });
         
-        _handleScannedCode(code);
+        _handleScannedCode(cleanCode);
       }
     }
   }
 
+  // UPDATED: Now uses route_id foreign key with proper join
   Future<void> _handleScannedCode(String qrCode) async {
     _animationController.stop();
     
     try {
-      debugPrint('🔍 Processing QR code: $qrCode');
-      debugPrint('🔍 QR code length: ${qrCode.length}');
-      debugPrint('🔍 QR code type: ${qrCode.runtimeType}');
+      // ✅ Clean and normalize the QR code
+      final trimmedQR = qrCode.trim();
+      final normalizedQR = trimmedQR.toUpperCase();
+      
+      debugPrint('🔍 ============ QR CODE SCAN DEBUG ============');
+      debugPrint('📱 Raw QR: "$qrCode"');
+      debugPrint('📱 Trimmed: "$trimmedQR"');
+      debugPrint('📱 Normalized: "$normalizedQR"');
+      debugPrint('📱 Length: raw=${qrCode.length}, trimmed=${trimmedQR.length}');
       
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
@@ -92,64 +102,118 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
       final profileId = profileResponse['id'] as String;
       debugPrint('✅ Profile ID: $profileId');
 
-      // ✅ FIRST: Check what QR codes exist in the database
-      debugPrint('🔍 Querying drivers table for QR code...');
+      // ✅ NOW CORRECT: Query with proper route_id foreign key join
+      debugPrint('🔍 Querying drivers with route join...');
       
-      // Query with exact match
-      final driverResponse = await supabase
+      final allDriversResponse = await supabase
           .from('drivers')
           .select('''
             id, 
-            route_id,
             profile_id,
             current_qr,
+            route_id,
+            vehicle_plate,
+            operator_name,
+            active,
             routes:route_id (
               id,
               code,
               name
             )
           ''')
-          .eq('current_qr', qrCode)
-          .maybeSingle();
+          .eq('active', true)
+          .not('current_qr', 'is', null);
 
-      debugPrint('📊 Query result: ${driverResponse != null ? "Found driver" : "No driver found"}');
-      
-      if (driverResponse != null) {
-        debugPrint('✅ Driver data: $driverResponse');
-        debugPrint('✅ Stored QR in DB: ${driverResponse['current_qr']}');
-        debugPrint('✅ Scanned QR: $qrCode');
-        debugPrint('✅ QR codes match: ${driverResponse['current_qr'] == qrCode}');
-      }
+      debugPrint('📊 Total active drivers with QR codes: ${allDriversResponse.length}');
 
-      if (driverResponse == null) {
-        // ✅ DIAGNOSTIC: Try to find ANY QR codes in the database
-        debugPrint('❌ No driver found with exact match');
-        debugPrint('🔍 Checking all QR codes in database...');
-        
-        final allDrivers = await supabase
-            .from('drivers')
-            .select('id, current_qr')
-            .not('current_qr', 'is', null)
-            .limit(5);
-        
-        debugPrint('📊 Sample QR codes in database:');
-        for (var driver in allDrivers) {
-          debugPrint('   - Driver ${driver['id']}: ${driver['current_qr']}');
-        }
-        
-        _showError('Invalid QR code. Please scan a valid driver QR code.');
+      if (allDriversResponse.isEmpty) {
+        debugPrint('⚠️ No active drivers with QR codes found!');
+        _showError('No active drivers available. Please try again later.');
         _resetScanner();
         return;
       }
 
+      // ✅ Try multiple matching strategies
+      Map<String, dynamic>? driverResponse;
+      String matchStrategy = '';
+      
+      // Strategy 1: Exact match (case-sensitive, trimmed)
+      for (var driver in allDriversResponse) {
+        final dbQR = (driver['current_qr'] as String?)?.trim() ?? '';
+        if (dbQR == trimmedQR) {
+          driverResponse = driver;
+          matchStrategy = 'Exact match (case-sensitive)';
+          debugPrint('✅ Match found: $matchStrategy');
+          break;
+        }
+      }
+      
+      // Strategy 2: Case-insensitive match
+      if (driverResponse == null) {
+        for (var driver in allDriversResponse) {
+          final dbQR = (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
+          if (dbQR == normalizedQR) {
+            driverResponse = driver;
+            matchStrategy = 'Case-insensitive match';
+            debugPrint('✅ Match found: $matchStrategy');
+            break;
+          }
+        }
+      }
+      
+      // Strategy 3: Contains match (for partial QR codes)
+      if (driverResponse == null && trimmedQR.length >= 8) {
+        for (var driver in allDriversResponse) {
+          final dbQR = (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
+          if (dbQR.contains(normalizedQR) || normalizedQR.contains(dbQR)) {
+            driverResponse = driver;
+            matchStrategy = 'Partial match';
+            debugPrint('✅ Match found: $matchStrategy');
+            break;
+          }
+        }
+      }
+
+      // Log all QR codes for debugging if no match found
+      if (driverResponse == null) {
+        debugPrint('❌ NO MATCH FOUND!');
+        debugPrint('📊 All QR codes in database:');
+        for (var driver in allDriversResponse) {
+          final dbQR = driver['current_qr'] as String?;
+          debugPrint('   Driver ${driver['id']}:');
+          debugPrint('     Raw: "$dbQR"');
+          debugPrint('     Trimmed: "${dbQR?.trim()}"');
+          debugPrint('     Normalized: "${dbQR?.trim().toUpperCase()}"');
+          debugPrint('     Length: ${dbQR?.length}');
+          debugPrint('     Active: ${driver['active']}');
+          debugPrint('     Route: ${driver['routes']}');
+        }
+        
+        _showError(
+          'Invalid QR code\n\n'
+          'Scanned: "$trimmedQR"\n'
+          'Please scan a valid driver QR code.'
+        );
+        _resetScanner();
+        return;
+      }
+
+      debugPrint('✅ ============ MATCH SUCCESS ============');
+      debugPrint('✅ Strategy: $matchStrategy');
+      debugPrint('✅ Driver ID: ${driverResponse['id']}');
+      debugPrint('✅ QR Code: ${driverResponse['current_qr']}');
+
       final driverId = driverResponse['id'] as String;
       final routeId = driverResponse['route_id'] as String?;
       final routeData = driverResponse['routes'];
-      final routeCode = routeData?['code'] as String?;
       
-      debugPrint('✅ Driver found: $driverId');
       debugPrint('✅ Route ID: $routeId');
-      debugPrint('✅ Route Code: $routeCode');
+      if (routeData != null) {
+        debugPrint('✅ Route Code: ${routeData['code']}');
+        debugPrint('✅ Route Name: ${routeData['name']}');
+      } else {
+        debugPrint('⚠️ No route data for this driver');
+      }
 
       // Check for existing ongoing trip
       final existingTrip = await supabase
@@ -160,24 +224,25 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
           .maybeSingle();
 
       if (existingTrip != null) {
-        debugPrint('🔄 Found existing trip: ${existingTrip['id']}');
+        debugPrint('🔄 Existing trip found: ${existingTrip['id']}');
         // SECOND SCAN - Arrival at destination
         await _handleArrivalScan(
           existingTrip['id'],
           existingTrip['origin_stop_id'],
           existingTrip['route_id'],
-          qrCode,
+          trimmedQR,
           profileId,
         );
       } else {
         debugPrint('🚌 First scan - Creating new trip');
         // FIRST SCAN - Boarding/Takeoff
-        await _handleTakeoffScan(driverId, routeId, profileId, qrCode);
+        await _handleTakeoffScan(driverId, routeId, profileId, trimmedQR);
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error handling scanned code: $e');
+      debugPrint('❌ ============ ERROR ============');
+      debugPrint('❌ Error: $e');
       debugPrint('❌ Stack trace: $stackTrace');
-      _showError('Error: ${e.toString()}');
+      _showError('Error processing QR code: ${e.toString()}');
       _resetScanner();
     }
   }
@@ -336,10 +401,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
         if (barcodes != null && barcodes.barcodes.isNotEmpty) {
           final String? code = barcodes.barcodes.first.rawValue;
           if (code != null) {
+            final cleanCode = code.trim();
             setState(() {
               _isProcessing = true;
             });
-            await _handleScannedCode(code);
+            await _handleScannedCode(cleanCode);
           }
         } else {
           if (mounted) {
