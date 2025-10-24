@@ -1,4 +1,3 @@
-// lib/pages/driver_qr_generate_page.dart - WITH NAVIGATION BAR & DOWNLOAD
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -165,7 +164,6 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
       
       _showSnackBar('QR Code saved to gallery!', Colors.green);
     } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // For desktop platforms
       final directory = await getDownloadsDirectory();
       if (directory != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -221,7 +219,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
     final isTablet = size.width > 600;
 
     return Scaffold(
-  extendBody: true, // ✨ This allows content to extend behind the navbar
+  extendBody: true,
   body: Container(
     decoration: const BoxDecoration(
       gradient: LinearGradient(
@@ -231,7 +229,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
       ),
     ),
     child: SafeArea(
-      bottom: false, // ✨ Don't apply SafeArea to bottom
+      bottom: false,
       child: Column(
         children: [
           Padding(
@@ -269,7 +267,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
               width: double.infinity,
               margin: const EdgeInsets.only(top: 20),
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).padding.bottom, // ✨ Add padding for safe area at bottom
+                bottom: MediaQuery.of(context).padding.bottom,
               ),
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -283,8 +281,8 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                   constraints: BoxConstraints(
                     maxWidth: isTablet ? 500 : double.infinity,
                   ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 100), // ✨ Add extra bottom padding for navbar
+                  child: Padding( // Add padding directly if needed, instead of in scroll view
+                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 30), // Adjusted padding
                     child: _isLoading
                         ? _buildLoadingState()
                         : _qrGenerated
@@ -490,63 +488,110 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
         scale: _scaleAnimation,
         child: Column(
           children: [
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8E4CB6).withAlpha(76),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
+            RepaintBoundary(
+              key: _qrKey,
+              child: Column(
                 children: [
+                  const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.only(left: 30, right: 20, top: 20, bottom: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(51),
-                      borderRadius: BorderRadius.circular(15),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF8E4CB6).withAlpha(76),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          _driverData?['driverName'] ?? 'Juan Dela Cruz',
-                          style: GoogleFonts.manrope(
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(51),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Icon(
+                            Icons.person_rounded,
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            size: 32,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _driverData?['driverName'] ?? 'Juan Dela Cruz',
+                                style: GoogleFonts.manrope(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  _buildInfoChip(
+                                    _driverData?['plateNumber'] ?? 'ABC-1234',
+                                    Icons.directions_bus_rounded,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildInfoChip(
+                                    _driverData?['routeNumber'] ?? 'Route 101',
+                                    Icons.route_rounded,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF8E4CB6), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
                           children: [
-                            _buildInfoChip(
-                              _driverData?['plateNumber'] ?? 'ABC-1234',
-                              Icons.directions_bus_rounded,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildInfoChip(
-                              _driverData?['routeNumber'] ?? 'Route 101',
-                              Icons.route_rounded,
+                            QrImageView(
+                              data: _qrCode!,
+                              version: QrVersions.auto,
+                              size: 250,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: Color(0xFF8E4CB6),
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: Color(0xFF8E4CB6),
+                              ),
+                              embeddedImage: null,
                             ),
                           ],
                         ),
@@ -557,88 +602,20 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
               ),
             ),
 
-            const SizedBox(height: 30),
-
-            RepaintBoundary(
-              key: _qrKey,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF8E4CB6), width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(25),
-                      blurRadius: 20,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        QrImageView(
-                          data: _qrCode!,
-                          version: QrVersions.auto,
-                          size: 250,
-                          //backgroundColor: Colors.white,
-                          eyeStyle: const QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: Color(0xFF8E4CB6),
-                          ),
-                          dataModuleStyle: const QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.square,
-                            color: Color(0xFF8E4CB6),
-                          ),
-                          embeddedImage: null,
-                        ),
-
-                        //Container(
-                        //  width: 60,
-                        //  height: 60,
-                        //  decoration: BoxDecoration(color: Colors.white),
-                        //  child: ClipRRect(
-                        //    borderRadius: BorderRadius.circular(5),
-                            //child: Padding(
-                            //  padding: const EdgeInsets.all(8),
-                            //  child: Image.asset(
-                            //    'assets/images/logo.png',
-                            //    fit: BoxFit.contain,
-                            //    errorBuilder: (context, error, stackTrace) {
-                            //      return Icon(
-                            //        Icons.qr_code_2_rounded,
-                           //         size: 35,
-                           //         color: const Color(0xFF8E4CB6),
-                             //     );
-                              //  },
-                            //  ),
-                           // ),
-                         // ),
-                       // ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             const SizedBox(height: 20),
 
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Color(0xFF8E4CB6).withAlpha(25),
+                color: const Color(0xFF8E4CB6).withAlpha(25),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Color(0xFF8E4CB6)),
+                border: Border.all(color: const Color(0xFF8E4CB6)),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline_rounded,
-                    color: Color(0xFF8E4CB6),
+                    color: const Color(0xFF8E4CB6),
                     size: 24,
                   ),
                   const SizedBox(width: 12),
@@ -646,7 +623,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     child: Text(
                       'Show this QR code to passengers for contactless payment',
                       style: GoogleFonts.nunito(
-                        color: Color(0xFF8E4CB6),
+                        color: const Color(0xFF8E4CB6),
                         fontSize: 14,
                         height: 1.5,
                         fontWeight: FontWeight.w600,
@@ -661,27 +638,6 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
             Row(
               children: [
-                 Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _generateQRCode,
-                  icon: const Icon(Icons.refresh_rounded, size: 20),
-                  label: Text(
-                    'Regenerate',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8E4CB6),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _isDownloading ? null : _downloadQRCode,

@@ -5,9 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import './fare_payment.dart';
 
-class QRScannerScreen extends StatefulWidget {
-  const QRScannerScreen({super.key});
 
+class QRScannerScreen extends StatefulWidget {
+  final VoidCallback? onScanComplete;
+
+  const QRScannerScreen({super.key, this.onScanComplete}); 
+  
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
@@ -20,7 +23,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
   late AnimationController _animationController;
   late Animation<double> _animation;
   
-  // Track scan state
   bool _isProcessing = false;
 
   @override
@@ -32,11 +34,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     )..repeat(reverse: true);
     
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
+    
+    // Ensure camera starts when screen initializes
+    cameraController.start(); 
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    cameraController.stop(); // Explicitly stop the camera
     cameraController.dispose();
     super.dispose();
   }
@@ -48,10 +54,13 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     if (barcodes.isNotEmpty) {
       final String? code = barcodes.first.rawValue;
       if (code != null) {
-        // ✅ Trim whitespace immediately
         final cleanCode = code.trim();
         debugPrint('📱 QR Code detected (raw): "$code"');
         debugPrint('📱 QR Code detected (clean): "$cleanCode"');
+        
+        // Pause camera immediately to prevent multiple detections
+        cameraController.stop(); 
+
         setState(() {
           isScanning = false;
           _isProcessing = true;
@@ -62,20 +71,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     }
   }
 
-  // UPDATED: Now uses route_id foreign key with proper join
   Future<void> _handleScannedCode(String qrCode) async {
     _animationController.stop();
     
     try {
-      // ✅ Clean and normalize the QR code
+      // ... (your existing Supabase logic for handling scanned QR code) ...
       final trimmedQR = qrCode.trim();
       final normalizedQR = trimmedQR.toUpperCase();
       
       debugPrint('🔍 ============ QR CODE SCAN DEBUG ============');
-      debugPrint('📱 Raw QR: "$qrCode"');
-      debugPrint('📱 Trimmed: "$trimmedQR"');
-      debugPrint('📱 Normalized: "$normalizedQR"');
-      debugPrint('📱 Length: raw=${qrCode.length}, trimmed=${trimmedQR.length}');
+      // ... (rest of your debug prints) ...
       
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
@@ -86,7 +91,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
         return;
       }
 
-      // Get user's profile_id
       final profileResponse = await supabase
           .from('profiles')
           .select('id')
@@ -102,7 +106,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
       final profileId = profileResponse['id'] as String;
       debugPrint('✅ Profile ID: $profileId');
 
-      // ✅ NOW CORRECT: Query with proper route_id foreign key join
       debugPrint('🔍 Querying drivers with route join...');
       
       final allDriversResponse = await supabase
@@ -174,8 +177,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
         }
       }
 
-      // Log all QR codes for debugging if no match found
       if (driverResponse == null) {
+        // ... (error handling for no match) ...
         debugPrint('❌ NO MATCH FOUND!');
         debugPrint('📊 All QR codes in database:');
         for (var driver in allDriversResponse) {
@@ -199,21 +202,13 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
       }
 
       debugPrint('✅ ============ MATCH SUCCESS ============');
-      debugPrint('✅ Strategy: $matchStrategy');
-      debugPrint('✅ Driver ID: ${driverResponse['id']}');
-      debugPrint('✅ QR Code: ${driverResponse['current_qr']}');
+      // ... (rest of your success debug prints) ...
 
       final driverId = driverResponse['id'] as String;
       final routeId = driverResponse['route_id'] as String?;
       final routeData = driverResponse['routes'];
       
-      debugPrint('✅ Route ID: $routeId');
-      if (routeData != null) {
-        debugPrint('✅ Route Code: ${routeData['code']}');
-        debugPrint('✅ Route Name: ${routeData['name']}');
-      } else {
-        debugPrint('⚠️ No route data for this driver');
-      }
+      // ... (route data debug prints) ...
 
       // Check for existing ongoing trip
       final existingTrip = await supabase
@@ -253,6 +248,105 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
       _isProcessing = false;
     });
     _animationController.repeat(reverse: true);
+    cameraController.start(); // Restart camera scanning
+  }
+
+  // ✨ NEW METHOD: Modal with gradient border
+  Future<void> _showSuccessModal({
+    required String title,
+    required String message,
+  }) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFB945AA),
+                  Color(0xFF8E4CB6),
+                  Color(0xFF5B53C2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            padding: const EdgeInsets.all(3),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(21),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    child: Image.asset(
+                      'assets/images/logo.png', // Replace with your image asset path
+                      width: 50, // Set the desired width
+                      height: 50,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF8E4CB6),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    //width: double.infinity,
+                    width: 90,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        backgroundColor: const Color(0xFF8E4CB6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _handleTakeoffScan(
@@ -266,7 +360,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
 
     try {
-      // Create trip with 'ongoing' status
       final result = await supabase.from('trips').insert({
         'driver_id': driverId,
         'route_id': routeId,
@@ -282,17 +375,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
 
       if (!mounted) return;
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Boarding recorded! Scan again when you arrive.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
+      // ✨ CHANGED: Modal instead of snackbar
+      await _showSuccessModal(
+        title: 'Boarding Recorded',
+        message: 'Your trip has started.\nScan again when you arrive at your destination.',
       );
+      
+      // Notify parent widget if a callback is provided
+      widget.onScanComplete?.call();
+      // ✨ CHANGED: Reset scanner instead of Navigator.pop
+      _resetScanner();
 
-      // Return to previous screen
-      Navigator.pop(context);
     } catch (e) {
       debugPrint('❌ Error creating trip: $e');
       _showError('Failed to create trip: ${e.toString()}');
@@ -312,6 +405,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     debugPrint('🏁 Completing trip: $tripId');
 
     try {
+      // ... (your existing logic for calculating fare and updating trip) ...
       // Get destination stop (for now, we'll use a placeholder approach)
       String? destinationStopId;
       if (routeId != null && originStopId != null) {
@@ -323,6 +417,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
             .maybeSingle();
 
         if (originStop != null) {
+          // Get the next stop after the origin
           final nextStop = await supabase
               .from('route_stops')
               .select('id')
@@ -336,14 +431,14 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
         }
       }
 
-      // Calculate distance and fare
-      const int distanceMeters = 5000; // 5km placeholder
-      const double fareAmount = 15.00; // Placeholder fare
+      // Placeholder values (you can calculate these properly later)
+      const int distanceMeters = 5000;
+      const double fareAmount = 15.00;
 
       debugPrint('📍 Destination stop: $destinationStopId');
       debugPrint('💰 Fare: ₱$fareAmount');
 
-      // Update trip to completed
+      // Update the trip with destination and fare
       await supabase.from('trips').update({
         'destination_stop_id': destinationStopId,
         'distance_meters': distanceMeters,
@@ -359,7 +454,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
 
       if (!mounted) return;
 
-      // Navigate to fare payment page
+      // Navigate to the fare payment screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -391,11 +486,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
 
   Future<void> _pickImageFromGallery() async {
     try {
+      // Pause scanning while picking image
+      cameraController.stop();
+
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
       );
       
       if (image != null) {
+        // Analyze the picked image for QR codes
         final BarcodeCapture? barcodes = await cameraController.analyzeImage(image.path);
         
         if (barcodes != null && barcodes.barcodes.isNotEmpty) {
@@ -416,7 +515,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
               ),
             );
           }
+          _resetScanner(); // Resume camera if no QR found
         }
+      } else {
+        _resetScanner(); // Resume camera if image picker cancelled
       }
     } catch (e) {
       debugPrint('❌ Error picking image: $e');
@@ -428,6 +530,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
           ),
         );
       }
+      _resetScanner(); // Resume camera on error
     }
   }
 
@@ -435,6 +538,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // ... (your existing UI code for the scanner) ...
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
@@ -455,15 +559,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                     padding: const EdgeInsets.all(20.0),
                     child: Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(width: 8),
                         const Text(
                           'QR Scan',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -478,8 +577,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                       'Scan QR code when boarding and again when arriving at your destination',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
+                        fontSize: 16,
+                        color: Color(0x99000000),
                         height: 1.5,
                       ),
                     ),
@@ -499,6 +598,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                             MobileScanner(
                               controller: cameraController,
                               onDetect: _onDetect,
+                              // No startDelay needed here if you explicitly call controller.start() in initState
                             ),
 
                             // Scanning Overlay
@@ -658,6 +758,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
     );
   }
 
+  // ... (your existing _buildCorner, ScannerOverlay, ScannerLinePainter classes) ...
   Widget _buildCorner(bool isTop, bool isLeft) {
     return Container(
       width: 40,

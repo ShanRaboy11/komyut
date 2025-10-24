@@ -5,11 +5,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/services/auth_provider.dart';
-
-import 'views/pages/home_admin.dart';
-import 'views/pages/home_commuter.dart';
-import 'views/pages/home_driver.dart';
-import 'views/pages/home_operator.dart';
+import 'views/pages/admin_app.dart';
+import 'views/pages/commuter_app.dart';
+import 'views/pages/driver_app.dart';
+import 'views/pages/operator_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,10 +44,10 @@ class MyApp extends StatelessWidget {
         home: const LandingPage(),
         
         routes: {
-          '/home_admin': (context) => const AdminDashboardNav(),
-          '/home_commuter': (context) => const CommuterDashboardNav(),
-          '/home_driver': (context) => const DriverDashboardNav(),
-          '/home_operator': (context) => const OperatorDashboardNav(),
+          '/home_admin': (context) => const AdminApp(),
+          '/home_commuter': (context) => const CommuterApp(),
+          '/home_driver': (context) => const DriverApp(),
+          '/home_operator': (context) => const OperatorApp(),
         },
       ),
     );

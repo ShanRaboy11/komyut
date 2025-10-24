@@ -6,6 +6,8 @@ class AnimatedBottomNavBar extends StatefulWidget {
   final List<NavItem> items;
   final int initialIndex;
   final Function(int)? onNavigationChanged;
+  final ValueChanged<int>? onItemSelected;
+
 
   const AnimatedBottomNavBar({
     super.key,
@@ -13,6 +15,7 @@ class AnimatedBottomNavBar extends StatefulWidget {
     required this.items,
     this.initialIndex = 0,
     this.onNavigationChanged,
+    this.onItemSelected,
   });
 
   @override
@@ -45,6 +48,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
     });
     _controller.forward(from: 0);
     widget.onNavigationChanged?.call(index);
+    widget.onItemSelected?.call(index); // 👈 Added onItemSelected callback
   }
 
   @override
@@ -256,98 +260,3 @@ class _MovingCurvePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MovingCurvePainter oldDelegate) => true;
 }
-
-
-/*class NavBarCommuter extends StatelessWidget {
-  const NavBarCommuter ({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        Center(child: Text("🏠 Home")),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
-
-class NavBarDriver extends StatelessWidget {
-  const NavBarDriver ({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        Center(child: Text("🏠 Home")),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ Feedback")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.rate_review_rounded, label: 'Feedback'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
-
-class NavBarOperator extends StatelessWidget {
-  const NavBarOperator ({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        Center(child: Text("🏠 Home")),
-        Center(child: Text("📋 Drivers")),
-        Center(child: Text("✍️ Transactions")),
-        Center(child: Text("🔔 Reports")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.group, label: 'Drivers'),
-        NavItem(icon: Symbols.rate_review_rounded, label: 'Transactions'),
-        NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
-
-class NavBarAdmin extends StatelessWidget {
-  const NavBarAdmin ({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        Center(child: Text("🏠 Home")),
-        Center(child: Text("📋 Verified")),
-        Center(child: Text("✍️ Activity")),
-        Center(child: Text("🔔 Reports")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.verified, label: 'Verified'),
-        NavItem(icon: Symbols.rate_review_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
-      ],
-    );
-  }
-}*/
