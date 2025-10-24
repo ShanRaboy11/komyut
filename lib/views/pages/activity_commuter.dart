@@ -404,7 +404,7 @@ class _TripsPageState extends State<TripsPage> {
                     style: GoogleFonts.nunito(
                       color: const Color.fromARGB(255, 0, 0, 0),
                       fontWeight: FontWeight.w600,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
                   const SizedBox(width: 20),

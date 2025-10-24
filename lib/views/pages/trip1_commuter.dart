@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/trip_card.dart';
+import '../widgets/drivercard_trip.dart';
+import '../widgets/tripdetails.dart';
 
 class Trip1Page extends StatefulWidget {
   const Trip1Page({super.key});
@@ -68,7 +70,7 @@ class Trip1PageState extends State<Trip1Page>
                     style: GoogleFonts.nunito(
                       color: const Color.fromARGB(255, 0, 0, 0),
                       fontWeight: FontWeight.w600,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -130,6 +132,21 @@ class Trip1PageState extends State<Trip1Page>
                 tripCode: "03B",
                 status: "cancelled",
               ),
+              DriverCard(
+                name: "Gio Christian D. Macatual",
+                role: "Driver",
+                plate: "735TUK",
+              ),
+              TripDetailsCard(
+                mapImage: 'assets/images/map.png',
+                distance: '4 kilometers',
+                routeCode: '01K',
+                from: 'SM Cebu',
+                fromTime: '03:17PM',
+                to: 'Colon',
+                toTime: '04:26PM',
+              ),
+
               const SizedBox(height: 20),
             ],
           ),
