@@ -141,7 +141,7 @@ class _QRScanLoadingScreenState extends State<QRScanLoadingScreen>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withAlpha((255 * 0.3).round()),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                 ),
