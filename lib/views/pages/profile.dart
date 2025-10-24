@@ -5,43 +5,13 @@ import 'personalinfo_commuter.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
 
-/*class CommuterDashboardNav extends StatefulWidget {
-  const CommuterDashboardNav({super.key});
+class CommuterProfilePage extends StatefulWidget {
+  const CommuterProfilePage({super.key});
   @override
-  State<CommuterDashboardNav> createState() => _CommuterDashboardNavState();
+  State<CommuterProfilePage> createState() => _CommuterProfilePageState();
 }
-class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        CommuterDashboardPage(), // Home Page
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.qr_code_scanner_rounded, label: 'QR Scan'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
-// ------------------- Dashboard Page -------------------
-class CommuterDashboardPage extends StatefulWidget {
-  const CommuterDashboardPage({super.key});
-  @override
-  State<CommuterDashboardPage> createState() => _CommuterDashboardPageState();
-}
-class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
-  */
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
 
+class _CommuterProfilePageState extends State<CommuterProfilePage> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -53,7 +23,7 @@ class ProfilePage extends StatelessWidget {
           SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: width * 0.07,
-              vertical: width * 0.12,
+              vertical: 20,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
