@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import 'profile.dart';
+import 'notification_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -13,15 +15,17 @@ class CommuterDashboardNav extends StatefulWidget {
 }
 
 class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
+  final GlobalKey<NotificationPageState> notificationKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
-      pages: const [
-        CommuterDashboardPage(), // Home Page
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ QR Scan")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+      pages: [
+        const CommuterDashboardPage(),
+        const Center(child: Text("📋 Activity")),
+        const Center(child: Text("✍️ QR Scan")),
+        NotificationPage(key: notificationKey),
+        const CommuterProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -30,6 +34,11 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
         NavItem(icon: Icons.person_rounded, label: 'Profile'),
       ],
+      onNavigationChanged: (index) {
+        if (index == 3) {
+          notificationKey.currentState?.resetToDefault();
+        }
+      },
     );
   }
 }

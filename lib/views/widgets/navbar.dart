@@ -60,6 +60,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
     return Scaffold(
       extendBody: true,
       body: IndexedStack(index: _selectedIndex, children: widget.pages),
+
       bottomNavigationBar: AnimatedBuilder(
         animation: _animation,
         builder: (context, _) {
@@ -256,7 +257,6 @@ class _MovingCurvePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MovingCurvePainter oldDelegate) => true;
 }
-
 
 /*class NavBarCommuter extends StatelessWidget {
   const NavBarCommuter ({super.key});
