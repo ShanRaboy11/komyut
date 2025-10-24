@@ -6,6 +6,8 @@ import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import 'profile.dart';
+import 'notification_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -16,16 +18,17 @@ class CommuterDashboardNav extends StatefulWidget {
 
 class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
   int _currentIndex = 0;
+  final GlobalKey<NotificationPageState> notificationKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
-      pages: const [
-        CommuterDashboardPage(),
-        Center(child: Text("📋 Activity")),
-        QRScanLoadingScreen(), 
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+      pages: [
+        const CommuterDashboardPage(),
+        const Center(child: Text("📋 Activity")),
+        const Center(child: Text("✍️ QR Scan")),
+        NotificationPage(key: notificationKey),
+        const CommuterProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'profile.dart';
 
 class PersonalInfoPage extends StatefulWidget {
   const PersonalInfoPage({super.key});
@@ -60,12 +59,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProfilePage(),
-                          ),
-                        );
+                        Navigator.pop(context);
                       },
                       icon: const Icon(Icons.arrow_back, color: Colors.black87),
                     ),
