@@ -1,18 +1,21 @@
-import 'dart:io';
+// lib/services/registration_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationService {
-  final supabase = Supabase.instance.client;
-  
-  // Store registration data temporarily
-  final Map<String, dynamic> _registrationData = {};
+  final _registrationData = <String, dynamic>{};
+  final _supabase = Supabase.instance.client;
 
-  Map<String, dynamic> getRegistrationData() => Map.from(_registrationData);
+  // Get all registration data
+  Map<String, dynamic> getRegistrationData() {
+    return Map<String, dynamic>.from(_registrationData);
+  }
 
   // Step 1: Save role
   void saveRole(String role) {
-    _registrationData['role'] = role.toLowerCase();
+    _registrationData['role'] = role;
+    debugPrint('✅ Role saved: $role');
+    debugPrint('Current data: $_registrationData');
   }
 
   // Step 2a: Save commuter personal info
@@ -30,19 +33,15 @@ class RegistrationService {
     _registrationData['age'] = age;
     _registrationData['sex'] = sex;
     _registrationData['address'] = address;
-    
-    if (category.toLowerCase() == 'regular') {
-      _registrationData['category'] = 'regular';
-    } else {
-      _registrationData['category'] = 'student';
-    }
-    
+    _registrationData['category'] = category;
     if (idProofPath != null) {
       _registrationData['id_proof_path'] = idProofPath;
     }
+    debugPrint('✅ Personal info saved');
+    debugPrint('Current data: $_registrationData');
   }
 
-  // Step 2b: Save driver personal info
+  // Step 2b: Save driver personal info (UPDATED with vehicle and route)
   void saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -52,6 +51,8 @@ class RegistrationService {
     required String licenseNumber,
     String? assignedOperator,
     required String driverLicensePath,
+    required String vehiclePlate,  // ✨ NEW
+    required String routeCode,     // ✨ NEW
   }) {
     _registrationData['first_name'] = firstName;
     _registrationData['last_name'] = lastName;
@@ -59,11 +60,12 @@ class RegistrationService {
     _registrationData['sex'] = sex;
     _registrationData['address'] = address;
     _registrationData['license_number'] = licenseNumber;
+    _registrationData['assigned_operator'] = assignedOperator;
     _registrationData['driver_license_path'] = driverLicensePath;
-    
-    if (assignedOperator != null && assignedOperator.isNotEmpty) {
-      _registrationData['operator_name'] = assignedOperator;
-    }
+    _registrationData['vehicle_plate'] = vehiclePlate;  // ✨ NEW
+    _registrationData['route_code'] = routeCode;        // ✨ NEW
+    debugPrint('✅ Driver personal info saved');
+    debugPrint('Current data: $_registrationData');
   }
 
   // Step 2c: Save operator personal info
@@ -79,6 +81,8 @@ class RegistrationService {
     _registrationData['company_name'] = companyName;
     _registrationData['company_address'] = companyAddress;
     _registrationData['contact_email'] = contactEmail;
+    debugPrint('✅ Operator personal info saved');
+    debugPrint('Current data: $_registrationData');
   }
 
   // Step 3: Save login info
@@ -88,234 +92,71 @@ class RegistrationService {
   }) {
     _registrationData['email'] = email;
     _registrationData['password'] = password;
+    debugPrint('✅ Login info saved');
+    debugPrint('Current data: $_registrationData');
   }
 
-  // NEW: Send OTP for email verification (no account created yet)
+  // Send email verification OTP
   Future<Map<String, dynamic>> sendEmailVerificationOTP(String email) async {
     try {
-      debugPrint('📧 Sending verification OTP to: $email (no signup yet)');
-      
-      // Use signInWithOtp for email verification without creating account
-      await supabase.auth.signInWithOtp(
+      debugPrint('📧 Sending OTP to: $email');
+
+      await _supabase.auth.signInWithOtp(
         email: email,
-        emailRedirectTo: null, // We'll use OTP code instead
+        emailRedirectTo: null,
       );
 
       debugPrint('✅ OTP sent successfully');
-      return {
-        'success': true,
-        'message': 'Verification code sent to your email',
-      };
-    } on AuthException catch (e) {
-      debugPrint('❌ Auth Exception: ${e.message}');
-      return {
-        'success': false,
-        'message': e.message,
-      };
+      return {'success': true};
     } catch (e) {
       debugPrint('❌ Error sending OTP: $e');
       return {
         'success': false,
-        'message': 'Failed to send verification code: ${e.toString()}',
+        'message': e.toString(),
       };
     }
   }
 
-  // NEW: Verify OTP and create account
+  // Verify OTP and create auth account
   Future<Map<String, dynamic>> verifyOTPAndCreateAccount(
     String email,
     String otp,
   ) async {
     try {
-      debugPrint('🔍 Verifying OTP: $otp for email: $email');
-      
-      // Step 1: Verify OTP
-      final verifyResponse = await supabase.auth.verifyOTP(
+      debugPrint('🔍 Verifying OTP for: $email');
+
+      // Verify OTP
+      final authResponse = await _supabase.auth.verifyOTP(
+        type: OtpType.email,
         email: email,
         token: otp,
-        type: OtpType.email,
       );
 
-      if (verifyResponse.session == null) {
-        debugPrint('❌ OTP verification failed - no session');
+      if (authResponse.user == null) {
         return {
           'success': false,
           'message': 'Invalid verification code',
         };
       }
 
-      debugPrint('✅ OTP verified successfully');
-      
-      // Step 2: Get the user ID from the session
-      final userId = verifyResponse.user?.id;
-      if (userId == null) {
-        debugPrint('❌ No user ID after OTP verification');
-        return {
-          'success': false,
-          'message': 'Verification failed',
-        };
-      }
+      debugPrint('✅ User authenticated: ${authResponse.user!.id}');
 
-      debugPrint('✅ User authenticated: $userId');
-
-      // Step 3: Update the user's password (since we used OTP login, not signup)
-      final password = _registrationData['password'];
+      // Set password for the account
+      final password = _registrationData['password'] as String?;
       if (password != null) {
         debugPrint('🔐 Setting user password...');
-        await supabase.auth.updateUser(
+        await _supabase.auth.updateUser(
           UserAttributes(password: password),
         );
         debugPrint('✅ Password set successfully');
       }
 
-      return {
-        'success': true,
-        'message': 'Email verified successfully',
-        'userId': userId,
-      };
-    } on AuthException catch (e) {
-      debugPrint('❌ Auth Exception: ${e.message}');
-      
-      String errorMessage = 'Invalid code. Please try again.';
-      if (e.message.contains('expired')) {
-        errorMessage = 'Code expired. Please request a new one.';
-      } else if (e.message.contains('invalid')) {
-        errorMessage = 'Invalid code. Please check and try again.';
-      }
-
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
+      return {'success': true};
     } catch (e) {
-      debugPrint('❌ General Exception: $e');
+      debugPrint('❌ Error verifying OTP: $e');
       return {
         'success': false,
-        'message': 'Error: ${e.toString()}',
-      };
-    }
-  }
-
-  // Step 4: Complete registration - Create profile and role-specific data
-  Future<Map<String, dynamic>> completeRegistration() async {
-    try {
-      debugPrint('🔍 Starting completeRegistration');
-      
-      // Get the current authenticated user
-      final user = supabase.auth.currentUser;
-      
-      if (user == null) {
-        debugPrint('❌ No authenticated user found');
-        return {
-          'success': false,
-          'message': 'User not authenticated. Please verify your email first.',
-        };
-      }
-
-      debugPrint('✅ User authenticated: ${user.id}');
-      debugPrint('📋 Registration data: $_registrationData');
-
-      final role = _registrationData['role'];
-      
-      // Step 1: Create profile
-      final profileData = {
-        'user_id': user.id,
-        'role': role,
-        'first_name': _registrationData['first_name'],
-        'last_name': _registrationData['last_name'],
-        'age': _registrationData['age'],
-        'sex': _registrationData['sex'],
-        'address': _registrationData['address'],
-        'is_verified': false,
-      };
-
-      debugPrint('💾 Inserting profile...');
-      final profileResponse = await supabase
-          .from('profiles')
-          .insert(profileData)
-          .select()
-          .single();
-      
-      final profileId = profileResponse['id'];
-      debugPrint('✅ Profile created with ID: $profileId');
-
-      // Step 2: Create role-specific records
-      if (role == 'commuter') {
-        debugPrint('👤 Creating commuter record...');
-        await supabase.from('commuters').insert({
-          'profile_id': profileId,
-          'category': _registrationData['category'],
-          'id_verified': false,
-          'wheel_tokens': 0,
-        });
-        
-        debugPrint('💰 Creating wallet for commuter...');
-        await supabase.from('wallets').insert({
-          'owner_profile_id': profileId,
-          'balance': 0.0,
-          'locked': false,
-        });
-        
-        debugPrint('✅ Commuter and wallet created!');
-        
-      } else if (role == 'driver') {
-        debugPrint('🚗 Creating driver record...');
-        await supabase.from('drivers').insert({
-          'profile_id': profileId,
-          'license_number': _registrationData['license_number'],
-          'operator_name': _registrationData['operator_name'],
-          'status': false,
-          'active': true,
-        });
-        
-        debugPrint('✅ Driver created!');
-        
-      } else if (role == 'operator') {
-        debugPrint('🏢 Creating operator record...');
-        await supabase.from('operators').insert({
-          'profile_id': profileId,
-          'company_name': _registrationData['company_name'],
-          'company_address': _registrationData['company_address'],
-          'contact_email': _registrationData['contact_email'],
-        });
-        
-        debugPrint('✅ Operator created!');
-      }
-
-      clearRegistrationData();
-      
-      debugPrint('🎉 Registration completed successfully!');
-      return {
-        'success': true,
-        'message': 'Registration completed successfully',
-        'data': {
-          'userId': user.id,
-          'profileId': profileId,
-          'role': role,
-        },
-      };
-
-    } on PostgrestException catch (e) {
-      debugPrint('❌ Supabase Error: ${e.message}');
-      debugPrint('❌ Error code: ${e.code}');
-      debugPrint('❌ Error details: ${e.details}');
-      
-      String userMessage = 'Database error occurred';
-      if (e.code == '23505') {
-        userMessage = 'This account already exists';
-      } else if (e.code == '23503') {
-        userMessage = 'Invalid data provided';
-      }
-      
-      return {
-        'success': false,
-        'message': userMessage,
-      };
-    } catch (e) {
-      debugPrint('❌ General Exception: $e');
-      return {
-        'success': false,
-        'message': 'Error: ${e.toString()}',
+        'message': e.toString(),
       };
     }
   }
@@ -324,54 +165,256 @@ class RegistrationService {
   Future<Map<String, dynamic>> resendOTP(String email) async {
     try {
       debugPrint('🔄 Resending OTP to: $email');
-      
-      await supabase.auth.signInWithOtp(
+
+      await _supabase.auth.signInWithOtp(
         email: email,
         emailRedirectTo: null,
       );
 
       debugPrint('✅ OTP resent successfully');
-      return {
-        'success': true,
-        'message': 'New code sent to your email',
-      };
-    } on AuthException catch (e) {
-      debugPrint('❌ Auth Exception: ${e.message}');
-      return {
-        'success': false,
-        'message': e.message,
-      };
+      return {'success': true};
     } catch (e) {
       debugPrint('❌ Error resending OTP: $e');
       return {
         'success': false,
-        'message': 'Failed to resend code: ${e.toString()}',
+        'message': e.toString(),
       };
     }
   }
 
-  // Upload file to Supabase Storage
-  Future<String?> uploadFile(File file, String bucket, String path) async {
+  // ✨ NEW: Fetch available routes for dropdown
+  Future<List<Map<String, dynamic>>> getAvailableRoutes() async {
     try {
-      final fileName = path.split('/').last;
-      final filePath = '$path/$fileName';
+      debugPrint('🔍 Fetching available routes...');
       
-      await supabase.storage.from(bucket).upload(
-        filePath,
-        file,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      final routes = await _supabase
+          .from('routes')
+          .select('code, name, description')
+          .order('code');
 
-      final url = supabase.storage.from(bucket).getPublicUrl(filePath);
-      return url;
+      debugPrint('✅ Fetched ${routes.length} routes');
+      return List<Map<String, dynamic>>.from(routes);
     } catch (e) {
-      debugPrint('Error uploading file: $e');
-      return null;
+      debugPrint('❌ Error fetching routes: $e');
+      return [];
+    }
+  }
+
+  // FIXED: Complete registration after email verification
+  Future<Map<String, dynamic>> completeRegistration() async {
+    try {
+      debugPrint('🔍 Starting completeRegistration');
+      debugPrint('📋 Registration data: $_registrationData');
+      
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('❌ No authenticated user found');
+        return {
+          'success': false,
+          'message': 'No authenticated user found. Please try logging in again.',
+        };
+      }
+
+      debugPrint('✅ User authenticated: ${user.id}');
+
+      // Verify role exists
+      final role = _registrationData['role'];
+      if (role == null) {
+        debugPrint('❌ Role is missing from registration data!');
+        return {
+          'success': false,
+          'message': 'Role information is missing. Please restart registration.',
+        };
+      }
+
+      debugPrint('✅ Role found: $role');
+
+      // CRITICAL FIX: Check if profile already exists
+      debugPrint('🔍 Checking if profile already exists...');
+      final existingProfile = await _supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      String profileId;
+
+      if (existingProfile != null) {
+        debugPrint('⚠️ Profile already exists for user ${user.id}');
+        profileId = existingProfile['id'];
+        debugPrint('✅ Using existing profile ID: $profileId');
+      } else {
+        // Create profile
+        debugPrint('💾 Creating new profile...');
+        
+        // FIX: Ensure all required fields are present
+        final profileData = <String, dynamic>{
+          'user_id': user.id,
+          'role': role,
+          'first_name': _registrationData['first_name'] ?? '',
+          'last_name': _registrationData['last_name'] ?? '',
+          'age': _registrationData['age'],
+          'sex': _registrationData['sex'],
+          'address': _registrationData['address'],
+        };
+
+        debugPrint('📤 Profile data to insert: $profileData');
+
+        try {
+          final profileResponse = await _supabase
+              .from('profiles')
+              .insert(profileData)
+              .select('id')
+              .single();
+
+          profileId = profileResponse['id'];
+          debugPrint('✅ Profile created with ID: $profileId');
+        } catch (insertError) {
+          debugPrint('❌ Error inserting profile: $insertError');
+          
+          // If insert fails due to RLS, try with service role or check RLS policies
+          if (insertError is PostgrestException) {
+            debugPrint('❌ PostgrestException code: ${insertError.code}');
+            debugPrint('❌ PostgrestException message: ${insertError.message}');
+            debugPrint('❌ PostgrestException details: ${insertError.details}');
+            
+            return {
+              'success': false,
+              'message': 'Failed to create profile. Error: ${insertError.message}',
+            };
+          }
+          rethrow;
+        }
+      }
+
+      // Create wallet if it doesn't exist
+      debugPrint('💰 Checking/creating wallet...');
+      final existingWallet = await _supabase
+          .from('wallets')
+          .select('id')
+          .eq('owner_profile_id', profileId)
+          .maybeSingle();
+
+      if (existingWallet == null) {
+        await _supabase.from('wallets').insert({
+          'owner_profile_id': profileId,
+          'balance': 0,
+        });
+        debugPrint('✅ Wallet created!');
+      } else {
+        debugPrint('✅ Wallet already exists');
+      }
+
+      // Create role-specific records
+      if (role == 'commuter') {
+        debugPrint('🚶 Checking/creating commuter record...');
+        final existingCommuter = await _supabase
+            .from('commuters')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingCommuter == null) {
+          await _supabase.from('commuters').insert({
+            'profile_id': profileId,
+            'category': _registrationData['category'] ?? 'regular',
+          });
+          debugPrint('✅ Commuter created!');
+        } else {
+          debugPrint('✅ Commuter already exists');
+        }
+      } else if (role == 'driver') {
+        debugPrint('🚗 Checking/creating driver record...');
+        final existingDriver = await _supabase
+            .from('drivers')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingDriver == null) {
+          // ✨ CRITICAL FIX: Get route_id from route_code
+          String? routeId;
+          if (_registrationData['route_code'] != null) {
+            debugPrint('🔍 Fetching route_id for code: ${_registrationData['route_code']}');
+            final routeResponse = await _supabase
+                .from('routes')
+                .select('id')
+                .eq('code', _registrationData['route_code'])
+                .maybeSingle();
+            
+            if (routeResponse != null) {
+              routeId = routeResponse['id'];
+              debugPrint('✅ Found route_id: $routeId');
+            } else {
+              debugPrint('⚠️ Route not found for code: ${_registrationData['route_code']}');
+            }
+          }
+
+          // ✨ UPDATED: Use route_id instead of route_code
+          await _supabase.from('drivers').insert({
+            'profile_id': profileId,
+            'license_number': _registrationData['license_number'] ?? '',
+            'operator_name': _registrationData['assigned_operator'],
+            'vehicle_plate': _registrationData['vehicle_plate'] ?? '',  // ✨ NEW
+            'route_id': routeId,  // ✨ Use route_id (FK) instead of route_code
+          });
+          debugPrint('✅ Driver created with route_id: $routeId');
+        } else {
+          debugPrint('✅ Driver already exists');
+        }
+      } else if (role == 'operator') {
+        debugPrint('🏢 Checking/creating operator record...');
+        final existingOperator = await _supabase
+            .from('operators')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingOperator == null) {
+          await _supabase.from('operators').insert({
+            'profile_id': profileId,
+            'company_name': _registrationData['company_name'] ?? '',
+            'company_address': _registrationData['company_address'] ?? '',
+            'contact_email': _registrationData['contact_email'] ?? '',
+          });
+          debugPrint('✅ Operator created!');
+        } else {
+          debugPrint('✅ Operator already exists');
+        }
+      }
+
+      debugPrint('🎉 Registration completed successfully!');
+      debugPrint('📤 Returning role: $role');
+      
+      // Return role at top level so it can be accessed
+      return {
+        'success': true,
+        'role': role,  // CRITICAL: Role at top level
+        'data': {
+          'userId': user.id,
+          'profileId': profileId,
+          'role': role,
+        },
+      };
+    } catch (e, stackTrace) {
+      if (e is PostgrestException) {
+        debugPrint('❌ Supabase Error: ${e.message}');
+        debugPrint('❌ Error code: ${e.code}');
+        debugPrint('❌ Error details: ${e.details}');
+      } else {
+        debugPrint('❌ Error completing registration: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
+      }
+      return {
+        'success': false,
+        'message': 'Registration failed: ${e.toString()}',
+      };
     }
   }
 
   // Clear all registration data
   void clearRegistrationData() {
     _registrationData.clear();
+    debugPrint('🗑️ Registration data cleared');
   }
 }
