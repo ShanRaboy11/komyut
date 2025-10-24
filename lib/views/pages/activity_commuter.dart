@@ -431,7 +431,6 @@ class _TripsPageState extends State<TripsPage> {
                 tripCode: "03B",
                 status: "cancelled",
               ),
-              const SizedBox(height: 30),
             ],
           ),
         ),

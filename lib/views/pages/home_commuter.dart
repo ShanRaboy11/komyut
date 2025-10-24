@@ -6,6 +6,7 @@ import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
+import 'activity_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -22,7 +23,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
     return AnimatedBottomNavBar(
       pages: [
         const CommuterDashboardPage(),
-        const Center(child: Text("📋 Activity")),
+        const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
         const CommuterProfilePage(),
