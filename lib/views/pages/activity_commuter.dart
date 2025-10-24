@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'trip1_commuter.dart';
 import '../widgets/trip_card.dart';
 
 class TripsPage extends StatefulWidget {
@@ -374,11 +375,21 @@ class _TripsPageState extends State<TripsPage> {
                     ),
                   ),
                   const SizedBox(width: 30),
-                  Text(
-                    "View All",
-                    style: GoogleFonts.nunito(
-                      color: const Color.fromARGB(255, 42, 42, 42),
-                      fontSize: 16,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Trip1Page(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "View All",
+                      style: GoogleFonts.nunito(
+                        color: const Color.fromARGB(255, 42, 42, 42),
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],
