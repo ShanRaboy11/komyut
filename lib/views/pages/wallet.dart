@@ -152,20 +152,29 @@ class _WalletPageState extends State<WalletPage>
                     vertical: 16,
                   ),
                   color: gradientColors[1],
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(
-                        'Deposit to komyut',
-                        style: GoogleFonts.manrope(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Center(
+                        child: Text(
+                          'Deposit to komyut',
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: const Icon(Icons.close, color: Colors.white),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -176,32 +185,41 @@ class _WalletPageState extends State<WalletPage>
                   child: Column(
                     children: [
                       _buildDepositOptionItem(
-                        icon: Icon(Icons.storefront, color: gradientColors[1]),
+                        icon: Icon(
+                          Icons.storefront,
+                          color: gradientColors[1],
+                          size: 26,
+                        ),
                         text: 'Over-the-Counter',
                       ),
                       _buildDepositOptionItem(
                         icon: Icon(
                           Icons.account_balance_wallet_outlined,
                           color: gradientColors[1],
+                          size: 26,
                         ),
                         text: 'Digital Wallet',
                       ),
                       _buildDepositOptionItem(
                         icon: Container(
+                          width: 26,
+                          height: 26,
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: gradientColors[1],
-                              width: 1.5,
+                              width: 2,
                             ),
                           ),
+                          alignment: Alignment.center,
                           child: Text(
                             'K',
                             style: TextStyle(
                               color: gradientColors[1],
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 15,
+                              height: 1,
                             ),
                           ),
                         ),
@@ -229,7 +247,7 @@ class _WalletPageState extends State<WalletPage>
         Navigator.of(context).pop();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         decoration: BoxDecoration(
           border: Border(
             bottom: isLast
@@ -239,12 +257,12 @@ class _WalletPageState extends State<WalletPage>
         ),
         child: Row(
           children: [
-            icon,
+            SizedBox(width: 35, child: Center(child: icon)),
             const SizedBox(width: 16),
             Text(
               text,
               style: GoogleFonts.manrope(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: gradientColors[1],
               ),
