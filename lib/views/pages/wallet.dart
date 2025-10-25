@@ -34,7 +34,6 @@ class _WalletPageState extends State<WalletPage>
     super.dispose();
   }
 
-  // NEW: Method to show the token information modal
   void _showTokenInfoModal(BuildContext context) {
     showDialog(
       context: context,
@@ -97,7 +96,7 @@ class _WalletPageState extends State<WalletPage>
                     const SizedBox(height: 20),
                     Text(
                       'Earn and use Wheel Tokens to make your rides more rewarding! Complete a ride to earn 0.5 Wheel Token.',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.justify,
                       style: GoogleFonts.nunito(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
@@ -106,7 +105,7 @@ class _WalletPageState extends State<WalletPage>
                     const SizedBox(height: 16),
                     Text(
                       'The more you ride, the more tokens you collect — and the more you save! Start earning today and make every ride count!',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.justify,
                       style: GoogleFonts.nunito(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
@@ -115,21 +114,14 @@ class _WalletPageState extends State<WalletPage>
                   ],
                 ),
                 Positioned(
-                  top: -16,
-                  right: -16,
+                  top: -12,
+                  right: -12,
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.close,
-                        color: gradientColors[1],
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
                 ),
