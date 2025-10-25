@@ -133,6 +133,128 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
+  void _showDepositOptionsModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Modal Header
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  color: gradientColors[1],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Deposit to komyut',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                // Modal Body
+                Container(
+                  color: Colors.white,
+                  child: Column(
+                    children: [
+                      _buildDepositOptionItem(
+                        icon: Icon(Icons.storefront, color: gradientColors[1]),
+                        text: 'Over-the-Counter',
+                      ),
+                      _buildDepositOptionItem(
+                        icon: Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: gradientColors[1],
+                        ),
+                        text: 'Digital Wallet',
+                      ),
+                      _buildDepositOptionItem(
+                        icon: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: gradientColors[1],
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Text(
+                            'K',
+                            style: TextStyle(
+                              color: gradientColors[1],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        text: 'Wheel Tokens',
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDepositOptionItem({
+    required Widget icon,
+    required String text,
+    bool isLast = false,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: isLast
+                ? BorderSide.none
+                : BorderSide(color: Colors.grey[200]!),
+          ),
+        ),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: 16),
+            Text(
+              text,
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: gradientColors[1],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,21 +393,24 @@ class _WalletPageState extends State<WalletPage>
           Positioned(
             bottom: -40,
             right: 0,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x338E4CB6),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+            child: GestureDetector(
+              onTap: () => _showDepositOptionsModal(context),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x338E4CB6),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.add, color: gradientColors[1], size: 30),
               ),
-              child: Icon(Icons.add, color: gradientColors[1], size: 30),
             ),
           ),
         ],
