@@ -37,7 +37,7 @@ class _WalletPageState extends State<WalletPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The universal navbar from the dashboard will be visible when you navigate back.
+      // The universal navbar from the parent will be visible.
       // This page does NOT have its own bottomNavigationBar.
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
@@ -56,15 +56,11 @@ class _WalletPageState extends State<WalletPage>
             color: Colors.black87,
           ),
         ),
-        centerTitle: false,
+        // --- THIS IS THE CHANGE ---
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          24.0,
-          0,
-          24.0,
-          40.0,
-        ), // Reduced bottom padding
+        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 40.0),
         child: Column(
           children: [
             const SizedBox(height: 16),

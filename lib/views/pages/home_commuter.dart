@@ -22,7 +22,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
       pages: [
-        const CommuterDashboardPage(),
+        const HomeTabNavigator(),
         const Center(child: Text("📋 Activity")),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
@@ -39,6 +39,30 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         if (index == 3) {
           notificationKey.currentState?.resetToDefault();
         }
+      },
+    );
+  }
+}
+
+class HomeTabNavigator extends StatelessWidget {
+  const HomeTabNavigator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      initialRoute: '/',
+      onGenerateRoute: (RouteSettings settings) {
+        WidgetBuilder builder;
+        switch (settings.name) {
+          case '/wallet':
+            builder = (BuildContext context) => const WalletPage();
+            break;
+          case '/':
+          default:
+            builder = (BuildContext context) => const CommuterDashboardPage();
+            break;
+        }
+        return MaterialPageRoute(builder: builder, settings: settings);
       },
     );
   }
@@ -78,8 +102,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 400;
 
+    // This page no longer needs a Scaffold. The parent provides it.
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(30, 10, 30, 80),
+      padding: const EdgeInsets.fromLTRB(30, 10, 30, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -101,7 +126,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   Text(
                     'Welcome back!',
                     style: GoogleFonts.manrope(
-                      color: Color(0xFF8E4CB6),
+                      color: const Color(0xFF8E4CB6),
                       fontSize: 18,
                     ),
                   ),
@@ -113,9 +138,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
           // Wallet / Points Tabs
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(10),
                 topRight: Radius.circular(10),
               ),
@@ -127,7 +152,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     onTap: () => _switchTab(true),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         gradient: showWallet
@@ -136,9 +160,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                         color: showWallet ? null : Colors.transparent,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(0),
                           topRight: Radius.circular(10),
-                          bottomRight: Radius.circular(0),
                         ),
                       ),
                       child: Center(
@@ -159,7 +181,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     onTap: () => _switchTab(false),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         gradient: !showWallet
@@ -168,9 +189,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                         color: !showWallet ? null : Colors.transparent,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(10),
-                          bottomRight: Radius.circular(0),
                           topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(0),
                         ),
                       ),
                       child: Center(
@@ -193,9 +212,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           // Wallet / Points Card Container
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: showWallet ? gradientColors : gradientColors,
-              ),
+              gradient: LinearGradient(colors: gradientColors),
               borderRadius: BorderRadius.only(
                 bottomLeft: const Radius.circular(20),
                 bottomRight: const Radius.circular(20),
@@ -212,16 +229,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
-                switchInCurve: Curves.easeInOut,
-                switchOutCurve: Curves.easeInOut,
                 transitionBuilder: (child, animation) {
-                  final bool isWalletToPoints =
-                      _previousShowWallet && !showWallet;
-                  final incomingOffset = isWalletToPoints
-                      ? const Offset(-1.0, 0)
-                      : const Offset(-1.0, 0);
                   final offsetAnimation = Tween<Offset>(
-                    begin: incomingOffset,
+                    begin: const Offset(-1.0, 0),
                     end: Offset.zero,
                   ).animate(animation);
                   return SlideTransition(
@@ -230,23 +240,16 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   );
                 },
                 child: showWallet
-                    ? _buildWalletContent(key: const ValueKey(1))
-                    : _buildPointsContent(key: const ValueKey(2)),
+                    ? _buildWalletContent(key: const ValueKey('wallet'))
+                    : _buildPointsContent(key: const ValueKey('points')),
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // Analytics
           _buildAnalyticsSection(isSmallScreen),
           const SizedBox(height: 20),
-
-          // Promo
           _buildPromoCard(),
           const SizedBox(height: 20),
-
-          // Quick Actions
           _buildQuickActions(),
         ],
       ),
@@ -257,11 +260,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildWalletContent({Key? key}) {
     return Container(
       key: key,
-      width: double.infinity,
       padding: const EdgeInsets.all(30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,11 +287,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       color: Colors.white70,
                       size: 18,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isBalanceVisible = !_isBalanceVisible;
-                      });
-                    },
+                    onPressed: () =>
+                        setState(() => _isBalanceVisible = !_isBalanceVisible),
                   ),
                 ],
               ),
@@ -305,7 +303,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Text(
                     _isBalanceVisible ? '500.00' : '••••••',
                     style: GoogleFonts.manrope(
@@ -322,9 +319,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             text: 'Cash In',
             icon: Icons.add_rounded,
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const WalletPage()),
-              );
+              // Use the nested navigator
+              Navigator.of(context).pushNamed('/wallet');
             },
             isFilled: true,
             fillColor: Colors.white,
@@ -342,14 +338,13 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   }
 
   // ---------------- Points Content ----------------
+  // Points Content with Updated Navigation
   Widget _buildPointsContent({Key? key}) {
     return Container(
       key: key,
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,11 +369,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       color: Colors.white70,
                       size: 18,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isPointsVisible = !_isPointsVisible;
-                      });
-                    },
+                    onPressed: () =>
+                        setState(() => _isPointsVisible = !_isPointsVisible),
                   ),
                 ],
               ),
@@ -406,9 +398,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           CustomButton(
             text: 'Redeem',
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const WalletPage()),
-              );
+              // Use the nested navigator
+              Navigator.of(context).pushNamed('/wallet');
             },
             isFilled: true,
             fillColor: Colors.white,
