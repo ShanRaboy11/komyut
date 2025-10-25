@@ -118,11 +118,7 @@ class _WalletPageState extends State<WalletPage>
                   right: -12,
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: const Icon(Icons.close, color: Colors.white),
                   ),
                 ),
               ],
@@ -169,59 +165,42 @@ class _WalletPageState extends State<WalletPage>
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                          child: const Icon(Icons.close, color: Colors.white),
                         ),
                       ),
                     ],
                   ),
                 ),
                 // Modal Body
+                // Modal Body
                 Container(
                   color: Colors.white,
                   child: Column(
                     children: [
                       _buildDepositOptionItem(
-                        icon: Icon(
-                          Icons.storefront,
-                          color: gradientColors[1],
-                          size: 26,
+                        icon: Image.asset(
+                          'assets/images/otc.png',
+                          width: 26,
+                          height: 26,
+                          fit: BoxFit.contain,
                         ),
                         text: 'Over-the-Counter',
                       ),
                       _buildDepositOptionItem(
-                        icon: Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: gradientColors[1],
-                          size: 26,
+                        icon: Image.asset(
+                          'assets/images/dw.png',
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.contain,
                         ),
                         text: 'Digital Wallet',
                       ),
                       _buildDepositOptionItem(
-                        icon: Container(
-                          width: 26,
-                          height: 26,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: gradientColors[1],
-                              width: 2,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'K',
-                            style: TextStyle(
-                              color: gradientColors[1],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              height: 1,
-                            ),
-                          ),
+                        icon: Image.asset(
+                          'assets/images/wt.png',
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
                         ),
                         text: 'Wheel Tokens',
                         isLast: true,
