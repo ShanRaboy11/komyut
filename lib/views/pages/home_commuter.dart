@@ -7,6 +7,7 @@ import '../widgets/navbar.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';
+import 'wallet_history.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -57,6 +58,15 @@ class HomeTabNavigator extends StatelessWidget {
           case '/wallet':
             builder = (BuildContext context) => const WalletPage();
             break;
+
+          case '/history':
+            // Safely cast the arguments to the type we expect
+            final type = settings.arguments as HistoryType;
+            builder = (BuildContext context) =>
+                TransactionHistoryPage(type: type);
+            break;
+          // ------------------------
+
           case '/':
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'wallet_history.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -298,7 +299,15 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildViewAllButton() {
     return OutlinedButton(
-      onPressed: () {},
+      onPressed: () {
+        // Determine which type of history to show based on the active tab
+        final type = _tabController.index == 0
+            ? HistoryType.transactions
+            : HistoryType.tokens;
+
+        // Use the nested navigator to push the new page
+        Navigator.of(context).pushNamed('/history', arguments: type);
+      },
       style: OutlinedButton.styleFrom(
         foregroundColor: gradientColors[1],
         side: BorderSide(color: gradientColors[1]),
