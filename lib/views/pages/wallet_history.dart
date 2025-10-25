@@ -71,12 +71,7 @@ class TransactionHistoryPage extends StatelessWidget {
           ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                24.0,
-                0,
-                24.0,
-                100.0,
-              ), // Padding for navbar
+              padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
               itemCount: data.length,
               itemBuilder: (context, index) {
                 final item = data[index];
@@ -104,7 +99,7 @@ class TransactionHistoryPage extends StatelessWidget {
     );
   }
 
-  // --- Reused List Item Widgets from WalletPage ---
+  // --- UPDATED WIDGETS ---
 
   Widget _buildTransactionItem(
     String title,
@@ -116,47 +111,44 @@ class TransactionHistoryPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // The 'color: Colors.white' property has been removed.
         border: Border(
           bottom: BorderSide(
             color: isLast ? Colors.transparent : Colors.grey[200]!,
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
-                ),
-              ],
-            ),
-            Text(
-              amount,
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isCredit
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFFC62828),
               ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
+          Text(
+            amount,
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: isCredit
+                  ? const Color(0xFF2E7D32)
+                  : const Color(0xFFC62828),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -171,53 +163,50 @@ class TransactionHistoryPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // The 'color: Colors.white' property has been removed.
         border: Border(
           bottom: BorderSide(
             color: isLast ? Colors.transparent : Colors.grey[200]!,
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text(
+                amount,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isCredit
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFFC62828),
                 ),
-              ],
-            ),
-            Row(
-              children: [
-                Text(
-                  amount,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isCredit
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFFC62828),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Image.asset('assets/images/wheel token.png', height: 20),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: 6),
+              Image.asset('assets/images/wheel token.png', height: 20),
+            ],
+          ),
+        ],
       ),
     );
   }
