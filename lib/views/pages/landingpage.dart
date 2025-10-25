@@ -3,6 +3,8 @@ import '../widgets/button.dart';
 import '../widgets/logo.dart';
 import '../pages/create_account.dart';
 import '../pages/login.dart';
+import '../pages/home_commuter.dart';
+import '../pages/wallet.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -116,7 +118,8 @@ class LandingPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
+                            // builder: (context) => const LoginPage(),
+                            builder: (context) => const CommuterDashboardNav(),
                           ),
                         );
                       },

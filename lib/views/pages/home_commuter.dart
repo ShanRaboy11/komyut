@@ -6,6 +6,7 @@ import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
+import 'wallet.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -320,7 +321,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           CustomButton(
             text: 'Cash In',
             icon: Icons.add_rounded,
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const WalletPage()),
+              );
+            },
             isFilled: true,
             fillColor: Colors.white,
             textColor: const Color(0xFF5B53C2),
@@ -400,7 +405,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           ),
           CustomButton(
             text: 'Redeem',
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const WalletPage()),
+              );
+            },
             isFilled: true,
             fillColor: Colors.white,
             textColor: const Color(0xFFB945AA),
