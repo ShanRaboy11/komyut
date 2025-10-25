@@ -167,36 +167,36 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           ),
 
           // Wallet / Tokens Animated Card
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (child, animation) {
-              final offsetAnimation =
-                  Tween<Offset>(
-                    begin: Offset(_previousShowWallet ? 1 : -1, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOutCubic,
-                    ),
-                  );
-              return SlideTransition(position: offsetAnimation, child: child);
-            },
-            child: Container(
-              key: ValueKey<bool>(showWallet),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: gradientColors),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10),
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(10),
+              bottomRight: Radius.circular(10),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (child, animation) {
+                final offsetAnimation =
+                    Tween<Offset>(
+                      begin: Offset(_previousShowWallet ? 1.0 : -1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOutCubic,
+                      ),
+                    );
+                return SlideTransition(position: offsetAnimation, child: child);
+              },
+              child: Container(
+                key: ValueKey<bool>(showWallet),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: gradientColors),
                 ),
+                child: showWallet
+                    ? _buildWalletCard(isSmallScreen)
+                    : _buildTokensCard(isSmallScreen),
               ),
-              child: showWallet
-                  ? _buildWalletCard(isSmallScreen)
-                  : _buildTokensCard(
-                      isSmallScreen,
-                    ), // Changed from _buildPointsCard
             ),
           ),
 
@@ -220,9 +220,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected
-                ? null
-                : Colors.grey[100], // Changed from 200 to 100
+            color: isSelected ? null : Colors.grey[100],
             gradient: isSelected
                 ? LinearGradient(colors: gradientColors)
                 : null,
@@ -258,7 +256,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Row(
               children: [
                 Text(
-                  _isBalanceVisible ? '₱500.00' : '₱•••.••',
+                  _isBalanceVisible ? '₱500.00' : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -299,29 +297,29 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
+  // UPDATED: Rebuilt to match the wallet card style as per new instructions
   // ---------------- Tokens Card ----------------
   Widget _buildTokensCard(bool isSmallScreen) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Text('Tokens', style: GoogleFonts.manrope(color: Colors.white70)),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'My Tokens',
-              style: GoogleFonts.manrope(color: Colors.white70),
-            ),
-            const SizedBox(height: 8),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SvgPicture.asset(
-                  'assets/images/coin.svg',
-                  height: 30,
-                  width: 30,
+                // You can change this asset path to 'wheel token.png'
+                Image.asset(
+                  'assets/images/wheel token.png',
+                  height: 32,
+                  width: 32,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible ? '1,234' : '•,•••',
+                  _isTokensVisible ? '51' : '••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -340,23 +338,23 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
               ],
             ),
+            CustomButton(
+              text: 'Redeem',
+              onPressed: () {
+                Navigator.of(context).pushNamed('/wallet');
+              },
+              isFilled: true,
+              fillColor: Colors.white,
+              textColor: const Color(0xFFB945AA),
+              width: 120,
+              height: 45,
+              borderRadius: 30,
+              hasShadow: false,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              imagePath: 'assets/images/redeem.svg',
+            ),
           ],
-        ),
-        CustomButton(
-          text: 'Redeem',
-          onPressed: () {
-            Navigator.of(context).pushNamed('/wallet');
-          },
-          isFilled: true,
-          fillColor: Colors.white,
-          textColor: const Color(0xFFB945AA),
-          width: 120,
-          height: 45,
-          borderRadius: 30,
-          hasShadow: false,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          imagePath: 'assets/images/redeem.svg',
         ),
       ],
     );
@@ -389,7 +387,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   ),
                   Text(
                     'This week',
-                    style: GoogleFonts.nunito(color: Color(0xFF8E4CB6)),
+                    style: GoogleFonts.nunito(color: const Color(0xFF8E4CB6)),
                   ),
                 ],
               ),
@@ -471,9 +469,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Symbols.featured_seasonal_and_gifts_rounded,
-            color: const Color(0xFFB3A11B),
+            color: Color(0xFFB3A11B),
           ),
           const SizedBox(width: 15),
           Expanded(
