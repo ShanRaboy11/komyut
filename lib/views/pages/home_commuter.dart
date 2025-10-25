@@ -105,7 +105,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
   bool _previousShowWallet = true;
   bool _isBalanceVisible = true;
-  bool _isPointsVisible = true;
+  bool _isTokensVisible = true;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -158,18 +158,15 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           ),
           const SizedBox(height: 10),
 
-          // Wallet / Points Tabs
-          Container(
-            decoration: const BoxDecoration(color: Colors.white),
-            child: Row(
-              children: [
-                _buildTabButton('Wallet', true),
-                _buildTabButton('Points', false),
-              ],
-            ),
+          // Wallet / Tokens Tabs
+          Row(
+            children: [
+              _buildTabButton('Wallet', true),
+              _buildTabButton('Tokens', false),
+            ],
           ),
 
-          // Wallet / Points Animated Card
+          // Wallet / Tokens Animated Card
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
             transitionBuilder: (child, animation) {
@@ -197,7 +194,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
               child: showWallet
                   ? _buildWalletCard(isSmallScreen)
-                  : _buildPointsCard(isSmallScreen),
+                  : _buildTokensCard(
+                      isSmallScreen,
+                    ), // Changed from _buildPointsCard
             ),
           ),
 
@@ -213,6 +212,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   }
 
   Widget _buildTabButton(String title, bool isWallet) {
+    final isSelected = showWallet == isWallet;
     return Expanded(
       child: GestureDetector(
         onTap: () => _switchTab(isWallet),
@@ -220,15 +220,21 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            gradient: (showWallet == isWallet)
+            color: isSelected
+                ? null
+                : Colors.grey[100], // Changed from 200 to 100
+            gradient: isSelected
                 ? LinearGradient(colors: gradientColors)
                 : null,
+            borderRadius: isWallet
+                ? const BorderRadius.only(topLeft: Radius.circular(10))
+                : const BorderRadius.only(topRight: Radius.circular(10)),
           ),
           child: Center(
             child: Text(
               title,
               style: GoogleFonts.manrope(
-                color: (showWallet == isWallet) ? Colors.white : Colors.black87,
+                color: isSelected ? Colors.white : Colors.black54,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -293,8 +299,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Points Card ----------------
-  Widget _buildPointsCard(bool isSmallScreen) {
+  // ---------------- Tokens Card ----------------
+  Widget _buildTokensCard(bool isSmallScreen) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -302,7 +308,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'My Points',
+              'My Tokens',
               style: GoogleFonts.manrope(color: Colors.white70),
             ),
             const SizedBox(height: 8),
@@ -315,7 +321,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isPointsVisible ? '1,234' : '•,•••',
+                  _isTokensVisible ? '1,234' : '•,•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -325,9 +331,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () =>
-                      setState(() => _isPointsVisible = !_isPointsVisible),
+                      setState(() => _isTokensVisible = !_isTokensVisible),
                   child: Icon(
-                    _isPointsVisible ? Icons.visibility : Icons.visibility_off,
+                    _isTokensVisible ? Icons.visibility : Icons.visibility_off,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -514,7 +520,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildActionButton(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
