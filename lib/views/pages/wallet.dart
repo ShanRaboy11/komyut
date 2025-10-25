@@ -22,9 +22,9 @@ class _WalletPageState extends State<WalletPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Add a listener to rebuild the UI when the tab changes, which is needed for IndexedStack
+    // The listener is crucial to rebuild the UI when the tab changes.
     _tabController.addListener(() {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
@@ -37,8 +37,6 @@ class _WalletPageState extends State<WalletPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The universal navbar from the parent will be visible.
-      // This page does NOT have its own bottomNavigationBar.
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -56,11 +54,13 @@ class _WalletPageState extends State<WalletPage>
             color: Colors.black87,
           ),
         ),
-        // --- THIS IS THE CHANGE ---
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 40.0),
+        // Increased bottom padding from 40.0 to 100.0 to ensure the content
+        // can be scrolled up from behind the persistent bottom navigation bar.
+        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
+        // -----------------------
         child: Column(
           children: [
             const SizedBox(height: 16),
@@ -72,6 +72,43 @@ class _WalletPageState extends State<WalletPage>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTransactionsTabs() {
+    return Column(
+      // This Column now correctly lays out all children vertically.
+      children: [
+        TabBar(
+          controller: _tabController,
+          labelColor: gradientColors[1],
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: gradientColors[1],
+          indicatorWeight: 3,
+          indicatorSize: TabBarIndicatorSize.label,
+          labelStyle: GoogleFonts.manrope(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+          unselectedLabelStyle: GoogleFonts.manrope(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+          tabs: const [
+            Tab(text: 'Transactions'),
+            Tab(text: 'Tokens'),
+          ],
+        ),
+        // INSTEAD of IndexedStack, we directly build the correct list.
+        // This allows the outer Column and SingleChildScrollView to correctly calculate the total height.
+        if (_tabController.index == 0)
+          _buildTransactionsList()
+        else
+          _buildTokensList(),
+
+        const SizedBox(height: 20),
+        _buildViewAllButton(), // This button is now guaranteed to be visible.
+      ],
     );
   }
 
@@ -92,13 +129,10 @@ class _WalletPageState extends State<WalletPage>
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Main content of the card
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Align items to the top
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Balance
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -120,11 +154,8 @@ class _WalletPageState extends State<WalletPage>
                   ),
                 ],
               ),
-              // Right side: Tokens
               Padding(
-                padding: const EdgeInsets.only(
-                  top: 4.0,
-                ), // Fine-tune vertical position
+                padding: const EdgeInsets.only(top: 4.0),
                 child: Row(
                   children: [
                     Image.asset('assets/images/wheel token.png', height: 22),
@@ -142,7 +173,6 @@ class _WalletPageState extends State<WalletPage>
               ),
             ],
           ),
-          // Floating Action Button
           Positioned(
             bottom: -40,
             right: 0,
@@ -196,7 +226,7 @@ class _WalletPageState extends State<WalletPage>
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: chartHeight + 24, // chart height + x-axis label space
+            height: chartHeight + 24,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -263,53 +293,6 @@ class _WalletPageState extends State<WalletPage>
           ],
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildTransactionsTabs() {
-    // This Column structure allows the content below the tabs to define its own height,
-    // preventing the clipping issue.
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          labelColor: gradientColors[1],
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: gradientColors[1],
-          indicatorWeight: 3,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: GoogleFonts.manrope(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-          unselectedLabelStyle: GoogleFonts.manrope(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          tabs: const [
-            Tab(text: 'Transactions'),
-            Tab(text: 'Tokens'),
-          ],
-        ),
-        // IndexedStack shows only the active tab's content but keeps all lists in the widget tree.
-        // This correctly calculates the required height inside a SingleChildScrollView.
-        IndexedStack(
-          index: _tabController.index,
-          children: [
-            // Visibility widgets ensure that the IndexedStack sizes itself correctly on the first build.
-            Visibility(
-              visible: _tabController.index == 0,
-              child: _buildTransactionsList(),
-            ),
-            Visibility(
-              visible: _tabController.index == 1,
-              child: _buildTokensList(),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _buildViewAllButton(),
-      ],
     );
   }
 
