@@ -23,7 +23,6 @@ class _WalletPageState extends State<WalletPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // The listener is crucial to rebuild the UI when the tab changes.
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -33,6 +32,113 @@ class _WalletPageState extends State<WalletPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  // NEW: Method to show the token information modal
+  void _showTokenInfoModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Wheel Token',
+                      style: GoogleFonts.manrope(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 40,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/images/wheel token.png',
+                            height: 80,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '1 Wheel Token = 1 Peso',
+                            style: GoogleFonts.manrope(
+                              color: Colors.black87,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Earn and use Wheel Tokens to make your rides more rewarding! Complete a ride to earn 0.5 Wheel Token.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'The more you ride, the more tokens you collect — and the more you save! Start earning today and make every ride count!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  top: -16,
+                  right: -16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close,
+                        color: gradientColors[1],
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -58,10 +164,7 @@ class _WalletPageState extends State<WalletPage>
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        // Increased bottom padding from 40.0 to 100.0 to ensure the content
-        // can be scrolled up from behind the persistent bottom navigation bar.
         padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
-        // -----------------------
         child: Column(
           children: [
             const SizedBox(height: 16),
@@ -78,7 +181,6 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildTransactionsTabs() {
     return Column(
-      // This Column now correctly lays out all children vertically.
       children: [
         TabBar(
           controller: _tabController,
@@ -100,15 +202,12 @@ class _WalletPageState extends State<WalletPage>
             Tab(text: 'Tokens'),
           ],
         ),
-        // INSTEAD of IndexedStack, we directly build the correct list.
-        // This allows the outer Column and SingleChildScrollView to correctly calculate the total height.
         if (_tabController.index == 0)
           _buildTransactionsList()
         else
           _buildTokensList(),
-
         const SizedBox(height: 20),
-        _buildViewAllButton(), // This button is now guaranteed to be visible.
+        _buildViewAllButton(),
       ],
     );
   }
@@ -155,21 +254,24 @@ class _WalletPageState extends State<WalletPage>
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Row(
-                  children: [
-                    Image.asset('assets/images/wheel token.png', height: 22),
-                    const SizedBox(width: 6),
-                    Text(
-                      '10.5',
-                      style: GoogleFonts.manrope(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+              GestureDetector(
+                onTap: () => _showTokenInfoModal(context),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Row(
+                    children: [
+                      Image.asset('assets/images/wheel token.png', height: 22),
+                      const SizedBox(width: 6),
+                      Text(
+                        '10.5',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -300,12 +402,9 @@ class _WalletPageState extends State<WalletPage>
   Widget _buildViewAllButton() {
     return OutlinedButton(
       onPressed: () {
-        // Determine which type of history to show based on the active tab
         final type = _tabController.index == 0
             ? HistoryType.transactions
             : HistoryType.tokens;
-
-        // Use the nested navigator to push the new page
         Navigator.of(context).pushNamed('/history', arguments: type);
       },
       style: OutlinedButton.styleFrom(
