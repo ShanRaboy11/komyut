@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
-
-// --- Main Wallet Page Widget ---
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -25,6 +22,10 @@ class _WalletPageState extends State<WalletPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Add a listener to rebuild the UI when the tab changes, which is needed for IndexedStack
+    _tabController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -36,8 +37,9 @@ class _WalletPageState extends State<WalletPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Allows body to go behind the floating navbar
-      backgroundColor: const Color(0xFFF6F1FF), // Light purple background
+      // The universal navbar from the dashboard will be visible when you navigate back.
+      // This page does NOT have its own bottomNavigationBar.
+      backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
@@ -57,7 +59,12 @@ class _WalletPageState extends State<WalletPage>
         centerTitle: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 120.0),
+        padding: const EdgeInsets.fromLTRB(
+          24.0,
+          0,
+          24.0,
+          40.0,
+        ), // Reduced bottom padding
         child: Column(
           children: [
             const SizedBox(height: 16),
@@ -69,7 +76,6 @@ class _WalletPageState extends State<WalletPage>
           ],
         ),
       ),
-      bottomNavigationBar: const CustomFloatingNavBar(),
     );
   }
 
@@ -90,18 +96,24 @@ class _WalletPageState extends State<WalletPage>
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Main content of the card
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // Align items to the top
             children: [
-              Text(
-                'Current Balance',
-                style: GoogleFonts.nunito(color: Colors.white70, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Left side: Balance
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Current Balance',
+                    style: GoogleFonts.nunito(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     '₱ 3 000.00',
                     style: GoogleFonts.manrope(
@@ -110,27 +122,31 @@ class _WalletPageState extends State<WalletPage>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/wheel token.png',
-                        height: 22,
-                      ), // TOKEN IMAGE
-                      const SizedBox(width: 6),
-                      Text(
-                        '10.5',
-                        style: GoogleFonts.manrope(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
+              ),
+              // Right side: Tokens
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 4.0,
+                ), // Fine-tune vertical position
+                child: Row(
+                  children: [
+                    Image.asset('assets/images/wheel token.png', height: 22),
+                    const SizedBox(width: 6),
+                    Text(
+                      '10.5',
+                      style: GoogleFonts.manrope(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
+          // Floating Action Button
           Positioned(
             bottom: -40,
             right: 0,
@@ -224,7 +240,6 @@ class _WalletPageState extends State<WalletPage>
       'Sun': 25,
     };
     const double maxVal = 100.0;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -256,6 +271,8 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildTransactionsTabs() {
+    // This Column structure allows the content below the tabs to define its own height,
+    // preventing the clipping issue.
     return Column(
       children: [
         TabBar(
@@ -278,15 +295,23 @@ class _WalletPageState extends State<WalletPage>
             Tab(text: 'Tokens'),
           ],
         ),
-        SizedBox(
-          // Calculated height prevents scrolling conflicts
-          height: (68.0 * 6) + 16,
-          child: TabBarView(
-            controller: _tabController,
-            children: [_buildTransactionsList(), _buildTokensList()],
-          ),
+        // IndexedStack shows only the active tab's content but keeps all lists in the widget tree.
+        // This correctly calculates the required height inside a SingleChildScrollView.
+        IndexedStack(
+          index: _tabController.index,
+          children: [
+            // Visibility widgets ensure that the IndexedStack sizes itself correctly on the first build.
+            Visibility(
+              visible: _tabController.index == 0,
+              child: _buildTransactionsList(),
+            ),
+            Visibility(
+              visible: _tabController.index == 1,
+              child: _buildTokensList(),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         _buildViewAllButton(),
       ],
     );
@@ -309,9 +334,7 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildTransactionsList() {
-    return ListView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: 16),
+    return Column(
       children: [
         _buildTransactionItem('Cash In', '10/3/25 8:25 PM', '+₱100.00', true),
         _buildTransactionItem('Trip Fare', '10/3/25 3:18 PM', '−₱13.00', false),
@@ -323,7 +346,32 @@ class _WalletPageState extends State<WalletPage>
           false,
         ),
         _buildTransactionItem('Trip Fare', '10/2/25 6:02 AM', '−₱13.00', false),
-        _buildTransactionItem('Cash In', '10/1/25 8:25 PM', '+₱150.00', true),
+        _buildTransactionItem(
+          'Cash In',
+          '10/1/25 8:25 PM',
+          '+₱150.00',
+          true,
+          isLast: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTokensList() {
+    return Column(
+      children: [
+        _buildTokenItem('Token Redemption', '10/3/25 8:25 PM', '-3.0', false),
+        _buildTokenItem('Trip Reward', '10/3/25 3:18 PM', '+0.5', true),
+        _buildTokenItem('Trip Reward', '10/3/25 1:02 PM', '+0.5', true),
+        _buildTokenItem('Trip Reward', '10/2/25 11:02 AM', '+0.5', true),
+        _buildTokenItem('Token Redemption', '10/2/25 6:02 AM', '-2.0', false),
+        _buildTokenItem(
+          'Trip Reward',
+          '10/1/25 8:25 PM',
+          '+0.5',
+          true,
+          isLast: true,
+        ),
       ],
     );
   }
@@ -332,12 +380,17 @@ class _WalletPageState extends State<WalletPage>
     String title,
     String subtitle,
     String amount,
-    bool isCredit,
-  ) {
+    bool isCredit, {
+    bool isLast = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.only(top: 16, bottom: 16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        border: Border(
+          bottom: BorderSide(
+            color: isLast ? Colors.transparent : Colors.grey[200]!,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -374,31 +427,21 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildTokensList() {
-    return ListView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: 16),
-      children: [
-        _buildTokenItem('Token Redemption', '10/3/25 8:25 PM', '-3.0', false),
-        _buildTokenItem('Trip Reward', '10/3/25 3:18 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/3/25 1:02 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/2/25 11:02 AM', '+0.5', true),
-        _buildTokenItem('Token Redemption', '10/2/25 6:02 AM', '-2.0', false),
-        _buildTokenItem('Trip Reward', '10/1/25 8:25 PM', '+0.5', true),
-      ],
-    );
-  }
-
   Widget _buildTokenItem(
     String title,
     String subtitle,
     String amount,
-    bool isCredit,
-  ) {
+    bool isCredit, {
+    bool isLast = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.only(top: 16, bottom: 16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        border: Border(
+          bottom: BorderSide(
+            color: isLast ? Colors.transparent : Colors.grey[200]!,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -433,130 +476,8 @@ class _WalletPageState extends State<WalletPage>
                 ),
               ),
               const SizedBox(width: 6),
-              Image.asset(
-                'assets/images/wheel token.png',
-                height: 20,
-              ), // TOKEN IMAGE
+              Image.asset('assets/images/wheel token.png', height: 20),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// --- Custom Floating Navigation Bar Widget ---
-// This is an exact recreation of the navbar in your screenshots.
-
-class CustomFloatingNavBar extends StatelessWidget {
-  const CustomFloatingNavBar({super.key});
-
-  final gradientColors = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          height: 65,
-          margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: gradientColors.reversed.toList()),
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8E4CB6).withOpacity(0.4),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(Symbols.receipt_long, 'Activity', context),
-              _buildNavItem(
-                Symbols.qr_code_scanner_rounded,
-                'QR Scan',
-                context,
-              ),
-              const SizedBox(width: 70), // Space for the home button
-              _buildNavItem(Symbols.info, 'Info', context),
-              _buildNavItem(Icons.person_outline_rounded, 'Profile', context),
-            ],
-          ),
-        ),
-        Positioned(
-          bottom: 25,
-          child: GestureDetector(
-            onTap: () {
-              // This takes the user back to the very first screen (dashboard)
-              if (Navigator.canPop(context)) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            },
-            child: Container(
-              width: 75,
-              height: 75,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: gradientColors),
-                boxShadow: [
-                  BoxShadow(
-                    color: gradientColors[1].withOpacity(0.5),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.home_rounded, color: Colors.white, size: 34),
-                  Text(
-                    'Home',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Tapping other nav items on this page will just pop back to the dashboard.
-        if (Navigator.canPop(context)) {
-          Navigator.of(context).pop();
-        }
-      },
-      behavior: HitTestBehavior.translucent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white.withOpacity(0.9), size: 26),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ],
       ),
