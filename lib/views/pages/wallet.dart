@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'wallet_history.dart';
+import 'otc.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -224,6 +225,9 @@ class _WalletPageState extends State<WalletPage>
     return InkWell(
       onTap: () {
         Navigator.of(context).pop();
+        if (text == 'Over-the-Counter') {
+          Navigator.of(context).pushNamed('/otc');
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),

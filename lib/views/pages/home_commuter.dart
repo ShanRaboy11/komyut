@@ -9,6 +9,7 @@ import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';
 import 'wallet_history.dart';
+import 'otc.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -82,6 +83,9 @@ class HomeTabNavigator extends StatelessWidget {
             final type = settings.arguments as HistoryType;
             builder = (BuildContext context) =>
                 TransactionHistoryPage(type: type);
+            break;
+          case '/otc':
+            builder = (BuildContext context) => const OverTheCounterPage();
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
