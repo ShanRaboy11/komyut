@@ -1,6 +1,8 @@
+// lib/pages/commuter_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
@@ -17,6 +19,7 @@ class CommuterDashboardNav extends StatefulWidget {
 }
 
 class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
+  int _currentIndex = 0;
   final GlobalKey<NotificationPageState> notificationKey = GlobalKey();
 
   @override
@@ -36,9 +39,31 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
         NavItem(icon: Icons.person_rounded, label: 'Profile'),
       ],
-      onNavigationChanged: (index) {
-        if (index == 3) {
-          notificationKey.currentState?.resetToDefault();
+      initialIndex: _currentIndex,
+      onItemSelected: (index) {
+        if (index == 2) {
+          // Navigate to QR Scanner as a full-screen route
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QRScannerScreen(
+                onScanComplete: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Boarding successful!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          // Update tab for other selections
+          setState(() {
+            _currentIndex = index;
+          });
         }
       },
     );
@@ -78,8 +103,142 @@ class HomeTabNavigator extends StatelessWidget {
   }
 }
 
-// ------------------- Dashboard Page -------------------
+class QRScanLoadingScreen extends StatefulWidget {
+  const QRScanLoadingScreen({super.key});
 
+  @override
+  State<QRScanLoadingScreen> createState() => _QRScanLoadingScreenState();
+}
+
+class _QRScanLoadingScreenState extends State<QRScanLoadingScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0, end: 0.1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white, // Example background color
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated Logo
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Transform.rotate(
+                    angle: _rotationAnimation.value,
+                    child: SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: Stack(
+                        children: [
+                          // Gradient Border Circle (Bottom Layer)
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xFFB945AA),
+                                  Color(0xFF8E4CB6),
+                                  Color(0xFF5B53C2),
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha((255 * 0.3).round()),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // White Fill Circle (Top Layer)
+                          Center(
+                            child: Container(
+                              width: 110, // Slightly smaller than the border circle
+                              height: 110,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Image.asset( // Changed from SvgPicture.asset to Image.asset
+  'assets/images/logo.png',
+  fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 40),
+
+            // Loading Text
+            Text(
+              'Opening QR Scanner...',
+              style: GoogleFonts.manrope(
+                color: Color(0xFFB945AA), // Changed to white for visibility on black background
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Loading Indicator
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8E4CB6)),
+                strokeWidth: 4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============== DASHBOARD PAGE ===============
 class CommuterDashboardPage extends StatefulWidget {
   const CommuterDashboardPage({super.key});
 
@@ -253,6 +412,35 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     ? _buildWalletContent(key: const ValueKey('wallet'))
                     : _buildPointsContent(key: const ValueKey('points')),
               ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (child, animation) {
+              final offsetAnimation = Tween<Offset>(
+                begin: Offset(_previousShowWallet ? 1 : -1, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              ));
+
+              return SlideTransition(
+                position: offsetAnimation,
+                child: child,
+              );
+            },
+            child: Container(
+              key: ValueKey<bool>(showWallet),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
+                ),
+              ),
+              child: showWallet
+                  ? _buildWalletCard(isSmallScreen)
+                  : _buildPointsCard(isSmallScreen),
             ),
           ),
           const SizedBox(height: 20),
@@ -266,6 +454,43 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
+  // ---------------- Wallet Card ----------------
+  Widget _buildWalletCard(bool isSmallScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Balance',
+          style: GoogleFonts.manrope(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _isBalanceVisible ? '₱500.00' : '₱•••.••',
+                  style: GoogleFonts.manrope(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isBalanceVisible = !_isBalanceVisible;
+                    });
+                  },
+                  child: Icon(
+                    _isBalanceVisible ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white,
+                    size: 20,
   // ---------------- Wallet Content ----------------
   Widget _buildWalletContent({Key? key}) {
     return Container(
@@ -321,6 +546,25 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
+              ],
+            ),
+            CustomButton(
+              text: 'Top Up',
+              onPressed: () {},
+              isFilled: true,
+              fillColor: Colors.white,
+              textColor: const Color(0xFFB945AA),
+              width: 100,
+              height: 40,
+              borderRadius: 30,
+              hasShadow: false,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ],
+        ),
+      ],
                 ],
               ),
             ],
@@ -347,6 +591,70 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
+  // ---------------- Points Card ----------------
+  Widget _buildPointsCard(bool isSmallScreen) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'My Points',
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/coin.svg',
+                  height: 30,
+                  width: 30,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isPointsVisible ? '1,234' : '•,•••',
+                  style: GoogleFonts.manrope(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isPointsVisible = !_isPointsVisible;
+                    });
+                  },
+                  child: Icon(
+                    _isPointsVisible ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        CustomButton(
+          text: 'Redeem',
+          onPressed: () {},
+          isFilled: true,
+          fillColor: Colors.white,
+          textColor: const Color(0xFFB945AA),
+          width: 120,
+          height: 45,
+          borderRadius: 30,
+          hasShadow: false,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          imagePath: 'assets/images/redeem.svg',
+        ),
+      ],
   // ---------------- Points Content ----------------
   // Points Content with Updated Navigation
   Widget _buildPointsContent({Key? key}) {
@@ -467,7 +775,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               IconButton(
                 onPressed: () {},
                 icon: Container(
-                  width: 30, // adjust size as needed
+                  width: 30,
                   height: 30,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(

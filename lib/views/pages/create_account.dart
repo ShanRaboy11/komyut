@@ -114,8 +114,7 @@ class CreateAccountPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const RegistrationRolePage()),
-                            //builder: (context) => const QRScannerScreen()),
+                           builder: (context) => const RegistrationRolePage()),
                         );
                       },
                         width: screenSize.width * 0.8,

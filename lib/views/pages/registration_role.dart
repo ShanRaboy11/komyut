@@ -64,13 +64,13 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
         late Widget nextPage; // Use 'late' instead of nullable
 
         switch (_selectedRole) {
-          case 'Commuter':
+          case 'commuter':
             nextPage = const RegistrationCommuterPersonalInfo();
             break;
-          case 'Driver':
+          case 'driver':
             nextPage = const RegistrationDriverPersonalInfo();
             break;
-          case 'Operator':
+          case 'operator':
             nextPage = const RegistrationOperatorPersonalInfo();
             break;
           default:
@@ -150,33 +150,33 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
 
                   OptionCard(
                     title: 'Commuter',
-                    isSelected: _selectedRole == 'Commuter',
+                    isSelected: _selectedRole == 'commuter',
                     height: 60,
                     onTap: () {
                       setState(() {
-                        _selectedRole = 'Commuter';
+                        _selectedRole = 'commuter';
                       });
                     },
                     type: OptionCardType.radio,
                   ),
                   OptionCard(
                     title: 'Driver',
-                    isSelected: _selectedRole == 'Driver',
+                    isSelected: _selectedRole == 'driver',
                     height: 60,
                     onTap: () {
                       setState(() {
-                        _selectedRole = 'Driver';
+                        _selectedRole = 'driver';
                       });
                     },
                     type: OptionCardType.radio,
                   ),
                   OptionCard(
                     title: 'Operator',
-                    isSelected: _selectedRole == 'Operator',
+                    isSelected: _selectedRole == 'operator',
                     height: 60,
                     onTap: () {
                       setState(() {
-                        _selectedRole = 'Operator';
+                        _selectedRole = 'operator';
                       });
                     },
                     type: OptionCardType.radio,
