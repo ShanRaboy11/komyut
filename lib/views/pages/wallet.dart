@@ -173,7 +173,6 @@ class _WalletPageState extends State<WalletPage>
                   ),
                 ),
                 // Modal Body
-                // Modal Body
                 Container(
                   color: Colors.white,
                   child: Column(

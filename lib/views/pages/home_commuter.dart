@@ -12,6 +12,7 @@ import 'wallet_history.dart';
 import 'otc.dart';
 import 'otc_confirm.dart';
 import 'otc_instructions.dart';
+import 'otc_success.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -96,6 +97,9 @@ class HomeTabNavigator extends StatelessWidget {
             break;
           case '/otc_instructions':
             builder = (BuildContext context) => const OtcInstructionsPage();
+            break;
+          case '/payment_success':
+            builder = (BuildContext context) => const PaymentSuccessPage();
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();

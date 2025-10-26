@@ -14,17 +14,11 @@ class OtcConfirmationPage extends StatelessWidget {
     final random = Random();
     final part1 = String.fromCharCodes(
       Iterable.generate(
-        8,
+        15,
         (_) => chars.codeUnitAt(random.nextInt(chars.length)),
       ),
     );
-    final part2 = String.fromCharCodes(
-      Iterable.generate(
-        8,
-        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
-      ),
-    );
-    return 'K0MYUT-$part1'.substring(0, 15);
+    return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
   @override
@@ -82,6 +76,7 @@ class OtcConfirmationPage extends StatelessWidget {
 
             // Transaction Card
             _buildTransactionCard(
+              context: context,
               date: date,
               time: time,
               amount: formattedAmount,
@@ -132,6 +127,7 @@ class OtcConfirmationPage extends StatelessWidget {
   }
 
   Widget _buildTransactionCard({
+    required BuildContext context,
     required String date,
     required String time,
     required String amount,
@@ -153,36 +149,60 @@ class OtcConfirmationPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(
-            'Cash In Transaction',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            children: [
+              Text(
+                'Cash In Transaction',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              _buildDetailRow('Date:', date),
+              _buildDetailRow('Time:', time),
+              _buildDetailRow('Amount:', amount),
+              _buildDetailRow('Channel:', 'Over-the-Counter'),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              _buildDetailRow('Total:', total, isTotal: true),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              BarcodeWidget(
+                barcode: Barcode.code128(),
+                data: transactionCode,
+                height: 50,
+                drawText: false,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                transactionCode,
+                style: GoogleFonts.sourceCodePro(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          _buildDetailRow('Date:', date),
-          _buildDetailRow('Time:', time),
-          _buildDetailRow('Amount:', amount),
-          _buildDetailRow('Channel:', 'Over-the-Counter'),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          _buildDetailRow('Total:', total, isTotal: true),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          BarcodeWidget(
-            barcode: Barcode.code128(),
-            data: transactionCode,
-            height: 50,
-            drawText: false,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            transactionCode,
-            style: GoogleFonts.sourceCodePro(
-              fontSize: 14,
-              color: Colors.black54,
-              letterSpacing: 1.5,
+          Positioned(
+            top: -12,
+            right: -12,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).popUntil((route) => route.settings.name == '/wallet');
+              },
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.close, color: brandColor),
+              ),
             ),
           ),
         ],

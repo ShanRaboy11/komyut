@@ -80,8 +80,7 @@ class OtcInstructionsPage extends StatelessWidget {
             Center(
               child: OutlinedButton(
                 onPressed: () {
-                  // This will pop all screens until it gets back to the home dashboard screen ('/')
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.of(context).pushNamed('/payment_success');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
