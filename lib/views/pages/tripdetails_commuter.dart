@@ -4,7 +4,6 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
-import '../widgets/receipttrip_card.dart';
 import '../pages/tripreceipt_commuter.dart';
 
 class TripDetailsPage extends StatelessWidget {

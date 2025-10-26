@@ -12,8 +12,6 @@ class TripReceiptPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final width = MediaQuery.of(context).size.width;
-    final isSmall = width < 400;
 
     return Scaffold(
       backgroundColor: Color(0xFFF7F4FF),
@@ -39,7 +37,7 @@ class TripReceiptPage extends StatelessWidget {
 
                   // Centered title
                   Text(
-                    "Trip Details",
+                    "Payment Receipt",
                     style: GoogleFonts.nunito(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

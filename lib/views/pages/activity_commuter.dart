@@ -449,26 +449,6 @@ class _TripsPageState extends State<TripsPage> {
     );
   }
 
-  Widget _statTile(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.nunito(color: Colors.white70, fontSize: 14),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.manrope(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildStatusDot(Color color, String label) {
     return Row(
       children: [
