@@ -7,7 +7,8 @@ class CustomButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isFilled;
   final bool isTextOnly;
-  final IconData? icon; // 👈 optional icon
+  final IconData? icon;
+  final Color? iconColor; // 👈 optional icon
   final String? imagePath;
   final Color? fillColor;
   final double width;
@@ -26,7 +27,8 @@ class CustomButton extends StatelessWidget {
     required this.onPressed,
     this.isFilled = true,
     this.isTextOnly = false,
-    this.icon, // 👈 optional icon param
+    this.icon,
+    this.iconColor, // 👈 optional icon param
     this.imagePath,
     this.fillColor,
     this.width = 325,
@@ -114,8 +116,9 @@ class CustomButton extends StatelessWidget {
                     if (icon != null) ...[
                       Icon(
                         icon,
-                        color: textColor ?? Colors.white,
+                        color: iconColor ?? Colors.white,
                         size: fontSize + 2,
+                        fill: 1,
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -165,17 +168,35 @@ class CustomButton extends StatelessWidget {
               borderRadius: actualInnerRadius,
               onTap: onPressed,
               child: Center(
-                child: Text(
-                  text,
-                  style: textStyle.copyWith(
-                    color: textColor,
-                    foreground: textColor == null
-                        ? (Paint()
-                            ..shader = _kGradient.createShader(
-                              Rect.fromLTWH(0, 0, w, h),
-                            ))
-                        : null,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (imagePath != null) ...[
+                      SvgPicture.asset(imagePath!, height: 20, width: 20),
+                      const SizedBox(width: 6),
+                    ],
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        color: iconColor ?? Colors.white,
+                        size: fontSize + 2,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      text,
+                      style: textStyle.copyWith(
+                        color: textColor,
+                        foreground: textColor == null
+                            ? (Paint()
+                                ..shader = _kGradient.createShader(
+                                  Rect.fromLTWH(0, 0, w, h),
+                                ))
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
