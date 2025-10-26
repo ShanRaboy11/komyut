@@ -89,7 +89,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Divider(color: _brandColor.withOpacity(0.5), thickness: 1),
+        Divider(color: _brandColor.withValues(alpha: 0.5), thickness: 1),
       ],
     );
   }

@@ -303,6 +303,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               isFilled: true,
               fillColor: Colors.white,
               textColor: const Color(0xFF5B53C2),
+              iconColor: const Color(0xFF5B53C2),
               width: 120,
               height: 45,
               borderRadius: 30,
@@ -365,6 +366,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               isFilled: true,
               fillColor: Colors.white,
               textColor: const Color(0xFFB945AA),
+              iconColor: const Color(0xFFB945AA),
               width: 120,
               height: 45,
               borderRadius: 30,
@@ -537,7 +539,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildActionButton(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha:0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

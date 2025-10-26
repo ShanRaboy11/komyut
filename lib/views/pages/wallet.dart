@@ -130,10 +130,20 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
+  void _handleDepositNavigation(String optionText) {
+    if (!mounted) return;
+
+    if (optionText == 'Over-the-Counter') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
+      );
+    }
+  }
+
   void _showDepositOptionsModal(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -165,7 +175,7 @@ class _WalletPageState extends State<WalletPage>
                       Align(
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
+                          onTap: () => Navigator.of(dialogContext).pop(),
                           child: const Icon(Icons.close, color: Colors.white),
                         ),
                       ),
@@ -185,6 +195,7 @@ class _WalletPageState extends State<WalletPage>
                           fit: BoxFit.contain,
                         ),
                         text: 'Over-the-Counter',
+                        dialogContext: dialogContext,
                       ),
                       _buildDepositOptionItem(
                         icon: Image.asset(
@@ -194,6 +205,7 @@ class _WalletPageState extends State<WalletPage>
                           fit: BoxFit.contain,
                         ),
                         text: 'Digital Wallet',
+                        dialogContext: dialogContext,
                       ),
                       _buildDepositOptionItem(
                         icon: Image.asset(
@@ -204,6 +216,7 @@ class _WalletPageState extends State<WalletPage>
                         ),
                         text: 'Wheel Tokens',
                         isLast: true,
+                        dialogContext: dialogContext,
                       ),
                     ],
                   ),
@@ -219,21 +232,13 @@ class _WalletPageState extends State<WalletPage>
   Widget _buildDepositOptionItem({
     required Widget icon,
     required String text,
+    required BuildContext dialogContext,
     bool isLast = false,
   }) {
     return InkWell(
       onTap: () {
-        Navigator.of(context, rootNavigator: true).pop();
-
-        Future.microtask(() {
-          if (text == 'Over-the-Counter') {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const OverTheCounterPage(),
-              ),
-            );
-          }
-        });
+        Navigator.of(dialogContext).pop();
+        _handleDepositNavigation(text);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
