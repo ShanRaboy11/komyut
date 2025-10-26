@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
-// import '../pages/home.dart';
 import '../widgets/button.dart';
 import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
 import '../widgets/shake_widget.dart';
 import '../../utils/toast_utils.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -55,49 +55,172 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    FocusScope.of(context).unfocus();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      _emailShakeKey.currentState?.shake();
-      _passwordShakeKey.currentState?.shake();
-
-      // UPDATED: Pass context to the toast utility
-      ToastUtils.showCustomToast(
-        context, // Pass the context
-        'Please fill in both email and password.',
-        Colors.redAccent,
-      );
-      return;
+  // Helper method to get the correct home route based on user role
+  String _getHomeRouteForRole(String? userRole) {
+    if (userRole == null || userRole.isEmpty) {
+      debugPrint('⚠️ User role is null or empty, defaulting to commuter');
+      return '/home_commuter';
     }
+    
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        return '/home_admin';
+      case 'commuter':
+        return '/home_commuter';
+      case 'driver':
+        return '/home_driver';
+      case 'operator':
+        return '/home_operator';
+      default:
+        debugPrint('⚠️ Unknown user role: $userRole, defaulting to commuter');
+        return '/home_commuter';
+    }
+  }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.signIn(email: email, password: password);
+   Future<String?> _fetchUserRole() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        debugPrint('⚠️ No authenticated user found');
+        return null;
+      }
+
+      debugPrint('🔍 Fetching profile for user ID: $userId');
+
+      // FIX 1: Try both 'id' and 'user_id' column names
+      // First, try with 'id' (most common in Supabase)
+      try {
+        final response = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle(); // Use maybeSingle() instead of single() to avoid exceptions
+
+        if (response != null && response['role'] != null) {
+          final role = response['role'] as String;
+          debugPrint('✅ User role fetched (using id): $role');
+          return role;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to fetch with "id" column, trying "user_id": $e');
+      }
+
+      // If that fails, try with 'user_id'
+      try {
+        final response = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (response != null && response['role'] != null) {
+          final role = response['role'] as String;
+          debugPrint('✅ User role fetched (using user_id): $role');
+          return role;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to fetch with "user_id" column: $e');
+      }
+
+      // FIX 2: If no profile found, check if profile exists at all
+      final profileCheck = await supabase
+          .from('profiles')
+          .select('id, user_id')
+          .limit(1);
+      
+      debugPrint('📊 Profile table structure check: $profileCheck');
+      debugPrint('❌ No profile found for user ID: $userId');
+      
+      return null;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error fetching user role: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  Future<void> _handleLogin() async {
+  FocusScope.of(context).unfocus();
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  if (email.isEmpty || password.isEmpty) {
+    _emailShakeKey.currentState?.shake();
+    _passwordShakeKey.currentState?.shake();
+
+    ToastUtils.showCustomToast(
+      context,
+      'Please fill in both email and password.',
+      Colors.redAccent,
+    );
+    return;
+  }
+
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final success = await authProvider.signIn(email: email, password: password);
+
+  if (!mounted) return;
+
+  if (success) {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final userRole = await _fetchUserRole();
 
     if (!mounted) return;
 
-    if (success) {
-      // UPDATED: Pass context to the toast utility
+    if (userRole == null) {
       ToastUtils.showCustomToast(
-        context, // Pass the context
-        'Login Successful!',
-        Colors.green,
+        context,
+        'Unable to retrieve your profile. Please contact support.',
+        Colors.orangeAccent,
       );
-      // Navigator.pushReplacement(...);
-    } else {
-      _emailShakeKey.currentState?.shake();
-      _passwordShakeKey.currentState?.shake();
-
-      // UPDATED: Pass context to the toast utility
-      ToastUtils.showCustomToast(
-        context, // Pass the context
-        authProvider.errorMessage ?? 'An unknown error occurred.',
-        Colors.redAccent,
-      );
+      Navigator.pushReplacementNamed(context, '/home_commuter');
+      return;
     }
+
+    final homeRoute = _getHomeRouteForRole(userRole);
+    debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
+
+    ToastUtils.showCustomToast(
+      context,
+      'Login Successful!',
+      Colors.green,
+    );
+
+    Navigator.pushReplacementNamed(context, homeRoute);
+  } else {
+    _emailShakeKey.currentState?.shake();
+    _passwordShakeKey.currentState?.shake();
+
+    // Convert technical error to friendly message
+    String errorMsg;
+    final error = authProvider.errorMessage?.toLowerCase() ?? '';
+
+    if (error.contains('user-not-found')) {
+      errorMsg = 'No account found with this email.';
+    } else if (error.contains('wrong-password')) {
+      errorMsg = 'Incorrect password. Please try again.';
+    } else if (error.contains('invalid-email')) {
+      errorMsg = 'Please enter a valid email address.';
+    } else if (error.contains('network-request-failed')) {
+      errorMsg = 'Network error. Please check your internet connection.';
+    } else if (error.contains('too-many-requests')) {
+      errorMsg = 'Too many failed attempts. Please try again later.';
+    } else {
+      errorMsg = 'Login failed. Please check your credentials and try again.';
+    }
+
+    ToastUtils.showCustomToast(
+      context,
+      errorMsg,
+      Colors.redAccent,
+    );
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +404,6 @@ class _LoginPageState extends State<LoginPage> {
                                 focusNode: _passwordFocusNode,
                                 obscureText: !_isPasswordVisible,
                                 style: const TextStyle(
-                                  // REMOVED: Error color logic
                                   color: Colors.white,
                                   fontFamily: 'Nunito',
                                 ),
@@ -299,7 +421,6 @@ class _LoginPageState extends State<LoginPage> {
                                     horizontal: 16,
                                     vertical: 20,
                                   ),
-                                  // REMOVED: Error border logic
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
                                     borderSide: const BorderSide(
@@ -345,7 +466,7 @@ class _LoginPageState extends State<LoginPage> {
                                   Row(
                                     children: [
                                       SizedBox(
-                                        width: 24, // Sized for easier tapping
+                                        width: 24,
                                         height: 24,
                                         child: Checkbox(
                                           value: _rememberMe,

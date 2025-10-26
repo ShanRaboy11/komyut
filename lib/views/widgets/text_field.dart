@@ -22,6 +22,7 @@ class CustomTextField extends StatelessWidget {
   final Color? hintColor;
   final double borderRadius;
   final EdgeInsetsGeometry contentPadding;
+  final TextCapitalization textCapitalization;
 
   const CustomTextField({
     super.key,
@@ -45,6 +46,7 @@ class CustomTextField extends StatelessWidget {
     this.hintColor,
     this.borderRadius = 15.0,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    this.textCapitalization = TextCapitalization.none, 
   });
 
   @override
@@ -60,6 +62,7 @@ class CustomTextField extends StatelessWidget {
             controller: controller,
             obscureText: obscureText,
             keyboardType: keyboardType,
+            textCapitalization: textCapitalization,
             validator: validator,
             onChanged: onChanged,
             enabled: enabled,
