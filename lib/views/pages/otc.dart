@@ -89,7 +89,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Divider(color: _brandColor, thickness: 1),
+        Divider(color: _brandColor.withOpacity(0.5), thickness: 1),
       ],
     );
   }
@@ -144,21 +144,25 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
             'Enter Amount',
             style: GoogleFonts.manrope(
               fontSize: 16,
-              color: Colors.black54,
+              color: Colors.black87,
               fontWeight: FontWeight.w600,
             ),
           ),
           Divider(color: _brandColor.withOpacity(0.5), height: 20),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
+
           Text(
             'PHP',
             style: GoogleFonts.manrope(
               fontSize: 18,
-              color: Colors.black54,
+              color: Colors.black87,
               fontWeight: FontWeight.bold,
             ),
           ),
+
+          const SizedBox(height: 1),
           SizedBox(
+            width: double.infinity,
             height: 80,
             child: Stack(
               alignment: Alignment.center,
@@ -177,7 +181,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   autofocus: true,
-                  showCursor: false, // <-- HIDES THE CURSOR
+                  showCursor: false,
                   style: const TextStyle(color: Colors.transparent),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -187,12 +191,15 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                     border: InputBorder.none,
                     fillColor: Colors.transparent,
                     filled: true,
+                    isCollapsed: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 30),
           Text(
             'A PHP 5.00 fee will be charged per transaction.',
             style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
@@ -207,8 +214,9 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
       child: OutlinedButton(
         onPressed: _isButtonEnabled
             ? () {
-                print(
-                  'Next button pressed with amount: ${_amountController.text}',
+                Navigator.of(context).pushNamed(
+                  '/otc_confirmation',
+                  arguments: _amountController.text,
                 );
               }
             : null,
