@@ -9,6 +9,8 @@ import 'views/pages/admin_app.dart';
 import 'views/pages/commuter_app.dart';
 import 'views/pages/driver_app.dart';
 import 'views/pages/operator_app.dart';
+import 'views/pages/wallet.dart';
+import 'views/pages/otc.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +50,8 @@ class MyApp extends StatelessWidget {
           '/home_commuter': (context) => const CommuterApp(),
           '/home_driver': (context) => const DriverApp(),
           '/home_operator': (context) => const OperatorApp(),
+          '/wallet': (context) => const WalletPage(),
+          '/otc': (context) => const OverTheCounterPage(),
         },
       ),
     );

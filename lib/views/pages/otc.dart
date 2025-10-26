@@ -10,34 +10,28 @@ class OverTheCounterPage extends StatefulWidget {
 }
 
 class _OverTheCounterPageState extends State<OverTheCounterPage> {
-  final TextEditingController _amountController = TextEditingController(
-    text: "0",
-  );
+  // Start with an empty controller. We will display "0" in the UI as a fallback.
+  final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
-  void initState() {
-    super.initState();
-    _amountController.addListener(() {
-      final text = _amountController.text;
-      final isEnabled =
-          text.isNotEmpty &&
-          double.tryParse(text) != null &&
-          double.parse(text) > 0;
-      if (isEnabled != _isButtonEnabled) {
-        setState(() {
-          _isButtonEnabled = isEnabled;
-        });
-      }
-    });
-  }
-
-  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
+  }
+
+  void _onAmountChanged(String value) {
+    // This logic runs every time the text field's value changes.
+    // It's much faster than a listener and prevents flickering.
+    setState(() {
+      final isEnabled =
+          value.isNotEmpty &&
+          int.tryParse(value) != null &&
+          int.parse(value) > 0;
+      _isButtonEnabled = isEnabled;
+    });
   }
 
   @override
@@ -50,7 +44,9 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            Navigator.of(context).pushReplacementNamed('/wallet');
+          },
         ),
         title: Text(
           'Cash In',
@@ -128,8 +124,6 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
   }
 
   Widget _buildAmountCard() {
-    // We use a Stack to place an invisible TextField over the display text.
-    // This gives us full control over the text style while getting native text input.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
@@ -165,11 +159,10 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
             ),
           ),
           SizedBox(
-            height: 80, // To contain the large text and avoid layout shifts
+            height: 80,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Display Text that updates
                 Text(
                   _amountController.text.isEmpty ? "0" : _amountController.text,
                   style: GoogleFonts.manrope(
@@ -178,23 +171,18 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                     color: Colors.black87,
                   ),
                 ),
-                // Invisible TextField
                 TextField(
                   controller: _amountController,
+                  onChanged: _onAmountChanged,
                   textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d*\.?\d{0,2}'),
-                    ),
-                  ],
+                  keyboardType: TextInputType.number,
                   autofocus: true,
-                  cursorColor: _brandColor,
-                  style: const TextStyle(
-                    color: Colors.transparent,
-                  ), // Hide the actual text
+                  showCursor: false, // <-- HIDES THE CURSOR
+                  style: const TextStyle(color: Colors.transparent),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     fillColor: Colors.transparent,
@@ -219,7 +207,6 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
       child: OutlinedButton(
         onPressed: _isButtonEnabled
             ? () {
-                // TODO: Implement navigation to the next step
                 print(
                   'Next button pressed with amount: ${_amountController.text}',
                 );

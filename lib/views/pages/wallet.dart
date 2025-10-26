@@ -224,10 +224,17 @@ class _WalletPageState extends State<WalletPage>
   }) {
     return InkWell(
       onTap: () {
-        Navigator.of(context).pop();
-        if (text == 'Over-the-Counter') {
-          Navigator.of(context).pushNamed('/otc');
-        }
+        Navigator.of(context, rootNavigator: true).pop();
+
+        Future.microtask(() {
+          if (text == 'Over-the-Counter') {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OverTheCounterPage(),
+              ),
+            );
+          }
+        });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
