@@ -1,4 +1,3 @@
-// lib/pages/commuter_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +7,12 @@ import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
+import 'wallet.dart';
+import 'wallet_history.dart';
+import 'otc.dart';
+import 'otc_confirm.dart';
+import 'otc_instructions.dart';
+import 'otc_success.dart';
 import 'activity_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
@@ -25,7 +30,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
       pages: [
-        const CommuterDashboardPage(),
+        const HomeTabNavigator(),
         const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
@@ -41,7 +46,6 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
       initialIndex: _currentIndex,
       onItemSelected: (index) {
         if (index == 2) {
-          // Navigate to QR Scanner as a full-screen route
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -59,152 +63,56 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
             ),
           );
         } else {
-          // Update tab for other selections
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         }
       },
     );
   }
 }
 
-class QRScanLoadingScreen extends StatefulWidget {
-  const QRScanLoadingScreen({super.key});
-
-  @override
-  State<QRScanLoadingScreen> createState() => _QRScanLoadingScreenState();
-}
-
-class _QRScanLoadingScreenState extends State<QRScanLoadingScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
-    _rotationAnimation = Tween<double>(begin: 0, end: 0.1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class HomeTabNavigator extends StatelessWidget {
+  const HomeTabNavigator({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white, // Example background color
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated Logo
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Transform.rotate(
-                    angle: _rotationAnimation.value,
-                    child: SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: Stack(
-                        children: [
-                          // Gradient Border Circle (Bottom Layer)
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0xFFB945AA),
-                                  Color(0xFF8E4CB6),
-                                  Color(0xFF5B53C2),
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha((255 * 0.3).round()),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                          ),
-                          // White Fill Circle (Top Layer)
-                          Center(
-                            child: Container(
-                              width: 110, // Slightly smaller than the border circle
-                              height: 110,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              child: Image.asset( // Changed from SvgPicture.asset to Image.asset
-  'assets/images/logo.png',
-  fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 40),
-
-            // Loading Text
-            Text(
-              'Opening QR Scanner...',
-              style: GoogleFonts.manrope(
-                color: Color(0xFFB945AA), // Changed to white for visibility on black background
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Loading Indicator
-            SizedBox(
-              width: 50,
-              height: 50,
-              child: CircularProgressIndicator(
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8E4CB6)),
-                strokeWidth: 4,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return Navigator(
+      initialRoute: '/',
+      onGenerateRoute: (RouteSettings settings) {
+        WidgetBuilder builder;
+        switch (settings.name) {
+          case '/wallet':
+            builder = (BuildContext context) => const WalletPage();
+            break;
+          case '/history':
+            final type = settings.arguments as HistoryType;
+            builder = (BuildContext context) =>
+                TransactionHistoryPage(type: type);
+            break;
+          case '/otc':
+            builder = (BuildContext context) => const OverTheCounterPage();
+            break;
+          case '/otc_confirmation':
+            final amount = settings.arguments as String;
+            builder = (BuildContext context) =>
+                OtcConfirmationPage(amount: amount);
+            break;
+          case '/otc_instructions':
+            builder = (BuildContext context) => const OtcInstructionsPage();
+            break;
+          case '/payment_success':
+            builder = (BuildContext context) => const PaymentSuccessPage();
+            break;
+          default:
+            builder = (BuildContext context) => const CommuterDashboardPage();
+            break;
+        }
+        return MaterialPageRoute(builder: builder, settings: settings);
+      },
     );
   }
 }
 
-// =============== DASHBOARD PAGE ===============
+// =================== DASHBOARD PAGE ===================
 class CommuterDashboardPage extends StatefulWidget {
   const CommuterDashboardPage({super.key});
 
@@ -215,9 +123,8 @@ class CommuterDashboardPage extends StatefulWidget {
 class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
   bool _previousShowWallet = true;
-
   bool _isBalanceVisible = true;
-  bool _isPointsVisible = true;
+  bool _isTokensVisible = true;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -238,7 +145,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     final isSmallScreen = size.width < 400;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(30, 10, 30, 80),
+      padding: const EdgeInsets.fromLTRB(30, 10, 30, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,7 +167,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   Text(
                     'Welcome back!',
                     style: GoogleFonts.manrope(
-                      color: Color(0xFF8E4CB6),
+                      color: const Color(0xFF8E4CB6),
                       fontSize: 18,
                     ),
                   ),
@@ -268,117 +175,47 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 10),
 
-          // Wallet / Points Tabs
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(10),
-                topRight: Radius.circular(10),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _switchTab(true),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: showWallet
-                            ? LinearGradient(colors: gradientColors)
-                            : null,
-                        color: showWallet ? null : Colors.transparent,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(0),
-                          topRight: Radius.circular(10),
-                          bottomRight: Radius.circular(0),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Wallet',
-                          style: GoogleFonts.manrope(
-                            color: showWallet ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _switchTab(false),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: !showWallet
-                            ? LinearGradient(colors: gradientColors)
-                            : null,
-                        color: !showWallet ? null : Colors.transparent,
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(10),
-                          bottomRight: Radius.circular(0),
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(0),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Points',
-                          style: GoogleFonts.manrope(
-                            color: !showWallet ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          // Wallet / Tokens Tabs
+          Row(
+            children: [
+              _buildTabButton('Wallet', true),
+              _buildTabButton('Tokens', false),
+            ],
           ),
 
-          // Wallet / Points Card Container
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (child, animation) {
-              final offsetAnimation = Tween<Offset>(
-                begin: Offset(_previousShowWallet ? 1 : -1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOutCubic,
-              ));
-
-              return SlideTransition(
-                position: offsetAnimation,
-                child: child,
-              );
-            },
-            child: Container(
-              key: ValueKey<bool>(showWallet),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: gradientColors),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10),
+          // Wallet / Tokens Animated Card
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(10),
+              bottomRight: Radius.circular(10),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (child, animation) {
+                final offsetAnimation =
+                    Tween<Offset>(
+                      begin: Offset(_previousShowWallet ? 1.0 : -1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOutCubic,
+                      ),
+                    );
+                return SlideTransition(position: offsetAnimation, child: child);
+              },
+              child: Container(
+                key: ValueKey<bool>(showWallet),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: gradientColors),
                 ),
+                child: showWallet
+                    ? _buildWalletCard(isSmallScreen)
+                    : _buildTokensCard(isSmallScreen),
               ),
-              child: showWallet
-                  ? _buildWalletCard(isSmallScreen)
-                  : _buildPointsCard(isSmallScreen),
             ),
           ),
 
@@ -393,18 +230,44 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
+  Widget _buildTabButton(String title, bool isWallet) {
+    final isSelected = showWallet == isWallet;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _switchTab(isWallet),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? null : Colors.grey[100],
+            gradient: isSelected
+                ? LinearGradient(colors: gradientColors)
+                : null,
+            borderRadius: isWallet
+                ? const BorderRadius.only(topLeft: Radius.circular(10))
+                : const BorderRadius.only(topRight: Radius.circular(10)),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: GoogleFonts.manrope(
+                color: isSelected ? Colors.white : Colors.black54,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ---------------- Wallet Card ----------------
   Widget _buildWalletCard(bool isSmallScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Balance',
-          style: GoogleFonts.manrope(
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        ),
+        Text('Balance', style: GoogleFonts.manrope(color: Colors.white70)),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -412,7 +275,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Row(
               children: [
                 Text(
-                  _isBalanceVisible ? '₱500.00' : '₱•••.••',
+                  _isBalanceVisible ? '₱500.00' : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -421,11 +284,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isBalanceVisible = !_isBalanceVisible;
-                    });
-                  },
+                  onTap: () =>
+                      setState(() => _isBalanceVisible = !_isBalanceVisible),
                   child: Icon(
                     _isBalanceVisible ? Icons.visibility : Icons.visibility_off,
                     color: Colors.white,
@@ -435,13 +295,17 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ],
             ),
             CustomButton(
-              text: 'Top Up',
-              onPressed: () {},
+              text: 'Cash In',
+              icon: Icons.add_rounded,
+              onPressed: () {
+                Navigator.of(context).pushNamed('/wallet');
+              },
               isFilled: true,
               fillColor: Colors.white,
-              textColor: const Color(0xFFB945AA),
-              width: 100,
-              height: 40,
+              textColor: const Color(0xFF5B53C2),
+              iconColor: const Color(0xFF5B53C2),
+              width: 120,
+              height: 45,
               borderRadius: 30,
               hasShadow: false,
               fontSize: 14,
@@ -453,32 +317,29 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Points Card ----------------
-  Widget _buildPointsCard(bool isSmallScreen) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // UPDATED: Rebuilt to match the wallet card style as per new instructions
+  // ---------------- Tokens Card ----------------
+  Widget _buildTokensCard(bool isSmallScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Text('Tokens', style: GoogleFonts.manrope(color: Colors.white70)),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'My Points',
-              style: GoogleFonts.manrope(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SvgPicture.asset(
-                  'assets/images/coin.svg',
-                  height: 30,
-                  width: 30,
+                // You can change this asset path to 'wheel token.png'
+                Image.asset(
+                  'assets/images/wheel token.png',
+                  height: 32,
+                  width: 32,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isPointsVisible ? '1,234' : '•,•••',
+                  _isTokensVisible ? '51' : '••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -487,34 +348,34 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isPointsVisible = !_isPointsVisible;
-                    });
-                  },
+                  onTap: () =>
+                      setState(() => _isTokensVisible = !_isTokensVisible),
                   child: Icon(
-                    _isPointsVisible ? Icons.visibility : Icons.visibility_off,
+                    _isTokensVisible ? Icons.visibility : Icons.visibility_off,
                     color: Colors.white,
                     size: 20,
                   ),
                 ),
               ],
             ),
+            CustomButton(
+              text: 'Redeem',
+              onPressed: () {
+                Navigator.of(context).pushNamed('/wallet');
+              },
+              isFilled: true,
+              fillColor: Colors.white,
+              textColor: const Color(0xFFB945AA),
+              iconColor: const Color(0xFFB945AA),
+              width: 120,
+              height: 45,
+              borderRadius: 30,
+              hasShadow: false,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              imagePath: 'assets/images/redeem.svg',
+            ),
           ],
-        ),
-        CustomButton(
-          text: 'Redeem',
-          onPressed: () {},
-          isFilled: true,
-          fillColor: Colors.white,
-          textColor: const Color(0xFFB945AA),
-          width: 120,
-          height: 45,
-          borderRadius: 30,
-          hasShadow: false,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          imagePath: 'assets/images/redeem.svg',
         ),
       ],
     );
@@ -524,15 +385,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildAnalyticsSection(bool isSmallScreen) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6), width: 1),
+        border: Border.all(color: const Color(0xFF8E4CB6)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Title + button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -543,17 +403,12 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     'Commute Analytics',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
                       fontSize: 20,
                     ),
                   ),
-                  SizedBox(height: 4),
                   Text(
                     'This week',
-                    style: GoogleFonts.nunito(
-                      color: Color(0xFF8E4CB6),
-                      fontSize: 16,
-                    ),
+                    style: GoogleFonts.nunito(color: const Color(0xFF8E4CB6)),
                   ),
                 ],
               ),
@@ -565,42 +420,34 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                      size: 14,
-                    ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 14,
                   ),
                 ),
               ),
             ],
           ),
           const Divider(),
-          // Analytics items row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildAnalyticsItem(
-                  Icons.directions_bus,
-                  'Trips',
-                  '12 trips',
-                  subtitle: '12.6 mi',
-                ),
-                _buildAnalyticsItem(
-                  Icons.account_balance_wallet_outlined,
-                  'Spend',
-                  '₱300 total',
-                ),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildAnalyticsItem(
+                Icons.directions_bus,
+                'Trips',
+                '12 trips',
+                subtitle: '12.6 mi',
+              ),
+              _buildAnalyticsItem(
+                Icons.account_balance_wallet_outlined,
+                'Spend',
+                '₱300 total',
+              ),
+            ],
           ),
         ],
       ),
@@ -622,10 +469,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           children: [
             Text(
               title,
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
             ),
             Text(value, style: GoogleFonts.nunito(color: Colors.black87)),
             if (subtitle != null)
@@ -645,20 +489,16 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
+          const Icon(
             Symbols.featured_seasonal_and_gifts_rounded,
-            color: const Color(0xFFB3A11B),
+            color: Color(0xFFB3A11B),
           ),
           const SizedBox(width: 15),
           Expanded(
             child: Text(
               'Get 50% off your next ride!\nUse Code: KOMYUTIE50',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
+              style: GoogleFonts.nunito(fontWeight: FontWeight.w500),
             ),
           ),
           CustomButton(
@@ -671,7 +511,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             height: 40,
             borderRadius: 20,
             hasShadow: false,
-            fontSize: 14,
           ),
         ],
       ),
@@ -681,9 +520,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   // ---------------- Quick Actions ----------------
   Widget _buildQuickActions() {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
-      margin: EdgeInsets.fromLTRB(0, 0, 0, 40),
+      margin: const EdgeInsets.only(bottom: 40),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: gradientColors),
         borderRadius: BorderRadius.circular(16),
@@ -698,14 +536,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildActionButton(
-    String title,
-    IconData icon, {
-    double iconSize = 20,
-  }) {
+  Widget _buildActionButton(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withValues(alpha:0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
@@ -718,7 +552,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           color: Colors.white,
           size: 12,
         ),
-        leading: Icon(icon, color: Colors.white, size: iconSize),
+        leading: Icon(icon, color: Colors.white),
         onTap: () {},
       ),
     );
