@@ -102,9 +102,7 @@ class OtcConfirmationPage extends StatelessWidget {
             Center(
               child: OutlinedButton(
                 onPressed: () {
-                  Navigator.of(
-                    context,
-                  ).popUntil((route) => route.settings.name == '/wallet');
+                  Navigator.of(context).pushNamed('/otc_instructions');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
