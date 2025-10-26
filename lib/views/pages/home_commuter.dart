@@ -13,6 +13,7 @@ import 'otc.dart';
 import 'otc_confirm.dart';
 import 'otc_instructions.dart';
 import 'otc_success.dart';
+import 'activity_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -30,7 +31,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
     return AnimatedBottomNavBar(
       pages: [
         const HomeTabNavigator(),
-        const Center(child: Text("📋 Activity")),
+        const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
         const CommuterProfilePage(),

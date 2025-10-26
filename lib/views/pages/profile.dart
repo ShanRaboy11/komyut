@@ -133,14 +133,14 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
                   },
                 ),
 
-                const SizedBox(height: 100), // space before bottom button
+                const SizedBox(height: 150), // space before bottom button
               ],
             ),
           ),
 
           // --- Logout Button at the Bottom ---
           Positioned(
-            bottom: 30,
+            bottom: 110,
             left: width * 0.07,
             right: width * 0.07,
             child: SizedBox(
