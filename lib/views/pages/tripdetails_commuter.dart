@@ -4,6 +4,8 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
+import '../widgets/receipttrip_card.dart';
+import '../pages/tripreceipt_commuter.dart';
 
 class TripDetailsPage extends StatelessWidget {
   final String date;
@@ -168,7 +170,14 @@ class TripDetailsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 CustomButton(
                   text: "View Receipt",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
+                      ),
+                    );
+                  },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
                   width: screenWidth,
@@ -191,7 +200,14 @@ class TripDetailsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 CustomButton(
                   text: "View Receipt",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
+                      ),
+                    );
+                  },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
                   width: screenWidth,
@@ -214,7 +230,14 @@ class TripDetailsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 CustomButton(
                   text: "View Receipt",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
+                      ),
+                    );
+                  },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
                   width: screenWidth,
