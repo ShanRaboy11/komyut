@@ -97,7 +97,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
                   BoxShadow(
                     color: const Color(
                       0xFF5B53C2,
-                    ).withOpacity(_glowAnimation.value),
+                    ).withValues(alpha: _glowAnimation.value),
                     blurRadius: 30, // softer diffusion
                     spreadRadius: 4, // close but soft
                     offset: Offset.zero,

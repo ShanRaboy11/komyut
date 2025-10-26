@@ -129,10 +129,10 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _brandColor.withOpacity(0.5)),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: _brandColor.withOpacity(0.1),
+            color: _brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -148,7 +148,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          Divider(color: _brandColor.withOpacity(0.5), height: 20),
+          Divider(color: _brandColor.withValues(alpha: 0.5), height: 20),
           const SizedBox(height: 6),
 
           Text(
@@ -223,12 +223,12 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         style: OutlinedButton.styleFrom(
           foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
           backgroundColor: _isButtonEnabled
-              ? _brandColor.withOpacity(0.1)
-              : Colors.grey.withOpacity(0.1),
+              ? _brandColor.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.1),
           side: BorderSide(
             color: _isButtonEnabled
                 ? _brandColor
-                : Colors.grey.withOpacity(0.5),
+                : Colors.grey.withValues(alpha: 0.5),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

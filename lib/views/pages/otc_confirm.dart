@@ -71,7 +71,7 @@ class OtcConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: brandColor.withOpacity(0.5), thickness: 1),
+            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
 
             // Transaction Card
@@ -101,7 +101,7 @@ class OtcConfirmationPage extends StatelessWidget {
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
-                  backgroundColor: brandColor.withOpacity(0.1),
+                  backgroundColor: brandColor.withValues(alpha: 0.1),
                   side: BorderSide(color: brandColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -140,10 +140,10 @@ class OtcConfirmationPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: brandColor.withOpacity(0.5)),
+        border: Border.all(color: brandColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: brandColor.withOpacity(0.1),
+            color: brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -161,14 +161,14 @@ class OtcConfirmationPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow('Amount:', amount),
               _buildDetailRow('Channel:', 'Over-the-Counter'),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Total:', total, isTotal: true),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,

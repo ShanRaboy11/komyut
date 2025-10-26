@@ -43,7 +43,7 @@ class OtcInstructionsPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: brandColor.withOpacity(0.5), thickness: 1),
+            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
 
             // Steps
@@ -84,7 +84,7 @@ class OtcInstructionsPage extends StatelessWidget {
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
-                  backgroundColor: brandColor.withOpacity(0.1),
+                  backgroundColor: brandColor.withValues(alpha: 0.1),
                   side: BorderSide(color: brandColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

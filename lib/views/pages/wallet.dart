@@ -99,7 +99,7 @@ class _WalletPageState extends State<WalletPage>
                       'Earn and use Wheel Tokens to make your rides more rewarding! Complete a ride to earn 0.5 Wheel Token.',
                       textAlign: TextAlign.justify,
                       style: GoogleFonts.nunito(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -108,7 +108,7 @@ class _WalletPageState extends State<WalletPage>
                       'The more you ride, the more tokens you collect — and the more you save! Start earning today and make every ride count!',
                       textAlign: TextAlign.justify,
                       style: GoogleFonts.nunito(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -341,7 +341,7 @@ class _WalletPageState extends State<WalletPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8E4CB6).withOpacity(0.3),
+            color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -434,7 +434,7 @@ class _WalletPageState extends State<WalletPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
