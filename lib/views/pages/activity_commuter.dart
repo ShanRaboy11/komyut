@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'trip1_commuter.dart';
+import 'trips_commuter.dart';
 import '../widgets/trip_card.dart';
 
 class TripsPage extends StatefulWidget {

@@ -2,8 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/trip_card.dart';
-import '../widgets/drivercard_trip.dart';
-import '../widgets/tripdetails.dart';
+import '../pages/tripdetails_commuter.dart';
 
 class Trip1Page extends StatefulWidget {
   const Trip1Page({super.key});
@@ -91,6 +90,21 @@ class Trip1PageState extends State<Trip1Page>
                 to: "Colon",
                 tripCode: "01K",
                 status: "ongoing",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TripDetailsPage(
+                        date: "September 11, 2025",
+                        time: "04:26 PM",
+                        from: "SM Cebu",
+                        to: "Colon",
+                        tripCode: "01K",
+                        status: "ongoing",
+                      ),
+                    ),
+                  );
+                },
               ),
               TripsCard(
                 date: "September 10, 2025",
@@ -99,6 +113,21 @@ class Trip1PageState extends State<Trip1Page>
                 to: "IT Park",
                 tripCode: "02C",
                 status: "completed",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TripDetailsPage(
+                        date: "September 10, 2025",
+                        time: "03:15 PM",
+                        from: "Ayala",
+                        to: "IT Park",
+                        tripCode: "02C",
+                        status: "completed",
+                      ),
+                    ),
+                  );
+                },
               ),
               TripsCard(
                 date: "September 09, 2025",
@@ -107,6 +136,21 @@ class Trip1PageState extends State<Trip1Page>
                 to: "Talamban",
                 tripCode: "03B",
                 status: "cancelled",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TripDetailsPage(
+                        date: "September 09, 2025",
+                        time: "06:45 PM",
+                        from: "Colon",
+                        to: "Talamban",
+                        tripCode: "03B",
+                        status: "cancelled",
+                      ),
+                    ),
+                  );
+                },
               ),
               TripsCard(
                 date: "September 11, 2025",
@@ -131,20 +175,6 @@ class Trip1PageState extends State<Trip1Page>
                 to: "Talamban",
                 tripCode: "03B",
                 status: "cancelled",
-              ),
-              DriverCard(
-                name: "Gio Christian D. Macatual",
-                role: "Driver",
-                plate: "735TUK",
-              ),
-              TripDetailsCard(
-                mapImage: 'assets/images/map.png',
-                distance: '4 kilometers',
-                routeCode: '01K',
-                from: 'SM Cebu',
-                fromTime: '03:17PM',
-                to: 'Colon',
-                toTime: '04:26PM',
               ),
 
               const SizedBox(height: 20),

@@ -38,6 +38,7 @@ class TripDetailsCard extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
+            spreadRadius: 1,
             offset: const Offset(0, 2),
           ),
         ],

@@ -322,6 +322,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             text: 'Cash In',
             icon: Icons.add_rounded,
             onPressed: () {},
+            iconColor: const Color(0xFF5B53C2),
             isFilled: true,
             fillColor: Colors.white,
             textColor: const Color(0xFF5B53C2),
