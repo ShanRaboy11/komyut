@@ -68,7 +68,7 @@ class TokenConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: brandColor.withOpacity(0.5), thickness: 1),
+            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
 
             // Transaction Card
@@ -94,11 +94,11 @@ class TokenConfirmationPage extends StatelessWidget {
             Center(
               child: OutlinedButton(
                 onPressed: () {
-                  //Navigator.of(context).pushNamed('/payment_success');
+                  Navigator.of(context).pushNamed('/token_success');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
-                  backgroundColor: brandColor.withOpacity(0.1),
+                  backgroundColor: brandColor.withValues(alpha: 0.1),
                   side: BorderSide(color: brandColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -137,10 +137,10 @@ class TokenConfirmationPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: brandColor.withOpacity(0.5)),
+        border: Border.all(color: brandColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: brandColor.withOpacity(0.1),
+            color: brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -159,7 +159,7 @@ class TokenConfirmationPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow(
@@ -170,9 +170,7 @@ class TokenConfirmationPage extends StatelessWidget {
                     Image.asset('assets/images/wheel token.png', height: 16),
                     const SizedBox(width: 6),
                     Text(
-                      double.parse(
-                        tokenAmount,
-                      ).toStringAsFixed(1), // Format to one decimal place
+                      double.parse(tokenAmount).toStringAsFixed(1),
                       style: GoogleFonts.manrope(
                         fontSize: 15,
                         color: Colors.black87,
@@ -182,9 +180,9 @@ class TokenConfirmationPage extends StatelessWidget {
                   ],
                 ),
               ),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Equivalent:', equivalentValue, isTotal: true),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
