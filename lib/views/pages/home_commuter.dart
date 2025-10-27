@@ -15,6 +15,7 @@ import 'otc_instructions.dart';
 import 'otc_success.dart';
 import 'activity_commuter.dart';
 import 'wt.dart';
+import 'wt_confirm.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -105,6 +106,11 @@ class HomeTabNavigator extends StatelessWidget {
             break;
           case '/redeem_tokens':
             builder = (BuildContext context) => const RedeemTokensPage();
+            break;
+          case '/token_confirmation':
+            final amount = settings.arguments as String;
+            builder = (BuildContext context) =>
+                TokenConfirmationPage(tokenAmount: amount);
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();

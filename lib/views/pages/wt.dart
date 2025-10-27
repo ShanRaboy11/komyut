@@ -275,7 +275,10 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         child: ElevatedButton(
           onPressed: _isButtonEnabled
               ? () {
-                  //
+                  Navigator.of(context).pushNamed(
+                    '/token_confirmation',
+                    arguments: _tokenController.text,
+                  );
                 }
               : null,
           style: ElevatedButton.styleFrom(
