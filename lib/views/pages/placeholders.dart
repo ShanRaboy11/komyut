@@ -64,8 +64,8 @@ class CommuterNotificationsPage extends StatelessWidget {
   }
 }
 
-class CommuterProfilePage extends StatelessWidget {
-  const CommuterProfilePage({super.key});
+class CommuterProfilePage1 extends StatelessWidget {
+  const CommuterProfilePage1({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
 import './home_operator.dart'; 
 import './placeholders.dart';
+import './personalinfo_operator.dart';
 
 class OperatorApp extends StatelessWidget {
   const OperatorApp({super.key});
@@ -13,7 +14,7 @@ class OperatorApp extends StatelessWidget {
       driversPage: OperatorDriversPage(),
       transactionsPage: OperatorTransactionsPage(),
       reportsPage: OperatorReportsPage(),
-      profilePage: OperatorProfilePage(),
+      profilePage: PersonalInfoPage(),
     );
   }
 }
