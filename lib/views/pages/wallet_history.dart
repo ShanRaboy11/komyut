@@ -11,7 +11,6 @@ class TransactionHistoryPage extends StatelessWidget {
 
   const TransactionHistoryPage({super.key, required this.type});
 
-  // Dummy data for a long list
   List<Map<String, dynamic>> get _dummyTransactions => List.generate(14, (i) {
     bool isCashIn = i == 0 || i == 13;
     return {
@@ -32,10 +31,22 @@ class TransactionHistoryPage extends StatelessWidget {
     };
   });
 
+  String _generateTransactionCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final part1 = String.fromCharCodes(
+      Iterable.generate(
+        15,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
   void _showCashInDetailModal(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,
@@ -47,7 +58,7 @@ class TransactionHistoryPage extends StatelessWidget {
             _buildDetailRow('Channel:', 'GCash'),
           ],
           totalRow: _buildDetailRow('Total:', 'P105.00'),
-          transactionCode: 'AHR231-DS31213',
+          transactionCode: _generateTransactionCode(),
         );
       },
     );
@@ -56,7 +67,7 @@ class TransactionHistoryPage extends StatelessWidget {
   void _showTokenRedemptionModal(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,
@@ -84,7 +95,7 @@ class TransactionHistoryPage extends StatelessWidget {
             ),
           ],
           totalRow: _buildDetailRow('Equivalent:', 'P10.00'),
-          transactionCode: 'AHR231-DS31213',
+          transactionCode: _generateTransactionCode(),
         );
       },
     );
@@ -107,10 +118,10 @@ class TransactionHistoryPage extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: brandColor.withOpacity(0.5)),
+          border: Border.all(color: brandColor.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: brandColor.withOpacity(0.1),
+              color: brandColor.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -129,11 +140,11 @@ class TransactionHistoryPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Divider(color: brandColor.withOpacity(0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
                 ...details,
-                Divider(color: brandColor.withOpacity(0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
                 totalRow,
-                Divider(color: brandColor.withOpacity(0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
                 BarcodeWidget(
                   barcode: Barcode.code128(),
                   data: transactionCode,

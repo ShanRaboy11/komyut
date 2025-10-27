@@ -14,6 +14,7 @@ import 'otc_confirm.dart';
 import 'otc_instructions.dart';
 import 'otc_success.dart';
 import 'activity_commuter.dart';
+import 'wt.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -101,6 +102,9 @@ class HomeTabNavigator extends StatelessWidget {
             break;
           case '/payment_success':
             builder = (BuildContext context) => const PaymentSuccessPage();
+            break;
+          case '/redeem_tokens':
+            builder = (BuildContext context) => const RedeemTokensPage();
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
@@ -539,7 +543,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildActionButton(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha:0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
