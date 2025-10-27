@@ -3,10 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:provider/provider.dart'; // 👈 ADD THIS
+import 'package:provider/provider.dart'; 
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
-import '../providers/commuter_dashboard.dart'; // 👈 ADD THIS
+import '../providers/commuter_dashboard.dart'; 
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';

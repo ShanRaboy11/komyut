@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import '../providers/operator_dashboard.dart';
 
 class OperatorDashboardNav extends StatefulWidget {
   const OperatorDashboardNav({super.key});
@@ -48,145 +50,251 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Load dashboard data when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperatorDashboardProvider>().loadDashboardData();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
-        child: SingleChildScrollView(
-          //padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- Header Card ---
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradientColors),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(0),
-                    bottomLeft: Radius.circular(25),
-                    topRight: Radius.circular(0),
-                    bottomRight: Radius.circular(25),
-                  ),
+        child: Consumer<OperatorDashboardProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return Center(
+                child: CircularProgressIndicator(
+                  color: gradientColors[0],
                 ),
-                padding: const EdgeInsets.all(40),
+              );
+            }
+
+            if (provider.errorMessage != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading dashboard',
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        provider.errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => provider.loadDashboardData(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () => provider.loadDashboardData(),
+              color: gradientColors[0],
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo
-                    Center(
-                      child: SvgPicture.asset(
-                        'assets/images/logo_white.svg',
-                        height: 80,
+                    // --- Header Card ---
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: gradientColors),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(0),
+                          bottomLeft: Radius.circular(25),
+                          topRight: Radius.circular(0),
+                          bottomRight: Radius.circular(25),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Today's Revenue row
-                    const Text(
-                      "Today's Revenue",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '₱500.00',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
+                      padding: const EdgeInsets.all(40),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Logo
+                          Center(
+                            child: SvgPicture.asset(
+                              'assets/images/logo_white.svg',
+                              height: 80,
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Symbols.account_balance_wallet_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          // Today's Revenue row
+                          const Text(
+                            "Today's Revenue",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                provider.todaysRevenueFormatted,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Icon(
+                                Symbols.account_balance_wallet_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 5),
+                    const SizedBox(height: 5),
 
-              // --- Stats Row ---
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 20.0,
-                  right: 20.0,
-                  top: 5.0,
-                ),
-                child: Column(
-                  children: [
                     // --- Stats Row ---
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            icon: Symbols.group_rounded,
-                            value: "120",
-                            label: "Total Drivers",
-                            color: gradientColors[0],
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 20.0,
+                        right: 20.0,
+                        top: 5.0,
+                      ),
+                      child: Column(
+                        children: [
+                          // --- Stats Row ---
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  context,
+                                  icon: Symbols.group_rounded,
+                                  value: provider.totalDriversDisplay,
+                                  label: "Total Drivers",
+                                  color: gradientColors[0],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  context,
+                                  icon: Symbols.directions_bus_rounded,
+                                  value: provider.activeTripsDisplay,
+                                  label: "Active Trips",
+                                  color: gradientColors[1],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            icon: Symbols.directions_bus_rounded,
-                            value: "90",
-                            label: "Active Trips",
-                            color: gradientColors[1],
+                          const SizedBox(height: 20),
+
+                          // --- Driver Performance Section ---
+                          _buildSectionHeader(
+                            "Driver performance",
+                            actionText: "View all",
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          ...provider.driverPerformance.map((driver) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _buildDriverCard(
+                                driver['name'] ?? 'Unknown Driver',
+                                provider.getDriverRevenueFormatted(driver),
+                                provider.getDriverRatingFormatted(driver),
+                              ),
+                            );
+                          }),
+                          if (provider.driverPerformance.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  'No driver performance data available',
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 20),
+
+                          // --- Reports Section ---
+                          _buildSectionHeader("Reports", actionText: "See all"),
+                          const SizedBox(height: 10),
+                          ...provider.recentReports.map((report) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _buildReportCard(
+                                title: report['title'] ?? 'Unknown Report',
+                                plate: report['plate'] ?? 'N/A',
+                                status: provider.getReportStatusDisplay(report['status'] ?? 'open'),
+                                statusColor: _getStatusColor(provider.getReportStatusColor(report['status'] ?? 'open')),
+                                buttonText: provider.getReportButtonText(report['status'] ?? 'open'),
+                              ),
+                            );
+                          }),
+                          if (provider.recentReports.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  'No reports available',
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
-
-                    // --- Driver Performance Section ---
-                    _buildSectionHeader(
-                      "Driver performance",
-                      actionText: "View all",
-                    ),
-                    const SizedBox(height: 10),
-                    _buildDriverCard("Riguel Alleje", "₱420", "4.8"),
-                    const SizedBox(height: 8),
-                    _buildDriverCard("Noah Elizalde", "₱400", "3.8"),
-                    const SizedBox(height: 20),
-
-                    // --- Reports Section ---
-                    _buildSectionHeader("Reports", actionText: "See all"),
-                    const SizedBox(height: 10),
-                    _buildReportCard(
-                      title: "Overcrowded bus",
-                      plate: "GLE703",
-                      status: "In progress",
-                      statusColor: Colors.orange,
-                      buttonText: "Track",
-                    ),
-                    const SizedBox(height: 8),
-                    _buildReportCard(
-                      title: "Route skipped stop",
-                      plate: "GLE704",
-                      status: "Resolved",
-                      statusColor: Colors.green,
-                      buttonText: "Details",
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
+  }
+
+  // --- Helper method to convert color names to Color objects ---
+  Color _getStatusColor(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'orange':
+        return Colors.orange;
+      case 'green':
+        return Colors.green;
+      case 'blue':
+        return Colors.blue;
+      case 'grey':
+        return Colors.grey;
+      case 'red':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 
   // --- Widgets ---
@@ -306,7 +414,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                     'Revenue $revenue  •  Rating $rating',
                     style: GoogleFonts.nunito(
                       fontSize: 13,
-                      color: Color.fromARGB(255, 123, 123, 123),
+                      color: const Color.fromARGB(255, 123, 123, 123),
                     ),
                   ),
                 ],
@@ -362,7 +470,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                 'Plate No. $plate • Status: $status',
                 style: GoogleFonts.nunito(
                   fontSize: 13,
-                  color: Color.fromARGB(255, 123, 123, 123),
+                  color: const Color.fromARGB(255, 123, 123, 123),
                 ),
               ),
               CustomButton(
