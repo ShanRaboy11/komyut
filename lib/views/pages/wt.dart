@@ -14,7 +14,9 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
   final TextEditingController _tokenController = TextEditingController();
   String _pesoEquivalent = "P0.00";
   bool _isButtonEnabled = false;
+  bool _hasError = false;
 
+  final int _balance = 120;
   final Color _brandColor = const Color(0xFF8E4CB6);
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -34,6 +36,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
       setState(() {
         _pesoEquivalent = "P0.00";
         _isButtonEnabled = false;
+        _hasError = false;
       });
       return;
     }
@@ -44,14 +47,25 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         locale: 'en_PH',
         symbol: 'P',
       );
-      setState(() {
-        _pesoEquivalent = currencyFormat.format(amount);
-        _isButtonEnabled = true;
-      });
+
+      if (amount > _balance) {
+        setState(() {
+          _pesoEquivalent = currencyFormat.format(amount);
+          _hasError = true;
+          _isButtonEnabled = false;
+        });
+      } else {
+        setState(() {
+          _pesoEquivalent = currencyFormat.format(amount);
+          _hasError = false;
+          _isButtonEnabled = true;
+        });
+      }
     } else {
       setState(() {
         _pesoEquivalent = "P0.00";
         _isButtonEnabled = false;
+        _hasError = false;
       });
     }
   }
@@ -178,7 +192,12 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _brandColor.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: _hasError
+                      ? Colors.red
+                      : _brandColor.withValues(alpha: 0.3),
+                  width: _hasError ? 2 : 1,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -198,7 +217,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: _brandColor,
+                        color: _hasError ? Colors.red : _brandColor,
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -214,7 +233,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
                     style: GoogleFonts.manrope(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: _brandColor,
+                      color: _hasError ? Colors.red : _brandColor,
                     ),
                   ),
                 ],
@@ -229,8 +248,13 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'Each Wheel Token is equivalent to 1 Peso.',
-            style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
+            _hasError
+                ? 'You only have $_balance tokens available.'
+                : 'Each Wheel Token is equivalent to 1 Peso.',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              color: _hasError ? Colors.red : Colors.black45,
+            ),
           ),
         ),
       ],
