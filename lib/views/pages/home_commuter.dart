@@ -132,6 +132,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
+  final gradientColors1 = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+  ];
+  final gradientColors2 = const [
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
 
   // 👇 ADD THIS - Load data when page opens
   @override
@@ -153,16 +161,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 400;
 
-    // 👇 WRAP WITH CONSUMER TO ACCESS PROVIDER DATA
     return Consumer<CommuterDashboardProvider>(
       builder: (context, provider, child) {
-        // Show loading while data is being fetched
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(30, 10, 30, 30),
+          padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -175,7 +181,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}', // 👈 DYNAMIC NAME
+                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}', 
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
@@ -192,9 +198,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
 
-              // Wallet / Tokens Tabs
               Row(
                 children: [
                   _buildTabButton('Wallet', true),
@@ -243,7 +248,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
 
               const SizedBox(height: 20),
-              _buildAnalyticsSection(isSmallScreen, provider), // 👈 PASS PROVIDER
+              _buildAnalyticsSection(isSmallScreen, provider), 
               const SizedBox(height: 20),
               _buildPromoCard(),
               const SizedBox(height: 20),
@@ -257,6 +262,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
   Widget _buildTabButton(String title, bool isWallet) {
     final isSelected = showWallet == isWallet;
+    final currentGradientColors = isWallet ? gradientColors1 : gradientColors2;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => _switchTab(isWallet),
@@ -264,9 +271,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? null : Colors.grey[100],
+            color: isSelected ? null : Colors.grey[200],
             gradient: isSelected
-                ? LinearGradient(colors: gradientColors)
+                ? LinearGradient(colors: currentGradientColors)
                 : null,
             borderRadius: isWallet
                 ? const BorderRadius.only(
@@ -280,9 +287,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             child: Text(
               title,
               style: GoogleFonts.manrope(
+                color: isSelected ? Colors.white : Colors.black54,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isSelected ? Colors.white : Colors.grey[700],
+                fontSize: 18,
               ),
             ),
           ),
@@ -291,32 +298,21 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // 👇 MODIFIED - Added provider parameter
   Widget _buildWalletCard(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Balance', style: GoogleFonts.manrope(color: Colors.white70)),
+        Text('Available Balance', style: GoogleFonts.manrope(color: Colors.white70)),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '₱',
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
                   _isBalanceVisible 
-                      ? provider.balance.toStringAsFixed(2) // 👈 DYNAMIC BALANCE
-                      : '••••',
+                      ? '₱${provider.balance.toStringAsFixed(2)}' 
+                      : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -336,21 +332,21 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ],
             ),
             CustomButton(
-              text: 'Top up',
+              text: 'Cash In',
+              icon: Icons.add_rounded,
               onPressed: () {
                 Navigator.of(context).pushNamed('/wallet');
               },
               isFilled: true,
               fillColor: Colors.white,
-              textColor: const Color(0xFFB945AA),
-              iconColor: const Color(0xFFB945AA),
+              textColor: const Color(0xFF5B53C2),
+              iconColor: const Color(0xFF5B53C2),
               width: 120,
               height: 45,
               borderRadius: 30,
               hasShadow: false,
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              imagePath: 'assets/images/topup.svg',
             ),
           ],
         ),
@@ -358,7 +354,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // 👇 MODIFIED - Added provider parameter
   Widget _buildTokensCard(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,7 +374,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 const SizedBox(width: 8),
                 Text(
                   _isTokensVisible 
-                      ? provider.wheelTokens.toString() // 👈 DYNAMIC TOKENS
+                      ? provider.wheelTokens.toString() 
                       : '••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
@@ -422,7 +417,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // 👇 MODIFIED - Added provider parameter
   Widget _buildAnalyticsSection(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Container(
       width: double.infinity,
@@ -543,13 +537,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             ),
           ),
           CustomButton(
-            text: 'Claim Now',
+            text: 'Claim',
+            fontSize: 13,
             onPressed: () {},
             isFilled: true,
             fillColor: const Color(0xFF8E4CB6),
             textColor: Colors.white,
-            width: 120,
-            height: 40,
+            width: 70,
+            height: 35,
             borderRadius: 20,
             hasShadow: false,
           ),
