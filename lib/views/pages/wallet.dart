@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:komyut/views/pages/dw.dart';
 import 'package:komyut/views/pages/wt.dart';
 import 'wallet_history.dart';
 import 'otc.dart';
@@ -326,7 +327,9 @@ class _WalletPageState extends State<WalletPage>
         MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
       );
     } else if (optionText == 'Digital Wallet') {
-      // Navigator.of(context).pushNamed('/dw');
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
+      );
     } else if (optionText == 'Wheel Tokens') {
       Navigator.of(
         context,

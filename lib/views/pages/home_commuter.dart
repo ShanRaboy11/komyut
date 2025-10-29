@@ -17,6 +17,8 @@ import 'activity_commuter.dart';
 import 'wt.dart';
 import 'wt_confirm.dart';
 import 'wt_success.dart';
+import 'dw.dart';
+import 'dw_confirm.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -115,6 +117,17 @@ class HomeTabNavigator extends StatelessWidget {
             break;
           case '/token_success':
             builder = (BuildContext context) => const TokenSuccessPage();
+            break;
+          case '/digital_wallet':
+            builder = (BuildContext context) => const DigitalWalletPage();
+            break;
+          case '/dw_confirmation':
+            final args = settings.arguments as Map<String, String>;
+            builder = (BuildContext context) => DwConfirmationPage(
+              name: args['name']!,
+              email: args['email']!,
+              amount: args['amount']!,
+            );
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
