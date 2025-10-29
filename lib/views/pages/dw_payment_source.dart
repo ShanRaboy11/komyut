@@ -281,7 +281,15 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
       child: OutlinedButton(
         onPressed: isEnabled
             ? () {
-                Navigator.of(context).pushNamed('/payment_success');
+                Navigator.of(context).pushNamed(
+                  '/dw_confirmation',
+                  arguments: {
+                    'name': widget.name,
+                    'email': widget.email,
+                    'amount': widget.amount,
+                    'source': _selectedSource!,
+                  },
+                );
               }
             : null,
         style: OutlinedButton.styleFrom(

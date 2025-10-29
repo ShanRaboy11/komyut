@@ -8,12 +8,14 @@ class DwConfirmationPage extends StatelessWidget {
   final String name;
   final String email;
   final String amount;
+  final String source;
 
   const DwConfirmationPage({
     super.key,
     required this.name,
     required this.email,
     required this.amount,
+    required this.source,
   });
 
   String _generateTransactionCode() {
@@ -30,12 +32,11 @@ class DwConfirmationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- Data Calculation ---
     final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
     final double amountValue = double.tryParse(amount) ?? 0.0;
-    final double totalValue = amountValue + 5.00;
+    final double totalValue = amountValue + 10.00;
     final transactionCode = _generateTransactionCode();
 
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
@@ -80,7 +81,6 @@ class DwConfirmationPage extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-
             _buildTransactionCard(
               context: context,
               date: date,
@@ -167,10 +167,13 @@ class DwConfirmationPage extends StatelessWidget {
                 ),
               ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+              _buildDetailRow('User ID:', '12-3456-789'),
+              _buildDetailRow('Name:', name),
+              _buildDetailRow('Email:', email),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow('Amount:', amount),
-              _buildDetailRow('Channel:', 'Digital Wallet'),
+              _buildDetailRow('Channel:', 'Digital Wallet - ($source)'),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Total:', total, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
@@ -195,7 +198,11 @@ class DwConfirmationPage extends StatelessWidget {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).popUntil((route) => route.settings.name == '/wallet');
+              },
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(
