@@ -139,21 +139,39 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
   }
 
   Widget _buildDetailRow(String label, String value) {
+    String displayedValue = value;
+
+    if (label.toLowerCase().contains('email') && value.contains('@')) {
+      final parts = value.split('@');
+      if (parts[0].length > 12) {
+        displayedValue = '${parts[0].substring(0, 9)}...@${parts[1]}';
+      }
+    } else if (label.toLowerCase().contains('name') && value.length > 18) {
+      displayedValue = '${value.substring(0, 15)}...';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[600]),
           ),
-          Text(
-            value,
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              displayedValue,
+              textAlign: TextAlign.end,
+              softWrap: false,
+              overflow: TextOverflow.fade,
+              maxLines: 1,
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
