@@ -27,27 +27,32 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
   @override
   void initState() {
     super.initState();
+    _tokenController.text = "0";
     _tokenController.addListener(_onTokenAmountChanged);
   }
 
   void _onTokenAmountChanged() {
-    final text = _tokenController.text;
-    if (text.isEmpty) {
-      setState(() {
-        _pesoEquivalent = "P0.00";
-        _isButtonEnabled = false;
-        _hasError = false;
-      });
-      return;
+    String text = _tokenController.text;
+
+    if (text.length > 1 && text.startsWith('0')) {
+      text = text.substring(1);
+      _tokenController.text = text;
+      _tokenController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _tokenController.text.length),
+      );
     }
 
-    final double? amount = double.tryParse(text);
-    if (amount != null && amount > 0) {
-      final currencyFormat = NumberFormat.currency(
-        locale: 'en_PH',
-        symbol: 'P',
+    if (text.isEmpty) {
+      _tokenController.text = "0";
+      _tokenController.selection = TextSelection.fromPosition(
+        TextPosition(offset: 1),
       );
+    }
 
+    final double? amount = double.tryParse(_tokenController.text);
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
+    if (amount != null && amount > 0) {
       if (amount > _balance) {
         setState(() {
           _pesoEquivalent = currencyFormat.format(amount);
