@@ -28,16 +28,23 @@ class CommuterNavBarWrapper extends StatefulWidget {
 
 class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
   late int _currentIndex;
-  // int _lastValidIndex = 0; // We will simplify this logic
+  bool _isQRScannerOpen = false; // Track if QR scanner is open
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    // _lastValidIndex = widget.initialIndex; // No longer strictly needed for this specific goal
   }
 
   void _handleQRScan() async {
+    // Store the current index BEFORE opening scanner
+    final previousIndex = _currentIndex;
+    
+    // Mark that QR scanner is open
+    setState(() {
+      _isQRScannerOpen = true;
+    });
+    
     // Open QR scanner and wait for it to close
     await Navigator.push(
       context,
@@ -56,25 +63,31 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
       ),
     );
     
-    // --- START OF MODIFICATION ---
-    // After QR scanner closes (either by back button or completion),
-    // always restore the index to the Home page (index 0).
+    // After QR scanner closes, restore previous index
     if (mounted) {
       setState(() {
-        _currentIndex = 0; // Force back to Home (index 0)
-        // No need to set _lastValidIndex here as we are explicitly going to Home
+        _currentIndex = previousIndex;
+        _isQRScannerOpen = false;
       });
     }
-    // --- END OF MODIFICATION ---
   }
 
   @override
   Widget build(BuildContext context) {
+    // Don't show navbar content if QR scanner is open
+    if (_isQRScannerOpen) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return AnimatedBottomNavBar(
       pages: [
         widget.homePage,
         widget.activityPage,
-        widget.qrScanPage ?? const SizedBox.shrink(),
+        const SizedBox.shrink(),
         widget.notificationsPage,
         widget.profilePage,
       ],
@@ -87,23 +100,18 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
       ],
       initialIndex: _currentIndex,
       onItemSelected: (index) {
-        // If QR Scan button is tapped, open scanner via navigation
         if (index == 2) {
           _handleQRScan();
-          return; // CRITICAL: Don't update _currentIndex, let _handleQRScan manage it
+          return;
         }
         
-        // For other buttons, update current index
         setState(() {
           _currentIndex = index;
-          // _lastValidIndex = index; // No longer needed for this specific "go to home" goal
         });
       },
     );
   }
 }
-
-// ... (Rest of your Driver, Operator, Admin NavBar Wrappers remain unchanged) ...
 
 // ============= DRIVER NAVBAR WRAPPER =============
 class DriverNavBarWrapper extends StatefulWidget {
