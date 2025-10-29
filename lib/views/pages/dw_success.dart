@@ -94,7 +94,7 @@ class _DwSuccessPageState extends State<DwSuccessPage>
                   BoxShadow(
                     color: const Color(
                       0xFF5B53C2,
-                    ).withOpacity(_glowAnimation.value),
+                    ).withValues(alpha: _glowAnimation.value),
                     blurRadius: 30,
                     spreadRadius: 4,
                     offset: Offset.zero,
