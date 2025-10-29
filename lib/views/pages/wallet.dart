@@ -595,94 +595,104 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildBalanceCard(WalletProvider provider) {
     final currencyFormat = NumberFormat("#,##0.00", "en_US");
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // The card itself
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8E4CB6).withValues(alpha: 0.25),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Top: Current Balance + tokens
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Current Balance',
                     style: GoogleFonts.nunito(
-                      color: Colors.white70,
-                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '₱ ${currencyFormat.format(provider.balance)}',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: () => _showTokenInfoModal(context),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/wheel token.png',
+                          height: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          provider.wheelTokens.toStringAsFixed(1),
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () => _showTokenInfoModal(context),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Row(
-                    children: [
-                      Image.asset('assets/images/wheel token.png', height: 22),
-                      const SizedBox(width: 6),
-                      Text(
-                        provider.wheelTokens.toString(),
-                        style: GoogleFonts.manrope(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              Text(
+                '₱ ${currencyFormat.format(provider.balance)}',
+                style: GoogleFonts.manrope(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          Positioned(
-            bottom: -40,
-            right: 0,
-            child: GestureDetector(
-              onTap: () => _showDepositOptionsModal(context),
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x338E4CB6),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.add, color: gradientColors[1], size: 30),
+        ),
+
+        // Floating "+" button
+        Positioned(
+          bottom: -18,
+          right: 18,
+          child: GestureDetector(
+            onTap: () => _showDepositOptionsModal(context),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
+              child: Icon(Icons.add, color: const Color(0xFF8E4CB6), size: 24),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
