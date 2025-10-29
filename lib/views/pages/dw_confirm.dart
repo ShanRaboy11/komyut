@@ -101,7 +101,7 @@ class DwConfirmationPage extends StatelessWidget {
             Center(
               child: OutlinedButton(
                 onPressed: () {
-                  Navigator.of(context).pushNamed('/payment_success');
+                  Navigator.of(context).pushNamed('/dw_success');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: brandColor,
@@ -173,7 +173,7 @@ class DwConfirmationPage extends StatelessWidget {
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow('Amount:', amount),
-              _buildDetailRow('Channel:', 'Digital Wallet - ($source)'),
+              _buildDetailRow('Channel:', 'Digital Wallet ($source)'),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Total:', total, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),

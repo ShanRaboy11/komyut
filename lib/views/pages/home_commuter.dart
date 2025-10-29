@@ -21,6 +21,7 @@ import 'dw.dart';
 import 'dw_payment_method.dart';
 import 'dw_payment_source.dart';
 import 'dw_confirm.dart';
+import 'dw_success.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -148,6 +149,9 @@ class HomeTabNavigator extends StatelessWidget {
               amount: args['amount']!,
               source: args['source']!,
             );
+            break;
+          case '/dw_success':
+            builder = (BuildContext context) => const DwSuccessPage();
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
