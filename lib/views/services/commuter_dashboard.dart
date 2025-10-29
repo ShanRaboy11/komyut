@@ -420,4 +420,62 @@ class CommuterDashboardService {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> getAllTransactions() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      final wallet = await _supabase
+          .from('wallets')
+          .select('id')
+          .eq('owner_profile_id', profile['id'])
+          .maybeSingle();
+      if (wallet == null) return [];
+
+      final transactions = await _supabase
+          .from('transactions')
+          .select(
+            'id, transaction_number, type, amount, status, created_at, processed_at',
+          )
+          .eq('wallet_id', wallet['id'])
+          .order('created_at', ascending: false);
+
+      debugPrint('✅ All transactions fetched: ${transactions.length}');
+      return transactions;
+    } catch (e) {
+      debugPrint('❌ Error fetching all transactions: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllTokenHistory() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final tokenHistory = await _supabase
+          .from('token_transactions')
+          .select('id, type, amount, created_at')
+          .eq('profile_id', profile['id'])
+          .order('created_at', ascending: false);
+
+      debugPrint('✅ All token history fetched: ${tokenHistory.length}');
+      return tokenHistory;
+    } catch (e) {
+      debugPrint('❌ Error fetching all token history: $e');
+      rethrow;
+    }
+  }
 }

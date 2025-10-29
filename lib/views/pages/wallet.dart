@@ -531,11 +531,11 @@ class _WalletPageState extends State<WalletPage>
       ),
       body: Consumer<WalletProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
+          if (provider.isWalletLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (provider.errorMessage != null) {
-            return Center(child: Text(provider.errorMessage!));
+          if (provider.walletErrorMessage != null) {
+            return Center(child: Text(provider.walletErrorMessage!));
           }
 
           return SingleChildScrollView(
@@ -545,7 +545,7 @@ class _WalletPageState extends State<WalletPage>
                 const SizedBox(height: 16),
                 _buildBalanceCard(provider),
                 const SizedBox(height: 30),
-                _buildFareExpensesCard(provider.fareExpenses), // Pass data
+                _buildFareExpensesCard(provider.fareExpenses),
                 const SizedBox(height: 24),
                 _buildTransactionsTabs(provider),
               ],
@@ -580,14 +580,14 @@ class _WalletPageState extends State<WalletPage>
           ],
         ),
         if (_tabController.index == 0)
-          _buildTransactionsList(provider.transactions)
+          _buildTransactionsList(provider.recentTransactions)
         else
-          _buildTokensList(provider.tokenHistory),
+          _buildTokensList(provider.recentTokenHistory),
         const SizedBox(height: 20),
-
-        // --- CONDITIONAL "VIEW ALL" BUTTON ---
-        if ((_tabController.index == 0 && provider.transactions.isNotEmpty) ||
-            (_tabController.index == 1 && provider.tokenHistory.isNotEmpty))
+        if ((_tabController.index == 0 &&
+                provider.recentTransactions.isNotEmpty) ||
+            (_tabController.index == 1 &&
+                provider.recentTokenHistory.isNotEmpty))
           _buildViewAllButton(),
       ],
     );

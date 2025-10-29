@@ -1,35 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
+import 'package:provider/provider.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
+import '../providers/wallet_provider.dart';
 
-// An enum to make our code cleaner and safer.
 enum HistoryType { transactions, tokens }
 
-class TransactionHistoryPage extends StatelessWidget {
+class TransactionHistoryPage extends StatefulWidget {
   final HistoryType type;
-
   const TransactionHistoryPage({super.key, required this.type});
 
-  List<Map<String, dynamic>> get _dummyTransactions => List.generate(14, (i) {
-    bool isCashIn = i == 0 || i == 13;
-    return {
-      'title': isCashIn ? 'Cash In' : 'Trip Fare',
-      'subtitle': '10/${i % 2 + 2}/25 ${i % 5 + 1}:${i * 4} PM',
-      'amount': isCashIn ? '+₱100.00' : '−₱13.00',
-      'isCredit': isCashIn,
-    };
-  });
+  @override
+  State<TransactionHistoryPage> createState() => _TransactionHistoryPageState();
+}
 
-  List<Map<String, dynamic>> get _dummyTokens => List.generate(14, (i) {
-    bool isReward = i % 2 != 0;
-    return {
-      'title': isReward ? 'Trip Reward' : 'Token Redemption',
-      'subtitle': '10/${i % 3 + 1}/25 ${i % 6 + 1}:${i * 3} PM',
-      'amount': isReward ? '+0.5' : '-${(i % 5 + 1)}.0',
-      'isCredit': isReward,
-    };
-  });
+class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      ).fetchFullHistory(widget.type);
+    });
+  }
 
   String _generateTransactionCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -43,7 +40,14 @@ class TransactionHistoryPage extends StatelessWidget {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  void _showCashInDetailModal(BuildContext context) {
+  void _showCashInDetailModal(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) {
+    final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+    final total = amount + 5.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -52,19 +56,43 @@ class TransactionHistoryPage extends StatelessWidget {
           context: dialogContext,
           title: 'Cash In Transaction',
           details: [
-            _buildDetailRow('Date:', '10/04/2025'),
-            _buildDetailRow('Time:', '10:45 AM'),
-            _buildDetailRow('Amount:', 'P100.00'),
-            _buildDetailRow('Channel:', 'GCash'),
+            _buildDetailRow(
+              'Date:',
+              DateFormat(
+                'MM/dd/yyyy',
+              ).format(DateTime.parse(transaction['created_at'])),
+            ),
+            _buildDetailRow(
+              'Time:',
+              DateFormat(
+                'hh:mm a',
+              ).format(DateTime.parse(transaction['created_at'])),
+            ),
+            _buildDetailRow('Amount:', currencyFormat.format(amount)),
+            _buildDetailRow(
+              'Channel:',
+              (transaction['type'] as String?)
+                      ?.split('_')
+                      .map((e) => e[0].toUpperCase() + e.substring(1))
+                      .join(' ') ??
+                  'N/A',
+            ),
           ],
-          totalRow: _buildDetailRow('Total:', 'P105.00'),
-          transactionCode: _generateTransactionCode(),
+          totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
+          transactionCode:
+              transaction['transaction_number'] ?? _generateTransactionCode(),
         );
       },
     );
   }
 
-  void _showTokenRedemptionModal(BuildContext context) {
+  void _showTokenRedemptionModal(
+    BuildContext context,
+    Map<String, dynamic> tokenData,
+  ) {
+    final amount = (tokenData['amount'] as num?)?.toDouble() ?? 0.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -73,8 +101,18 @@ class TransactionHistoryPage extends StatelessWidget {
           context: dialogContext,
           title: 'Token Redemption',
           details: [
-            _buildDetailRow('Date:', '10/04/2025'),
-            _buildDetailRow('Time:', '10:45 AM'),
+            _buildDetailRow(
+              'Date:',
+              DateFormat(
+                'MM/dd/yyyy',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
+            _buildDetailRow(
+              'Time:',
+              DateFormat(
+                'hh:mm a',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
             _buildDetailRow(
               'Amount:',
               Row(
@@ -83,7 +121,7 @@ class TransactionHistoryPage extends StatelessWidget {
                   Image.asset('assets/images/wheel token.png', height: 16),
                   const SizedBox(width: 6),
                   Text(
-                    '10.0',
+                    amount.toStringAsFixed(1),
                     style: GoogleFonts.manrope(
                       fontSize: 15,
                       color: Colors.black87,
@@ -94,7 +132,10 @@ class TransactionHistoryPage extends StatelessWidget {
               ),
             ),
           ],
-          totalRow: _buildDetailRow('Equivalent:', 'P10.00'),
+          totalRow: _buildDetailRow(
+            'Equivalent:',
+            currencyFormat.format(amount.abs()),
+          ),
           transactionCode: _generateTransactionCode(),
         );
       },
@@ -217,8 +258,7 @@ class TransactionHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isTransactions = type == HistoryType.transactions;
-    final data = isTransactions ? _dummyTransactions : _dummyTokens;
+    final bool isTransactions = widget.type == HistoryType.transactions;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
@@ -255,29 +295,34 @@ class TransactionHistoryPage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
-              itemCount: data.length,
-              itemBuilder: (context, index) {
-                final item = data[index];
-                final isLast = index == data.length - 1;
-                return isTransactions
-                    ? _buildTransactionItem(
-                        context, // Pass context
-                        item['title'],
-                        item['subtitle'],
-                        item['amount'],
-                        item['isCredit'],
-                        isLast: isLast,
-                      )
-                    : _buildTokenItem(
-                        context, // Pass context
-                        item['title'],
-                        item['subtitle'],
-                        item['amount'],
-                        item['isCredit'],
-                        isLast: isLast,
-                      );
+            child: Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                if (provider.isHistoryLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (provider.historyErrorMessage != null) {
+                  return Center(child: Text(provider.historyErrorMessage!));
+                }
+                if (provider.fullHistory.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No history found.',
+                      style: GoogleFonts.nunito(),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
+                  itemCount: provider.fullHistory.length,
+                  itemBuilder: (context, index) {
+                    final item = provider.fullHistory[index];
+                    final isLast = index == provider.fullHistory.length - 1;
+                    return isTransactions
+                        ? _buildTransactionItem(context, item, isLast: isLast)
+                        : _buildTokenItem(context, item, isLast: isLast);
+                  },
+                );
               },
             ),
           ),
@@ -288,14 +333,24 @@ class TransactionHistoryPage extends StatelessWidget {
 
   Widget _buildTransactionItem(
     BuildContext context,
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> transaction, {
     bool isLast = false,
   }) {
+    final bool isCredit = (transaction['amount'] as num) >= 0;
+    final String title = (transaction['type'] as String)
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+    final String amount = NumberFormat.currency(
+      locale: 'en_PH',
+      symbol: '₱',
+    ).format(transaction['amount']);
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(transaction['created_at']));
+
     return InkWell(
-      onTap: () => _showCashInDetailModal(context),
+      onTap: () => _showCashInDetailModal(context, transaction),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -320,13 +375,13 @@ class TransactionHistoryPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle,
+                  date,
                   style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
                 ),
               ],
             ),
             Text(
-              amount,
+              (isCredit ? '+' : '') + amount,
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -343,14 +398,20 @@ class TransactionHistoryPage extends StatelessWidget {
 
   Widget _buildTokenItem(
     BuildContext context,
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> tokenData, {
     bool isLast = false,
   }) {
+    final bool isCredit = (tokenData['amount'] as num) >= 0;
+    final String title = (tokenData['type'] as String) == 'redemption'
+        ? 'Token Redemption'
+        : 'Trip Reward';
+    final double amount = (tokenData['amount'] as num).toDouble();
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(tokenData['created_at']));
+
     return InkWell(
-      onTap: () => _showTokenRedemptionModal(context),
+      onTap: () => _showTokenRedemptionModal(context, tokenData),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -375,7 +436,7 @@ class TransactionHistoryPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle,
+                  date,
                   style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
                 ),
               ],
@@ -383,7 +444,7 @@ class TransactionHistoryPage extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  amount,
+                  '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
