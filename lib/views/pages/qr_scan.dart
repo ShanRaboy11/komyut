@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import './fare_payment.dart';
-import './commuter_app.dart';
 
 class QRScannerScreen extends StatefulWidget {
   final VoidCallback? onScanComplete;
@@ -545,11 +544,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-    Navigator.pop(context);
-    return false;
-},
+    return PopScope(
+    canPop: true,
       child: Scaffold(
       body: Container(
         // ... (your existing UI code for the scanner) ...
