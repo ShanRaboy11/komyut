@@ -496,12 +496,9 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                   Container(
                     padding: const EdgeInsets.only(left: 30, right: 20, top: 20, bottom: 20),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF5B53C2), width: 1),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF8E4CB6).withAlpha(76),
@@ -515,7 +512,11 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(51),
+                            gradient: const LinearGradient(
+                        colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: const Icon(
@@ -532,7 +533,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                               Text(
                                 _driverData?['driverName'] ?? 'Juan Dela Cruz',
                                 style: GoogleFonts.manrope(
-                                  color: Colors.white,
+                                  color: Color(0xFF5B53C2),
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -679,18 +680,18 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(51),
+        color: Color(0xFF8E4CB6).withAlpha(51),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.white),
+          Icon(icon, size: 16, color: Color(0xFF5B53C2)),
           const SizedBox(width: 6),
           Text(
             text,
             style: GoogleFonts.nunito(
-              color: Colors.white,
+              color: Color(0xFF5B53C2),
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),

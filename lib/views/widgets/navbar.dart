@@ -8,7 +8,6 @@ class AnimatedBottomNavBar extends StatefulWidget {
   final Function(int)? onNavigationChanged;
   final ValueChanged<int>? onItemSelected;
 
-
   const AnimatedBottomNavBar({
     super.key,
     required this.pages,
@@ -27,17 +26,35 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
   late int _selectedIndex;
   late AnimationController _controller;
   late Animation<double> _animation;
-  double _oldIndex = 0;
+  late double _oldIndex;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+    _oldIndex = widget.initialIndex.toDouble(); // 👈 FIX: Start oldIndex at initialIndex
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void didUpdateWidget(AnimatedBottomNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // If the parent changed initialIndex, update internal state
+    if (widget.initialIndex != oldWidget.initialIndex && 
+        widget.initialIndex != _selectedIndex) {
+      setState(() {
+        _oldIndex = _selectedIndex.toDouble();
+        _selectedIndex = widget.initialIndex;
+      });
+      
+      // Animate the curve to the new position
+      _controller.forward(from: 0);
+    }
   }
 
   void _onItemTapped(int index) {
@@ -48,7 +65,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
     });
     _controller.forward(from: 0);
     widget.onNavigationChanged?.call(index);
-    widget.onItemSelected?.call(index); // 👈 Added onItemSelected callback
+    widget.onItemSelected?.call(index);
   }
 
   @override
@@ -71,7 +88,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
           return Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 0.0,
-            ), // ⬅ horizontal padding added
+            ),
             child: CustomPaint(
               painter: _MovingCurvePainter(
                 colorStops: const [
@@ -95,8 +112,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
 
                     return Expanded(
                       child: GestureDetector(
-                        behavior: HitTestBehavior
-                            .translucent, // 👈 makes tapping easier
+                        behavior: HitTestBehavior.translucent,
                         onTap: () => _onItemTapped(index),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -169,7 +185,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                   offset: const Offset(
                                     0,
                                     -8,
-                                  ), // lift label a bit
+                                  ),
                                   child: Text(item.label),
                                 ),
                               ),
@@ -195,7 +211,6 @@ class NavItem {
   const NavItem({required this.icon, required this.label});
 }
 
-/// 🎨 Custom painter for moving notch curve
 class _MovingCurvePainter extends CustomPainter {
   final List<Color> colorStops;
   final double oldIndex;
@@ -230,7 +245,6 @@ class _MovingCurvePainter extends CustomPainter {
     path.moveTo(0, 0);
     path.lineTo(centerX - notchWidth / 2 - 10, 0);
 
-    // 👇 Centered, smooth curve
     path.quadraticBezierTo(
       centerX - notchWidth / 2,
       0,

@@ -544,7 +544,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+    canPop: true,
+      child: Scaffold(
       body: Container(
         // ... (your existing UI code for the scanner) ...
         width: double.infinity,
@@ -567,6 +569,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     padding: const EdgeInsets.all(20.0),
                     child: Row(
                       children: [
+                        IconButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.arrow_back, size: 28),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 12),
                         const Text(
                           'QR Scan',
                           style: TextStyle(
@@ -762,7 +773,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           ],
         ),
       ),
-    );
+    ));
   }
 
   // ... (your existing _buildCorner, ScannerOverlay, ScannerLinePainter classes) ...
