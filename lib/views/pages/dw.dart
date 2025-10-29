@@ -28,7 +28,7 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
   void _onSubmit() {
     if (_formKey.currentState!.validate()) {
       Navigator.of(context).pushNamed(
-        '/dw_confirmation',
+        '/dw_payment_method',
         arguments: {
           'name': _nameController.text,
           'email': _emailController.text,
@@ -62,8 +62,7 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        behavior:
-            HitTestBehavior.translucent,
+        behavior: HitTestBehavior.translucent,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
           child: Column(
@@ -120,7 +119,7 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Fill in all the information required in the form.',
+                'Fill in all the details required in the form.',
                 style: GoogleFonts.nunito(fontSize: 15, color: Colors.black54),
               ),
             ],
