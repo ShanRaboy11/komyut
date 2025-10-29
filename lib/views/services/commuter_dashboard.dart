@@ -82,22 +82,14 @@ class CommuterDashboardService {
           .maybeSingle();
 
       if (commuterData == null) {
-        return {
-          'category': 'regular',
-          'wheel_tokens': 0,
-          'id_verified': false,
-        };
+        return {'category': 'regular', 'wheel_tokens': 0, 'id_verified': false};
       }
 
       debugPrint('✅ Commuter details fetched: ${commuterData['category']}');
       return commuterData;
     } catch (e) {
       debugPrint('❌ Error fetching commuter details: $e');
-      return {
-        'category': 'regular',
-        'wheel_tokens': 0,
-        'id_verified': false,
-      };
+      return {'category': 'regular', 'wheel_tokens': 0, 'id_verified': false};
     }
   }
 
@@ -381,6 +373,51 @@ class CommuterDashboardService {
     } catch (e) {
       debugPrint('❌ Error fetching dashboard data: $e');
       rethrow;
+    }
+  }
+
+  Future<Map<String, double>> getFareExpensesWeekly() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return {};
+
+      final response = await _supabase.rpc('get_weekly_fare_expenses');
+
+      if (response is List) {
+        return {
+          for (var item in response)
+            item['day_name']: (item['total'] as num).toDouble(),
+        };
+      }
+      return {};
+    } catch (e) {
+      debugPrint('❌ Error fetching weekly fare expenses: $e');
+      return {};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTokenHistory() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final tokenHistory = await _supabase
+          .from('token_transactions')
+          .select('id, type, amount, created_at')
+          .eq('profile_id', profile['id'])
+          .order('created_at', ascending: false)
+          .limit(10);
+
+      return List<Map<String, dynamic>>.from(tokenHistory);
+    } catch (e) {
+      debugPrint('❌ Error fetching token history: $e');
+      return [];
     }
   }
 }

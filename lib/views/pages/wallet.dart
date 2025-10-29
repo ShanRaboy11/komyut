@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:komyut/views/pages/dw.dart';
 import 'package:komyut/views/pages/wt.dart';
+import 'package:provider/provider.dart';
 import 'wallet_history.dart';
 import 'otc.dart';
 import 'dart:math';
 import 'package:barcode_widget/barcode_widget.dart';
+import '../providers/wallet_provider.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -31,6 +34,9 @@ class _WalletPageState extends State<WalletPage>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WalletProvider>(context, listen: false).fetchWalletData();
+    });
   }
 
   @override
@@ -51,7 +57,14 @@ class _WalletPageState extends State<WalletPage>
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  void _showCashInDetailModal(BuildContext context) {
+  void _showCashInDetailModal(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) {
+    final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+    final total = amount + 5.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -60,19 +73,36 @@ class _WalletPageState extends State<WalletPage>
           context: dialogContext,
           title: 'Cash In Transaction',
           details: [
-            _buildDetailRow('Date:', '10/04/2025'),
-            _buildDetailRow('Time:', '10:45 AM'),
-            _buildDetailRow('Amount:', 'P100.00'),
-            _buildDetailRow('Channel:', 'GCash'),
+            _buildDetailRow(
+              'Date:',
+              DateFormat(
+                'MM/dd/yyyy',
+              ).format(DateTime.parse(transaction['created_at'])),
+            ),
+            _buildDetailRow(
+              'Time:',
+              DateFormat(
+                'hh:mm a',
+              ).format(DateTime.parse(transaction['created_at'])),
+            ),
+            _buildDetailRow('Amount:', currencyFormat.format(amount)),
+            _buildDetailRow('Channel:', transaction['type'] ?? 'N/A'),
           ],
-          totalRow: _buildDetailRow('Total:', 'P105.00'),
-          transactionCode: _generateTransactionCode(),
+          totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
+          transactionCode:
+              transaction['transaction_number'] ?? _generateTransactionCode(),
         );
       },
     );
   }
 
-  void _showTokenRedemptionModal(BuildContext context) {
+  void _showTokenRedemptionModal(
+    BuildContext context,
+    Map<String, dynamic> tokenData,
+  ) {
+    final amount = (tokenData['amount'] as num?)?.toDouble() ?? 0.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -81,8 +111,18 @@ class _WalletPageState extends State<WalletPage>
           context: dialogContext,
           title: 'Token Redemption',
           details: [
-            _buildDetailRow('Date:', '10/04/2025'),
-            _buildDetailRow('Time:', '10:45 AM'),
+            _buildDetailRow(
+              'Date:',
+              DateFormat(
+                'MM/dd/yyyy',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
+            _buildDetailRow(
+              'Time:',
+              DateFormat(
+                'hh:mm a',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
             _buildDetailRow(
               'Amount:',
               Row(
@@ -91,7 +131,7 @@ class _WalletPageState extends State<WalletPage>
                   Image.asset('assets/images/wheel token.png', height: 16),
                   const SizedBox(width: 6),
                   Text(
-                    '10.0',
+                    amount.toStringAsFixed(1),
                     style: GoogleFonts.manrope(
                       fontSize: 15,
                       color: Colors.black87,
@@ -102,7 +142,10 @@ class _WalletPageState extends State<WalletPage>
               ),
             ),
           ],
-          totalRow: _buildDetailRow('Equivalent:', 'P10.00'),
+          totalRow: _buildDetailRow(
+            'Equivalent:',
+            currencyFormat.format(amount),
+          ),
           transactionCode: _generateTransactionCode(),
         );
       },
@@ -486,23 +529,34 @@ class _WalletPageState extends State<WalletPage>
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            _buildBalanceCard(),
-            const SizedBox(height: 30),
-            _buildFareExpensesCard(),
-            const SizedBox(height: 24),
-            _buildTransactionsTabs(),
-          ],
-        ),
+      body: Consumer<WalletProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (provider.errorMessage != null) {
+            return Center(child: Text(provider.errorMessage!));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                _buildBalanceCard(provider),
+                const SizedBox(height: 30),
+                _buildFareExpensesCard(provider.fareExpenses), // Pass data
+                const SizedBox(height: 24),
+                _buildTransactionsTabs(provider),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTransactionsTabs() {
+  Widget _buildTransactionsTabs(WalletProvider provider) {
     return Column(
       children: [
         TabBar(
@@ -526,16 +580,21 @@ class _WalletPageState extends State<WalletPage>
           ],
         ),
         if (_tabController.index == 0)
-          _buildTransactionsList()
+          _buildTransactionsList(provider.transactions)
         else
-          _buildTokensList(),
+          _buildTokensList(provider.tokenHistory),
         const SizedBox(height: 20),
-        _buildViewAllButton(),
+
+        // --- CONDITIONAL "VIEW ALL" BUTTON ---
+        if ((_tabController.index == 0 && provider.transactions.isNotEmpty) ||
+            (_tabController.index == 1 && provider.tokenHistory.isNotEmpty))
+          _buildViewAllButton(),
       ],
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(WalletProvider provider) {
+    final currencyFormat = NumberFormat("#,##0.00", "en_US");
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -568,7 +627,7 @@ class _WalletPageState extends State<WalletPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '₱ 3 000.00',
+                    '₱ ${currencyFormat.format(provider.balance)}',
                     style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 34,
@@ -586,7 +645,7 @@ class _WalletPageState extends State<WalletPage>
                       Image.asset('assets/images/wheel token.png', height: 22),
                       const SizedBox(width: 6),
                       Text(
-                        '10.5',
+                        provider.wheelTokens.toString(),
                         style: GoogleFonts.manrope(
                           color: Colors.white,
                           fontSize: 18,
@@ -627,7 +686,7 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildFareExpensesCard() {
+  Widget _buildFareExpensesCard(Map<String, double> expenses) {
     const double chartHeight = 110;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -675,7 +734,9 @@ class _WalletPageState extends State<WalletPage>
                       .toList(),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: _buildBarChart(chartHeight)),
+                Expanded(
+                  child: _buildBarChart(chartHeight, expenses),
+                ), // Pass data
               ],
             ),
           ),
@@ -684,26 +745,25 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildBarChart(double chartHeight) {
-    final Map<String, double> weeklyData = {
-      'Mon': 78,
-      'Tue': 88,
-      'Wed': 60,
-      'Thu': 75,
-      'Fri': 85,
-      'Sat': 25,
-      'Sun': 25,
-    };
-    const double maxVal = 100.0;
+  Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
+    // Find the max value from the fetched data for proper scaling. Default to 100 if no data.
+    final double maxVal = weeklyData.values.fold(
+      100.0,
+      (max, v) => v > max ? v : max,
+    );
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: weeklyData.entries.map((entry) {
+      children: days.map((day) {
+        // Get the value for the day, or 0.0 if not present
+        final value = weeklyData[day] ?? 0.0;
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              height: (entry.value / maxVal) * chartHeight,
+              height: (value / maxVal) * chartHeight,
               width: 20,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
@@ -712,7 +772,7 @@ class _WalletPageState extends State<WalletPage>
             ),
             const SizedBox(height: 8),
             Text(
-              entry.key,
+              day,
               style: GoogleFonts.nunito(
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w600,
@@ -746,58 +806,63 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildTransactionsList() {
+  Widget _buildTransactionsList(List<Map<String, dynamic>> transactions) {
+    if (transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: Text('No recent transactions.')),
+      );
+    }
     return Column(
-      children: [
-        _buildTransactionItem('Cash In', '10/3/25 8:25 PM', '+₱100.00', true),
-        _buildTransactionItem('Trip Fare', '10/3/25 3:18 PM', '−₱13.00', false),
-        _buildTransactionItem('Trip Fare', '10/3/25 1:02 PM', '−₱13.00', false),
-        _buildTransactionItem(
-          'Trip Fare',
-          '10/2/25 11:02 AM',
-          '−₱13.00',
-          false,
-        ),
-        _buildTransactionItem('Trip Fare', '10/2/25 6:02 AM', '−₱13.00', false),
-        _buildTransactionItem(
-          'Cash In',
-          '10/1/25 8:25 PM',
-          '+₱150.00',
-          true,
-          isLast: true,
-        ),
-      ],
+      children: transactions.asMap().entries.map((entry) {
+        int idx = entry.key;
+        Map<String, dynamic> transaction = entry.value;
+        return _buildTransactionItem(
+          transaction,
+          isLast: idx == transactions.length - 1,
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildTokensList() {
+  Widget _buildTokensList(List<Map<String, dynamic>> tokenHistory) {
+    if (tokenHistory.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: Text('No recent token activity.')),
+      );
+    }
     return Column(
-      children: [
-        _buildTokenItem('Token Redemption', '10/3/25 8:25 PM', '-3.0', false),
-        _buildTokenItem('Trip Reward', '10/3/25 3:18 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/3/25 1:02 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/2/25 11:02 AM', '+0.5', true),
-        _buildTokenItem('Token Redemption', '10/2/25 6:02 AM', '-2.0', false),
-        _buildTokenItem(
-          'Trip Reward',
-          '10/1/25 8:25 PM',
-          '+0.5',
-          true,
-          isLast: true,
-        ),
-      ],
+      children: tokenHistory.asMap().entries.map((entry) {
+        int idx = entry.key;
+        Map<String, dynamic> tokenData = entry.value;
+        return _buildTokenItem(
+          tokenData,
+          isLast: idx == tokenHistory.length - 1,
+        );
+      }).toList(),
     );
   }
 
   Widget _buildTransactionItem(
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> transaction, {
     bool isLast = false,
   }) {
+    final bool isCredit = (transaction['amount'] as num) > 0;
+    final String title = (transaction['type'] as String)
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+    final String amount = NumberFormat.currency(
+      locale: 'en_PH',
+      symbol: '₱',
+    ).format(transaction['amount']);
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(transaction['created_at']));
+
     return InkWell(
-      onTap: () => _showCashInDetailModal(context),
+      onTap: () => _showCashInDetailModal(context, transaction),
       child: Container(
         padding: const EdgeInsets.only(top: 16, bottom: 16),
         decoration: BoxDecoration(
@@ -822,13 +887,13 @@ class _WalletPageState extends State<WalletPage>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle,
+                  date,
                   style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
                 ),
               ],
             ),
             Text(
-              amount,
+              (isCredit ? '+' : '') + amount,
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -844,14 +909,21 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildTokenItem(
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> tokenData, {
     bool isLast = false,
   }) {
+    // Updated to parse real data structure
+    final bool isCredit = (tokenData['amount'] as num) > 0;
+    final String title = (tokenData['type'] as String) == 'redemption'
+        ? 'Token Redemption'
+        : 'Trip Reward';
+    final double amount = (tokenData['amount'] as num).toDouble();
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(tokenData['created_at']));
+
     return InkWell(
-      onTap: () => _showTokenRedemptionModal(context),
+      onTap: () => _showTokenRedemptionModal(context, tokenData),
       child: Container(
         padding: const EdgeInsets.only(top: 16, bottom: 16),
         decoration: BoxDecoration(
@@ -876,7 +948,7 @@ class _WalletPageState extends State<WalletPage>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle,
+                  date,
                   style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
                 ),
               ],
@@ -884,7 +956,7 @@ class _WalletPageState extends State<WalletPage>
             Row(
               children: [
                 Text(
-                  amount,
+                  '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

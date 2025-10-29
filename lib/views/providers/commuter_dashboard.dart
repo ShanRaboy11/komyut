@@ -33,7 +33,7 @@ class CommuterDashboardProvider extends ChangeNotifier {
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  
+
   // Profile getters
   String get firstName => _firstName;
   String get lastName => _lastName;
@@ -44,7 +44,7 @@ class CommuterDashboardProvider extends ChangeNotifier {
   String get category => _category;
   int get wheelTokens => _wheelTokens;
   bool get idVerified => _idVerified;
-  
+
   // Get user-friendly category name
   String get categoryDisplay {
     switch (_category) {
@@ -159,7 +159,8 @@ class CommuterDashboardProvider extends ChangeNotifier {
   /// Refresh notifications count only
   Future<void> refreshNotifications() async {
     try {
-      _unreadNotifications = await _dashboardService.getUnreadNotificationsCount();
+      _unreadNotifications = await _dashboardService
+          .getUnreadNotificationsCount();
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Error refreshing notifications: $e');
