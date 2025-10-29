@@ -3,8 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:provider/provider.dart'; 
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import '../providers/commuter_dashboard.dart'; 
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';
@@ -122,7 +124,6 @@ class CommuterDashboardPage extends StatefulWidget {
 
 class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
-  bool _previousShowWallet = true;
   bool _isBalanceVisible = true;
   bool _isTokensVisible = true;
 
@@ -131,10 +132,26 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
+  final gradientColors1 = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+  ];
+  final gradientColors2 = const [
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
+
+  // 👇 ADD THIS - Load data when page opens
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CommuterDashboardProvider>().loadDashboardData();
+    });
+  }
 
   void _switchTab(bool goWallet) {
     setState(() {
-      _previousShowWallet = showWallet;
       showWallet = goWallet;
     });
   }
@@ -144,94 +161,109 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 400;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(30, 10, 30, 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<CommuterDashboardProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset('assets/images/logo.svg', height: 80, width: 80),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Hi, Naomi',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                  Text(
-                    'Welcome back!',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF8E4CB6),
-                      fontSize: 18,
-                    ),
+                  SvgPicture.asset('assets/images/logo.svg', height: 80, width: 80),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}', 
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Text(
+                        'Welcome back!',
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF8E4CB6),
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
+              const SizedBox(height: 15),
 
-          // Wallet / Tokens Tabs
-          Row(
-            children: [
-              _buildTabButton('Wallet', true),
-              _buildTabButton('Tokens', false),
-            ],
-          ),
-
-          // Wallet / Tokens Animated Card
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(10),
-              bottomRight: Radius.circular(10),
-            ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              transitionBuilder: (child, animation) {
-                final offsetAnimation =
-                    Tween<Offset>(
-                      begin: Offset(_previousShowWallet ? 1.0 : -1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOutCubic,
-                      ),
-                    );
-                return SlideTransition(position: offsetAnimation, child: child);
-              },
-              child: Container(
-                key: ValueKey<bool>(showWallet),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradientColors),
-                ),
-                child: showWallet
-                    ? _buildWalletCard(isSmallScreen)
-                    : _buildTokensCard(isSmallScreen),
+              Row(
+                children: [
+                  _buildTabButton('Wallet', true),
+                  _buildTabButton('Tokens', false),
+                ],
               ),
-            ),
-          ),
 
-          const SizedBox(height: 20),
-          _buildAnalyticsSection(isSmallScreen),
-          const SizedBox(height: 20),
-          _buildPromoCard(),
-          const SizedBox(height: 20),
-          _buildQuickActions(),
-        ],
-      ),
+              // Wallet / Tokens Animated Card
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: gradientColors),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.0, 0.05),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      key: ValueKey<bool>(showWallet),
+                      child: showWallet
+                          ? _buildWalletCard(isSmallScreen, provider)
+                          : _buildTokensCard(isSmallScreen, provider),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              _buildAnalyticsSection(isSmallScreen, provider), 
+              const SizedBox(height: 20),
+              _buildPromoCard(),
+              const SizedBox(height: 20),
+              _buildQuickActions(),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildTabButton(String title, bool isWallet) {
     final isSelected = showWallet == isWallet;
+    final currentGradientColors = isWallet ? gradientColors1 : gradientColors2;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => _switchTab(isWallet),
@@ -239,13 +271,17 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? null : Colors.grey[100],
+            color: isSelected ? null : Colors.grey[200],
             gradient: isSelected
-                ? LinearGradient(colors: gradientColors)
+                ? LinearGradient(colors: currentGradientColors)
                 : null,
             borderRadius: isWallet
-                ? const BorderRadius.only(topLeft: Radius.circular(10))
-                : const BorderRadius.only(topRight: Radius.circular(10)),
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                  )
+                : const BorderRadius.only(
+                    topRight: Radius.circular(10),
+                  ),
           ),
           child: Center(
             child: Text(
@@ -262,12 +298,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Wallet Card ----------------
-  Widget _buildWalletCard(bool isSmallScreen) {
+  Widget _buildWalletCard(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Balance', style: GoogleFonts.manrope(color: Colors.white70)),
+        Text('Available Balance', style: GoogleFonts.manrope(color: Colors.white70)),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -275,7 +310,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Row(
               children: [
                 Text(
-                  _isBalanceVisible ? '₱500.00' : '₱•••',
+                  _isBalanceVisible 
+                      ? '₱${provider.balance.toStringAsFixed(2)}' 
+                      : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -317,9 +354,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // UPDATED: Rebuilt to match the wallet card style as per new instructions
-  // ---------------- Tokens Card ----------------
-  Widget _buildTokensCard(bool isSmallScreen) {
+  Widget _buildTokensCard(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -331,7 +366,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // You can change this asset path to 'wheel token.png'
                 Image.asset(
                   'assets/images/wheel token.png',
                   height: 32,
@@ -339,7 +373,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible ? '51' : '••',
+                  _isTokensVisible 
+                      ? provider.wheelTokens.toString() 
+                      : '••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -381,8 +417,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Analytics Section ----------------
-  Widget _buildAnalyticsSection(bool isSmallScreen) {
+  Widget _buildAnalyticsSection(bool isSmallScreen, CommuterDashboardProvider provider) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -439,13 +474,13 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               _buildAnalyticsItem(
                 Icons.directions_bus,
                 'Trips',
-                '12 trips',
-                subtitle: '12.6 mi',
+                '${provider.totalTripsCount} trips', // 👈 DYNAMIC TRIPS COUNT
+                subtitle: '12.6 mi', // Keep this static or calculate from trip data
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
                 'Spend',
-                '₱300 total',
+                '₱${provider.totalSpent.toStringAsFixed(0)} total', // 👈 DYNAMIC TOTAL SPENT
               ),
             ],
           ),
@@ -502,13 +537,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             ),
           ),
           CustomButton(
-            text: 'Claim Now',
+            text: 'Claim',
+            fontSize: 13,
             onPressed: () {},
             isFilled: true,
             fillColor: const Color(0xFF8E4CB6),
             textColor: Colors.white,
-            width: 120,
-            height: 40,
+            width: 70,
+            height: 35,
             borderRadius: 20,
             hasShadow: false,
           ),

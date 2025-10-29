@@ -686,7 +686,7 @@ class RegistrationDriverPersonalInfoState
                                                         code,
                                                         style: const TextStyle(
                                                           fontWeight:
-                                                              FontWeight.bold,
+                                                              FontWeight.w800,
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),

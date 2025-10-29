@@ -1,13 +1,13 @@
-// lib/views/widgets/role_navbar_wrappers.dart
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/navbar.dart';
+import '../pages/qr_scan.dart'; // Import QR scanner
 
 // ============= COMMUTER NAVBAR WRAPPER =============
 class CommuterNavBarWrapper extends StatefulWidget {
   final Widget homePage;
   final Widget activityPage;
-  final Widget qrScanPage;
+  final Widget? qrScanPage;
   final Widget notificationsPage;
   final Widget profilePage;
   final int initialIndex;
@@ -16,7 +16,7 @@ class CommuterNavBarWrapper extends StatefulWidget {
     super.key,
     required this.homePage,
     required this.activityPage,
-    required this.qrScanPage,
+    this.qrScanPage,
     required this.notificationsPage,
     required this.profilePage,
     this.initialIndex = 0,
@@ -28,6 +28,7 @@ class CommuterNavBarWrapper extends StatefulWidget {
 
 class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
   late int _currentIndex;
+  bool _isQRScannerOpen = false; // Track if QR scanner is open
 
   @override
   void initState() {
@@ -35,13 +36,58 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
     _currentIndex = widget.initialIndex;
   }
 
+  void _handleQRScan() async {
+    // Store the current index BEFORE opening scanner
+    final previousIndex = _currentIndex;
+    
+    // Mark that QR scanner is open
+    setState(() {
+      _isQRScannerOpen = true;
+    });
+    
+    // Open QR scanner and wait for it to close
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QRScannerScreen(
+          onScanComplete: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Boarding successful!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    
+    // After QR scanner closes, restore previous index
+    if (mounted) {
+      setState(() {
+        _currentIndex = previousIndex;
+        _isQRScannerOpen = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Don't show navbar content if QR scanner is open
+    if (_isQRScannerOpen) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return AnimatedBottomNavBar(
       pages: [
         widget.homePage,
         widget.activityPage,
-        widget.qrScanPage,
+        const SizedBox.shrink(),
         widget.notificationsPage,
         widget.profilePage,
       ],
@@ -54,6 +100,11 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
       ],
       initialIndex: _currentIndex,
       onItemSelected: (index) {
+        if (index == 2) {
+          _handleQRScan();
+          return;
+        }
+        
         setState(() {
           _currentIndex = index;
         });

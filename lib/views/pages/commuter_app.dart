@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
 import './home_commuter.dart'; 
-import './qr_scan.dart';
-import './placeholders.dart';
+import './trips_commuter.dart';
+import './notification_commuter.dart';
+import './profile.dart';
 
 class CommuterApp extends StatelessWidget {
   const CommuterApp({super.key});
@@ -11,9 +12,8 @@ class CommuterApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return CommuterNavBarWrapper(
       homePage: CommuterDashboardNav(),
-      activityPage: CommuterActivityPage(),
-      qrScanPage: QRScannerScreen(),
-      notificationsPage: CommuterNotificationsPage(),
+      activityPage: Trip1Page(),
+      notificationsPage: NotificationPage(),
       profilePage: CommuterProfilePage(),
     );
   }

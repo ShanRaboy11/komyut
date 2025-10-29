@@ -338,6 +338,19 @@ LEFT JOIN trips tr ON tr.driver_id = d.id
 LEFT JOIN transactions t ON t.related_trip_id = tr.id
 GROUP BY d.id, p.first_name, p.last_name;
 
+ALTER TABLE drivers 
+ADD COLUMN route_id uuid REFERENCES routes(id) ON DELETE SET NULL;
+
+-- Migrate existing data
+UPDATE drivers d
+SET route_id = r.id
+FROM routes r
+WHERE d.route_code = r.code;
+
+-- Add index
+CREATE INDEX idx_drivers_route ON drivers(route_id);
+
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_trips_driver_started_at ON trips(driver_id, started_at);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
