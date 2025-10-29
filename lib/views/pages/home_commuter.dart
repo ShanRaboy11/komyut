@@ -20,6 +20,7 @@ import 'wt_success.dart';
 import 'dw.dart';
 import 'dw_confirm.dart';
 import 'dw_payment_method.dart';
+import 'dw_payment_source.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -128,6 +129,15 @@ class HomeTabNavigator extends StatelessWidget {
               name: args['name']!,
               email: args['email']!,
               amount: args['amount']!,
+            );
+            break;
+          case '/dw_payment_source':
+            final args = settings.arguments as Map<String, String>;
+            builder = (BuildContext context) => DwSourceSelectionPage(
+              name: args['name']!,
+              email: args['email']!,
+              amount: args['amount']!,
+              paymentMethod: args['paymentMethod']!,
             );
             break;
           case '/dw_confirmation':

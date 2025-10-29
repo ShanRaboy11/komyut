@@ -91,7 +91,7 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.asset('assets/images/step2.png', width: 40, height: 40),
+        Image.asset('assets/images/step3.png', width: 40, height: 40),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -146,8 +146,8 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
       if (parts[0].length > 12) {
         displayedValue = '${parts[0].substring(0, 9)}...@${parts[1]}';
       }
-    } else if (label.toLowerCase().contains('name') && value.length > 18) {
-      displayedValue = '${value.substring(0, 15)}...';
+    } else if (label.toLowerCase().contains('name') && value.length > 30) {
+      displayedValue = '${value.substring(0, 28)}...';
     }
 
     return Padding(
@@ -248,11 +248,12 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
         onPressed: isEnabled
             ? () {
                 Navigator.of(context).pushNamed(
-                  '/dw_confirmation',
+                  '/dw_payment_source',
                   arguments: {
                     'name': widget.name,
                     'email': widget.email,
                     'amount': widget.amount,
+                    'paymentMethod': _selectedMethod!,
                   },
                 );
               }
