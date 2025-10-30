@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class RedeemTokensPage extends StatefulWidget {
   const RedeemTokensPage({super.key});
@@ -16,7 +18,6 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
   bool _isButtonEnabled = false;
   bool _hasError = false;
 
-  final int _balance = 120;
   final Color _brandColor = const Color(0xFF8E4CB6);
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -32,28 +33,32 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
   }
 
   void _onTokenAmountChanged() {
+    final tokenBalance = Provider.of<WalletProvider>(
+      context,
+      listen: false,
+    ).wheelTokens;
     String text = _tokenController.text;
 
     if (text.length > 1 && text.startsWith('0')) {
       text = text.substring(1);
-      _tokenController.text = text;
-      _tokenController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _tokenController.text.length),
+      _tokenController.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
       );
     }
 
     if (text.isEmpty) {
-      _tokenController.text = "0";
-      _tokenController.selection = TextSelection.fromPosition(
-        TextPosition(offset: 1),
+      _tokenController.value = const TextEditingValue(
+        text: "0",
+        selection: TextSelection.collapsed(offset: 1),
       );
     }
 
-    final double? amount = double.tryParse(_tokenController.text);
+    final int? amount = int.tryParse(_tokenController.text);
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
     if (amount != null && amount > 0) {
-      if (amount > _balance) {
+      if (amount > tokenBalance) {
         setState(() {
           _pesoEquivalent = currencyFormat.format(amount);
           _hasError = true;
@@ -84,53 +89,57 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F1FF),
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Cash In',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+    return Consumer<WalletProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF6F1FF),
+          appBar: AppBar(
+            scrolledUnderElevation: 0,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black54),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              'Redeem Tokens',
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            centerTitle: true,
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 0),
-            Stack(
-              alignment: Alignment.bottomCenter,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 50.0),
-                  child: Image.asset(
-                    'assets/images/token_exchange.png',
-                    height: 250,
-                  ),
+                _buildHeader(),
+                const SizedBox(height: 0),
+                Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 50.0),
+                      child: Image.asset(
+                        'assets/images/token_exchange.png',
+                        height: 250,
+                      ),
+                    ),
+                    _buildTokenBalance(provider.wheelTokens),
+                  ],
                 ),
-                _buildTokenBalance(),
+                const SizedBox(height: 50),
+                _buildInputSection(provider.wheelTokens),
+                const SizedBox(height: 30),
+                _buildNextButton(),
               ],
             ),
-            const SizedBox(height: 50),
-            _buildInputSection(),
-            const SizedBox(height: 30),
-            _buildNextButton(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -152,11 +161,11 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
     );
   }
 
-  Widget _buildTokenBalance() {
+  Widget _buildTokenBalance(double balance) {
     return Column(
       children: [
         Text(
-          '120',
+          NumberFormat("0.#").format(balance),
           style: GoogleFonts.manrope(
             fontSize: 48,
             fontWeight: FontWeight.bold,
@@ -175,7 +184,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
     );
   }
 
-  Widget _buildInputSection() {
+  Widget _buildInputSection(double balance) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -210,11 +219,15 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
                   Flexible(
                     child: TextField(
                       controller: _tokenController,
+                      // Allow decimal input for tokens
                       keyboardType: const TextInputType.numberWithOptions(
-                        decimal: false,
+                        decimal: true,
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
+                        // Allow digits and a single decimal point
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d*'),
+                        ),
                         LengthLimitingTextInputFormatter(7),
                       ],
                       cursorColor: _brandColor,
@@ -244,7 +257,6 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
                 ],
               ),
             ),
-
             const Positioned(
               child: Icon(Icons.chevron_right, color: Colors.black54, size: 30),
             ),
@@ -254,7 +266,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         Center(
           child: Text(
             _hasError
-                ? 'You only have $_balance tokens available.'
+                ? 'You only have ${NumberFormat("0.#").format(balance)} tokens available.'
                 : 'Each Wheel Token is equivalent to 1 Peso.',
             style: GoogleFonts.nunito(
               fontSize: 13,

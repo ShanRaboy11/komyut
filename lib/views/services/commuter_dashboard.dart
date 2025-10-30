@@ -1,4 +1,3 @@
-// lib/services/commuter_dashboard_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,15 +12,12 @@ class CommuterDashboardService {
         throw Exception('No authenticated user');
       }
 
-      // Get profile data from the 'profiles' table
       final profileData = await _supabase
           .from('profiles')
-          // --- FIX: Add user_id to the select query ---
           .select('id, user_id, first_name, last_name, role, is_verified')
           .eq('user_id', user.id)
           .single();
 
-      // Add the email from the auth user object to the returned map
       profileData['email'] = user.email;
 
       debugPrint('✅ Profile fetched for: ${profileData['first_name']}');
@@ -38,14 +34,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return 0.0;
 
-      // Get profile_id first
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get wallet balance
       final walletData = await _supabase
           .from('wallets')
           .select('balance')
@@ -71,14 +65,12 @@ class CommuterDashboardService {
         throw Exception('No authenticated user');
       }
 
-      // Get profile_id first
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get commuter details
       final commuterData = await _supabase
           .from('commuters')
           .select('id, category, wheel_tokens, id_verified')
@@ -86,27 +78,32 @@ class CommuterDashboardService {
           .maybeSingle();
 
       if (commuterData == null) {
-        return {'category': 'regular', 'wheel_tokens': 0, 'id_verified': false};
+        return {
+          'category': 'regular',
+          'wheel_tokens': 0.0,
+          'id_verified': false,
+        };
       }
 
       debugPrint('✅ Commuter details fetched: ${commuterData['category']}');
       return commuterData;
     } catch (e) {
       debugPrint('❌ Error fetching commuter details: $e');
-      return {'category': 'regular', 'wheel_tokens': 0, 'id_verified': false};
+      return {'category': 'regular', 'wheel_tokens': 0.0, 'id_verified': false};
     }
   }
 
   /// Get total points/wheel tokens
-  Future<int> getWheelTokens() async {
+  Future<double> getWheelTokens() async {
     try {
       final commuterDetails = await getCommuterDetails();
-      final tokens = (commuterDetails['wheel_tokens'] as int?) ?? 0;
+      final tokens =
+          (commuterDetails['wheel_tokens'] as num?)?.toDouble() ?? 0.0;
       debugPrint('✅ Wheel tokens fetched: $tokens');
       return tokens;
     } catch (e) {
       debugPrint('❌ Error fetching wheel tokens: $e');
-      return 0;
+      return 0.0;
     }
   }
 
@@ -116,14 +113,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get recent trips where this profile created them
       final trips = await _supabase
           .from('trips')
           .select('''
@@ -162,14 +157,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get ongoing trip
       final trip = await _supabase
           .from('trips')
           .select('''
@@ -218,14 +211,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return 0;
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Count unread notifications
       final notifications = await _supabase
           .from('notifications')
           .select('id')
@@ -262,7 +253,6 @@ class CommuterDashboardService {
 
       final transactions = await _supabase
           .from('transactions')
-          // --- FIX: Join with payment_methods to get the method name ---
           .select('''
             id,
             transaction_number,
@@ -291,14 +281,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return 0;
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Count all trips
       final trips = await _supabase
           .from('trips')
           .select('id')
@@ -318,14 +306,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return 0.0;
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get all completed trips and sum fare amounts
       final trips = await _supabase
           .from('trips')
           .select('fare_amount')
@@ -350,28 +336,30 @@ class CommuterDashboardService {
     try {
       debugPrint('🔄 Fetching all commuter dashboard data...');
 
-      final profile = await getCommuterProfile();
-      final commuterDetails = await getCommuterDetails();
-      final balance = await getWalletBalance();
-      final wheelTokens = await getWheelTokens();
-      final recentTrips = await getRecentTrips();
-      final activeTrip = await getActiveTrip();
-      final unreadNotifications = await getUnreadNotificationsCount();
-      final totalTripsCount = await getTotalTripsCount();
-      final totalSpent = await getTotalSpent();
+      final results = await Future.wait([
+        getWalletBalance(),
+        getWheelTokens(),
+        getRecentTrips(),
+        getActiveTrip(),
+        getUnreadNotificationsCount(),
+        getTotalTripsCount(),
+        getTotalSpent(),
+        getCommuterProfile(),
+        getCommuterDetails(),
+      ]);
 
       debugPrint('✅ All commuter dashboard data fetched successfully');
 
       return {
-        'profile': profile,
-        'commuterDetails': commuterDetails,
-        'balance': balance,
-        'wheelTokens': wheelTokens,
-        'recentTrips': recentTrips,
-        'activeTrip': activeTrip,
-        'unreadNotifications': unreadNotifications,
-        'totalTripsCount': totalTripsCount,
-        'totalSpent': totalSpent,
+        'balance': results[0] as double,
+        'wheelTokens': results[1] as double,
+        'recentTrips': results[2] as List<Map<String, dynamic>>,
+        'activeTrip': results[3] as Map<String, dynamic>?,
+        'unreadNotifications': results[4] as int,
+        'totalTripsCount': results[5] as int,
+        'totalSpent': results[6] as double,
+        'profile': results[7] as Map<String, dynamic>,
+        'commuterDetails': results[8] as Map<String, dynamic>,
       };
     } catch (e) {
       debugPrint('❌ Error fetching dashboard data: $e');
@@ -399,31 +387,6 @@ class CommuterDashboardService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getTokenHistory() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return [];
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-      final tokenHistory = await _supabase
-          .from('token_transactions')
-          .select('id, type, amount, created_at')
-          .eq('profile_id', profile['id'])
-          .order('created_at', ascending: false)
-          .limit(10);
-
-      return List<Map<String, dynamic>>.from(tokenHistory);
-    } catch (e) {
-      debugPrint('❌ Error fetching token history: $e');
-      return [];
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -443,7 +406,6 @@ class CommuterDashboardService {
 
       final transactions = await _supabase
           .from('transactions')
-          // --- FIX: Join with payment_methods here as well ---
           .select('''
               id, 
               transaction_number, 
@@ -528,7 +490,6 @@ class CommuterDashboardService {
     required double amount,
     required String paymentMethodName,
     required String transactionNumber,
-    // --- NEW: Add parameters for user-inputted data ---
     required String payerName,
     required String payerEmail,
   }) async {
@@ -547,7 +508,6 @@ class CommuterDashboardService {
 
       if (walletId == null) throw Exception('User wallet not found.');
 
-      // Insert the new transaction
       final newTransaction = await _supabase
           .from('transactions')
           .insert({
@@ -562,7 +522,6 @@ class CommuterDashboardService {
                 .select('id')
                 .eq('name', paymentMethodName)
                 .single())['id'],
-            // --- FIX: Save the inputted name and email to metadata ---
             'metadata': {'payer_name': payerName, 'payer_email': payerEmail},
           })
           .select('*, payment_methods(name)')
@@ -583,11 +542,9 @@ class CommuterDashboardService {
       final response = await _supabase
           .from('payment_methods')
           .select('name')
-          .eq('type', type) // Filter by 'E-Wallet' or 'Online Banking'
-          .eq('is_active', true); // Only fetch active ones
+          .eq('type', type)
+          .eq('is_active', true);
 
-      // The response is a List<Map<String, dynamic>>, like [{'name': 'GCash'}, {'name': 'PayMaya'}]
-      // We need to convert it to a List<String>.
       final sources = response.map((item) => item['name'] as String).toList();
       debugPrint('✅ Fetched ${sources.length} sources for type "$type"');
       return sources;
@@ -614,6 +571,71 @@ class CommuterDashboardService {
     } catch (e) {
       debugPrint('❌ Error fetching commuter name: $e');
       rethrow;
+    }
+  }
+
+  Future<void> redeemTokens({
+    required double amount,
+    required String transactionNumber,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated.');
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      final profileId = profile['id'];
+
+      await _supabase.rpc(
+        'redeem_wheel_tokens',
+        params: {
+          'p_amount_to_redeem': amount,
+          'p_profile_id': profileId,
+          'p_transaction_number': transactionNumber,
+        },
+      );
+      debugPrint('✅ Successfully redeemed $amount tokens via RPC.');
+    } catch (e) {
+      debugPrint('❌ Error redeeming tokens: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTokenHistory() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id, commuters!inner(id)')
+          .eq('user_id', userId)
+          .single();
+      final commuterId = profile['commuters'][0]['id'];
+
+      if (commuterId == null) return [];
+
+      final tokenHistory = await _supabase
+          .from('points_transactions')
+          .select('id, change, reason, created_at')
+          .eq('commuter_id', commuterId)
+          .order('created_at', ascending: false)
+          .limit(10);
+
+      return tokenHistory.map((item) {
+        return {
+          'id': item['id'],
+          'amount': item['change'],
+          'type': item['reason'],
+          'created_at': item['created_at'],
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error fetching token history: $e');
+      return [];
     }
   }
 }

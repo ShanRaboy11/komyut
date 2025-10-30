@@ -7,7 +7,7 @@ CREATE TYPE report_status AS ENUM ('open','in_review','resolved','dismissed','cl
 CREATE TYPE report_severity AS ENUM ('low','medium','high');
 CREATE TYPE trip_status AS ENUM ('ongoing','completed','cancelled');
 CREATE TYPE transaction_type AS ENUM ('cash_in','cash_out','fare_payment','points_redemption','driver_payout','operator_payout');
-CREATE TYPE transaction_status AS ENUM ('pending','confirmed','failed');
+CREATE TYPE transaction_status AS ENUM ('pending','completed','failed');
 CREATE TYPE notification_type AS ENUM ('trip','wallet','rewards','verification','report','system');
 CREATE TYPE verification_status AS ENUM ('pending','approved','rejected','lacking');
 
@@ -105,7 +105,7 @@ CREATE TABLE commuters (
   category commuter_category NOT NULL DEFAULT 'regular',
   attachment_id uuid REFERENCES attachments(id) ON DELETE SET NULL,
   id_verified boolean DEFAULT false,
-  wheel_tokens integer DEFAULT 0 CHECK (wheel_tokens >= 0),
+  wheel_tokens numeric(10, 2) DEFAULT 0 CHECK (wheel_tokens >= 0),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -219,10 +219,10 @@ WHERE status = 'ongoing';
 CREATE TABLE points_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   commuter_id uuid REFERENCES commuters(id) ON DELETE CASCADE,
-  change integer NOT NULL, 
+  change numeric(10, 2) NOT NULL, 
   reason text,
   related_transaction_id uuid REFERENCES transactions(id) ON DELETE SET NULL,
-  balance_after integer,
+  balance_after numeric(10, 2),
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
 );
@@ -348,8 +348,6 @@ CREATE INDEX IF NOT EXISTS idx_trips_driver_started_at ON trips(driver_id, start
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_verifications_status ON verifications(status);
 
--- ==== CASH-IN COMPLETION FUNCTION (RPC) ====
--- This is already safe to re-run because of "OR REPLACE"
 CREATE OR REPLACE FUNCTION complete_otc_cash_in(transaction_id_arg uuid)
 RETURNS void AS $$
 DECLARE
@@ -367,60 +365,77 @@ BEGIN
 
   UPDATE public.transactions
   SET 
-    status = 'confirmed',
+    status = 'completed',
     processed_at = now()
   WHERE id = transaction_id_arg;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ========= NEW: PAYMENT METHODS SETUP =========
-
--- First, create a new ENUM type to categorize our payment methods.
 CREATE TYPE payment_method_type AS ENUM ('Over-the-Counter', 'E-Wallet', 'Online Banking');
 
--- Create the table to store all possible payment methods and sources.
 CREATE TABLE payment_methods (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    name text NOT NULL, -- e.g., "GCash Bills Pay", "BPI", "7-Eleven"
-    type payment_method_type NOT NULL, -- The category it belongs to
+    name text NOT NULL,
+    type payment_method_type NOT NULL,
     is_active boolean DEFAULT true,
     description text,
     created_at timestamptz DEFAULT now()
 );
 
--- Add an index for faster lookups by type.
 CREATE INDEX idx_payment_methods_type ON payment_methods(type);
 
--- Now, update the 'transactions' table to link to our new table.
--- We are removing the 'DEFAULT' from transaction_number as well, as discussed.
 ALTER TABLE public.transactions
-  DROP COLUMN IF EXISTS payment_method_id, -- Drop if it exists to make this script re-runnable
+  DROP COLUMN IF EXISTS payment_method_id,
   ADD COLUMN payment_method_id uuid REFERENCES payment_methods(id),
-  ALTER COLUMN transaction_number DROP DEFAULT; -- This is from our previous discussion
+  ALTER COLUMN transaction_number DROP DEFAULT;
 
--- Also, let's delete the old function that is no longer needed.
 DROP FUNCTION IF EXISTS public.komyut_generate_transaction_number();
-
--- Enable Row Level Security for the new table.
-ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
-
--- Create a policy that allows any logged-in user to READ the list of payment methods.
-DROP POLICY IF EXISTS "Allow authenticated users to read payment methods" ON public.payment_methods;
-CREATE POLICY "Allow authenticated users to read payment methods"
-ON public.payment_methods
-FOR SELECT
-TO authenticated
-USING (true);
-
-
--- ==== POPULATE THE TABLE WITH INITIAL DATA ====
--- This adds the options your app needs.
 
 INSERT INTO public.payment_methods (name, type) VALUES
 ('Over-the-Counter', 'Over-the-Counter'),
-('GCash Bills Pay', 'E-Wallet'),
+('GCash', 'E-Wallet'),
 ('PayMaya', 'E-Wallet'),
 ('BPI', 'Online Banking'),
 ('BDO', 'Online Banking'),
 ('Metrobank', 'Online Banking'),
 ('Landbank', 'Online Banking');
+
+CREATE OR REPLACE FUNCTION redeem_wheel_tokens(
+    p_amount_to_redeem numeric,
+    p_profile_id uuid,
+    p_transaction_number text
+)
+RETURNS void AS $$
+DECLARE
+    v_commuter_id uuid;
+    v_wallet_id uuid;
+    v_current_tokens numeric;
+    v_new_transaction_id uuid;
+BEGIN
+    SELECT c.id, w.id INTO v_commuter_id, v_wallet_id
+    FROM profiles p
+    JOIN commuters c ON p.id = c.profile_id
+    JOIN wallets w ON p.id = w.owner_profile_id
+    WHERE p.id = p_profile_id;
+
+    IF v_commuter_id IS NULL OR v_wallet_id IS NULL THEN
+        RAISE EXCEPTION 'Commuter or wallet not found for profile %', p_profile_id;
+    END IF;
+
+    SELECT wheel_tokens INTO v_current_tokens FROM commuters WHERE id = v_commuter_id FOR UPDATE;
+
+    IF v_current_tokens < p_amount_to_redeem THEN
+        RAISE EXCEPTION 'Insufficient wheel tokens. Current balance: %, required: %', v_current_tokens, p_amount_to_redeem;
+    END IF;
+
+    UPDATE commuters SET wheel_tokens = wheel_tokens - p_amount_to_redeem WHERE id = v_commuter_id;
+    UPDATE wallets SET balance = balance + p_amount_to_redeem WHERE id = v_wallet_id;
+
+    INSERT INTO transactions (wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, processed_at)
+    VALUES (v_wallet_id, p_profile_id, 'points_redemption', p_amount_to_redeem, 'completed', p_transaction_number, now())
+    RETURNING id INTO v_new_transaction_id;
+
+    INSERT INTO points_transactions (commuter_id, change, reason, related_transaction_id, balance_after)
+    VALUES (v_commuter_id, -p_amount_to_redeem, 'redemption', v_new_transaction_id, (v_current_tokens - p_amount_to_redeem));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

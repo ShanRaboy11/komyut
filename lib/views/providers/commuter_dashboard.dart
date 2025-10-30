@@ -15,7 +15,7 @@ class CommuterDashboardProvider extends ChangeNotifier {
 
   // Commuter data
   String _category = 'regular';
-  int _wheelTokens = 0;
+  double _wheelTokens = 0.0;
   bool _idVerified = false;
 
   // Financial data
@@ -42,7 +42,7 @@ class CommuterDashboardProvider extends ChangeNotifier {
 
   // Commuter getters
   String get category => _category;
-  int get wheelTokens => _wheelTokens;
+  double get wheelTokens => _wheelTokens;
   bool get idVerified => _idVerified;
 
   // Get user-friendly category name
@@ -90,7 +90,8 @@ class CommuterDashboardProvider extends ChangeNotifier {
       // Update commuter details
       final commuterDetails = data['commuterDetails'];
       _category = commuterDetails['category'] ?? 'regular';
-      _wheelTokens = commuterDetails['wheel_tokens'] ?? 0;
+      _wheelTokens =
+          (commuterDetails['wheel_tokens'] as num?)?.toDouble() ?? 0.0;
       _idVerified = commuterDetails['id_verified'] ?? false;
 
       // Update financial data

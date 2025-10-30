@@ -443,7 +443,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible ? provider.wheelTokens.toString() : '••',
+                  _isTokensVisible ? provider.wheelTokens.toString() : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,

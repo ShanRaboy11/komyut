@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class TokenConfirmationPage extends StatelessWidget {
   final String tokenAmount;
@@ -21,6 +23,44 @@ class TokenConfirmationPage extends StatelessWidget {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
+  Future<void> _onConfirmPressed(
+    BuildContext context,
+    String transactionCode,
+  ) async {
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final amountValue = double.tryParse(tokenAmount);
+
+    if (amountValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid token amount.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final success = await provider.redeemWheelTokens(
+      amount: amountValue,
+      transactionCode: transactionCode,
+    );
+
+    if (success && context.mounted) {
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/token_success', (route) => false);
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.completionErrorMessage ?? 'Failed to redeem tokens.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -30,7 +70,6 @@ class TokenConfirmationPage extends StatelessWidget {
     final transactionCode = _generateTransactionCode();
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String equivalentValue = currencyFormat.format(tokenValue);
-
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -44,7 +83,7 @@ class TokenConfirmationPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Cash In',
+          'Redeem Tokens',
           style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -58,7 +97,6 @@ class TokenConfirmationPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Text(
               'Wheel Tokens',
               style: GoogleFonts.manrope(
@@ -70,8 +108,6 @@ class TokenConfirmationPage extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-
-            // Transaction Card
             _buildTransactionCard(
               context: context,
               date: date,
@@ -89,32 +125,43 @@ class TokenConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Confirm Button
             Center(
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/token_success');
+              child: Consumer<WalletProvider>(
+                builder: (context, provider, child) {
+                  return OutlinedButton(
+                    onPressed: provider.isCompletionLoading
+                        ? null
+                        : () => _onConfirmPressed(context, transactionCode),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: provider.isCompletionLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: brandColor,
+                            ),
+                          )
+                        : Text(
+                            'Confirm',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                  );
                 },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandColor,
-                  backgroundColor: brandColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: brandColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 50,
-                    vertical: 14,
-                  ),
-                ),
-                child: Text(
-                  'Confirm',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
               ),
             ),
           ],
@@ -204,11 +251,9 @@ class TokenConfirmationPage extends StatelessWidget {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () {
-                Navigator.of(
-                  context,
-                ).popUntil((route) => route.settings.name == '/wallet');
-              },
+              onTap: () => Navigator.of(
+                context,
+              ).popUntil((route) => route.settings.name == '/wallet'),
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(

@@ -40,40 +40,62 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  void _showCashInDetailModal(
+  void _showTransactionDetailModal(
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
+    final String type = transaction['type'] as String? ?? 'transaction';
     final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-    final isCashIn = (transaction['type'] as String?) == 'cash_in';
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
-    // --- FIX: Read the payment method name from the joined table data ---
-    // The data structure is now: { ..., "payment_methods": { "name": "Over-the-Counter" } }
-    final paymentMethod = transaction['payment_methods'];
-    final channelDisplay =
-        (paymentMethod != null && paymentMethod['name'] != null)
-        ? paymentMethod['name']
-        // Fallback for older transactions or different types
-        : (transaction['type'] as String)
-              .split('_')
-              .map((word) => word[0].toUpperCase() + word.substring(1))
-              .join(' ');
+    final String modalTitle =
+        '${type.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')} Transaction';
 
-    // --- FIX: Dynamic Fee Logic ---
-    double total;
-    if (isCashIn) {
+    List<Widget> details = [];
+    double total = amount;
+    String totalLabel = 'Amount:';
+
+    details.add(
+      _buildDetailRow(
+        'Date:',
+        DateFormat(
+          'MM/dd/yyyy',
+        ).format(DateTime.parse(transaction['created_at'])),
+      ),
+    );
+    details.add(
+      _buildDetailRow(
+        'Time:',
+        DateFormat('hh:mm a').format(DateTime.parse(transaction['created_at'])),
+      ),
+    );
+    details.add(_buildDetailRow('Amount:', currencyFormat.format(amount)));
+
+    if (type == 'cash_in') {
+      final paymentMethod = transaction['payment_methods'];
+      final channelDisplay =
+          (paymentMethod != null && paymentMethod['name'] != null)
+          ? paymentMethod['name']
+          : 'N/A';
+      details.add(_buildDetailRow('Channel:', channelDisplay));
+
+      final status = (transaction['status'] as String?) ?? 'N/A';
+      details.add(
+        _buildDetailRow(
+          'Status:',
+          status[0].toUpperCase() + status.substring(1),
+        ),
+      );
+
       if (channelDisplay == 'Over-the-Counter') {
-        total = amount + 5.0; // OTC fee
+        total = amount + 5.0;
       } else {
-        total = amount + 10.0; // Digital Wallet fee
+        total = amount + 10.0;
       }
-    } else {
-      total = amount; // No fee for other transaction types
+      totalLabel = 'Total:';
+    } else if (type == 'points_redemption') {
+      totalLabel = 'Equivalent:';
     }
-
-    final status = (transaction['status'] as String?) ?? 'N/A';
-    final statusToDisplay = status[0].toUpperCase() + status.substring(1);
 
     showDialog(
       context: context,
@@ -81,25 +103,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,
-          title: 'Cash In Transaction',
-          details: [
-            _buildDetailRow(
-              'Date:',
-              DateFormat(
-                'MM/dd/yyyy',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-            _buildDetailRow(
-              'Time:',
-              DateFormat(
-                'hh:mm a',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-            _buildDetailRow('Amount:', currencyFormat.format(amount)),
-            if (isCashIn) _buildDetailRow('Channel:', channelDisplay),
-            if (isCashIn) _buildDetailRow('Status:', statusToDisplay),
-          ],
-          totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
+          title: modalTitle,
+          details: details,
+          totalRow: _buildDetailRow(totalLabel, currencyFormat.format(total)),
           transactionCode:
               transaction['transaction_number'] ?? _generateTransactionCode(),
         );
@@ -360,17 +366,10 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     final bool isCredit = (transaction['amount'] as num) > 0;
     final String type = transaction['type'] as String;
 
-    // --- FIX: Get the title from the new payment_methods data structure ---
-
-    String title;
-    if (type == 'cash_in') {
-      title = 'Cash In'; // Always "Cash In" for this type
-    } else {
-      title = type
-          .split('_')
-          .map((word) => word[0].toUpperCase() + word.substring(1))
-          .join(' ');
-    }
+    final String title = type
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
 
     final String amount = NumberFormat.currency(
       locale: 'en_PH',
@@ -381,14 +380,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     ).format(DateTime.parse(transaction['created_at']));
 
     return InkWell(
-      onTap: () {
-        // --- FIX: Logic to decide which modal to show ---
-        if (type == 'cash_in') {
-          _showCashInDetailModal(context, transaction);
-        }
-        // Add else if blocks here for other transaction types if they need modals
-        // e.g., else if (type == 'fare_payment') { _showFarePaymentModal(...) }
-      },
+      onTap: () => _showTransactionDetailModal(context, transaction),
       child: Container(
         padding: const EdgeInsets.only(top: 16, bottom: 16),
         decoration: BoxDecoration(

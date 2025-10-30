@@ -9,7 +9,7 @@ class WalletProvider extends ChangeNotifier {
   bool _isWalletLoading = false;
   String? _walletErrorMessage;
   double _balance = 0.0;
-  int _wheelTokens = 0;
+  double _wheelTokens = 0;
   List<Map<String, dynamic>> _recentTransactions = [];
   List<Map<String, dynamic>> _recentTokenHistory = [];
   Map<String, double> _fareExpenses = {};
@@ -42,7 +42,7 @@ class WalletProvider extends ChangeNotifier {
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
   double get balance => _balance;
-  int get wheelTokens => _wheelTokens;
+  double get wheelTokens => _wheelTokens;
   List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
   List<Map<String, dynamic>> get recentTokenHistory => _recentTokenHistory;
   Map<String, double> get fareExpenses => _fareExpenses;
@@ -67,7 +67,6 @@ class WalletProvider extends ChangeNotifier {
   Map<String, dynamic>? get userProfile => _userProfile;
 
   // --- Methods ---
-
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
     _walletErrorMessage = null;
@@ -81,7 +80,7 @@ class WalletProvider extends ChangeNotifier {
         _dashboardService.getFareExpensesWeekly(),
       ]);
       _balance = results[0] as double;
-      _wheelTokens = results[1] as int;
+      _wheelTokens = results[1] as double;
       _recentTransactions = results[2] as List<Map<String, dynamic>>;
       _recentTokenHistory = results[3] as List<Map<String, dynamic>>;
       _fareExpenses = results[4] as Map<String, double>;
@@ -112,7 +111,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // --- THIS IS THE CORRECTED METHOD ---
   Future<bool> createOtcTransaction({
     required double amount,
     required String transactionCode,
@@ -126,7 +124,6 @@ class WalletProvider extends ChangeNotifier {
         amount: amount,
         paymentMethodName: 'Over-the-Counter',
         transactionNumber: transactionCode,
-        // --- FIX: Add the missing required arguments with default values ---
         payerName: 'User',
         payerEmail: 'N/A',
       );
@@ -141,7 +138,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // --- FOR OTC COMPLETION ---
   Future<bool> completeOtcCashIn({required String transactionId}) async {
     _isCompletionLoading = true;
     _completionErrorMessage = null;
@@ -164,7 +160,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // --- DIGITAL WALLET TRANSACTION METHOD ---
   Future<bool> createDigitalWalletTransaction({
     required double amount,
     required String source,
@@ -198,7 +193,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> fetchPaymentSources(String type) async {
     _isSourcesLoading = true;
     _sourcesErrorMessage = null;
-    _paymentSources = []; // Clear previous results
+    _paymentSources = [];
     notifyListeners();
 
     try {
@@ -229,20 +224,44 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> fetchUserNameForForm() async {
-    // We don't need to check if it's already loaded,
-    // as it might be a different subset of data.
     _isProfileLoading = true;
     _profileErrorMessage = null;
     notifyListeners();
 
     try {
-      // Call the NEW service method
       _userProfile = await _dashboardService.getCommuterName();
     } catch (e) {
       _profileErrorMessage = 'Failed to load user name: ${e.toString()}';
     } finally {
       _isProfileLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> redeemWheelTokens({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    _isCompletionLoading = true;
+    _completionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _dashboardService.redeemTokens(
+        amount: amount,
+        transactionNumber: transactionCode,
+      );
+
+      await fetchWalletData();
+
+      _isCompletionLoading = false;
+      notifyListeners();
+      return true; // Success
+    } catch (e) {
+      _completionErrorMessage = 'Redemption failed: ${e.toString()}';
+      _isCompletionLoading = false;
+      notifyListeners();
+      return false; // Failure
     }
   }
 }
