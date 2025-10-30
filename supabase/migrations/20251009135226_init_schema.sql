@@ -166,13 +166,6 @@ BEFORE UPDATE ON trips
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
-CREATE OR REPLACE FUNCTION komyut_generate_transaction_number()
-RETURNS text AS $$
-BEGIN
-  RETURN concat('EXCHAND-', to_char(now(),'YYYYMMDDHH24MISS'), '-', substr(md5(gen_random_uuid()::text),1,6));
-END;
-$$ LANGUAGE plpgsql;
-
 -- Wallets
 CREATE TABLE wallets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -191,7 +184,7 @@ EXECUTE FUNCTION komyut_update_timestamp();
 
 CREATE TABLE transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  transaction_number text UNIQUE DEFAULT komyut_generate_transaction_number(),
+  transaction_number text UNIQUE,
   wallet_id uuid REFERENCES wallets(id) ON DELETE SET NULL,
   initiated_by_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
   type transaction_type NOT NULL,
@@ -384,31 +377,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ==== ROW LEVEL SECURITY (RLS) POLICIES FOR TRANSACTIONS ====
--- Enable RLS on the table
-ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+-- ========= NEW: PAYMENT METHODS SETUP =========
 
--- Allow users to INSERT their own transactions
-DROP POLICY IF EXISTS "Users can insert their own transactions" ON public.transactions;
-CREATE POLICY "Users can insert their own transactions"
-ON public.transactions
-FOR INSERT
-WITH CHECK (
-  auth.uid() = (
-    SELECT user_id FROM profiles WHERE id = initiated_by_profile_id
-  )
+-- First, create a new ENUM type to categorize our payment methods.
+CREATE TYPE payment_method_type AS ENUM ('Over-the-Counter', 'E-Wallet', 'Online Banking');
+
+-- Create the table to store all possible payment methods and sources.
+CREATE TABLE payment_methods (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL, -- e.g., "GCash Bills Pay", "BPI", "7-Eleven"
+    type payment_method_type NOT NULL, -- The category it belongs to
+    is_active boolean DEFAULT true,
+    description text,
+    created_at timestamptz DEFAULT now()
 );
 
--- Allow users to VIEW transactions related to their wallet
-DROP POLICY IF EXISTS "Users can view their own transactions" ON public.transactions;
-CREATE POLICY "Users can view their own transactions"
-ON public.transactions
+-- Add an index for faster lookups by type.
+CREATE INDEX idx_payment_methods_type ON payment_methods(type);
+
+-- Now, update the 'transactions' table to link to our new table.
+-- We are removing the 'DEFAULT' from transaction_number as well, as discussed.
+ALTER TABLE public.transactions
+  DROP COLUMN IF EXISTS payment_method_id, -- Drop if it exists to make this script re-runnable
+  ADD COLUMN payment_method_id uuid REFERENCES payment_methods(id),
+  ALTER COLUMN transaction_number DROP DEFAULT; -- This is from our previous discussion
+
+-- Also, let's delete the old function that is no longer needed.
+DROP FUNCTION IF EXISTS public.komyut_generate_transaction_number();
+
+-- Enable Row Level Security for the new table.
+ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
+
+-- Create a policy that allows any logged-in user to READ the list of payment methods.
+DROP POLICY IF EXISTS "Allow authenticated users to read payment methods" ON public.payment_methods;
+CREATE POLICY "Allow authenticated users to read payment methods"
+ON public.payment_methods
 FOR SELECT
-USING (
-  auth.uid() = (
-    SELECT p.user_id 
-    FROM profiles p 
-    JOIN wallets w ON p.id = w.owner_profile_id
-    WHERE w.id = transactions.wallet_id
-  )
-);
+TO authenticated
+USING (true);
+
+
+-- ==== POPULATE THE TABLE WITH INITIAL DATA ====
+-- This adds the options your app needs.
+
+INSERT INTO public.payment_methods (name, type) VALUES
+('Over-the-Counter', 'Over-the-Counter'),
+('GCash Bills Pay', 'E-Wallet'),
+('PayMaya', 'E-Wallet'),
+('BPI', 'Online Banking'),
+('BDO', 'Online Banking'),
+('Metrobank', 'Online Banking'),
+('Landbank', 'Online Banking');
