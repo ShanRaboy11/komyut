@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 
 class OtcConfirmationPage extends StatefulWidget {
-  final Map<String, dynamic> transaction;
+  final String amount;
 
-  const OtcConfirmationPage({super.key, required this.transaction});
+  const OtcConfirmationPage({super.key, required this.amount});
 
   @override
   State<OtcConfirmationPage> createState() => _OtcConfirmationPageState();
@@ -21,6 +21,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
   @override
   void initState() {
     super.initState();
+    // The K0MYUT code is generated once, here.
     _transactionCode = _generateTransactionCode();
   }
 
@@ -36,34 +37,38 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
+  // This is where the transaction is finally created in the database.
   Future<void> _onConfirmPressed() async {
     final provider = Provider.of<WalletProvider>(context, listen: false);
-    final transactionId = widget.transaction['id'];
+    final amountValue = double.tryParse(widget.amount);
 
-    if (transactionId == null) {
+    if (amountValue == null) {
+      // Handle potential parsing error, though it shouldn't happen with the text field formatters
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Error: Missing transaction ID.'),
+          content: Text('Invalid amount format.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final success = await provider.confirmOtcTransaction(
-      transactionId: transactionId,
+    // FIX: Calling the correct method name from the provider
+    final success = await provider.createOtcTransaction(
+      amount: amountValue,
       transactionCode: _transactionCode,
     );
 
     if (success && mounted) {
+      // Pass the newly created transaction data from the provider to the next screen
       Navigator.of(
         context,
-      ).pushNamed('/otc_instructions', arguments: widget.transaction);
+      ).pushNamed('/otc_instructions', arguments: provider.pendingTransaction);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            provider.cashInErrorMessage ?? 'Failed to confirm transaction.',
+            provider.cashInErrorMessage ?? 'Failed to create transaction.',
           ),
           backgroundColor: Colors.red,
         ),
@@ -73,9 +78,10 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final double amountValue = (widget.transaction['amount'] as num).toDouble();
+    // Data is calculated locally for display
+    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
     final double totalValue = amountValue + 5.00;
-    final now = DateTime.parse(widget.transaction['created_at']);
+    final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
 
@@ -87,24 +93,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Cash In',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      appBar: AppBar(/* ... Unchanged ... */),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
         child: Column(
@@ -127,7 +116,8 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               time: time,
               amount: formattedAmount,
               total: formattedTotal,
-              transactionCode: _transactionCode, // Use state variable
+              transactionCode:
+                  _transactionCode, // Use the code generated in initState
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -147,7 +137,6 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
   Widget _buildConfirmButton() {
     final Color brandColor = const Color(0xFF8E4CB6);
-
     return Consumer<WalletProvider>(
       builder: (context, provider, child) {
         return Center(

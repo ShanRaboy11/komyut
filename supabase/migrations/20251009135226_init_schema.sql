@@ -412,17 +412,3 @@ USING (
     WHERE w.id = transactions.wallet_id
   )
 );
-
-CREATE OR REPLACE FUNCTION komyut_generate_transaction_number()
-RETURNS text AS $$
-DECLARE
-  chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  random_str text := '';
-  i int;
-BEGIN
-  FOR i IN 1..15 LOOP
-    random_str := random_str || substr(chars, floor(random() * length(chars) + 1)::int, 1);
-  END LOOP;
-  RETURN 'K0MYUT-XHS' || random_str;
-END;
-$$ LANGUAGE plpgsql;

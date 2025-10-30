@@ -36,36 +36,11 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
     });
   }
 
-  Future<void> _onNextPressed() async {
+  void _onNextPressed() {
     if (!_isButtonEnabled) return;
-
-    final provider = Provider.of<WalletProvider>(context, listen: false);
-    final amount = double.tryParse(_amountController.text);
-
-    if (amount == null) return;
-
-    final success = await provider.createCashInTransaction(
-      amount: amount,
-      type: 'over_the_counter',
-    );
-
-    if (success && mounted) {
-      // If the transaction was created successfully, navigate to the confirmation page.
-      // We pass the transaction data from the provider.
-      Navigator.of(
-        context,
-      ).pushNamed('/otc_confirmation', arguments: provider.pendingTransaction);
-    } else if (mounted) {
-      // If it failed, show an error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.cashInErrorMessage ?? 'An unknown error occurred.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    Navigator.of(
+      context,
+    ).pushNamed('/otc_confirmation', arguments: _amountController.text);
   }
 
   @override

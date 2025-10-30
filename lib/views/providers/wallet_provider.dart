@@ -14,12 +14,21 @@ class WalletProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _recentTokenHistory = [];
   Map<String, double> _fareExpenses = {};
 
-  // --- State for TransactionHistoryPage (This was missing) ---
+  // --- State for TransactionHistoryPage ---
   bool _isHistoryLoading = false;
   String? _historyErrorMessage;
   List<Map<String, dynamic>> _fullHistory = [];
 
-  // --- Getters for WalletPage ---
+  // --- State for Cash-In Flow ---
+  bool _isCashInLoading = false;
+  String? _cashInErrorMessage;
+  Map<String, dynamic>? _pendingTransaction;
+
+  // --- State for Completion Flow ---
+  bool _isCompletionLoading = false;
+  String? _completionErrorMessage;
+
+  // --- Getters ---
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
   double get balance => _balance;
@@ -28,28 +37,19 @@ class WalletProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get recentTokenHistory => _recentTokenHistory;
   Map<String, double> get fareExpenses => _fareExpenses;
 
-  // --- Getters for TransactionHistoryPage
   bool get isHistoryLoading => _isHistoryLoading;
   String? get historyErrorMessage => _historyErrorMessage;
   List<Map<String, dynamic>> get fullHistory => _fullHistory;
-
-  // --- FOR CASH-IN FLOW ---
-  bool _isCashInLoading = false;
-  String? _cashInErrorMessage;
-  Map<String, dynamic>? _pendingTransaction;
 
   bool get isCashInLoading => _isCashInLoading;
   String? get cashInErrorMessage => _cashInErrorMessage;
   Map<String, dynamic>? get pendingTransaction => _pendingTransaction;
 
-  // --- FOR COMPLETION FLOW ---
-  bool _isCompletionLoading = false;
-  String? _completionErrorMessage;
-
   bool get isCompletionLoading => _isCompletionLoading;
   String? get completionErrorMessage => _completionErrorMessage;
 
-  // Method for WalletPage
+  // --- Methods ---
+
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
     _walletErrorMessage = null;
@@ -75,11 +75,10 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // Method for TransactionHistoryPage
   Future<void> fetchFullHistory(HistoryType type) async {
     _isHistoryLoading = true;
     _historyErrorMessage = null;
-    _fullHistory = []; // Clear previous history
+    _fullHistory = [];
     notifyListeners();
     try {
       if (type == HistoryType.transactions) {
@@ -95,50 +94,26 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // --- METHOD FOR OTC CASH-IN ---
-  Future<bool> createCashInTransaction({
+  // --- THIS IS THE CORRECTED METHOD ---
+  Future<bool> createOtcTransaction({
     required double amount,
-    required String type,
+    required String transactionCode, // It now accepts the code
   }) async {
     _isCashInLoading = true;
     _cashInErrorMessage = null;
     notifyListeners();
 
     try {
-      _pendingTransaction = await _dashboardService.initiateCashInTransaction(
+      _pendingTransaction = await _dashboardService.createCashInTransaction(
         amount: amount,
-        type: type,
+        channel: 'over_the_counter',
+        transactionNumber: transactionCode, // And passes it to the service
       );
       _isCashInLoading = false;
       notifyListeners();
       return true; // Success
     } catch (e) {
       _cashInErrorMessage = 'Error: ${e.toString()}';
-      _isCashInLoading = false;
-      notifyListeners();
-      return false; // Failure
-    }
-  }
-
-  // --- METHOD FOR OTC CONFIRMATION ---
-  Future<bool> confirmOtcTransaction({
-    required String transactionId,
-    required String transactionCode,
-  }) async {
-    _isCashInLoading = true; // Reuse the same loading flag
-    _cashInErrorMessage = null;
-    notifyListeners();
-
-    try {
-      await _dashboardService.confirmCashInTransaction(
-        transactionId: transactionId,
-        transactionCode: transactionCode,
-      );
-      _isCashInLoading = false;
-      notifyListeners();
-      return true; // Success
-    } catch (e) {
-      _cashInErrorMessage = 'Error confirming transaction: ${e.toString()}';
       _isCashInLoading = false;
       notifyListeners();
       return false; // Failure
@@ -155,8 +130,6 @@ class WalletProvider extends ChangeNotifier {
       await _dashboardService.completeCashInTransaction(
         transactionId: transactionId,
       );
-      // After completion, refresh the main wallet data to show the new balance.
-      // Calling this ensures the balance is up-to-date when the user goes back.
       await fetchWalletData();
       _isCompletionLoading = false;
       notifyListeners();

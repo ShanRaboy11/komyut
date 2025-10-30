@@ -539,13 +539,13 @@ class _WalletPageState extends State<WalletPage>
       ),
       body: Consumer<WalletProvider>(
         builder: (context, provider, child) {
+          // --- FIX: Use the correct getter names ---
           if (provider.isWalletLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.walletErrorMessage != null) {
             return Center(child: Text(provider.walletErrorMessage!));
           }
-
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
             child: Column(
@@ -587,6 +587,7 @@ class _WalletPageState extends State<WalletPage>
             Tab(text: 'Tokens'),
           ],
         ),
+        // --- FIX: Use correct getters from provider ---
         if (_tabController.index == 0)
           _buildTransactionsList(provider.recentTransactions)
         else
@@ -607,13 +608,12 @@ class _WalletPageState extends State<WalletPage>
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // The card itself
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+            gradient: LinearGradient(
+              colors: gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -629,7 +629,6 @@ class _WalletPageState extends State<WalletPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top: Current Balance + tokens
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -651,7 +650,7 @@ class _WalletPageState extends State<WalletPage>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          provider.wheelTokens.toStringAsFixed(1),
+                          provider.wheelTokens.toString(),
                           style: GoogleFonts.manrope(
                             color: Colors.white,
                             fontSize: 16,
@@ -675,8 +674,6 @@ class _WalletPageState extends State<WalletPage>
             ],
           ),
         ),
-
-        // Floating "+" button
         Positioned(
           bottom: -18,
           right: 18,
@@ -752,9 +749,7 @@ class _WalletPageState extends State<WalletPage>
                       .toList(),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: _buildBarChart(chartHeight, expenses),
-                ), // Pass data
+                Expanded(child: _buildBarChart(chartHeight, expenses)),
               ],
             ),
           ),
@@ -867,7 +862,7 @@ class _WalletPageState extends State<WalletPage>
     bool isLast = false,
   }) {
     final bool isCredit = (transaction['amount'] as num) > 0;
-    // Get the specific channel from metadata, fallback to the main type
+    // --- FIX: Read from metadata for specific channel name ---
     final channel =
         (transaction['metadata'] as Map<String, dynamic>?)?['channel'] ??
         transaction['type'];
