@@ -518,4 +518,23 @@ class CommuterDashboardService {
       rethrow;
     }
   }
+
+  Future<void> confirmCashInTransaction({
+    required String transactionId,
+    required String transactionCode,
+  }) async {
+    try {
+      await _supabase
+          .from('transactions')
+          .update({'transaction_number': transactionCode})
+          .eq('id', transactionId);
+
+      debugPrint(
+        '✅ Transaction $transactionId confirmed with code $transactionCode',
+      );
+    } catch (e) {
+      debugPrint('❌ Error confirming cash-in transaction: $e');
+      rethrow;
+    }
+  }
 }

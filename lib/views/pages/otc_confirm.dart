@@ -3,11 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
-class OtcConfirmationPage extends StatelessWidget {
-  final String amount;
+class OtcConfirmationPage extends StatefulWidget {
+  final Map<String, dynamic> transaction;
 
-  const OtcConfirmationPage({super.key, required this.amount});
+  const OtcConfirmationPage({super.key, required this.transaction});
+
+  @override
+  State<OtcConfirmationPage> createState() => _OtcConfirmationPageState();
+}
+
+class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
+  late String _transactionCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionCode = _generateTransactionCode();
+  }
 
   String _generateTransactionCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -21,14 +36,46 @@ class OtcConfirmationPage extends StatelessWidget {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
+  Future<void> _onConfirmPressed() async {
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final transactionId = widget.transaction['id'];
+
+    if (transactionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Missing transaction ID.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final success = await provider.confirmOtcTransaction(
+      transactionId: transactionId,
+      transactionCode: _transactionCode,
+    );
+
+    if (success && mounted) {
+      Navigator.of(context).pushNamed('/otc_instructions');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.cashInErrorMessage ?? 'Failed to confirm transaction.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final double amountValue = (widget.transaction['amount'] as num).toDouble();
+    final double totalValue = amountValue + 5.00; // Assuming 5.00 fee
+    final now = DateTime.parse(widget.transaction['created_at']);
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
-    final double amountValue = double.tryParse(amount) ?? 0.0;
-    final double totalValue = amountValue + 5.00;
-    final transactionCode = _generateTransactionCode();
 
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String formattedAmount = currencyFormat.format(amountValue);
@@ -61,7 +108,6 @@ class OtcConfirmationPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Text(
               'Over-the-Counter',
               style: GoogleFonts.manrope(
@@ -73,15 +119,13 @@ class OtcConfirmationPage extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-
-            // Transaction Card
             _buildTransactionCard(
               context: context,
               date: date,
               time: time,
               amount: formattedAmount,
               total: formattedTotal,
-              transactionCode: transactionCode,
+              transactionCode: _transactionCode, // Use state variable
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -92,37 +136,46 @@ class OtcConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Confirm Button
-            Center(
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/otc_instructions');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandColor,
-                  backgroundColor: brandColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: brandColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 50,
-                    vertical: 14,
-                  ),
-                ),
-                child: Text(
-                  'Confirm',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
+            _buildConfirmButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildConfirmButton() {
+    final Color brandColor = const Color(0xFF8E4CB6);
+
+    return Consumer<WalletProvider>(
+      builder: (context, provider, child) {
+        return Center(
+          child: OutlinedButton(
+            onPressed: provider.isCashInLoading ? null : _onConfirmPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: brandColor,
+              backgroundColor: brandColor.withValues(alpha: 0.1),
+              side: BorderSide(color: brandColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+            ),
+            child: provider.isCashInLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Confirm',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 

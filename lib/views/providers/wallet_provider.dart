@@ -112,4 +112,29 @@ class WalletProvider extends ChangeNotifier {
       return false; // Failure
     }
   }
+
+  // --- METHOD FOR OTC CONFIRMATION ---
+  Future<bool> confirmOtcTransaction({
+    required String transactionId,
+    required String transactionCode,
+  }) async {
+    _isCashInLoading = true; // Reuse the same loading flag
+    _cashInErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _dashboardService.confirmCashInTransaction(
+        transactionId: transactionId,
+        transactionCode: transactionCode,
+      );
+      _isCashInLoading = false;
+      notifyListeners();
+      return true; // Success
+    } catch (e) {
+      _cashInErrorMessage = 'Error confirming transaction: ${e.toString()}';
+      _isCashInLoading = false;
+      notifyListeners();
+      return false; // Failure
+    }
+  }
 }
