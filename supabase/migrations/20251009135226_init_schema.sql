@@ -7,7 +7,7 @@ CREATE TYPE report_status AS ENUM ('open','in_review','resolved','dismissed','cl
 CREATE TYPE report_severity AS ENUM ('low','medium','high');
 CREATE TYPE trip_status AS ENUM ('ongoing','completed','cancelled');
 CREATE TYPE transaction_type AS ENUM ('cash_in','cash_out','fare_payment','points_redemption','driver_payout','operator_payout');
-CREATE TYPE transaction_status AS ENUM ('pending','completed','failed');
+CREATE TYPE transaction_status AS ENUM ('pending','confirmed','failed');
 CREATE TYPE notification_type AS ENUM ('trip','wallet','rewards','verification','report','system');
 CREATE TYPE verification_status AS ENUM ('pending','approved','rejected','lacking');
 
@@ -355,23 +355,19 @@ RETURNS void AS $$
 DECLARE
   trans RECORD;
 BEGIN
-  -- Find the specific transaction that needs to be completed
   SELECT * INTO trans FROM public.transactions WHERE id = transaction_id_arg FOR UPDATE;
 
-  -- Security check: ensure the transaction exists and is in the correct state
   IF NOT FOUND OR trans.status <> 'pending' OR trans.type <> 'cash_in' THEN
     RAISE EXCEPTION 'Transaction not found or not in a completable state.';
   END IF;
 
-  -- Add the amount to the user's wallet
   UPDATE public.wallets
   SET balance = balance + trans.amount
   WHERE id = trans.wallet_id;
 
-  -- Mark the transaction as completed and set the processing time
   UPDATE public.transactions
   SET 
-    status = 'completed',
+    status = 'confirmed',
     processed_at = now()
   WHERE id = transaction_id_arg;
 END;

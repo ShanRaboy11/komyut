@@ -72,17 +72,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       total = amount; // No fee for other transaction types
     }
 
-    // --- FIX: Dynamic Status Logic ---
-    String? statusToDisplay;
-    if (isCashIn) {
-      if (channelDisplay == 'Over-the-Counter') {
-        statusToDisplay = 'Confirmed'; // Always Confirmed for OTC
-      } else {
-        // For Digital Wallet, use the real status from the database
-        final status = (transaction['status'] as String?) ?? 'N/A';
-        statusToDisplay = status[0].toUpperCase() + status.substring(1);
-      }
-    }
+    final status = (transaction['status'] as String?) ?? 'N/A';
+    final statusToDisplay = status[0].toUpperCase() + status.substring(1);
 
     showDialog(
       context: context,
@@ -106,8 +97,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             ),
             _buildDetailRow('Amount:', currencyFormat.format(amount)),
             if (isCashIn) _buildDetailRow('Channel:', channelDisplay),
-            if (statusToDisplay != null)
-              _buildDetailRow('Status:', statusToDisplay),
+            if (isCashIn) _buildDetailRow('Status:', statusToDisplay),
           ],
           totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
           transactionCode:
