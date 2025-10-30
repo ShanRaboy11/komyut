@@ -168,10 +168,10 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
       if (parts[0].length > 12) {
         displayedValue = '${parts[0].substring(0, 9)}...@${parts[1]}';
       }
-    } else if (label.toLowerCase().contains('name') && value.length > 30) {
+    } else if (label.toLowerCase().contains('name') && value.length > 28) {
       displayedValue = '${value.substring(0, 28)}...';
     } else if (label.toLowerCase() == 'user id:' && value.length > 18) {
-      displayedValue = '${value.substring(0, 25)}...';
+      displayedValue = '${value.substring(0, 18)}...';
     }
 
     return Padding(

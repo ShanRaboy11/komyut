@@ -115,14 +115,24 @@ class DwConfirmationPage extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-            _buildTransactionCard(
-              context: context,
-              date: date,
-              time: time,
-              amount: formattedAmount,
-              total: formattedTotal,
-              transactionCode: transactionCode,
-              brandColor: brandColor,
+            Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                // Get the raw user ID from the provider's state
+                final userId =
+                    provider.userProfile?['user_id']?.toString() ?? 'N/A';
+
+                // Pass the raw ID to the build method
+                return _buildTransactionCard(
+                  context: context,
+                  userId: userId, // Pass the fetched User ID
+                  date: date,
+                  time: time,
+                  amount: formattedAmount,
+                  total: formattedTotal,
+                  transactionCode: transactionCode,
+                  brandColor: brandColor,
+                );
+              },
             ),
             const SizedBox(height: 24),
             Center(
@@ -176,6 +186,7 @@ class DwConfirmationPage extends StatelessWidget {
 
   Widget _buildTransactionCard({
     required BuildContext context,
+    required String userId,
     required String date,
     required String time,
     required String amount,
@@ -211,7 +222,7 @@ class DwConfirmationPage extends StatelessWidget {
                 ),
               ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-              _buildDetailRow('User ID:', '12-3456-789'),
+              _buildDetailRow('User ID:', userId),
               _buildDetailRow('Name:', name),
               _buildDetailRow('Email:', email),
               _buildDetailRow('Date:', date),
@@ -263,6 +274,11 @@ class DwConfirmationPage extends StatelessWidget {
   }
 
   Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+    String displayedValue = value;
+
+    if (label.toLowerCase() == 'user id:' && value.length > 18) {
+      displayedValue = '${value.substring(0, 18)}...';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -277,7 +293,7 @@ class DwConfirmationPage extends StatelessWidget {
             ),
           ),
           Text(
-            value,
+            displayedValue,
             style: GoogleFonts.manrope(
               fontSize: 15,
               color: Colors.black87,
