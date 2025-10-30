@@ -159,10 +159,10 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
     if (_selectedSource != null) {
       if (widget.paymentMethod == 'E-Wallet') {
         descriptionText =
-            'Pay manually using the $_selectedSource. Instructions will be emailed. A surcharge may be applied.';
+            'Pay manually using the $_selectedSource app. Instructions will be emailed. A surcharge may be applied.';
       } else if (widget.paymentMethod == 'Online Banking') {
         descriptionText =
-            'Pay manually via $_selectedSource. Instructions will be emailed.';
+            'Pay manually via $_selectedSource online. Instructions will be emailed.';
       }
     }
 

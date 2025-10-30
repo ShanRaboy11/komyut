@@ -33,6 +33,11 @@ class WalletProvider extends ChangeNotifier {
   String? _sourcesErrorMessage;
   List<String> _paymentSources = [];
 
+  // --- State for User Profile ---
+  bool _isProfileLoading = false;
+  String? _profileErrorMessage;
+  Map<String, dynamic>? _userProfile;
+
   // --- Getters ---
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
@@ -56,6 +61,10 @@ class WalletProvider extends ChangeNotifier {
   bool get isSourcesLoading => _isSourcesLoading;
   String? get sourcesErrorMessage => _sourcesErrorMessage;
   List<String> get paymentSources => _paymentSources;
+
+  bool get isProfileLoading => _isProfileLoading;
+  String? get profileErrorMessage => _profileErrorMessage;
+  Map<String, dynamic>? get userProfile => _userProfile;
 
   // --- Methods ---
 
@@ -115,9 +124,11 @@ class WalletProvider extends ChangeNotifier {
     try {
       _pendingTransaction = await _dashboardService.createCashInTransaction(
         amount: amount,
-        // The name must exactly match the 'name' column in your payment_methods table
         paymentMethodName: 'Over-the-Counter',
         transactionNumber: transactionCode,
+        // --- FIX: Add the missing required arguments with default values ---
+        payerName: 'User',
+        payerEmail: 'N/A',
       );
       _isCashInLoading = false;
       notifyListeners();
@@ -156,19 +167,22 @@ class WalletProvider extends ChangeNotifier {
   // --- DIGITAL WALLET TRANSACTION METHOD ---
   Future<bool> createDigitalWalletTransaction({
     required double amount,
-    required String source, // The specific source like 'GCash Bills Pay'
+    required String source,
     required String transactionCode,
+    required String payerName,
+    required String payerEmail,
   }) async {
     _isCashInLoading = true;
     _cashInErrorMessage = null;
     notifyListeners();
 
     try {
-      // We re-use the same generic service method, which is great!
       _pendingTransaction = await _dashboardService.createCashInTransaction(
         amount: amount,
-        paymentMethodName: source, // Pass the dynamic source from the UI
+        paymentMethodName: source,
         transactionNumber: transactionCode,
+        payerName: payerName,
+        payerEmail: payerEmail,
       );
       _isCashInLoading = false;
       notifyListeners();
@@ -193,6 +207,41 @@ class WalletProvider extends ChangeNotifier {
       _sourcesErrorMessage = 'Failed to load payment sources: ${e.toString()}';
     } finally {
       _isSourcesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchUserProfile() async {
+    if (_userProfile != null) return;
+
+    _isProfileLoading = true;
+    _profileErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _userProfile = await _dashboardService.getCommuterProfile();
+    } catch (e) {
+      _profileErrorMessage = 'Failed to load user profile: ${e.toString()}';
+    } finally {
+      _isProfileLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchUserNameForForm() async {
+    // We don't need to check if it's already loaded,
+    // as it might be a different subset of data.
+    _isProfileLoading = true;
+    _profileErrorMessage = null;
+    notifyListeners();
+
+    try {
+      // Call the NEW service method
+      _userProfile = await _dashboardService.getCommuterName();
+    } catch (e) {
+      _profileErrorMessage = 'Failed to load user name: ${e.toString()}';
+    } finally {
+      _isProfileLoading = false;
       notifyListeners();
     }
   }

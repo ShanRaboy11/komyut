@@ -39,20 +39,15 @@ class DwConfirmationPage extends StatelessWidget {
     final provider = Provider.of<WalletProvider>(context, listen: false);
     final amountValue = double.tryParse(amount);
 
-    if (amountValue == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid amount format.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (amountValue == null) return;
 
+    // --- FIX: Call the updated provider method with all the data ---
     final success = await provider.createDigitalWalletTransaction(
       amount: amountValue,
-      source: source, // Pass the selected source (e.g., 'GCash Bills Pay')
+      source: source,
       transactionCode: transactionCode,
+      payerName: name, // Pass the inputted name
+      payerEmail: email, // Pass the inputted email
     );
 
     if (success && context.mounted) {

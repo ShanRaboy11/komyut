@@ -8,19 +8,23 @@ class CommuterDashboardService {
   /// Get commuter's profile information
   Future<Map<String, dynamic>> getCommuterProfile() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
         throw Exception('No authenticated user');
       }
 
-      // Get profile with commuter info
+      // Get profile data from the 'profiles' table
       final profileData = await _supabase
           .from('profiles')
-          .select('id, first_name, last_name, role, is_verified')
-          .eq('user_id', userId)
+          // --- FIX: Add user_id to the select query ---
+          .select('id, user_id, first_name, last_name, role, is_verified')
+          .eq('user_id', user.id)
           .single();
 
-      debugPrint('✅ Profile fetched: ${profileData['first_name']}');
+      // Add the email from the auth user object to the returned map
+      profileData['email'] = user.email;
+
+      debugPrint('✅ Profile fetched for: ${profileData['first_name']}');
       return profileData;
     } catch (e) {
       debugPrint('❌ Error fetching profile: $e');
@@ -522,14 +526,16 @@ class CommuterDashboardService {
 
   Future<Map<String, dynamic>> createCashInTransaction({
     required double amount,
-    required String paymentMethodName, // Changed from 'channel' for clarity
+    required String paymentMethodName,
     required String transactionNumber,
+    // --- NEW: Add parameters for user-inputted data ---
+    required String payerName,
+    required String payerEmail,
   }) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated.');
 
-      // 1. Get wallet and profile IDs (existing logic)
       final profileData = await _supabase
           .from('profiles')
           .select('id, wallets!inner(id)')
@@ -538,21 +544,10 @@ class CommuterDashboardService {
 
       final profileId = profileData['id'];
       final walletId = profileData['wallets'][0]['id'];
+
       if (walletId == null) throw Exception('User wallet not found.');
 
-      // 2. Get the ID of the payment method from its name
-      final paymentMethodData = await _supabase
-          .from('payment_methods')
-          .select('id')
-          .eq('name', paymentMethodName)
-          .maybeSingle();
-
-      if (paymentMethodData == null) {
-        throw Exception('Payment method "$paymentMethodName" not found.');
-      }
-      final paymentMethodId = paymentMethodData['id'];
-
-      // 3. Insert the new transaction with the correct payment_method_id
+      // Insert the new transaction
       final newTransaction = await _supabase
           .from('transactions')
           .insert({
@@ -562,17 +557,19 @@ class CommuterDashboardService {
             'type': 'cash_in',
             'status': 'pending',
             'transaction_number': transactionNumber,
-            'payment_method_id':
-                paymentMethodId, // This is the new, correct way
-            // We no longer need to store the channel in metadata
+            'payment_method_id': (await _supabase
+                .from('payment_methods')
+                .select('id')
+                .eq('name', paymentMethodName)
+                .single())['id'],
+            // --- FIX: Save the inputted name and email to metadata ---
+            'metadata': {'payer_name': payerName, 'payer_email': payerEmail},
           })
-          .select(
-            '*, payment_methods(name)',
-          ) // Also fetch the name for the return value
+          .select('*, payment_methods(name)')
           .single();
 
       debugPrint(
-        '✅ Cash-in transaction CREATED with payment method: ${newTransaction['id']}',
+        '✅ Cash-in transaction CREATED with metadata: ${newTransaction['id']}',
       );
       return newTransaction;
     } catch (e) {
@@ -596,6 +593,26 @@ class CommuterDashboardService {
       return sources;
     } catch (e) {
       debugPrint('❌ Error fetching payment sources: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getCommuterName() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('No authenticated user');
+      }
+      final nameData = await _supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', userId)
+          .single();
+
+      debugPrint('✅ Commuter name fetched: ${nameData['first_name']}');
+      return nameData;
+    } catch (e) {
+      debugPrint('❌ Error fetching commuter name: $e');
       rethrow;
     }
   }

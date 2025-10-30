@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class DwPaymentMethodPage extends StatefulWidget {
   final String name;
@@ -26,6 +28,15 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the user profile to get the ID for display
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WalletProvider>(context, listen: false).fetchUserProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +69,18 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
             const SizedBox(height: 40),
             _buildStepIndicator(),
             const SizedBox(height: 30),
-            _buildDetailsCard(),
+            Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                if (provider.isProfileLoading && provider.userProfile == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final userId =
+                    provider.userProfile?['user_id']?.toString() ?? 'N/A';
+
+                return _buildDetailsCard(userId);
+              },
+            ),
             const SizedBox(height: 20),
             _buildPaymentMethodCard(),
             const SizedBox(height: 30),
@@ -116,7 +138,7 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
     );
   }
 
-  Widget _buildDetailsCard() {
+  Widget _buildDetailsCard(String userId) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
@@ -126,7 +148,7 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
       ),
       child: Column(
         children: [
-          _buildDetailRow('User ID:', '12-3456-789'),
+          _buildDetailRow('User ID:', userId),
           _buildDetailRow('Name:', widget.name),
           _buildDetailRow('Email Address:', widget.email),
           _buildDetailRow(
@@ -148,6 +170,8 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
       }
     } else if (label.toLowerCase().contains('name') && value.length > 30) {
       displayedValue = '${value.substring(0, 28)}...';
+    } else if (label.toLowerCase() == 'user id:' && value.length > 18) {
+      displayedValue = '${value.substring(0, 25)}...';
     }
 
     return Padding(
