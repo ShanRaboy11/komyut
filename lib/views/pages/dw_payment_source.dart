@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class DwSourceSelectionPage extends StatefulWidget {
   final String name;
@@ -25,11 +27,6 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   String? _selectedSource;
   bool _agreeToTerms = false;
 
-  final Map<String, List<String>> _paymentSources = {
-    'E-Wallet': ['GCash Bills Pay', 'PayMaya'],
-    'Online Banking': ['BPI', 'BDO', 'Metrobank', 'Landbank'],
-  };
-
   final Map<String, String> _sourceDescriptions = {
     'GCash Bills Pay':
         'Pay manually using GCash Mobile App Bills Payment feature. A PHP10 surcharge may be applied by GCash.',
@@ -39,15 +36,17 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
     'BDO': 'Pay manually via BDO Online Banking. Instructions will be emailed.',
   };
 
-  late List<String> _currentSources;
-
   final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
   void initState() {
     super.initState();
-    _currentSources = _paymentSources[widget.paymentMethod] ?? [];
-    _selectedSource = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      ).fetchPaymentSources(widget.paymentMethod);
+    });
   }
 
   @override
@@ -89,7 +88,22 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
             const SizedBox(height: 40),
             _buildStepIndicator(),
             const SizedBox(height: 30),
-            _buildSourceCard(totalValue, currencyFormat),
+            Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                if (provider.isSourcesLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (provider.sourcesErrorMessage != null) {
+                  return Center(child: Text(provider.sourcesErrorMessage!));
+                }
+                // Pass the fetched data to the build method
+                return _buildSourceCard(
+                  totalValue,
+                  currencyFormat,
+                  provider.paymentSources,
+                );
+              },
+            ),
             const SizedBox(height: 30),
             _buildSendButton(),
           ],
@@ -145,7 +159,11 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
     );
   }
 
-  Widget _buildSourceCard(double totalValue, NumberFormat currencyFormat) {
+  Widget _buildSourceCard(
+    double totalValue,
+    NumberFormat currencyFormat,
+    List<String> sources,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       decoration: BoxDecoration(
@@ -200,17 +218,15 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
                       ),
                       isExpanded: true,
                       icon: Icon(Icons.keyboard_arrow_down, color: _brandColor),
-                      items: [
-                        ..._currentSources.map((String source) {
-                          return DropdownMenuItem<String>(
-                            value: source,
-                            child: Text(
-                              source,
-                              style: GoogleFonts.manrope(fontSize: 15),
-                            ),
-                          );
-                        }),
-                      ],
+                      items: sources.map((String source) {
+                        return DropdownMenuItem<String>(
+                          value: source,
+                          child: Text(
+                            source,
+                            style: GoogleFonts.manrope(fontSize: 15),
+                          ),
+                        );
+                      }).toList(),
                       onChanged: (newValue) {
                         setState(() {
                           _selectedSource = newValue;

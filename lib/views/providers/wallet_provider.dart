@@ -28,6 +28,11 @@ class WalletProvider extends ChangeNotifier {
   bool _isCompletionLoading = false;
   String? _completionErrorMessage;
 
+  // --- State for Payment Sources Flow ---
+  bool _isSourcesLoading = false;
+  String? _sourcesErrorMessage;
+  List<String> _paymentSources = [];
+
   // --- Getters ---
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
@@ -47,6 +52,10 @@ class WalletProvider extends ChangeNotifier {
 
   bool get isCompletionLoading => _isCompletionLoading;
   String? get completionErrorMessage => _completionErrorMessage;
+
+  bool get isSourcesLoading => _isSourcesLoading;
+  String? get sourcesErrorMessage => _sourcesErrorMessage;
+  List<String> get paymentSources => _paymentSources;
 
   // --- Methods ---
 
@@ -169,6 +178,22 @@ class WalletProvider extends ChangeNotifier {
       _isCashInLoading = false;
       notifyListeners();
       return false; // Failure
+    }
+  }
+
+  Future<void> fetchPaymentSources(String type) async {
+    _isSourcesLoading = true;
+    _sourcesErrorMessage = null;
+    _paymentSources = []; // Clear previous results
+    notifyListeners();
+
+    try {
+      _paymentSources = await _dashboardService.getPaymentSourcesByType(type);
+    } catch (e) {
+      _sourcesErrorMessage = 'Failed to load payment sources: ${e.toString()}';
+    } finally {
+      _isSourcesLoading = false;
+      notifyListeners();
     }
   }
 }
