@@ -1,8 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
-class OtcInstructionsPage extends StatelessWidget {
-  const OtcInstructionsPage({super.key});
+class OtcInstructionsPage extends StatefulWidget {
+  final Map<String, dynamic> transaction;
+
+  const OtcInstructionsPage({super.key, required this.transaction});
+
+  @override
+  State<OtcInstructionsPage> createState() => _OtcInstructionsPageState();
+}
+
+class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
+  Future<void> _onDonePressed() async {
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final transactionId = widget.transaction['id'];
+
+    if (transactionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Missing transaction ID.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final success = await provider.completeOtcCashIn(
+      transactionId: transactionId,
+    );
+
+    if (success && mounted) {
+      Navigator.of(context).pushNamed('/payment_success');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.completionErrorMessage ??
+                'Failed to complete transaction.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +75,6 @@ class OtcInstructionsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Text(
               'Over-the-Counter',
               style: GoogleFonts.manrope(
@@ -45,8 +86,6 @@ class OtcInstructionsPage extends StatelessWidget {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-
-            // Steps
             _buildStep(
               iconPath: 'assets/images/step2.png',
               title: 'Step 2',
@@ -75,33 +114,41 @@ class OtcInstructionsPage extends StatelessWidget {
                   'The cashier will process the transaction and load the funds to your wallet. Wait for confirmation before leaving the store.',
             ),
             const SizedBox(height: 50),
-
-            // Done Button
-            Center(
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/payment_success');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandColor,
-                  backgroundColor: brandColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: brandColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                return Center(
+                  child: OutlinedButton(
+                    onPressed: provider.isCompletionLoading
+                        ? null
+                        : _onDonePressed,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 60,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: provider.isCompletionLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Done',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 60,
-                    vertical: 14,
-                  ),
-                ),
-                child: Text(
-                  'Done',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),

@@ -42,6 +42,13 @@ class WalletProvider extends ChangeNotifier {
   String? get cashInErrorMessage => _cashInErrorMessage;
   Map<String, dynamic>? get pendingTransaction => _pendingTransaction;
 
+  // --- FOR COMPLETION FLOW ---
+  bool _isCompletionLoading = false;
+  String? _completionErrorMessage;
+
+  bool get isCompletionLoading => _isCompletionLoading;
+  String? get completionErrorMessage => _completionErrorMessage;
+
   // Method for WalletPage
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
@@ -133,6 +140,31 @@ class WalletProvider extends ChangeNotifier {
     } catch (e) {
       _cashInErrorMessage = 'Error confirming transaction: ${e.toString()}';
       _isCashInLoading = false;
+      notifyListeners();
+      return false; // Failure
+    }
+  }
+
+  // --- FOR OTC COMPLETION ---
+  Future<bool> completeOtcCashIn({required String transactionId}) async {
+    _isCompletionLoading = true;
+    _completionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _dashboardService.completeCashInTransaction(
+        transactionId: transactionId,
+      );
+      // After completion, refresh the main wallet data to show the new balance.
+      // Calling this ensures the balance is up-to-date when the user goes back.
+      await fetchWalletData();
+      _isCompletionLoading = false;
+      notifyListeners();
+      return true; // Success
+    } catch (e) {
+      _completionErrorMessage =
+          'Failed to complete transaction: ${e.toString()}';
+      _isCompletionLoading = false;
       notifyListeners();
       return false; // Failure
     }

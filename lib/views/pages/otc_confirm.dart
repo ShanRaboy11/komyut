@@ -56,7 +56,9 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     );
 
     if (success && mounted) {
-      Navigator.of(context).pushNamed('/otc_instructions');
+      Navigator.of(
+        context,
+      ).pushNamed('/otc_instructions', arguments: widget.transaction);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -72,7 +74,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     final double amountValue = (widget.transaction['amount'] as num).toDouble();
-    final double totalValue = amountValue + 5.00; // Assuming 5.00 fee
+    final double totalValue = amountValue + 5.00;
     final now = DateTime.parse(widget.transaction['created_at']);
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);

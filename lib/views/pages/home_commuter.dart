@@ -107,7 +107,9 @@ class HomeTabNavigator extends StatelessWidget {
                 OtcConfirmationPage(transaction: transaction);
             break;
           case '/otc_instructions':
-            builder = (BuildContext context) => const OtcInstructionsPage();
+            final transaction = settings.arguments as Map<String, dynamic>;
+            builder = (BuildContext context) =>
+                OtcInstructionsPage(transaction: transaction);
             break;
           case '/payment_success':
             builder = (BuildContext context) => const PaymentSuccessPage();

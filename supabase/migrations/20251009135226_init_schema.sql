@@ -356,6 +356,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_a
 CREATE INDEX IF NOT EXISTS idx_verifications_status ON verifications(status);
 
 -- ==== CASH-IN COMPLETION FUNCTION (RPC) ====
+-- This is already safe to re-run because of "OR REPLACE"
 CREATE OR REPLACE FUNCTION complete_otc_cash_in(transaction_id_arg uuid)
 RETURNS void AS $$
 DECLARE
@@ -383,11 +384,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ROW LEVEL SECURITY (RLS) POLICIES FOR TRANSACTIONS ====
--- enable RLS on the table
+-- ==== ROW LEVEL SECURITY (RLS) POLICIES FOR TRANSACTIONS ====
+-- Enable RLS on the table
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
--- allow users to INSERT their own transactions
+-- Allow users to INSERT their own transactions
+DROP POLICY IF EXISTS "Users can insert their own transactions" ON public.transactions;
 CREATE POLICY "Users can insert their own transactions"
 ON public.transactions
 FOR INSERT
@@ -397,7 +399,8 @@ WITH CHECK (
   )
 );
 
--- allow users to VIEW transactions related to their wallet
+-- Allow users to VIEW transactions related to their wallet
+DROP POLICY IF EXISTS "Users can view their own transactions" ON public.transactions;
 CREATE POLICY "Users can view their own transactions"
 ON public.transactions
 FOR SELECT

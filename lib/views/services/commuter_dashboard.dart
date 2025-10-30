@@ -537,4 +537,19 @@ class CommuterDashboardService {
       rethrow;
     }
   }
+
+  Future<void> completeCashInTransaction({
+    required String transactionId,
+  }) async {
+    try {
+      await _supabase.rpc(
+        'complete_otc_cash_in',
+        params: {'transaction_id_arg': transactionId},
+      );
+      debugPrint('✅ Transaction $transactionId completed via RPC.');
+    } catch (e) {
+      debugPrint('❌ Error completing cash-in transaction via RPC: $e');
+      rethrow;
+    }
+  }
 }
