@@ -350,8 +350,62 @@ WHERE d.route_code = r.code;
 -- Add index
 CREATE INDEX idx_drivers_route ON drivers(route_id);
 
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_trips_driver_started_at ON trips(driver_id, started_at);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_verifications_status ON verifications(status);
+
+-- ==== CASH-IN COMPLETION FUNCTION (RPC) ====
+CREATE OR REPLACE FUNCTION complete_otc_cash_in(transaction_id_arg uuid)
+RETURNS void AS $$
+DECLARE
+  trans RECORD;
+BEGIN
+  -- Find the specific transaction that needs to be completed
+  SELECT * INTO trans FROM public.transactions WHERE id = transaction_id_arg FOR UPDATE;
+
+  -- Security check: ensure the transaction exists and is in the correct state
+  IF NOT FOUND OR trans.status <> 'pending' OR trans.type <> 'cash_in' THEN
+    RAISE EXCEPTION 'Transaction not found or not in a completable state.';
+  END IF;
+
+  -- Add the amount to the user's wallet
+  UPDATE public.wallets
+  SET balance = balance + trans.amount
+  WHERE id = trans.wallet_id;
+
+  -- Mark the transaction as completed and set the processing time
+  UPDATE public.transactions
+  SET 
+    status = 'completed',
+    processed_at = now()
+  WHERE id = transaction_id_arg;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ROW LEVEL SECURITY (RLS) POLICIES FOR TRANSACTIONS ====
+-- enable RLS on the table
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+-- allow users to INSERT their own transactions
+CREATE POLICY "Users can insert their own transactions"
+ON public.transactions
+FOR INSERT
+WITH CHECK (
+  auth.uid() = (
+    SELECT user_id FROM profiles WHERE id = initiated_by_profile_id
+  )
+);
+
+-- allow users to VIEW transactions related to their wallet
+CREATE POLICY "Users can view their own transactions"
+ON public.transactions
+FOR SELECT
+USING (
+  auth.uid() = (
+    SELECT p.user_id 
+    FROM profiles p 
+    JOIN wallets w ON p.id = w.owner_profile_id
+    WHERE w.id = transactions.wallet_id
+  )
+);
