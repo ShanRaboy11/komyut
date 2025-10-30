@@ -33,6 +33,15 @@ class WalletProvider extends ChangeNotifier {
   String? get historyErrorMessage => _historyErrorMessage;
   List<Map<String, dynamic>> get fullHistory => _fullHistory;
 
+  // --- FOR CASH-IN FLOW ---
+  bool _isCashInLoading = false;
+  String? _cashInErrorMessage;
+  Map<String, dynamic>? _pendingTransaction;
+
+  bool get isCashInLoading => _isCashInLoading;
+  String? get cashInErrorMessage => _cashInErrorMessage;
+  Map<String, dynamic>? get pendingTransaction => _pendingTransaction;
+
   // Method for WalletPage
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
@@ -76,6 +85,31 @@ class WalletProvider extends ChangeNotifier {
     } finally {
       _isHistoryLoading = false;
       notifyListeners();
+    }
+  }
+
+  // --- METHOD FOR OTC CASH-IN ---
+  Future<bool> createCashInTransaction({
+    required double amount,
+    required String type,
+  }) async {
+    _isCashInLoading = true;
+    _cashInErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _pendingTransaction = await _dashboardService.initiateCashInTransaction(
+        amount: amount,
+        type: type,
+      );
+      _isCashInLoading = false;
+      notifyListeners();
+      return true; // Success
+    } catch (e) {
+      _cashInErrorMessage = 'Error: ${e.toString()}';
+      _isCashInLoading = false;
+      notifyListeners();
+      return false; // Failure
     }
   }
 }

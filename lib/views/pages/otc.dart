@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class OverTheCounterPage extends StatefulWidget {
   const OverTheCounterPage({super.key});
@@ -32,6 +34,38 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
           int.parse(value) > 0;
       _isButtonEnabled = isEnabled;
     });
+  }
+
+  Future<void> _onNextPressed() async {
+    if (!_isButtonEnabled) return;
+
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final amount = double.tryParse(_amountController.text);
+
+    if (amount == null) return;
+
+    final success = await provider.createCashInTransaction(
+      amount: amount,
+      type: 'over_the_counter',
+    );
+
+    if (success && mounted) {
+      // If the transaction was created successfully, navigate to the confirmation page.
+      // We pass the transaction data from the provider.
+      Navigator.of(
+        context,
+      ).pushNamed('/otc_confirmation', arguments: provider.pendingTransaction);
+    } else if (mounted) {
+      // If it failed, show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.cashInErrorMessage ?? 'An unknown error occurred.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -210,36 +244,44 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
   }
 
   Widget _buildNextButton() {
-    return Center(
-      child: OutlinedButton(
-        onPressed: _isButtonEnabled
-            ? () {
-                Navigator.of(context).pushNamed(
-                  '/otc_confirmation',
-                  arguments: _amountController.text,
-                );
-              }
-            : null,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
-          backgroundColor: _isButtonEnabled
-              ? _brandColor.withValues(alpha: 0.1)
-              : Colors.grey.withValues(alpha: 0.1),
-          side: BorderSide(
-            color: _isButtonEnabled
-                ? _brandColor
-                : Colors.grey.withValues(alpha: 0.5),
+    return Consumer<WalletProvider>(
+      builder: (context, provider, child) {
+        return Center(
+          child: OutlinedButton(
+            onPressed: (provider.isCashInLoading || !_isButtonEnabled)
+                ? null
+                : _onNextPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
+              backgroundColor: _isButtonEnabled
+                  ? _brandColor.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.1),
+              side: BorderSide(
+                color: _isButtonEnabled
+                    ? _brandColor
+                    : Colors.grey.withValues(alpha: 0.5),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+            ),
+            child: provider.isCashInLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Next',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
-        ),
-        child: Text(
-          'Next',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      ),
+        );
+      },
     );
   }
 }

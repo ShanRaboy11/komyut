@@ -478,4 +478,44 @@ class CommuterDashboardService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> initiateCashInTransaction({
+    required double amount,
+    required String type, // e.g., 'over_the_counter' or 'digital_wallet'
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated.');
+
+      final profileData = await _supabase
+          .from('profiles')
+          .select('id, wallets!inner(id)')
+          .eq('user_id', userId)
+          .single();
+
+      final profileId = profileData['id'];
+      final walletId = profileData['wallets'][0]['id'];
+
+      if (walletId == null) throw Exception('User wallet not found.');
+
+      final newTransaction = await _supabase
+          .from('transactions')
+          .insert({
+            'wallet_id': walletId,
+            'initiated_by_profile_id': profileId,
+            'amount': amount,
+            'type': 'cash_in',
+            'status': 'pending',
+            'metadata': {'channel': type},
+          })
+          .select()
+          .single();
+
+      debugPrint('✅ Cash-in transaction initiated: ${newTransaction['id']}');
+      return newTransaction;
+    } catch (e) {
+      debugPrint('❌ Error initiating cash-in transaction: $e');
+      rethrow;
+    }
+  }
 }
