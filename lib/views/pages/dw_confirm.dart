@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class DwConfirmationPage extends StatelessWidget {
   final String name;
@@ -28,6 +30,43 @@ class DwConfirmationPage extends StatelessWidget {
       ),
     );
     return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
+  Future<void> _onConfirmPressed(
+    BuildContext context,
+    String transactionCode,
+  ) async {
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final amountValue = double.tryParse(amount);
+
+    if (amountValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid amount format.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final success = await provider.createDigitalWalletTransaction(
+      amount: amountValue,
+      source: source, // Pass the selected source (e.g., 'GCash Bills Pay')
+      transactionCode: transactionCode,
+    );
+
+    if (success && context.mounted) {
+      Navigator.of(context).pushNamed('/dw_success');
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            provider.cashInErrorMessage ?? 'Failed to create transaction.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -99,29 +138,39 @@ class DwConfirmationPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Center(
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/dw_success');
+              child: Consumer<WalletProvider>(
+                builder: (context, provider, child) {
+                  return OutlinedButton(
+                    onPressed: provider.isCashInLoading
+                        ? null
+                        : () => _onConfirmPressed(context, transactionCode),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: provider.isCashInLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Confirm',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                  );
                 },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandColor,
-                  backgroundColor: brandColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: brandColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 50,
-                    vertical: 14,
-                  ),
-                ),
-                child: Text(
-                  'Confirm',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
               ),
             ),
           ],

@@ -143,4 +143,32 @@ class WalletProvider extends ChangeNotifier {
       return false; // Failure
     }
   }
+
+  // --- DIGITAL WALLET TRANSACTION METHOD ---
+  Future<bool> createDigitalWalletTransaction({
+    required double amount,
+    required String source, // The specific source like 'GCash Bills Pay'
+    required String transactionCode,
+  }) async {
+    _isCashInLoading = true;
+    _cashInErrorMessage = null;
+    notifyListeners();
+
+    try {
+      // We re-use the same generic service method, which is great!
+      _pendingTransaction = await _dashboardService.createCashInTransaction(
+        amount: amount,
+        paymentMethodName: source, // Pass the dynamic source from the UI
+        transactionNumber: transactionCode,
+      );
+      _isCashInLoading = false;
+      notifyListeners();
+      return true; // Success
+    } catch (e) {
+      _cashInErrorMessage = 'Error: ${e.toString()}';
+      _isCashInLoading = false;
+      notifyListeners();
+      return false; // Failure
+    }
+  }
 }

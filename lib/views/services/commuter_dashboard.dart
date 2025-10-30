@@ -580,4 +580,23 @@ class CommuterDashboardService {
       rethrow;
     }
   }
+
+  Future<List<String>> getPaymentSourcesByType(String type) async {
+    try {
+      final response = await _supabase
+          .from('payment_methods')
+          .select('name')
+          .eq('type', type) // Filter by 'E-Wallet' or 'Online Banking'
+          .eq('is_active', true); // Only fetch active ones
+
+      // The response is a List<Map<String, dynamic>>, like [{'name': 'GCash'}, {'name': 'PayMaya'}]
+      // We need to convert it to a List<String>.
+      final sources = response.map((item) => item['name'] as String).toList();
+      debugPrint('✅ Fetched ${sources.length} sources for type "$type"');
+      return sources;
+    } catch (e) {
+      debugPrint('❌ Error fetching payment sources: $e');
+      rethrow;
+    }
+  }
 }
