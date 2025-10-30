@@ -27,15 +27,6 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   String? _selectedSource;
   bool _agreeToTerms = false;
 
-  final Map<String, String> _sourceDescriptions = {
-    'GCash Bills Pay':
-        'Pay manually using GCash Mobile App Bills Payment feature. A PHP10 surcharge may be applied by GCash.',
-    'PayMaya':
-        'Pay manually using the PayMaya app. A surcharge may be applied.',
-    'BPI': 'Pay manually via BPI Online. Instructions will be emailed.',
-    'BDO': 'Pay manually via BDO Online Banking. Instructions will be emailed.',
-  };
-
   final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
@@ -164,6 +155,17 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
     NumberFormat currencyFormat,
     List<String> sources,
   ) {
+    String descriptionText = '';
+    if (_selectedSource != null) {
+      if (widget.paymentMethod == 'E-Wallet') {
+        descriptionText =
+            'Pay manually using the $_selectedSource. Instructions will be emailed. A surcharge may be applied.';
+      } else if (widget.paymentMethod == 'Online Banking') {
+        descriptionText =
+            'Pay manually via $_selectedSource. Instructions will be emailed.';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       decoration: BoxDecoration(
@@ -240,9 +242,7 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            _selectedSource != null
-                ? (_sourceDescriptions[_selectedSource!] ?? '')
-                : '',
+            descriptionText,
             style: GoogleFonts.nunito(
               fontSize: 13,
               color: Colors.blue.shade800,
