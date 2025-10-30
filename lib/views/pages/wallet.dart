@@ -64,14 +64,18 @@ class _WalletPageState extends State<WalletPage>
     final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final total = amount + 5.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
-    // Read the channel from metadata
-    final channel =
-        (transaction['metadata'] as Map<String, dynamic>?)?['channel'] ??
-        transaction['type'];
-    final channelDisplay = (channel as String)
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+
+    // --- FIX: Read the payment method name from the joined table data ---
+    // The data structure is now: { ..., "payment_methods": { "name": "Over-the-Counter" } }
+    final paymentMethod = transaction['payment_methods'];
+    final channelDisplay =
+        (paymentMethod != null && paymentMethod['name'] != null)
+        ? paymentMethod['name']
+        // Fallback for older transactions or different types
+        : (transaction['type'] as String)
+              .split('_')
+              .map((word) => word[0].toUpperCase() + word.substring(1))
+              .join(' ');
 
     showDialog(
       context: context,
@@ -94,7 +98,10 @@ class _WalletPageState extends State<WalletPage>
               ).format(DateTime.parse(transaction['created_at'])),
             ),
             _buildDetailRow('Amount:', currencyFormat.format(amount)),
-            _buildDetailRow('Channel:', channelDisplay),
+            _buildDetailRow(
+              'Channel:',
+              channelDisplay,
+            ), // Now uses the corrected value
           ],
           totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
           transactionCode:
@@ -664,7 +671,7 @@ class _WalletPageState extends State<WalletPage>
               ),
               const SizedBox(height: 12),
               Text(
-                '₱ ${currencyFormat.format(provider.balance)}',
+                '₱${currencyFormat.format(provider.balance)}',
                 style: GoogleFonts.manrope(
                   color: Colors.white,
                   fontSize: 34,
@@ -862,14 +869,16 @@ class _WalletPageState extends State<WalletPage>
     bool isLast = false,
   }) {
     final bool isCredit = (transaction['amount'] as num) > 0;
-    // --- FIX: Read from metadata for specific channel name ---
-    final channel =
-        (transaction['metadata'] as Map<String, dynamic>?)?['channel'] ??
-        transaction['type'];
-    final String title = (channel as String)
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+
+    // --- FIX: Get the title from the new payment_methods data structure ---
+    final paymentMethod = transaction['payment_methods'];
+    final String title =
+        (paymentMethod != null && paymentMethod['name'] != null)
+        ? paymentMethod['name']
+        : (transaction['type'] as String)
+              .split('_')
+              .map((word) => word[0].toUpperCase() + word.substring(1))
+              .join(' ');
 
     final String amount = NumberFormat.currency(
       locale: 'en_PH',

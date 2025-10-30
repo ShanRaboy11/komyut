@@ -48,6 +48,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     final total = amount + 5.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
+    // --- FIX: Read the payment method name from the joined table data ---
+    final paymentMethod = transaction['payment_methods'];
+    final channelDisplay =
+        (paymentMethod != null && paymentMethod['name'] != null)
+        ? paymentMethod['name'] as String
+        // Fallback for older transactions or different types
+        : (transaction['type'] as String)
+              .split('_')
+              .map((e) => e[0].toUpperCase() + e.substring(1))
+              .join(' ');
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -71,12 +82,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             _buildDetailRow('Amount:', currencyFormat.format(amount)),
             _buildDetailRow(
               'Channel:',
-              (transaction['type'] as String?)
-                      ?.split('_')
-                      .map((e) => e[0].toUpperCase() + e.substring(1))
-                      .join(' ') ??
-                  'N/A',
-            ),
+              channelDisplay,
+            ), // Now uses the corrected value
           ],
           totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
           transactionCode:
@@ -337,10 +344,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     bool isLast = false,
   }) {
     final bool isCredit = (transaction['amount'] as num) >= 0;
-    final String title = (transaction['type'] as String)
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+
+    // --- FIX: Get title from the new data structure ---
+    final paymentMethod = transaction['payment_methods'];
+    final String title =
+        (paymentMethod != null && paymentMethod['name'] != null)
+        ? paymentMethod['name']
+        : (transaction['type'] as String)
+              .split('_')
+              .map((word) => word[0].toUpperCase() + word.substring(1))
+              .join(' ');
+
     final String amount = NumberFormat.currency(
       locale: 'en_PH',
       symbol: '₱',

@@ -97,7 +97,7 @@ class WalletProvider extends ChangeNotifier {
   // --- THIS IS THE CORRECTED METHOD ---
   Future<bool> createOtcTransaction({
     required double amount,
-    required String transactionCode, // It now accepts the code
+    required String transactionCode,
   }) async {
     _isCashInLoading = true;
     _cashInErrorMessage = null;
@@ -106,8 +106,9 @@ class WalletProvider extends ChangeNotifier {
     try {
       _pendingTransaction = await _dashboardService.createCashInTransaction(
         amount: amount,
-        channel: 'over_the_counter',
-        transactionNumber: transactionCode, // And passes it to the service
+        // The name must exactly match the 'name' column in your payment_methods table
+        paymentMethodName: 'Over-the-Counter',
+        transactionNumber: transactionCode,
       );
       _isCashInLoading = false;
       notifyListeners();

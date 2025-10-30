@@ -242,14 +242,12 @@ class CommuterDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get wallet_id
       final wallet = await _supabase
           .from('wallets')
           .select('id')
@@ -258,9 +256,9 @@ class CommuterDashboardService {
 
       if (wallet == null) return [];
 
-      // Get recent transactions
       final transactions = await _supabase
           .from('transactions')
+          // --- FIX: Join with payment_methods to get the method name ---
           .select('''
             id,
             transaction_number,
@@ -268,7 +266,8 @@ class CommuterDashboardService {
             amount,
             status,
             created_at,
-            processed_at
+            processed_at,
+            payment_methods ( name ) 
           ''')
           .eq('wallet_id', wallet['id'])
           .order('created_at', ascending: false)
@@ -440,9 +439,17 @@ class CommuterDashboardService {
 
       final transactions = await _supabase
           .from('transactions')
-          .select(
-            'id, transaction_number, type, amount, status, created_at, processed_at',
-          )
+          // --- FIX: Join with payment_methods here as well ---
+          .select('''
+              id, 
+              transaction_number, 
+              type, 
+              amount, 
+              status, 
+              created_at, 
+              processed_at,
+              payment_methods ( name )
+            ''')
           .eq('wallet_id', wallet['id'])
           .order('created_at', ascending: false);
 
@@ -515,13 +522,14 @@ class CommuterDashboardService {
 
   Future<Map<String, dynamic>> createCashInTransaction({
     required double amount,
-    required String channel,
-    required String transactionNumber, // The app will now provide the code
+    required String paymentMethodName, // Changed from 'channel' for clarity
+    required String transactionNumber,
   }) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated.');
 
+      // 1. Get wallet and profile IDs (existing logic)
       final profileData = await _supabase
           .from('profiles')
           .select('id, wallets!inner(id)')
@@ -530,10 +538,21 @@ class CommuterDashboardService {
 
       final profileId = profileData['id'];
       final walletId = profileData['wallets'][0]['id'];
-
       if (walletId == null) throw Exception('User wallet not found.');
 
-      // Insert the new transaction with the provided transaction number
+      // 2. Get the ID of the payment method from its name
+      final paymentMethodData = await _supabase
+          .from('payment_methods')
+          .select('id')
+          .eq('name', paymentMethodName)
+          .maybeSingle();
+
+      if (paymentMethodData == null) {
+        throw Exception('Payment method "$paymentMethodName" not found.');
+      }
+      final paymentMethodId = paymentMethodData['id'];
+
+      // 3. Insert the new transaction with the correct payment_method_id
       final newTransaction = await _supabase
           .from('transactions')
           .insert({
@@ -542,14 +561,19 @@ class CommuterDashboardService {
             'amount': amount,
             'type': 'cash_in',
             'status': 'pending',
-            'metadata': {'channel': channel},
-            'transaction_number':
-                transactionNumber, // We are now saving the code from the app
+            'transaction_number': transactionNumber,
+            'payment_method_id':
+                paymentMethodId, // This is the new, correct way
+            // We no longer need to store the channel in metadata
           })
-          .select()
+          .select(
+            '*, payment_methods(name)',
+          ) // Also fetch the name for the return value
           .single();
 
-      debugPrint('✅ Cash-in transaction CREATED: ${newTransaction['id']}');
+      debugPrint(
+        '✅ Cash-in transaction CREATED with payment method: ${newTransaction['id']}',
+      );
       return newTransaction;
     } catch (e) {
       debugPrint('❌ Error creating cash-in transaction: $e');
