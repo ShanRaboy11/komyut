@@ -64,6 +64,14 @@ class _WalletPageState extends State<WalletPage>
     final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final total = amount + 5.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+    // Read the channel from metadata
+    final channel =
+        (transaction['metadata'] as Map<String, dynamic>?)?['channel'] ??
+        transaction['type'];
+    final channelDisplay = (channel as String)
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
 
     showDialog(
       context: context,
@@ -86,7 +94,7 @@ class _WalletPageState extends State<WalletPage>
               ).format(DateTime.parse(transaction['created_at'])),
             ),
             _buildDetailRow('Amount:', currencyFormat.format(amount)),
-            _buildDetailRow('Channel:', transaction['type'] ?? 'N/A'),
+            _buildDetailRow('Channel:', channelDisplay),
           ],
           totalRow: _buildDetailRow('Total:', currencyFormat.format(total)),
           transactionCode:
@@ -859,10 +867,15 @@ class _WalletPageState extends State<WalletPage>
     bool isLast = false,
   }) {
     final bool isCredit = (transaction['amount'] as num) > 0;
-    final String title = (transaction['type'] as String)
+    // Get the specific channel from metadata, fallback to the main type
+    final channel =
+        (transaction['metadata'] as Map<String, dynamic>?)?['channel'] ??
+        transaction['type'];
+    final String title = (channel as String)
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
+
     final String amount = NumberFormat.currency(
       locale: 'en_PH',
       symbol: '₱',
