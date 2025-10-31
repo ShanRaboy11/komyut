@@ -93,7 +93,11 @@ class _WalletPageState extends State<WalletPage>
     );
 
     if (type == 'token_redemption') {
-      totalRow = _buildDetailRow('Total:', currencyFormat.format(amount));
+      totalRow = _buildDetailRow(
+        'Amount:',
+        currencyFormat.format(amount),
+        isTotal: true,
+      );
     } else if (type == 'cash_in') {
       details.add(_buildDetailRow('Amount:', currencyFormat.format(amount)));
 
@@ -118,9 +122,17 @@ class _WalletPageState extends State<WalletPage>
       } else {
         total += 10.0;
       }
-      totalRow = _buildDetailRow('Total:', currencyFormat.format(total));
+      totalRow = _buildDetailRow(
+        'Total:',
+        currencyFormat.format(total),
+        isTotal: true,
+      );
     } else {
-      totalRow = _buildDetailRow('Amount:', currencyFormat.format(amount));
+      totalRow = _buildDetailRow(
+        'Amount:',
+        currencyFormat.format(amount),
+        isTotal: true,
+      );
     }
 
     showDialog(
@@ -286,9 +298,11 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildDetailRow(String label, dynamic value) {
+  Widget _buildDetailRow(String label, dynamic value, {bool isTotal = false}) {
     final isValueWidget = value is Widget;
-    final isTotal = (label == 'Total:' || label == 'Equivalent:');
+
+    final bool shouldBeBold =
+        isTotal || (label == 'Total:' || label == 'Equivalent:');
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -299,8 +313,8 @@ class _WalletPageState extends State<WalletPage>
             label,
             style: GoogleFonts.nunito(
               fontSize: 15,
-              color: isTotal ? Colors.black87 : Colors.grey[600],
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: shouldBeBold ? Colors.black87 : Colors.grey[600],
+              fontWeight: shouldBeBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           if (isValueWidget)
@@ -311,7 +325,7 @@ class _WalletPageState extends State<WalletPage>
               style: GoogleFonts.manrope(
                 fontSize: 15,
                 color: Colors.black87,
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+                fontWeight: shouldBeBold ? FontWeight.bold : FontWeight.w600,
               ),
             ),
         ],

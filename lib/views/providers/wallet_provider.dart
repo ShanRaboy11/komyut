@@ -179,6 +179,7 @@ class WalletProvider extends ChangeNotifier {
         payerName: payerName,
         payerEmail: payerEmail,
       );
+      await fetchWalletData();
       _isCashInLoading = false;
       notifyListeners();
       return true; // Success
