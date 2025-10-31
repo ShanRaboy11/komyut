@@ -76,11 +76,11 @@ class WalletProvider extends ChangeNotifier {
         _dashboardService.getWalletBalance(),
         _dashboardService.getWheelTokens(),
         _dashboardService.getRecentTransactions(),
-        _dashboardService.getTokenHistory(),
+        _dashboardService.getRecentTokens(),
         _dashboardService.getFareExpensesWeekly(),
       ]);
-      _balance = results[0] as double;
-      _wheelTokens = results[1] as double;
+      _balance = (results[0] as num).toDouble();
+      _wheelTokens = (results[1] as num).toDouble();
       _recentTransactions = results[2] as List<Map<String, dynamic>>;
       _recentTokenHistory = results[3] as List<Map<String, dynamic>>;
       _fareExpenses = results[4] as Map<String, double>;
@@ -101,7 +101,7 @@ class WalletProvider extends ChangeNotifier {
       if (type == HistoryType.transactions) {
         _fullHistory = await _dashboardService.getAllTransactions();
       } else {
-        _fullHistory = await _dashboardService.getAllTokenHistory();
+        _fullHistory = await _dashboardService.getAllTokens();
       }
     } catch (e) {
       _historyErrorMessage = 'Failed to load history: $e';

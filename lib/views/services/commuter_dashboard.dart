@@ -242,7 +242,6 @@ class CommuterDashboardService {
           .select('id')
           .eq('user_id', userId)
           .single();
-
       final wallet = await _supabase
           .from('wallets')
           .select('id')
@@ -253,16 +252,9 @@ class CommuterDashboardService {
 
       final transactions = await _supabase
           .from('transactions')
-          .select('''
-            id,
-            transaction_number,
-            type,
-            amount,
-            status,
-            created_at,
-            processed_at,
-            payment_methods ( name ) 
-          ''')
+          .select(
+            'id, transaction_number, type, amount, status, created_at, processed_at, payment_methods(name)',
+          )
           .eq('wallet_id', wallet['id'])
           .order('created_at', ascending: false)
           .limit(10);
@@ -273,6 +265,10 @@ class CommuterDashboardService {
       debugPrint('❌ Error fetching recent transactions: $e');
       return [];
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getRecentTokens() async {
+    return getAllTokens(limit: 10);
   }
 
   /// Get total trips count
@@ -407,13 +403,7 @@ class CommuterDashboardService {
       final transactions = await _supabase
           .from('transactions')
           .select('''
-              id, 
-              transaction_number, 
-              type, 
-              amount, 
-              status, 
-              created_at, 
-              processed_at,
+              id, transaction_number, type, amount, status, created_at, processed_at,
               payment_methods ( name )
             ''')
           .eq('wallet_id', wallet['id'])
@@ -427,7 +417,7 @@ class CommuterDashboardService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAllTokenHistory() async {
+  Future<List<Map<String, dynamic>>> getAllTokens({int? limit}) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
@@ -437,17 +427,53 @@ class CommuterDashboardService {
           .select('id')
           .eq('user_id', userId)
           .single();
-
-      final tokenHistory = await _supabase
-          .from('token_transactions')
-          .select('id, type, amount, created_at')
+      final commuter = await _supabase
+          .from('commuters')
+          .select('id')
           .eq('profile_id', profile['id'])
+          .single();
+      final commuterId = commuter['id'];
+
+      var query = _supabase
+          .from('points_transactions')
+          .select('''
+              change,
+              reason,
+              created_at,
+              transactions (
+                  transaction_number
+              )
+          ''')
+          .eq('commuter_id', commuterId)
           .order('created_at', ascending: false);
 
-      debugPrint('✅ All token history fetched: ${tokenHistory.length}');
-      return tokenHistory;
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+
+      final response = await query;
+
+      final mappedHistory = response.map((item) {
+        final transactionData = item['transactions'] as Map<String, dynamic>?;
+
+        String type =
+            item['reason'] as String? ??
+            ((item['change'] as num) < 0 ? 'redemption' : 'reward');
+
+        return {
+          'amount': item['change'],
+          'type': type,
+          'created_at': item['created_at'],
+          'transaction_number': transactionData?['transaction_number'],
+        };
+      }).toList();
+
+      debugPrint(
+        '✅ Fetched ${mappedHistory.length} token records from points_transactions.',
+      );
+      return mappedHistory;
     } catch (e) {
-      debugPrint('❌ Error fetching all token history: $e');
+      debugPrint('❌ Error fetching token history from points_transactions: $e');
       rethrow;
     }
   }
@@ -601,41 +627,6 @@ class CommuterDashboardService {
     } catch (e) {
       debugPrint('❌ Error redeeming tokens: $e');
       rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getTokenHistory() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return [];
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id, commuters!inner(id)')
-          .eq('user_id', userId)
-          .single();
-      final commuterId = profile['commuters'][0]['id'];
-
-      if (commuterId == null) return [];
-
-      final tokenHistory = await _supabase
-          .from('points_transactions')
-          .select('id, change, reason, created_at')
-          .eq('commuter_id', commuterId)
-          .order('created_at', ascending: false)
-          .limit(10);
-
-      return tokenHistory.map((item) {
-        return {
-          'id': item['id'],
-          'amount': item['change'],
-          'type': item['reason'],
-          'created_at': item['created_at'],
-        };
-      }).toList();
-    } catch (e) {
-      debugPrint('❌ Error fetching token history: $e');
-      return [];
     }
   }
 }

@@ -48,12 +48,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
-    final String modalTitle =
-        '${type.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')} Transaction';
+    String modalTitle = type
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+
+    if (type != 'token_redemption') {
+      modalTitle += ' Transaction';
+    }
 
     List<Widget> details = [];
-    double total = amount;
-    String totalLabel = 'Amount:';
+    Widget totalRow;
 
     details.add(
       _buildDetailRow(
@@ -69,9 +74,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         DateFormat('hh:mm a').format(DateTime.parse(transaction['created_at'])),
       ),
     );
-    details.add(_buildDetailRow('Amount:', currencyFormat.format(amount)));
 
-    if (type == 'cash_in') {
+    if (type == 'token_redemption') {
+      totalRow = _buildDetailRow('Total:', currencyFormat.format(amount));
+    } else if (type == 'cash_in') {
+      details.add(_buildDetailRow('Amount:', currencyFormat.format(amount)));
+
       final paymentMethod = transaction['payment_methods'];
       final channelDisplay =
           (paymentMethod != null && paymentMethod['name'] != null)
@@ -87,14 +95,15 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         ),
       );
 
+      double total = amount;
       if (channelDisplay == 'Over-the-Counter') {
-        total = amount + 5.0;
+        total += 5.0;
       } else {
-        total = amount + 10.0;
+        total += 10.0;
       }
-      totalLabel = 'Total:';
-    } else if (type == 'points_redemption') {
-      totalLabel = 'Equivalent:';
+      totalRow = _buildDetailRow('Total:', currencyFormat.format(total));
+    } else {
+      totalRow = _buildDetailRow('Amount:', currencyFormat.format(amount));
     }
 
     showDialog(
@@ -105,7 +114,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           context: dialogContext,
           title: modalTitle,
           details: details,
-          totalRow: _buildDetailRow(totalLabel, currencyFormat.format(total)),
+          totalRow: totalRow,
           transactionCode:
               transaction['transaction_number'] ?? _generateTransactionCode(),
         );
@@ -113,12 +122,21 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     );
   }
 
-  void _showTokenRedemptionModal(
+  void _showTokenDetailModal(
     BuildContext context,
     Map<String, dynamic> tokenData,
   ) {
     final amount = (tokenData['amount'] as num?)?.toDouble() ?? 0.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
+    final String type = (tokenData['type'] as String?) ?? 'reward';
+    final String modalTitle = type == 'redemption'
+        ? 'Token Redemption'
+        : 'Token Reward';
+
+    final String transactionCode =
+        tokenData['transaction_number'] as String? ??
+        _generateTransactionCode();
 
     showDialog(
       context: context,
@@ -126,7 +144,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,
-          title: 'Token Redemption',
+          title: modalTitle,
           details: [
             _buildDetailRow(
               'Date:',
@@ -148,7 +166,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   Image.asset('assets/images/wheel token.png', height: 16),
                   const SizedBox(width: 6),
                   Text(
-                    amount.toStringAsFixed(1),
+                    amount.abs().toStringAsFixed(1),
                     style: GoogleFonts.manrope(
                       fontSize: 15,
                       color: Colors.black87,
@@ -163,7 +181,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             'Equivalent:',
             currencyFormat.format(amount.abs()),
           ),
-          transactionCode: _generateTransactionCode(),
+          transactionCode: transactionCode,
         );
       },
     );
@@ -431,19 +449,19 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     Map<String, dynamic> tokenData, {
     bool isLast = false,
   }) {
-    final bool isCredit = (tokenData['amount'] as num) >= 0;
+    final bool isCredit = (tokenData['amount'] as num) > 0;
     final String title = (tokenData['type'] as String) == 'redemption'
         ? 'Token Redemption'
-        : 'Trip Reward';
+        : 'Token Reward';
     final double amount = (tokenData['amount'] as num).toDouble();
     final String date = DateFormat(
       'MM/d/yy hh:mm a',
     ).format(DateTime.parse(tokenData['created_at']));
 
     return InkWell(
-      onTap: () => _showTokenRedemptionModal(context, tokenData),
+      onTap: () => _showTokenDetailModal(context, tokenData),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.only(top: 16, bottom: 16),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(

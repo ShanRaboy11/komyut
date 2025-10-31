@@ -6,10 +6,23 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 
-class TokenConfirmationPage extends StatelessWidget {
+class TokenConfirmationPage extends StatefulWidget {
   final String tokenAmount;
 
   const TokenConfirmationPage({super.key, required this.tokenAmount});
+
+  @override
+  State<TokenConfirmationPage> createState() => _TokenConfirmationPageState();
+}
+
+class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
+  late final String transactionCode;
+
+  @override
+  void initState() {
+    super.initState();
+    transactionCode = _generateTransactionCode();
+  }
 
   String _generateTransactionCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -23,12 +36,9 @@ class TokenConfirmationPage extends StatelessWidget {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  Future<void> _onConfirmPressed(
-    BuildContext context,
-    String transactionCode,
-  ) async {
+  Future<void> _onConfirmPressed(BuildContext context) async {
     final provider = Provider.of<WalletProvider>(context, listen: false);
-    final amountValue = double.tryParse(tokenAmount);
+    final amountValue = double.tryParse(widget.tokenAmount);
 
     if (amountValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,8 +76,7 @@ class TokenConfirmationPage extends StatelessWidget {
     final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
-    final double tokenValue = double.tryParse(tokenAmount) ?? 0.0;
-    final transactionCode = _generateTransactionCode();
+    final double tokenValue = double.tryParse(widget.tokenAmount) ?? 0.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String equivalentValue = currencyFormat.format(tokenValue);
     final Color brandColor = const Color(0xFF8E4CB6);
@@ -112,7 +121,7 @@ class TokenConfirmationPage extends StatelessWidget {
               context: context,
               date: date,
               time: time,
-              tokenAmount: tokenAmount,
+              tokenAmount: widget.tokenAmount,
               equivalentValue: equivalentValue,
               transactionCode: transactionCode,
               brandColor: brandColor,
@@ -131,7 +140,7 @@ class TokenConfirmationPage extends StatelessWidget {
                   return OutlinedButton(
                     onPressed: provider.isCompletionLoading
                         ? null
-                        : () => _onConfirmPressed(context, transactionCode),
+                        : () => _onConfirmPressed(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: brandColor,
                       backgroundColor: brandColor.withValues(alpha: 0.1),
@@ -251,9 +260,7 @@ class TokenConfirmationPage extends StatelessWidget {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(
-                context,
-              ).popUntil((route) => route.settings.name == '/wallet'),
+              onTap: () => Navigator.of(context).pop(),
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(
