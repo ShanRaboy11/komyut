@@ -64,3 +64,12 @@ CREATE POLICY "Operators: self insert"
 ON operators
 FOR INSERT
 WITH CHECK (profile_id = auth.uid());
+
+ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow authenticated users to read payment methods" ON public.payment_methods;
+CREATE POLICY "Allow authenticated users to read payment methods"
+ON public.payment_methods
+FOR SELECT
+TO authenticated
+USING (true);

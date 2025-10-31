@@ -1,12 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+DROP TYPE IF EXISTS transaction_type CASCADE;
+CREATE TYPE transaction_type AS ENUM (
+  'cash_in',
+  'cash_out',
+  'fare_payment',
+  'token_redemption',
+  'driver_payout',
+  'operator_payout'
+);
+
 CREATE TYPE user_role AS ENUM ('admin','commuter','driver','operator');
 CREATE TYPE commuter_category AS ENUM ('regular','senior','student','pwd');
 CREATE TYPE report_category AS ENUM ('vehicle','driver','traffic','lost_item','safety_security','app','miscellaneous','route');
 CREATE TYPE report_status AS ENUM ('open','in_review','resolved','dismissed','closed');
 CREATE TYPE report_severity AS ENUM ('low','medium','high');
 CREATE TYPE trip_status AS ENUM ('ongoing','completed','cancelled');
-CREATE TYPE transaction_type AS ENUM ('cash_in','cash_out','fare_payment','points_redemption','driver_payout','operator_payout');
 CREATE TYPE transaction_status AS ENUM ('pending','completed','failed');
 CREATE TYPE notification_type AS ENUM ('trip','wallet','rewards','verification','report','system');
 CREATE TYPE verification_status AS ENUM ('pending','approved','rejected','lacking');
@@ -105,7 +114,7 @@ CREATE TABLE commuters (
   category commuter_category NOT NULL DEFAULT 'regular',
   attachment_id uuid REFERENCES attachments(id) ON DELETE SET NULL,
   id_verified boolean DEFAULT false,
-  wheel_tokens integer DEFAULT 0 CHECK (wheel_tokens >= 0),
+  wheel_tokens numeric(10, 2) DEFAULT 0 CHECK (wheel_tokens >= 0),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -166,13 +175,6 @@ BEFORE UPDATE ON trips
 FOR EACH ROW
 EXECUTE FUNCTION komyut_update_timestamp();
 
-CREATE OR REPLACE FUNCTION komyut_generate_transaction_number()
-RETURNS text AS $$
-BEGIN
-  RETURN concat('EXCHAND-', to_char(now(),'YYYYMMDDHH24MISS'), '-', substr(md5(gen_random_uuid()::text),1,6));
-END;
-$$ LANGUAGE plpgsql;
-
 -- Wallets
 CREATE TABLE wallets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -191,7 +193,7 @@ EXECUTE FUNCTION komyut_update_timestamp();
 
 CREATE TABLE transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  transaction_number text UNIQUE DEFAULT komyut_generate_transaction_number(),
+  transaction_number text UNIQUE,
   wallet_id uuid REFERENCES wallets(id) ON DELETE SET NULL,
   initiated_by_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
   type transaction_type NOT NULL,
@@ -226,10 +228,10 @@ WHERE status = 'ongoing';
 CREATE TABLE points_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   commuter_id uuid REFERENCES commuters(id) ON DELETE CASCADE,
-  change integer NOT NULL, 
+  change numeric(10, 2) NOT NULL, 
   reason text,
   related_transaction_id uuid REFERENCES transactions(id) ON DELETE SET NULL,
-  balance_after integer,
+  balance_after numeric(10, 2),
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
 );
@@ -350,8 +352,124 @@ WHERE d.route_code = r.code;
 -- Add index
 CREATE INDEX idx_drivers_route ON drivers(route_id);
 
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_trips_driver_started_at ON trips(driver_id, started_at);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_verifications_status ON verifications(status);
+
+CREATE OR REPLACE FUNCTION complete_otc_cash_in(transaction_id_arg uuid)
+RETURNS void AS $$
+DECLARE
+  trans RECORD;
+BEGIN
+  SELECT * INTO trans FROM public.transactions WHERE id = transaction_id_arg FOR UPDATE;
+
+  IF NOT FOUND OR trans.status <> 'pending' OR trans.type <> 'cash_in' THEN
+    RAISE EXCEPTION 'Transaction not found or not in a completable state.';
+  END IF;
+
+  UPDATE public.wallets
+  SET balance = balance + trans.amount
+  WHERE id = trans.wallet_id;
+
+  UPDATE public.transactions
+  SET 
+    status = 'completed',
+    processed_at = now()
+  WHERE id = transaction_id_arg;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TYPE payment_method_type AS ENUM ('Over-the-Counter', 'E-Wallet', 'Online Banking');
+
+CREATE TABLE payment_methods (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    type payment_method_type NOT NULL,
+    is_active boolean DEFAULT true,
+    description text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_payment_methods_type ON payment_methods(type);
+
+ALTER TABLE public.transactions
+  DROP COLUMN IF EXISTS payment_method_id,
+  ADD COLUMN payment_method_id uuid REFERENCES payment_methods(id),
+  ALTER COLUMN transaction_number DROP DEFAULT;
+
+DROP FUNCTION IF EXISTS public.komyut_generate_transaction_number();
+
+INSERT INTO public.payment_methods (name, type) VALUES
+('Over-the-Counter', 'Over-the-Counter'),
+('GCash', 'E-Wallet'),
+('PayMaya', 'E-Wallet'),
+('BPI', 'Online Banking'),
+('BDO', 'Online Banking'),
+('Metrobank', 'Online Banking'),
+('Landbank', 'Online Banking');
+
+CREATE OR REPLACE FUNCTION redeem_wheel_tokens(
+    p_amount_to_redeem numeric,
+    p_profile_id uuid,
+    p_transaction_number text
+)
+RETURNS void AS $$
+DECLARE
+    v_commuter_id uuid;
+    v_wallet_id uuid;
+    v_current_tokens numeric;
+    v_new_transaction_id uuid;
+BEGIN
+    SELECT c.id, w.id INTO v_commuter_id, v_wallet_id FROM profiles p JOIN commuters c ON p.id = c.profile_id JOIN wallets w ON p.id = w.owner_profile_id WHERE p.id = p_profile_id;
+    IF v_commuter_id IS NULL OR v_wallet_id IS NULL THEN RAISE EXCEPTION 'Commuter or wallet not found'; END IF;
+    SELECT wheel_tokens INTO v_current_tokens FROM commuters WHERE id = v_commuter_id FOR UPDATE;
+    IF v_current_tokens < p_amount_to_redeem THEN RAISE EXCEPTION 'Insufficient wheel tokens'; END IF;
+    
+    UPDATE commuters SET wheel_tokens = wheel_tokens - p_amount_to_redeem WHERE id = v_commuter_id;
+    UPDATE wallets SET balance = balance + p_amount_to_redeem WHERE id = v_wallet_id;
+    
+    INSERT INTO transactions (wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, processed_at)
+    VALUES (v_wallet_id, p_profile_id, 'token_redemption', p_amount_to_redeem, 'completed', p_transaction_number, now())
+    RETURNING id INTO v_new_transaction_id;
+
+    INSERT INTO points_transactions (commuter_id, change, reason, related_transaction_id, balance_after)
+    VALUES (v_commuter_id, -p_amount_to_redeem, 'redemption', v_new_transaction_id, (v_current_tokens - p_amount_to_redeem));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses();
+
+CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses()
+RETURNS TABLE(day_name text, total numeric) AS $$
+BEGIN
+  RETURN QUERY
+  
+  WITH days AS (
+    SELECT 
+      to_char(d, 'Dy') as day_name_short, 
+      d::date as full_date
+    FROM generate_series(
+      date_trunc('day', now() - interval '6 days'),
+      date_trunc('day', now()),
+      '1 day'
+    ) as d
+  )
+  
+  SELECT
+    d.day_name_short,
+    COALESCE(SUM(t.amount), 0) AS total
+  FROM days d
+  LEFT JOIN transactions t ON date_trunc('day', t.created_at) = d.full_date
+    AND t.type = 'fare_payment'
+    AND t.wallet_id = (
+      SELECT w.id FROM wallets w
+      JOIN profiles p ON w.owner_profile_id = p.id
+      WHERE p.user_id = auth.uid()
+      LIMIT 1
+    )
+  GROUP BY d.day_name_short, d.full_date
+  ORDER BY d.full_date;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

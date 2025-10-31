@@ -6,23 +6,22 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 
-class OtcConfirmationPage extends StatefulWidget {
-  final String amount;
+class TokenConfirmationPage extends StatefulWidget {
+  final String tokenAmount;
 
-  const OtcConfirmationPage({super.key, required this.amount});
+  const TokenConfirmationPage({super.key, required this.tokenAmount});
 
   @override
-  State<OtcConfirmationPage> createState() => _OtcConfirmationPageState();
+  State<TokenConfirmationPage> createState() => _TokenConfirmationPageState();
 }
 
-class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
-  late String _transactionCode;
+class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
+  late final String transactionCode;
 
   @override
   void initState() {
     super.initState();
-    // The K0MYUT code is generated once, here.
-    _transactionCode = _generateTransactionCode();
+    transactionCode = _generateTransactionCode();
   }
 
   String _generateTransactionCode() {
@@ -37,38 +36,34 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  // This is where the transaction is finally created in the database.
-  Future<void> _onConfirmPressed() async {
+  Future<void> _onConfirmPressed(BuildContext context) async {
     final provider = Provider.of<WalletProvider>(context, listen: false);
-    final amountValue = double.tryParse(widget.amount);
+    final amountValue = double.tryParse(widget.tokenAmount);
 
     if (amountValue == null) {
-      // Handle potential parsing error, though it shouldn't happen with the text field formatters
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid amount format.'),
+          content: Text('Invalid token amount.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    // FIX: Calling the correct method name from the provider
-    final success = await provider.createOtcTransaction(
+    final success = await provider.redeemWheelTokens(
       amount: amountValue,
-      transactionCode: _transactionCode,
+      transactionCode: transactionCode,
     );
 
-    if (success && mounted) {
-      // Pass the newly created transaction data from the provider to the next screen
+    if (success && context.mounted) {
       Navigator.of(
         context,
-      ).pushNamed('/otc_instructions', arguments: provider.pendingTransaction);
-    } else if (mounted) {
+      ).pushNamedAndRemoveUntil('/token_success', (route) => false);
+    } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            provider.cashInErrorMessage ?? 'Failed to create transaction.',
+            provider.completionErrorMessage ?? 'Failed to redeem tokens.',
           ),
           backgroundColor: Colors.red,
         ),
@@ -78,17 +73,12 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Data is calculated locally for display
-    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
-    final double totalValue = amountValue + 5.00;
     final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
-
+    final double tokenValue = double.tryParse(widget.tokenAmount) ?? 0.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
-    final String formattedAmount = currencyFormat.format(amountValue);
-    final String formattedTotal = currencyFormat.format(totalValue);
-
+    final String equivalentValue = currencyFormat.format(tokenValue);
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -102,7 +92,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Cash In',
+          'Redeem Tokens',
           style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -117,7 +107,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Over-the-Counter',
+              'Wheel Tokens',
               style: GoogleFonts.manrope(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -131,10 +121,9 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               context: context,
               date: date,
               time: time,
-              amount: formattedAmount,
-              total: formattedTotal,
-              transactionCode:
-                  _transactionCode, // Use the code generated in initState
+              tokenAmount: widget.tokenAmount,
+              equivalentValue: equivalentValue,
+              transactionCode: transactionCode,
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -145,45 +134,48 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildConfirmButton(),
+            Center(
+              child: Consumer<WalletProvider>(
+                builder: (context, provider, child) {
+                  return OutlinedButton(
+                    onPressed: provider.isCompletionLoading
+                        ? null
+                        : () => _onConfirmPressed(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: provider.isCompletionLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: brandColor,
+                            ),
+                          )
+                        : Text(
+                            'Confirm',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildConfirmButton() {
-    final Color brandColor = const Color(0xFF8E4CB6);
-    return Consumer<WalletProvider>(
-      builder: (context, provider, child) {
-        return Center(
-          child: OutlinedButton(
-            onPressed: provider.isCashInLoading ? null : _onConfirmPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: brandColor,
-              backgroundColor: brandColor.withValues(alpha: 0.1),
-              side: BorderSide(color: brandColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-            ),
-            child: provider.isCashInLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Confirm',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-          ),
-        );
-      },
     );
   }
 
@@ -191,8 +183,8 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     required BuildContext context,
     required String date,
     required String time,
-    required String amount,
-    required String total,
+    required String tokenAmount,
+    required String equivalentValue,
     required String transactionCode,
     required Color brandColor,
   }) {
@@ -214,9 +206,10 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
         clipBehavior: Clip.none,
         children: [
           Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Cash In Transaction',
+                'Token Redemption',
                 style: GoogleFonts.manrope(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -225,24 +218,40 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
-              _buildDetailRow('Amount:', amount),
-              _buildDetailRow('Channel:', 'Over-the-Counter'),
+              _buildDetailRow(
+                'Amount:',
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset('assets/images/wheel token.png', height: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      double.parse(tokenAmount).toStringAsFixed(1),
+                      style: GoogleFonts.manrope(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-              _buildDetailRow('Total:', total, isTotal: true),
+              _buildDetailRow('Equivalent:', equivalentValue, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
-                height: 50,
+                height: 40,
                 drawText: false,
               ),
               const SizedBox(height: 8),
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Colors.black54,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],
@@ -251,18 +260,16 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () {
-                Navigator.of(
-                  context,
-                ).popUntil((route) => route.settings.name == '/wallet');
-              },
+              onTap: () => Navigator.of(
+                context,
+              ).popUntil((route) => route.settings.name == '/wallet'),
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.close, color: brandColor),
+                child: Icon(Icons.close, color: brandColor, size: 20),
               ),
             ),
           ),
@@ -271,7 +278,8 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildDetailRow(String label, dynamic value, {bool isTotal = false}) {
+    final isValueWidget = value is Widget;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -285,14 +293,17 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              color: Colors.black87,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+          if (isValueWidget)
+            value
+          else
+            Text(
+              value.toString(),
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                color: Colors.black87,
+                fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+              ),
             ),
-          ),
         ],
       ),
     );

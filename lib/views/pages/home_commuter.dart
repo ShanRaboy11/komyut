@@ -3,10 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
-import '../providers/commuter_dashboard.dart'; 
+import '../providers/commuter_dashboard.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';
@@ -16,6 +16,14 @@ import 'otc_confirm.dart';
 import 'otc_instructions.dart';
 import 'otc_success.dart';
 import 'activity_commuter.dart';
+import 'wt.dart';
+import 'wt_confirm.dart';
+import 'wt_success.dart';
+import 'dw.dart';
+import 'dw_payment_method.dart';
+import 'dw_payment_source.dart';
+import 'dw_confirm.dart';
+import 'dw_success.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -99,10 +107,55 @@ class HomeTabNavigator extends StatelessWidget {
                 OtcConfirmationPage(amount: amount);
             break;
           case '/otc_instructions':
-            builder = (BuildContext context) => const OtcInstructionsPage();
+            final transaction = settings.arguments as Map<String, dynamic>;
+            builder = (BuildContext context) =>
+                OtcInstructionsPage(transaction: transaction);
             break;
           case '/payment_success':
             builder = (BuildContext context) => const PaymentSuccessPage();
+            break;
+          case '/redeem_tokens':
+            builder = (BuildContext context) => const RedeemTokensPage();
+            break;
+          case '/token_confirmation':
+            final amount = settings.arguments as String;
+            builder = (BuildContext context) =>
+                TokenConfirmationPage(tokenAmount: amount);
+            break;
+          case '/token_success':
+            builder = (BuildContext context) => const TokenSuccessPage();
+            break;
+          case '/digital_wallet':
+            builder = (BuildContext context) => const DigitalWalletPage();
+            break;
+          case '/dw_payment_method':
+            final args = settings.arguments as Map<String, String>;
+            builder = (BuildContext context) => DwPaymentMethodPage(
+              name: args['name']!,
+              email: args['email']!,
+              amount: args['amount']!,
+            );
+            break;
+          case '/dw_payment_source':
+            final args = settings.arguments as Map<String, String>;
+            builder = (BuildContext context) => DwSourceSelectionPage(
+              name: args['name']!,
+              email: args['email']!,
+              amount: args['amount']!,
+              paymentMethod: args['paymentMethod']!,
+            );
+            break;
+          case '/dw_confirmation':
+            final args = settings.arguments as Map<String, String>;
+            builder = (BuildContext context) => DwConfirmationPage(
+              name: args['name']!,
+              email: args['email']!,
+              amount: args['amount']!,
+              source: args['source']!,
+            );
+            break;
+          case '/dw_success':
+            builder = (BuildContext context) => const DwSuccessPage();
             break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
@@ -132,14 +185,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
-  final gradientColors1 = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-  ];
-  final gradientColors2 = const [
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
+  final gradientColors1 = const [Color(0xFFB945AA), Color(0xFF8E4CB6)];
+  final gradientColors2 = const [Color(0xFF8E4CB6), Color(0xFF5B53C2)];
 
   // 👇 ADD THIS - Load data when page opens
   @override
@@ -176,12 +223,16 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SvgPicture.asset('assets/images/logo.svg', height: 80, width: 80),
+                  SvgPicture.asset(
+                    'assets/images/logo.svg',
+                    height: 80,
+                    width: 80,
+                  ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}', 
+                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
@@ -219,21 +270,35 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     gradient: LinearGradient(colors: gradientColors),
                   ),
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 500),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
                     transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0.0, 0.05),
+                      final inFromRight = !showWallet;
+
+                      final offsetAnimation =
+                          Tween<Offset>(
+                            begin: Offset(inFromRight ? 1.0 : -1.0, 0.0),
                             end: Offset.zero,
                           ).animate(
                             CurvedAnimation(
                               parent: animation,
-                              curve: Curves.easeOut,
+                              curve: Curves.easeInOutCubic,
                             ),
+                          );
+
+                      final fadeAnimation = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      );
+
+                      return ClipRect(
+                        child: SlideTransition(
+                          position: offsetAnimation,
+                          child: FadeTransition(
+                            opacity: fadeAnimation,
+                            child: child,
                           ),
-                          child: child,
                         ),
                       );
                     },
@@ -248,7 +313,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
 
               const SizedBox(height: 20),
-              _buildAnalyticsSection(isSmallScreen, provider), 
+              _buildAnalyticsSection(isSmallScreen, provider),
               const SizedBox(height: 20),
               _buildPromoCard(),
               const SizedBox(height: 20),
@@ -276,12 +341,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ? LinearGradient(colors: currentGradientColors)
                 : null,
             borderRadius: isWallet
-                ? const BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                  )
-                : const BorderRadius.only(
-                    topRight: Radius.circular(10),
-                  ),
+                ? const BorderRadius.only(topLeft: Radius.circular(10))
+                : const BorderRadius.only(topRight: Radius.circular(10)),
           ),
           child: Center(
             child: Text(
@@ -298,11 +359,17 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildWalletCard(bool isSmallScreen, CommuterDashboardProvider provider) {
+  Widget _buildWalletCard(
+    bool isSmallScreen,
+    CommuterDashboardProvider provider,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Available Balance', style: GoogleFonts.manrope(color: Colors.white70)),
+        Text(
+          'Available Balance',
+          style: GoogleFonts.manrope(color: Colors.white70),
+        ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -310,8 +377,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Row(
               children: [
                 Text(
-                  _isBalanceVisible 
-                      ? '₱${provider.balance.toStringAsFixed(2)}' 
+                  _isBalanceVisible
+                      ? '₱${provider.balance.toStringAsFixed(2)}'
                       : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
@@ -354,7 +421,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildTokensCard(bool isSmallScreen, CommuterDashboardProvider provider) {
+  Widget _buildTokensCard(
+    bool isSmallScreen,
+    CommuterDashboardProvider provider,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -373,9 +443,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible 
-                      ? provider.wheelTokens.toString() 
-                      : '••',
+                  _isTokensVisible ? provider.wheelTokens.toString() : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -417,7 +485,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildAnalyticsSection(bool isSmallScreen, CommuterDashboardProvider provider) {
+  Widget _buildAnalyticsSection(
+    bool isSmallScreen,
+    CommuterDashboardProvider provider,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -475,7 +546,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Icons.directions_bus,
                 'Trips',
                 '${provider.totalTripsCount} trips', // 👈 DYNAMIC TRIPS COUNT
-                subtitle: '12.6 mi', // Keep this static or calculate from trip data
+                subtitle:
+                    '12.6 mi', // Keep this static or calculate from trip data
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
@@ -575,7 +647,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   Widget _buildActionButton(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha:0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

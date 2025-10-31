@@ -6,24 +6,19 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 
-class OtcConfirmationPage extends StatefulWidget {
+class DwConfirmationPage extends StatelessWidget {
+  final String name;
+  final String email;
   final String amount;
+  final String source;
 
-  const OtcConfirmationPage({super.key, required this.amount});
-
-  @override
-  State<OtcConfirmationPage> createState() => _OtcConfirmationPageState();
-}
-
-class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
-  late String _transactionCode;
-
-  @override
-  void initState() {
-    super.initState();
-    // The K0MYUT code is generated once, here.
-    _transactionCode = _generateTransactionCode();
-  }
+  const DwConfirmationPage({
+    super.key,
+    required this.name,
+    required this.email,
+    required this.amount,
+    required this.source,
+  });
 
   String _generateTransactionCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -37,34 +32,27 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  // This is where the transaction is finally created in the database.
-  Future<void> _onConfirmPressed() async {
+  Future<void> _onConfirmPressed(
+    BuildContext context,
+    String transactionCode,
+  ) async {
     final provider = Provider.of<WalletProvider>(context, listen: false);
-    final amountValue = double.tryParse(widget.amount);
+    final amountValue = double.tryParse(amount);
 
-    if (amountValue == null) {
-      // Handle potential parsing error, though it shouldn't happen with the text field formatters
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid amount format.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (amountValue == null) return;
 
-    // FIX: Calling the correct method name from the provider
-    final success = await provider.createOtcTransaction(
+    // --- FIX: Call the updated provider method with all the data ---
+    final success = await provider.createDigitalWalletTransaction(
       amount: amountValue,
-      transactionCode: _transactionCode,
+      source: source,
+      transactionCode: transactionCode,
+      payerName: name, // Pass the inputted name
+      payerEmail: email, // Pass the inputted email
     );
 
-    if (success && mounted) {
-      // Pass the newly created transaction data from the provider to the next screen
-      Navigator.of(
-        context,
-      ).pushNamed('/otc_instructions', arguments: provider.pendingTransaction);
-    } else if (mounted) {
+    if (success && context.mounted) {
+      Navigator.of(context).pushNamed('/dw_success');
+    } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -78,12 +66,12 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Data is calculated locally for display
-    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
-    final double totalValue = amountValue + 5.00;
     final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
+    final double amountValue = double.tryParse(amount) ?? 0.0;
+    final double totalValue = amountValue + 10.00;
+    final transactionCode = _generateTransactionCode();
 
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String formattedAmount = currencyFormat.format(amountValue);
@@ -117,7 +105,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Over-the-Counter',
+              'Digital Wallet',
               style: GoogleFonts.manrope(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -127,15 +115,24 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
-            _buildTransactionCard(
-              context: context,
-              date: date,
-              time: time,
-              amount: formattedAmount,
-              total: formattedTotal,
-              transactionCode:
-                  _transactionCode, // Use the code generated in initState
-              brandColor: brandColor,
+            Consumer<WalletProvider>(
+              builder: (context, provider, child) {
+                // Get the raw user ID from the provider's state
+                final userId =
+                    provider.userProfile?['user_id']?.toString() ?? 'N/A';
+
+                // Pass the raw ID to the build method
+                return _buildTransactionCard(
+                  context: context,
+                  userId: userId, // Pass the fetched User ID
+                  date: date,
+                  time: time,
+                  amount: formattedAmount,
+                  total: formattedTotal,
+                  transactionCode: transactionCode,
+                  brandColor: brandColor,
+                );
+              },
             ),
             const SizedBox(height: 24),
             Center(
@@ -145,50 +142,51 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildConfirmButton(),
+            Center(
+              child: Consumer<WalletProvider>(
+                builder: (context, provider, child) {
+                  return OutlinedButton(
+                    onPressed: provider.isCashInLoading
+                        ? null
+                        : () => _onConfirmPressed(context, transactionCode),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: provider.isCashInLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Confirm',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConfirmButton() {
-    final Color brandColor = const Color(0xFF8E4CB6);
-    return Consumer<WalletProvider>(
-      builder: (context, provider, child) {
-        return Center(
-          child: OutlinedButton(
-            onPressed: provider.isCashInLoading ? null : _onConfirmPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: brandColor,
-              backgroundColor: brandColor.withValues(alpha: 0.1),
-              side: BorderSide(color: brandColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-            ),
-            child: provider.isCashInLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Confirm',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildTransactionCard({
     required BuildContext context,
+    required String userId,
     required String date,
     required String time,
     required String amount,
@@ -214,6 +212,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
         clipBehavior: Clip.none,
         children: [
           Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Cash In Transaction',
@@ -223,26 +222,29 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
                 ),
               ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+              _buildDetailRow('User ID:', userId),
+              _buildDetailRow('Name:', name),
+              _buildDetailRow('Email:', email),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow('Amount:', amount),
-              _buildDetailRow('Channel:', 'Over-the-Counter'),
+              _buildDetailRow('Channel:', 'Digital Wallet ($source)'),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Total:', total, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
-                height: 50,
+                height: 40,
                 drawText: false,
               ),
               const SizedBox(height: 8),
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Colors.black54,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],
@@ -262,7 +264,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.close, color: brandColor),
+                child: Icon(Icons.close, color: brandColor, size: 20),
               ),
             ),
           ),
@@ -272,6 +274,11 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
   }
 
   Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+    String displayedValue = value;
+
+    if (label.toLowerCase() == 'user id:' && value.length > 18) {
+      displayedValue = '${value.substring(0, 18)}...';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -286,7 +293,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             ),
           ),
           Text(
-            value,
+            displayedValue,
             style: GoogleFonts.manrope(
               fontSize: 15,
               color: Colors.black87,

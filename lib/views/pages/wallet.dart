@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:komyut/views/pages/dw.dart';
+import 'package:komyut/views/pages/wt.dart';
+import 'package:provider/provider.dart';
 import 'wallet_history.dart';
 import 'otc.dart';
+import 'dart:math';
+import 'package:barcode_widget/barcode_widget.dart';
+import '../providers/wallet_provider.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -27,12 +34,303 @@ class _WalletPageState extends State<WalletPage>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WalletProvider>(context, listen: false).fetchWalletData();
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  String _generateTransactionCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final part1 = String.fromCharCodes(
+      Iterable.generate(
+        15,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
+  void _showTransactionDetailModal(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) {
+    final String type = transaction['type'] as String? ?? 'transaction';
+    final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
+    String modalTitle = type
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+
+    if (type != 'token_redemption') {
+      modalTitle += ' Transaction';
+    }
+
+    List<Widget> details = [];
+    Widget totalRow;
+
+    details.add(
+      _buildDetailRow(
+        'Date:',
+        DateFormat(
+          'MM/dd/yyyy',
+        ).format(DateTime.parse(transaction['created_at'])),
+      ),
+    );
+    details.add(
+      _buildDetailRow(
+        'Time:',
+        DateFormat('hh:mm a').format(DateTime.parse(transaction['created_at'])),
+      ),
+    );
+
+    if (type == 'token_redemption') {
+      totalRow = _buildDetailRow(
+        'Amount:',
+        currencyFormat.format(amount),
+        isTotal: true,
+      );
+    } else if (type == 'cash_in') {
+      details.add(_buildDetailRow('Amount:', currencyFormat.format(amount)));
+
+      final paymentMethod = transaction['payment_methods'];
+      final channelDisplay =
+          (paymentMethod != null && paymentMethod['name'] != null)
+          ? paymentMethod['name']
+          : 'N/A';
+      details.add(_buildDetailRow('Channel:', channelDisplay));
+
+      final status = (transaction['status'] as String?) ?? 'N/A';
+      details.add(
+        _buildDetailRow(
+          'Status:',
+          status[0].toUpperCase() + status.substring(1),
+        ),
+      );
+
+      double total = amount;
+      if (channelDisplay == 'Over-the-Counter') {
+        total += 5.0;
+      } else {
+        total += 10.0;
+      }
+      totalRow = _buildDetailRow(
+        'Total:',
+        currencyFormat.format(total),
+        isTotal: true,
+      );
+    } else {
+      totalRow = _buildDetailRow(
+        'Amount:',
+        currencyFormat.format(amount),
+        isTotal: true,
+      );
+    }
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (dialogContext) {
+        return _buildDetailModal(
+          context: dialogContext,
+          title: modalTitle,
+          details: details,
+          totalRow: totalRow,
+          transactionCode:
+              transaction['transaction_number'] ?? _generateTransactionCode(),
+        );
+      },
+    );
+  }
+
+  void _showTokenActivityModal(
+    BuildContext context,
+    Map<String, dynamic> tokenData,
+  ) {
+    final amount = (tokenData['amount'] as num?)?.toDouble() ?? 0.0;
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+
+    final String type = (tokenData['type'] as String?) ?? 'reward';
+    final String modalTitle = type == 'redemption'
+        ? 'Token Redemption'
+        : 'Token Reward';
+
+    final String transactionCode =
+        tokenData['transaction_number'] as String? ??
+        _generateTransactionCode();
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (dialogContext) {
+        return _buildDetailModal(
+          context: dialogContext,
+          title: modalTitle,
+          details: [
+            _buildDetailRow(
+              'Date:',
+              DateFormat(
+                'MM/dd/yyyy',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
+            _buildDetailRow(
+              'Time:',
+              DateFormat(
+                'hh:mm a',
+              ).format(DateTime.parse(tokenData['created_at'])),
+            ),
+            _buildDetailRow(
+              'Amount:',
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/wheel token.png', height: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    amount.abs().toStringAsFixed(1),
+                    style: GoogleFonts.manrope(
+                      fontSize: 15,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          totalRow: _buildDetailRow(
+            'Equivalent:',
+            currencyFormat.format(amount.abs()),
+          ),
+          transactionCode: transactionCode,
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailModal({
+    required BuildContext context,
+    required String title,
+    required List<Widget> details,
+    required Widget totalRow,
+    required String transactionCode,
+  }) {
+    final Color brandColor = const Color(0xFF8E4CB6);
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: brandColor.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: brandColor.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                ...details,
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                totalRow,
+                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                BarcodeWidget(
+                  barcode: Barcode.code128(),
+                  data: transactionCode,
+                  height: 40,
+                  drawText: false,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  transactionCode,
+                  style: GoogleFonts.sourceCodePro(
+                    fontSize: 12,
+                    color: Colors.black54,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: -12,
+              right: -12,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.close, color: brandColor, size: 20),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, dynamic value, {bool isTotal = false}) {
+    final isValueWidget = value is Widget;
+
+    final bool shouldBeBold =
+        isTotal || (label == 'Total:' || label == 'Equivalent:');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.nunito(
+              fontSize: 15,
+              color: shouldBeBold ? Colors.black87 : Colors.grey[600],
+              fontWeight: shouldBeBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          if (isValueWidget)
+            value
+          else
+            Text(
+              value.toString(),
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                color: Colors.black87,
+                fontWeight: shouldBeBold ? FontWeight.bold : FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   void _showTokenInfoModal(BuildContext context) {
@@ -137,6 +435,14 @@ class _WalletPageState extends State<WalletPage>
       Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
       );
+    } else if (optionText == 'Digital Wallet') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
+      );
+    } else if (optionText == 'Wheel Tokens') {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const RedeemTokensPage()));
     }
   }
 
@@ -152,7 +458,6 @@ class _WalletPageState extends State<WalletPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Modal Header
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -182,7 +487,6 @@ class _WalletPageState extends State<WalletPage>
                     ],
                   ),
                 ),
-                // Modal Body
                 Container(
                   color: Colors.white,
                   child: Column(
@@ -289,23 +593,33 @@ class _WalletPageState extends State<WalletPage>
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            _buildBalanceCard(),
-            const SizedBox(height: 30),
-            _buildFareExpensesCard(),
-            const SizedBox(height: 24),
-            _buildTransactionsTabs(),
-          ],
-        ),
+      body: Consumer<WalletProvider>(
+        builder: (context, provider, child) {
+          if (provider.isWalletLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (provider.walletErrorMessage != null) {
+            return Center(child: Text(provider.walletErrorMessage!));
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                _buildBalanceCard(provider),
+                const SizedBox(height: 30),
+                _buildFareExpensesCard(provider.fareExpenses),
+                const SizedBox(height: 24),
+                _buildTransactionsTabs(provider),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTransactionsTabs() {
+  Widget _buildTransactionsTabs(WalletProvider provider) {
     return Column(
       children: [
         TabBar(
@@ -329,108 +643,119 @@ class _WalletPageState extends State<WalletPage>
           ],
         ),
         if (_tabController.index == 0)
-          _buildTransactionsList()
+          _buildTransactionsList(provider.recentTransactions)
         else
-          _buildTokensList(),
+          _buildTokensList(provider.recentTokenHistory),
         const SizedBox(height: 20),
-        _buildViewAllButton(),
+        if ((_tabController.index == 0 &&
+                provider.recentTransactions.isNotEmpty) ||
+            (_tabController.index == 1 &&
+                provider.recentTokenHistory.isNotEmpty))
+          _buildViewAllButton(),
       ],
     );
   }
 
-  Widget _buildBalanceCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+  Widget _buildBalanceCard(WalletProvider provider) {
+    final currencyFormat = NumberFormat("#,##0.00", "en_US");
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8E4CB6).withValues(alpha: 0.25),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Current Balance',
                     style: GoogleFonts.nunito(
-                      color: Colors.white70,
-                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '₱ 3 000.00',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: () => _showTokenInfoModal(context),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/wheel token.png',
+                          height: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          provider.wheelTokens.toString(),
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () => _showTokenInfoModal(context),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Row(
-                    children: [
-                      Image.asset('assets/images/wheel token.png', height: 22),
-                      const SizedBox(width: 6),
-                      Text(
-                        '10.5',
-                        style: GoogleFonts.manrope(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              Text(
+                '₱${currencyFormat.format(provider.balance)}',
+                style: GoogleFonts.manrope(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          Positioned(
-            bottom: -40,
-            right: 0,
-            child: GestureDetector(
-              onTap: () => _showDepositOptionsModal(context),
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x338E4CB6),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.add, color: gradientColors[1], size: 30),
+        ),
+        Positioned(
+          bottom: -18,
+          right: 18,
+          child: GestureDetector(
+            onTap: () => _showDepositOptionsModal(context),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
+              child: Icon(Icons.add, color: const Color(0xFF8E4CB6), size: 24),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFareExpensesCard() {
+  Widget _buildFareExpensesCard(Map<String, double> expenses) {
     const double chartHeight = 110;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -478,7 +803,7 @@ class _WalletPageState extends State<WalletPage>
                       .toList(),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: _buildBarChart(chartHeight)),
+                Expanded(child: _buildBarChart(chartHeight, expenses)),
               ],
             ),
           ),
@@ -487,26 +812,23 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildBarChart(double chartHeight) {
-    final Map<String, double> weeklyData = {
-      'Mon': 78,
-      'Tue': 88,
-      'Wed': 60,
-      'Thu': 75,
-      'Fri': 85,
-      'Sat': 25,
-      'Sun': 25,
-    };
-    const double maxVal = 100.0;
+  Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
+    final double maxVal = weeklyData.values.fold(
+      100.0,
+      (max, v) => v > max ? v : max,
+    );
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: weeklyData.entries.map((entry) {
+      children: days.map((day) {
+        final value = weeklyData[day] ?? 0.0;
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              height: (entry.value / maxVal) * chartHeight,
+              height: (value / maxVal) * chartHeight,
               width: 20,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
@@ -515,7 +837,7 @@ class _WalletPageState extends State<WalletPage>
             ),
             const SizedBox(height: 8),
             Text(
-              entry.key,
+              day,
               style: GoogleFonts.nunito(
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w600,
@@ -549,153 +871,173 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildTransactionsList() {
+  Widget _buildTransactionsList(List<Map<String, dynamic>> transactions) {
+    if (transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: Text('No recent transactions.')),
+      );
+    }
     return Column(
-      children: [
-        _buildTransactionItem('Cash In', '10/3/25 8:25 PM', '+₱100.00', true),
-        _buildTransactionItem('Trip Fare', '10/3/25 3:18 PM', '−₱13.00', false),
-        _buildTransactionItem('Trip Fare', '10/3/25 1:02 PM', '−₱13.00', false),
-        _buildTransactionItem(
-          'Trip Fare',
-          '10/2/25 11:02 AM',
-          '−₱13.00',
-          false,
-        ),
-        _buildTransactionItem('Trip Fare', '10/2/25 6:02 AM', '−₱13.00', false),
-        _buildTransactionItem(
-          'Cash In',
-          '10/1/25 8:25 PM',
-          '+₱150.00',
-          true,
-          isLast: true,
-        ),
-      ],
+      children: transactions.asMap().entries.map((entry) {
+        int idx = entry.key;
+        Map<String, dynamic> transaction = entry.value;
+        return _buildTransactionItem(
+          transaction,
+          isLast: idx == transactions.length - 1,
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildTokensList() {
+  Widget _buildTokensList(List<Map<String, dynamic>> tokenHistory) {
+    if (tokenHistory.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: Text('No recent token activity.')),
+      );
+    }
     return Column(
-      children: [
-        _buildTokenItem('Token Redemption', '10/3/25 8:25 PM', '-3.0', false),
-        _buildTokenItem('Trip Reward', '10/3/25 3:18 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/3/25 1:02 PM', '+0.5', true),
-        _buildTokenItem('Trip Reward', '10/2/25 11:02 AM', '+0.5', true),
-        _buildTokenItem('Token Redemption', '10/2/25 6:02 AM', '-2.0', false),
-        _buildTokenItem(
-          'Trip Reward',
-          '10/1/25 8:25 PM',
-          '+0.5',
-          true,
-          isLast: true,
-        ),
-      ],
+      children: tokenHistory.asMap().entries.map((entry) {
+        int idx = entry.key;
+        Map<String, dynamic> tokenData = entry.value;
+        return _buildTokenItem(
+          tokenData,
+          isLast: idx == tokenHistory.length - 1,
+        );
+      }).toList(),
     );
   }
 
   Widget _buildTransactionItem(
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> transaction, {
     bool isLast = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.only(top: 16, bottom: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isLast ? Colors.transparent : Colors.grey[200]!,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
-              ),
-            ],
-          ),
-          Text(
-            amount,
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: isCredit
-                  ? const Color(0xFF2E7D32)
-                  : const Color(0xFFC62828),
+    final bool isCredit = (transaction['amount'] as num) > 0;
+    final String type = transaction['type'] as String;
+
+    final String title = type
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+
+    final String amount = NumberFormat.currency(
+      locale: 'en_PH',
+      symbol: '₱',
+    ).format(transaction['amount']);
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(transaction['created_at']));
+
+    return InkWell(
+      onTap: () => _showTransactionDetailModal(context, transaction),
+      child: Container(
+        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isLast ? Colors.transparent : Colors.grey[200]!,
             ),
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  date,
+                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
+            Text(
+              (isCredit ? '+' : '') + amount,
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isCredit
+                    ? const Color(0xFF2E7D32)
+                    : const Color(0xFFC62828),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTokenItem(
-    String title,
-    String subtitle,
-    String amount,
-    bool isCredit, {
+    Map<String, dynamic> tokenData, {
     bool isLast = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.only(top: 16, bottom: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isLast ? Colors.transparent : Colors.grey[200]!,
+    final bool isCredit = (tokenData['amount'] as num) > 0;
+    final String title = (tokenData['type'] as String) == 'redemption'
+        ? 'Token Redemption'
+        : 'Token Reward';
+    final double amount = (tokenData['amount'] as num).toDouble();
+    final String date = DateFormat(
+      'MM/d/yy hh:mm a',
+    ).format(DateTime.parse(tokenData['created_at']));
+
+    return InkWell(
+      onTap: () => _showTokenActivityModal(context, tokenData),
+      child: Container(
+        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isLast ? Colors.transparent : Colors.grey[200]!,
+            ),
           ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Text(
-                amount,
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isCredit
-                      ? const Color(0xFF2E7D32)
-                      : const Color(0xFFC62828),
+                const SizedBox(height: 4),
+                Text(
+                  date,
+                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Image.asset('assets/images/wheel token.png', height: 20),
-            ],
-          ),
-        ],
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isCredit
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFFC62828),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Image.asset('assets/images/wheel token.png', height: 20),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

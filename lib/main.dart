@@ -14,6 +14,7 @@ import 'views/pages/otc.dart';
 import 'views/providers/commuter_dashboard.dart';
 import 'views/providers/driver_dashboard.dart';
 import 'views/providers/operator_dashboard.dart';
+import 'views/providers/wallet_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CommuterDashboardProvider()),
         ChangeNotifierProvider(create: (_) => DriverDashboardProvider()),
         ChangeNotifierProvider(create: (_) => OperatorDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => WalletProvider()),
       ],
       child: MaterialApp(
         title: 'KOMYUT',
