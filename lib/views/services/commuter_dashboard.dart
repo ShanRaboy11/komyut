@@ -371,10 +371,12 @@ class CommuterDashboardService {
       final response = await _supabase.rpc('get_weekly_fare_expenses');
 
       if (response is List) {
-        return {
+        final weeklyExpenses = {
           for (var item in response)
-            item['day_name']: (item['total'] as num).toDouble(),
+            (item['day_name'] as String): (item['total'] as num).toDouble(),
         };
+        debugPrint('✅ Weekly fare expenses fetched: $weeklyExpenses');
+        return weeklyExpenses;
       }
       return {};
     } catch (e) {
