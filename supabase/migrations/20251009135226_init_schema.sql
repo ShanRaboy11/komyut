@@ -437,3 +437,39 @@ BEGIN
     VALUES (v_commuter_id, -p_amount_to_redeem, 'redemption', v_new_transaction_id, (v_current_tokens - p_amount_to_redeem));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses();
+
+CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses()
+RETURNS TABLE(day_name text, total numeric) AS $$
+BEGIN
+  RETURN QUERY
+  
+  WITH days AS (
+    SELECT 
+      to_char(d, 'Dy') as day_name_short, 
+      d::date as full_date
+    FROM generate_series(
+      date_trunc('day', now() - interval '6 days'),
+      date_trunc('day', now()),
+      '1 day'
+    ) as d
+  )
+  
+  SELECT
+    d.day_name_short,
+    COALESCE(SUM(t.amount), 0) AS total
+  FROM days d
+  LEFT JOIN transactions t ON date_trunc('day', t.created_at) = d.full_date
+    AND t.type = 'fare_payment'
+    AND t.wallet_id = (
+      SELECT w.id FROM wallets w
+      JOIN profiles p ON w.owner_profile_id = p.id
+      WHERE p.user_id = auth.uid()
+      LIMIT 1
+    )
+  GROUP BY d.day_name_short, d.full_date
+  ORDER BY d.full_date;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
