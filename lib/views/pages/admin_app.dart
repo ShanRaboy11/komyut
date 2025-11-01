@@ -14,7 +14,7 @@ class AdminApp extends StatelessWidget {
       verifiedPage: AdminVerifiedPage(),
       activityPage: AdminActivityPage(),
       reportsPage: AdminReportsPage(),
-      routePage: AdminRoutesPage(),
+      routePage: AdminRoutesPage(), 
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import './admin_add_route.dart';
 
 // Route Details Page with Edit Functionality
@@ -28,6 +30,16 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _codeController = TextEditingController();
+  final MapController _mapController = MapController();
+
+  List<Marker> _markers = [];
+  List<LatLng> _polylinePoints = [];
+
+  static const LinearGradient _kGradient = LinearGradient(
+    colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
 
   @override
   void initState() {
@@ -66,65 +78,510 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
         _stops = List<Map<String, dynamic>>.from(stopsResponse);
         _isLoading = false;
 
-        // Populate controllers
         _codeController.text = _routeData?['code'] ?? '';
         _nameController.text = _routeData?['name'] ?? '';
         _descriptionController.text = _routeData?['description'] ?? '';
+
+        _updateMapMarkers();
+        _updatePolyline();
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        _showSnackBar('Error: ${e.toString()}', isError: true);
       }
     }
+  }
+
+  void _updateMapMarkers() {
+    _markers = _stops
+        .where((s) => s['isDeleted'] != true)
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+          final index = entry.key;
+          final stop = entry.value;
+          final visibleStops = _stops
+              .where((s) => s['isDeleted'] != true)
+              .toList();
+          final isFirst = index == 0;
+          final isLast = index == visibleStops.length - 1;
+
+          return Marker(
+            point: LatLng(stop['latitude'], stop['longitude']),
+            width: 50,
+            height: 60,
+            child: GestureDetector(
+              onTap: _isEditing
+                  ? () => _showStopOptions(_stops.indexOf(stop))
+                  : null,
+              child: Column(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: isFirst
+                          ? LinearGradient(
+                              colors: [Colors.green, Colors.green.shade700],
+                            )
+                          : isLast
+                          ? LinearGradient(
+                              colors: [Colors.red, Colors.red.shade700],
+                            )
+                          : _kGradient,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              (isFirst
+                                      ? Colors.green
+                                      : isLast
+                                      ? Colors.red
+                                      : const Color(0xFF5B53C2))
+                                  .withAlpha(102),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${stop['sequence']}',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: isFirst
+                        ? Colors.green
+                        : isLast
+                        ? Colors.red
+                        : const Color(0xFF5B53C2),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          );
+        })
+        .toList();
+  }
+
+  void _updatePolyline() {
+    _polylinePoints = _stops.where((s) => s['isDeleted'] != true).map((stop) {
+      return LatLng(stop['latitude'], stop['longitude']);
+    }).toList();
+  }
+
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    if (_isEditing) {
+      _showAddStopDialog(point);
+    }
+  }
+
+  void _showAddStopDialog(LatLng point) {
+    final TextEditingController stopNameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: _kGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.add_location_alt,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Add Stop',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: stopNameController,
+              decoration: InputDecoration(
+                labelText: 'Stop Name',
+                hintText: 'e.g., SM City Cebu',
+                prefixIcon: const Icon(
+                  Icons.location_on,
+                  color: Color(0xFF5B53C2),
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF7F4FF),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.purple.shade100),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF5B53C2),
+                    width: 2,
+                  ),
+                ),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.my_location,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lat: ${point.latitude.toStringAsFixed(6)}\nLng: ${point.longitude.toStringAsFixed(6)}',
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: _kGradient,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5B53C2).withAlpha(76),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (stopNameController.text.trim().isNotEmpty) {
+                  _addStop(point, stopNameController.text.trim());
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text(
+                'Add Stop',
+                style: GoogleFonts.manrope(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addStop(LatLng point, String name) {
+    setState(() {
+      final newStop = {
+        'name': name,
+        'sequence': _stops.where((s) => s['isDeleted'] != true).length + 1,
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+        'route_id': widget.routeId,
+        'isNew': true,
+      };
+      _stops.add(newStop);
+      _updateMapMarkers();
+      _updatePolyline();
+    });
+
+    _showSnackBar('Stop "$name" added. Click Save to update route.');
+  }
+
+  void _showStopOptions(int index) {
+    final stop = _stops[index];
+    final visibleStops = _stops.where((s) => s['isDeleted'] != true).toList();
+    final visibleIndex = visibleStops.indexOf(stop);
+    final isFirst = visibleIndex == 0;
+    final isLast = visibleIndex == visibleStops.length - 1;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: isFirst
+                        ? LinearGradient(
+                            colors: [Colors.green, Colors.green.shade700],
+                          )
+                        : isLast
+                        ? LinearGradient(
+                            colors: [Colors.red, Colors.red.shade700],
+                          )
+                        : _kGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${stop['sequence']}',
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        stop['name'],
+                        style: GoogleFonts.manrope(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade900,
+                        ),
+                      ),
+                      Text(
+                        isFirst
+                            ? 'Starting Point'
+                            : isLast
+                            ? 'End Point'
+                            : 'Stop #${stop['sequence']}',
+                        style: GoogleFonts.nunito(
+                          color: isFirst
+                              ? Colors.green
+                              : isLast
+                              ? Colors.red
+                              : Colors.grey.shade600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F4FF),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.my_location,
+                    size: 16,
+                    color: Colors.purple.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${stop['latitude'].toStringAsFixed(6)}, ${stop['longitude'].toStringAsFixed(6)}',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 32),
+            InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                _removeStop(index);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      color: Colors.red.shade700,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Remove Stop',
+                      style: GoogleFonts.manrope(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeStop(int index) {
+    final stopName = _stops[index]['name'];
+    setState(() {
+      if (_stops[index].containsKey('id')) {
+        _stops[index]['isDeleted'] = true;
+      } else {
+        _stops.removeAt(index);
+      }
+
+      int sequence = 1;
+      for (var stop in _stops) {
+        if (stop['isDeleted'] != true) {
+          stop['sequence'] = sequence++;
+        }
+      }
+
+      _updateMapMarkers();
+      _updatePolyline();
+    });
+    _showSnackBar('Stop "$stopName" will be removed when you save.');
   }
 
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final visibleStops = _stops.where((s) => s['isDeleted'] != true).toList();
+
+    if (visibleStops.length < 2) {
+      _showSnackBar('Route must have at least 2 stops', isError: true);
+      return;
+    }
+
     try {
       final supabase = Supabase.instance.client;
 
-      await supabase.from('routes').update({
-        'code': _codeController.text.trim(),
-        'name': _nameController.text.trim(),
-        'description': _descriptionController.text.trim(),
-      }).eq('id', widget.routeId);
+      await supabase
+          .from('routes')
+          .update({
+            'code': _codeController.text.trim(),
+            'name': _nameController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'start_lat': visibleStops.first['latitude'],
+            'start_lng': visibleStops.first['longitude'],
+            'end_lat': visibleStops.last['latitude'],
+            'end_lng': visibleStops.last['longitude'],
+          })
+          .eq('id', widget.routeId);
+
+      for (var stop in _stops.where((s) => s['isDeleted'] == true)) {
+        if (stop.containsKey('id')) {
+          await supabase.from('route_stops').delete().eq('id', stop['id']);
+        }
+      }
+
+      for (var stop in _stops.where(
+        (s) => s['isDeleted'] != true && s['isNew'] != true,
+      )) {
+        await supabase
+            .from('route_stops')
+            .update({'sequence': stop['sequence']})
+            .eq('id', stop['id']);
+      }
+
+      final newStops = _stops.where((s) => s['isNew'] == true).toList();
+      if (newStops.isNotEmpty) {
+        final stopsData = newStops
+            .map(
+              (stop) => {
+                'route_id': widget.routeId,
+                'name': stop['name'],
+                'sequence': stop['sequence'],
+                'latitude': stop['latitude'],
+                'longitude': stop['longitude'],
+              },
+            )
+            .toList();
+        await supabase.from('route_stops').insert(stopsData);
+      }
 
       setState(() => _isEditing = false);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Route updated successfully!'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
 
+      _showSnackBar('Route updated successfully!');
       _loadRouteDetails();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving changes: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      _showSnackBar('Error saving changes: ${e.toString()}', isError: true);
     }
   }
 
@@ -135,10 +592,24 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
       _nameController.text = _routeData?['name'] ?? '';
       _descriptionController.text = _routeData?['description'] ?? '';
     });
+    _loadRouteDetails();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final visibleStops = _stops.where((s) => s['isDeleted'] != true).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       appBar: AppBar(
@@ -192,7 +663,6 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Route Info Card
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -215,7 +685,6 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (_isEditing) ...[
-                            // Edit Mode - Code
                             TextFormField(
                               controller: _codeController,
                               style: GoogleFonts.manrope(
@@ -249,7 +718,6 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                               },
                             ),
                             const SizedBox(height: 16),
-                            // Edit Mode - Name
                             TextFormField(
                               controller: _nameController,
                               style: GoogleFonts.manrope(
@@ -283,7 +751,6 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                               },
                             ),
                             const SizedBox(height: 16),
-                            // Edit Mode - Description
                             TextFormField(
                               controller: _descriptionController,
                               style: GoogleFonts.nunito(
@@ -311,7 +778,6 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                               ),
                             ),
                           ] else ...[
-                            // View Mode
                             Text(
                               _routeData?['name'] ?? 'Unnamed Route',
                               style: GoogleFonts.manrope(
@@ -336,7 +802,98 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Stops Section Header
+                    if (_isEditing) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF5B53C2).withAlpha(26),
+                              const Color(0xFFB945AA).withAlpha(26),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.purple.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.touch_app,
+                              color: Colors.purple.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Tap on the map to add new stops',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.purple.shade900,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 300,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.purple.shade100,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(13),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: _polylinePoints.isNotEmpty
+                                ? _polylinePoints.first
+                                : const LatLng(10.3157, 123.8854),
+                            initialZoom: 13.0,
+                            onTap: _onMapTap,
+                            interactionOptions: const InteractionOptions(
+                              flags:
+                                  InteractiveFlag.all & ~InteractiveFlag.rotate,
+                            ),
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate:
+                                  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                              subdomains: const ['a', 'b', 'c', 'd'],
+                              retinaMode: RetinaMode.isHighDensity(context),
+                            ),
+                            if (_polylinePoints.length > 1)
+                              PolylineLayer(
+                                polylines: [
+                                  Polyline(
+                                    points: _polylinePoints,
+                                    color: const Color(0xFF5B53C2),
+                                    strokeWidth: 4.0,
+                                    borderStrokeWidth: 2.0,
+                                    borderColor: Colors.white.withAlpha(179),
+                                  ),
+                                ],
+                              ),
+                            MarkerLayer(markers: _markers),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
                     Row(
                       children: [
                         const Icon(
@@ -363,7 +920,7 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${_stops.length}',
+                            '${visibleStops.length}',
                             style: GoogleFonts.manrope(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -375,104 +932,161 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Stops List
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _stops.length,
+                      itemCount: visibleStops.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final stop = _stops[index];
+                        final stop = visibleStops[index];
                         final isFirst = index == 0;
-                        final isLast = index == _stops.length - 1;
+                        final isLast = index == visibleStops.length - 1;
+                        final isNew = stop['isNew'] == true;
 
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.purple.shade100,
-                              width: 1.5,
+                        return InkWell(
+                          onTap: _isEditing
+                              ? () => _showStopOptions(_stops.indexOf(stop))
+                              : null,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isNew
+                                    ? Colors.green.shade300
+                                    : Colors.purple.shade100,
+                                width: isNew ? 2 : 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(10),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(10),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isFirst
-                                        ? [Colors.green, Colors.green.shade700]
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    gradient: isFirst
+                                        ? LinearGradient(
+                                            colors: [
+                                              Colors.green,
+                                              Colors.green.shade700,
+                                            ],
+                                          )
                                         : isLast
-                                            ? [Colors.red, Colors.red.shade700]
-                                            : [
-                                                const Color(0xFF5B53C2),
-                                                const Color(0xFFB945AA)
-                                              ],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (isFirst
-                                              ? Colors.green
-                                              : isLast
-                                                  ? Colors.red
-                                                  : const Color(0xFF5B53C2))
-                                          .withAlpha(76),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${stop['sequence']}',
-                                    style: GoogleFonts.manrope(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      stop['name'],
-                                      style: GoogleFonts.manrope(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    if (isFirst || isLast) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isFirst ? 'Starting Point' : 'End Point',
-                                        style: GoogleFonts.nunito(
-                                          fontSize: 12,
-                                          color: isFirst
-                                              ? Colors.green
-                                              : Colors.red,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        ? LinearGradient(
+                                            colors: [
+                                              Colors.red,
+                                              Colors.red.shade700,
+                                            ],
+                                          )
+                                        : _kGradient,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (isFirst
+                                                    ? Colors.green
+                                                    : isLast
+                                                    ? Colors.red
+                                                    : const Color(0xFF5B53C2))
+                                                .withAlpha(76),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
-                                  ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${stop['sequence']}',
+                                      style: GoogleFonts.manrope(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              stop['name'],
+                                              style: GoogleFonts.manrope(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isNew)
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.shade100,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.green.shade300,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                'NEW',
+                                                style: GoogleFonts.manrope(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      if (isFirst || isLast) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          isFirst
+                                              ? 'Starting Point'
+                                              : 'End Point',
+                                          style: GoogleFonts.nunito(
+                                            fontSize: 12,
+                                            color: isFirst
+                                                ? Colors.green
+                                                : Colors.red,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                if (_isEditing)
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.more_vert,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    onPressed: () =>
+                                        _showStopOptions(_stops.indexOf(stop)),
+                                    tooltip: 'Stop Options',
+                                  ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -533,7 +1147,11 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Text(
               'Delete Route',
@@ -617,7 +1235,6 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Enhanced Header with Add Button
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -632,7 +1249,6 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
               ),
               child: Column(
                 children: [
-                  // Top Row: Back button, Title, Route count
                   Row(
                     children: [
                       const SizedBox(width: 12),
@@ -676,7 +1292,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                           ],
                         ),
                         child: Text(
-                          '${_routes.length}' + " routes",
+                          '${_routes.length} routes',
                           style: GoogleFonts.manrope(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -688,7 +1304,6 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Search Bar
                   TextField(
                     decoration: InputDecoration(
                       hintText: 'Search by code or name...',
@@ -727,7 +1342,6 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Add Route Button (Moved here from FAB)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -748,8 +1362,10 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                         ),
                         elevation: 2,
                       ),
-                      icon: const Icon(Icons.add_circle_outline,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                      ),
                       label: Text(
                         'Add New Route',
                         style: GoogleFonts.manrope(
@@ -764,92 +1380,90 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
               ),
             ),
 
-            // Routes List
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredRoutes.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _searchQuery.isEmpty
-                                      ? Icons.route_outlined
-                                      : Icons.search_off,
-                                  size: 64,
-                                  color: Colors.purple.shade300,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                _searchQuery.isEmpty
-                                    ? 'No routes yet'
-                                    : 'No routes found',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _searchQuery.isEmpty
-                                    ? 'Create your first route to get started'
-                                    : 'Try adjusting your search',
-                                style: GoogleFonts.nunito(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.shade50,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _searchQuery.isEmpty
+                                  ? Icons.route_outlined
+                                  : Icons.search_off,
+                              size: 64,
+                              color: Colors.purple.shade300,
+                            ),
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadRoutes,
-                          color: const Color(0xFF5B53C2),
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _filteredRoutes.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final route = _filteredRoutes[index];
-                              final stopCount = route['route_stops'] != null
-                                  ? (route['route_stops'] as List).length
-                                  : 0;
+                          const SizedBox(height: 20),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'No routes yet'
+                                : 'No routes found',
+                            style: GoogleFonts.manrope(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'Create your first route to get started'
+                                : 'Try adjusting your search',
+                            style: GoogleFonts.nunito(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadRoutes,
+                      color: const Color(0xFF5B53C2),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredRoutes.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final route = _filteredRoutes[index];
+                          final stopCount = route['route_stops'] != null
+                              ? (route['route_stops'] as List).length
+                              : 0;
 
-                              return _RouteCard(
-                                routeCode: route['code'] ?? 'N/A',
-                                routeName: route['name'],
-                                description: route['description'],
-                                stopCount: stopCount,
-                                onDelete: () => _deleteRoute(
-                                  route['id'],
-                                  route['code'] ?? 'N/A',
+                          return _RouteCard(
+                            routeCode: route['code'] ?? 'N/A',
+                            routeName: route['name'],
+                            description: route['description'],
+                            stopCount: stopCount,
+                            onDelete: () => _deleteRoute(
+                              route['id'],
+                              route['code'] ?? 'N/A',
+                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RouteDetailsPage(
+                                    routeId: route['id'],
+                                    routeCode: route['code'] ?? 'N/A',
+                                  ),
                                 ),
-                                onTap: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => RouteDetailsPage(
-                                        routeId: route['id'],
-                                        routeCode: route['code'] ?? 'N/A',
-                                      ),
-                                    ),
-                                  );
-                                  _loadRoutes();
-                                },
                               );
+                              _loadRoutes();
                             },
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -858,7 +1472,6 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
   }
 }
 
-// Enhanced Route Card
 class _RouteCard extends StatelessWidget {
   final String routeCode;
   final String? routeName;
