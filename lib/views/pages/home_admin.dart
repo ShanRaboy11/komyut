@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import './admin_routes.dart'; 
 
 class AdminDashboardNav extends StatefulWidget {
   const AdminDashboardNav({super.key});
@@ -64,6 +65,77 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: SvgPicture.asset('assets/images/logo.svg', height: 60),
               ),
               const SizedBox(height: 16),
+
+              // --- Quick Actions Section ---
+              Text(
+                'Quick Actions',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Icons.route_rounded,
+                      title: 'Routes',
+                      subtitle: 'Manage routes',
+                      color: const Color(0xFF5B53C2),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminRoutesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Symbols.verified,
+                      title: 'Verify',
+                      subtitle: 'Review users',
+                      color: const Color(0xFFB945AA),
+                      onTap: () {
+                        // Navigate to verification page
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Symbols.chat_info_rounded,
+                      title: 'Reports',
+                      subtitle: 'View reports',
+                      color: const Color(0xFFE67E22),
+                      onTap: () {
+                        // Navigate to reports page
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Icons.people_rounded,
+                      title: 'Users',
+                      subtitle: 'Manage users',
+                      color: const Color(0xFF3498DB),
+                      onTap: () {
+                        // Navigate to users page
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
 
               // --- Analytics Section ---
               Text(
@@ -357,6 +429,80 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Text(label, style: const TextStyle(fontSize: 13)),
       ],
+    );
+  }
+}
+
+// Quick Action Card Widget
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.purple.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.nunito(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
