@@ -5,7 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
-import './admin_routes.dart'; 
+import 'admin_routes.dart'; 
 
 class AdminDashboardNav extends StatefulWidget {
   const AdminDashboardNav({super.key});
@@ -29,6 +29,7 @@ class _AdminDashboardNavState extends State<AdminDashboardNav> {
         NavItem(icon: Symbols.verified, label: 'Verified'),
         NavItem(icon: Symbols.rate_review_rounded, label: 'Activity'),
         NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
+        NavItem(icon: Icons.route_rounded, label: 'Routes'),
       ],
     );
   }
@@ -65,77 +66,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: SvgPicture.asset('assets/images/logo.svg', height: 60),
               ),
               const SizedBox(height: 16),
-
-              // --- Quick Actions Section ---
-              Text(
-                'Quick Actions',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.route_rounded,
-                      title: 'Routes',
-                      subtitle: 'Manage routes',
-                      color: const Color(0xFF5B53C2),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminRoutesPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Symbols.verified,
-                      title: 'Verify',
-                      subtitle: 'Review users',
-                      color: const Color(0xFFB945AA),
-                      onTap: () {
-                        // Navigate to verification page
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Symbols.chat_info_rounded,
-                      title: 'Reports',
-                      subtitle: 'View reports',
-                      color: const Color(0xFFE67E22),
-                      onTap: () {
-                        // Navigate to reports page
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.people_rounded,
-                      title: 'Users',
-                      subtitle: 'Manage users',
-                      color: const Color(0xFF3498DB),
-                      onTap: () {
-                        // Navigate to users page
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
 
               // --- Analytics Section ---
               Text(

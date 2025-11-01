@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
 import './home_admin.dart'; 
 import './placeholders.dart';
+import './admin_routes.dart';
 
 class AdminApp extends StatelessWidget {
   const AdminApp({super.key});
@@ -13,6 +14,7 @@ class AdminApp extends StatelessWidget {
       verifiedPage: AdminVerifiedPage(),
       activityPage: AdminActivityPage(),
       reportsPage: AdminReportsPage(),
+      routePage: AdminRoutesPage(),
     );
   }
 }

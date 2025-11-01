@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import './admin_add_route.dart'; // Assuming this file exists for adding routes
+import './admin_add_route.dart';
 
-// Placeholder for a route details/edit page
+// Route Details Page with Edit Functionality
 class RouteDetailsPage extends StatefulWidget {
   final String routeId;
   final String routeCode;
@@ -22,11 +22,25 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
   Map<String, dynamic>? _routeData;
   List<Map<String, dynamic>> _stops = [];
   bool _isLoading = true;
+  bool _isEditing = false;
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _codeController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadRouteDetails();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _codeController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRouteDetails() async {
@@ -35,14 +49,12 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
     try {
       final supabase = Supabase.instance.client;
 
-      // Load route
       final routeResponse = await supabase
           .from('routes')
           .select()
           .eq('id', widget.routeId)
           .single();
 
-      // Load stops
       final stopsResponse = await supabase
           .from('route_stops')
           .select()
@@ -53,13 +65,76 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
         _routeData = routeResponse;
         _stops = List<Map<String, dynamic>>.from(stopsResponse);
         _isLoading = false;
+
+        // Populate controllers
+        _codeController.text = _routeData?['code'] ?? '';
+        _nameController.text = _routeData?['name'] ?? '';
+        _descriptionController.text = _routeData?['description'] ?? '';
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
+  }
+
+  Future<void> _saveChanges() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      await supabase.from('routes').update({
+        'code': _codeController.text.trim(),
+        'name': _nameController.text.trim(),
+        'description': _descriptionController.text.trim(),
+      }).eq('id', widget.routeId);
+
+      setState(() => _isEditing = false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Route updated successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+
+      _loadRouteDetails();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving changes: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _isEditing = false;
+      _codeController.text = _routeData?['code'] ?? '';
+      _nameController.text = _routeData?['name'] ?? '';
+      _descriptionController.text = _routeData?['description'] ?? '';
+    });
   }
 
   @override
@@ -74,134 +149,344 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              // TODO: Implement actual route editing functionality here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Edit functionality coming soon!'),
-                ),
-              );
-            },
-          ),
+          if (_isEditing) ...[
+            TextButton.icon(
+              onPressed: _cancelEdit,
+              icon: const Icon(Icons.close, size: 20),
+              label: const Text('Cancel'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: _saveChanges,
+              icon: const Icon(Icons.check, size: 20),
+              label: const Text('Save'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5B53C2),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () {
+                setState(() => _isEditing = true);
+              },
+              tooltip: 'Edit Route',
+            ),
+            const SizedBox(width: 8),
+          ],
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Route Info Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.purple.shade100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Route Info Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5B53C2).withAlpha(76),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isEditing) ...[
+                            // Edit Mode - Code
+                            TextFormField(
+                              controller: _codeController,
+                              style: GoogleFonts.manrope(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Route Code',
+                                labelStyle: GoogleFonts.nunito(
+                                  color: Colors.white.withAlpha(230),
+                                  fontSize: 14,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withAlpha(128),
+                                  ),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a route code';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // Edit Mode - Name
+                            TextFormField(
+                              controller: _nameController,
+                              style: GoogleFonts.manrope(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Route Name',
+                                labelStyle: GoogleFonts.nunito(
+                                  color: Colors.white.withAlpha(230),
+                                  fontSize: 14,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withAlpha(128),
+                                  ),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a route name';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // Edit Mode - Description
+                            TextFormField(
+                              controller: _descriptionController,
+                              style: GoogleFonts.nunito(
+                                color: Colors.white.withAlpha(230),
+                                fontSize: 14,
+                              ),
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                labelStyle: GoogleFonts.nunito(
+                                  color: Colors.white.withAlpha(230),
+                                  fontSize: 14,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withAlpha(128),
+                                  ),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // View Mode
+                            Text(
+                              _routeData?['name'] ?? 'Unnamed Route',
+                              style: GoogleFonts.manrope(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (_routeData?['description'] != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _routeData!['description'],
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white.withAlpha(230),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 24),
+
+                    // Stops Section Header
+                    Row(
                       children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Color(0xFF5B53C2),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          _routeData?['name'] ?? 'Unnamed Route',
+                          'Stops',
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (_routeData?['description'] != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _routeData!['description'],
-                            style: GoogleFonts.nunito(color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                        ],
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5B53C2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_stops.length}',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                  // Stops List
-                  Text(
-                    'Stops (${_stops.length})',
-                    style: GoogleFonts.manrope(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _stops.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final stop = _stops[index];
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.purple.shade100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 5,
-                              offset: const Offset(0, 2),
+                    // Stops List
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _stops.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final stop = _stops[index];
+                        final isFirst = index == 0;
+                        final isLast = index == _stops.length - 1;
+
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.purple.shade100,
+                              width: 1.5,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF5B53C2),
-                                shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
-                              child: Center(
-                                child: Text(
-                                  '${stop['sequence']}',
-                                  style: GoogleFonts.manrope(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isFirst
+                                        ? [Colors.green, Colors.green.shade700]
+                                        : isLast
+                                            ? [Colors.red, Colors.red.shade700]
+                                            : [
+                                                const Color(0xFF5B53C2),
+                                                const Color(0xFFB945AA)
+                                              ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (isFirst
+                                              ? Colors.green
+                                              : isLast
+                                                  ? Colors.red
+                                                  : const Color(0xFF5B53C2))
+                                          .withAlpha(76),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${stop['sequence']}',
+                                    style: GoogleFonts.manrope(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                stop['name'],
-                                style: GoogleFonts.manrope(
-                                  fontWeight: FontWeight.w600,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      stop['name'],
+                                      style: GoogleFonts.manrope(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    if (isFirst || isLast) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        isFirst ? 'Starting Point' : 'End Point',
+                                        style: GoogleFonts.nunito(
+                                          fontSize: 12,
+                                          color: isFirst
+                                              ? Colors.green
+                                              : Colors.red,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
     );
   }
 }
 
+// Main Admin Routes Page
 class AdminRoutesPage extends StatefulWidget {
   const AdminRoutesPage({super.key});
 
@@ -245,19 +530,31 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Delete Route',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'Delete Route',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
         content: Text(
           'Are you sure you want to delete route $routeCode? This action cannot be undone.',
-          style: GoogleFonts.nunito(),
+          style: GoogleFonts.nunito(fontSize: 15),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -266,8 +563,12 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: const Text('Delete'),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -293,6 +594,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
         backgroundColor: isError ? Colors.red : Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -315,53 +617,88 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Enhanced Header with Add Button
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.white,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Column(
                 children: [
+                  // Top Row: Back button, Title, Route count
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Manage Routes',
-                        style: GoogleFonts.manrope(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Manage Routes',
+                              style: GoogleFonts.manrope(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'View and organize all routes',
+                              style: GoogleFonts.nunito(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 16,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF7F4FF),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+                          ),
                           borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5B53C2).withAlpha(76),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
-                          '${_routes.length} routes',
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF5B53C2),
+                          '${_routes.length}' + " routes",
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // Search bar
+                  const SizedBox(height: 16),
+
+                  // Search Bar
                   TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search routes...',
-                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search by code or name...',
+                      hintStyle: GoogleFonts.nunito(
+                        color: Colors.grey.shade500,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.grey.shade600,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.purple.shade100),
@@ -370,12 +707,58 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.purple.shade100),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF5B53C2),
+                          width: 2,
+                        ),
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF7F4FF),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                     onChanged: (value) {
                       setState(() => _searchQuery = value);
                     },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Add Route Button (Moved here from FAB)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminAddRoutePage(),
+                          ),
+                        );
+                        _loadRoutes();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5B53C2),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      icon: const Icon(Icons.add_circle_outline,
+                          color: Colors.white),
+                      label: Text(
+                        'Add New Route',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -386,91 +769,96 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredRoutes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.route,
-                            size: 80,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isEmpty
-                                ? 'No routes yet'
-                                : 'No routes found',
-                            style: GoogleFonts.manrope(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadRoutes,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredRoutes.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 15),
-                        itemBuilder: (context, index) {
-                          final route = _filteredRoutes[index];
-                          final stopCount = route['route_stops'] != null
-                              ? (route['route_stops'] as List).length
-                              : 0;
-
-                          return _RouteCard(
-                            routeCode: route['code'] ?? 'N/A',
-                            routeName: route['name'],
-                            description: route['description'],
-                            stopCount: stopCount,
-                            onDelete: () => _deleteRoute(
-                              route['id'],
-                              route['code'] ?? 'N/A',
-                            ),
-                            onTap: () {
-                              // Navigate to route details page for editing
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => RouteDetailsPage(
-                                    routeId: route['id'],
-                                    routeCode: route['code'] ?? 'N/A',
-                                  ),
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade50,
+                                  shape: BoxShape.circle,
                                 ),
+                                child: Icon(
+                                  _searchQuery.isEmpty
+                                      ? Icons.route_outlined
+                                      : Icons.search_off,
+                                  size: 64,
+                                  color: Colors.purple.shade300,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                _searchQuery.isEmpty
+                                    ? 'No routes yet'
+                                    : 'No routes found',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _searchQuery.isEmpty
+                                    ? 'Create your first route to get started'
+                                    : 'Try adjusting your search',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadRoutes,
+                          color: const Color(0xFF5B53C2),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredRoutes.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final route = _filteredRoutes[index];
+                              final stopCount = route['route_stops'] != null
+                                  ? (route['route_stops'] as List).length
+                                  : 0;
+
+                              return _RouteCard(
+                                routeCode: route['code'] ?? 'N/A',
+                                routeName: route['name'],
+                                description: route['description'],
+                                stopCount: stopCount,
+                                onDelete: () => _deleteRoute(
+                                  route['id'],
+                                  route['code'] ?? 'N/A',
+                                ),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => RouteDetailsPage(
+                                        routeId: route['id'],
+                                        routeCode: route['code'] ?? 'N/A',
+                                      ),
+                                    ),
+                                  );
+                                  _loadRoutes();
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-                    ),
+                          ),
+                        ),
             ),
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminAddRoutePage()),
-          );
-          _loadRoutes(); // Reload routes after adding a new one
-        },
-        backgroundColor: const Color(0xFF5B53C2),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Add Route',
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
         ),
       ),
     );
   }
 }
 
+// Enhanced Route Card
 class _RouteCard extends StatelessWidget {
   final String routeCode;
   final String? routeName;
@@ -498,11 +886,11 @@ class _RouteCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Color(0xFFB945AA)),
+          border: Border.all(color: const Color(0xFFB945AA), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05), // Added subtle elevation
-              blurRadius: 10,
+              color: const Color(0xFFB945AA).withAlpha(26),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -514,14 +902,21 @@ class _RouteCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: 14,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF5B53C2).withAlpha(76),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     routeCode,
@@ -529,54 +924,79 @@ class _RouteCard extends StatelessWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete_forever, color: Colors.red),
-                  onPressed: onDelete,
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: onDelete,
+                    tooltip: 'Delete route',
+                  ),
                 ),
               ],
             ),
             if (routeName != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 routeName!,
                 style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
                 ),
               ),
             ],
             if (description != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 description!,
-                style: GoogleFonts.nunito(fontSize: 13, color: Colors.grey),
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 16, color: Colors.grey.shade700),
-                const SizedBox(width: 4),
-                Text(
-                  '$stopCount stops',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F4FF),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 18,
+                    color: Colors.purple.shade700,
                   ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Text(
+                    '$stopCount ${stopCount == 1 ? 'stop' : 'stops'}',
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.purple.shade700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
