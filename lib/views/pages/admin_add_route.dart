@@ -127,11 +127,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              const Icon(
-                Icons.location_on,
-                color: Color(0xFF5B53C2),
-                size: 40,
-              ),
+              const Icon(Icons.location_on, color: Color(0xFF5B53C2), size: 40),
               Positioned(
                 top: 8,
                 child: Container(
@@ -394,10 +390,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                   ),
                   Text(
                     'Tap on map to add stops',
-                    style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      color: Colors.grey,
-                    ),
+                    style: GoogleFonts.nunito(fontSize: 13, color: Colors.grey),
                   ),
                 ],
               ),
@@ -452,9 +445,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFF7F4FF),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.purple.shade100,
-                          ),
+                          border: Border.all(color: Colors.purple.shade100),
                         ),
                         child: Row(
                           children: [
@@ -513,28 +504,51 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
             // Save Button
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.white,
+              color: Colors.white, // This outer container's color is white
               child: SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveRoute,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5B53C2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  // This is the container that provides the gradient
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFB945AA),
+                        Color(0xFF8E4CB6),
+                        Color(0xFF5B53C2),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
+                    borderRadius: BorderRadius.circular(
+                      12,
+                    ), // Match button's border radius
                   ),
-                  child: _isSaving
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          'Save Route',
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _saveRoute,
+                    style: ElevatedButton.styleFrom(
+                      // ****** THIS IS THE CRUCIAL CHANGE ******
+                      backgroundColor: Colors
+                          .transparent, // Make the ElevatedButton transparent
+                      shadowColor:
+                          Colors.transparent, // Remove button's default shadow
+                      padding: EdgeInsets
+                          .zero, // Remove default padding to let gradient fill fully
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            'Save Route',
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ),
             ),

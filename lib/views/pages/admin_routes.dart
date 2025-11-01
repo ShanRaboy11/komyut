@@ -1,7 +1,206 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import './admin_add_route.dart';
+import './admin_add_route.dart'; // Assuming this file exists for adding routes
+
+// Placeholder for a route details/edit page
+class RouteDetailsPage extends StatefulWidget {
+  final String routeId;
+  final String routeCode;
+
+  const RouteDetailsPage({
+    super.key,
+    required this.routeId,
+    required this.routeCode,
+  });
+
+  @override
+  State<RouteDetailsPage> createState() => _RouteDetailsPageState();
+}
+
+class _RouteDetailsPageState extends State<RouteDetailsPage> {
+  Map<String, dynamic>? _routeData;
+  List<Map<String, dynamic>> _stops = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRouteDetails();
+  }
+
+  Future<void> _loadRouteDetails() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Load route
+      final routeResponse = await supabase
+          .from('routes')
+          .select()
+          .eq('id', widget.routeId)
+          .single();
+
+      // Load stops
+      final stopsResponse = await supabase
+          .from('route_stops')
+          .select()
+          .eq('route_id', widget.routeId)
+          .order('sequence', ascending: true);
+
+      setState(() {
+        _routeData = routeResponse;
+        _stops = List<Map<String, dynamic>>.from(stopsResponse);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F4FF),
+      appBar: AppBar(
+        title: Text(
+          'Route ${widget.routeCode}',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              // TODO: Implement actual route editing functionality here
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Edit functionality coming soon!'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Route Info Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.purple.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _routeData?['name'] ?? 'Unnamed Route',
+                          style: GoogleFonts.manrope(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_routeData?['description'] != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _routeData!['description'],
+                            style: GoogleFonts.nunito(color: Colors.grey),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Stops List
+                  Text(
+                    'Stops (${_stops.length})',
+                    style: GoogleFonts.manrope(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _stops.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final stop = _stops[index];
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.purple.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF5B53C2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${stop['sequence']}',
+                                  style: GoogleFonts.manrope(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                stop['name'],
+                                style: GoogleFonts.manrope(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
 
 class AdminRoutesPage extends StatefulWidget {
   const AdminRoutesPage({super.key});
@@ -26,7 +225,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
 
     try {
       final supabase = Supabase.instance.client;
-      
+
       final response = await supabase
           .from('routes')
           .select('*, route_stops(count)')
@@ -100,7 +299,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
 
   List<Map<String, dynamic>> get _filteredRoutes {
     if (_searchQuery.isEmpty) return _routes;
-    
+
     return _routes.where((route) {
       final code = (route['code'] ?? '').toString().toLowerCase();
       final name = (route['name'] ?? '').toString().toLowerCase();
@@ -187,66 +386,65 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredRoutes.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.route,
-                                size: 80,
-                                color: Colors.grey.shade300,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _searchQuery.isEmpty
-                                    ? 'No routes yet'
-                                    : 'No routes found',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.route,
+                            size: 80,
+                            color: Colors.grey.shade300,
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadRoutes,
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _filteredRoutes.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final route = _filteredRoutes[index];
-                              final stopCount = route['route_stops'] != null
-                                  ? (route['route_stops'] as List).length
-                                  : 0;
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'No routes yet'
+                                : 'No routes found',
+                            style: GoogleFonts.manrope(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadRoutes,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredRoutes.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 15),
+                        itemBuilder: (context, index) {
+                          final route = _filteredRoutes[index];
+                          final stopCount = route['route_stops'] != null
+                              ? (route['route_stops'] as List).length
+                              : 0;
 
-                              return _RouteCard(
-                                routeCode: route['code'] ?? 'N/A',
-                                routeName: route['name'],
-                                description: route['description'],
-                                stopCount: stopCount,
-                                onDelete: () => _deleteRoute(
-                                  route['id'],
-                                  route['code'] ?? 'N/A',
+                          return _RouteCard(
+                            routeCode: route['code'] ?? 'N/A',
+                            routeName: route['name'],
+                            description: route['description'],
+                            stopCount: stopCount,
+                            onDelete: () => _deleteRoute(
+                              route['id'],
+                              route['code'] ?? 'N/A',
+                            ),
+                            onTap: () {
+                              // Navigate to route details page for editing
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RouteDetailsPage(
+                                    routeId: route['id'],
+                                    routeCode: route['code'] ?? 'N/A',
+                                  ),
                                 ),
-                                onTap: () {
-                                  // Navigate to route details
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => RouteDetailsPage(
-                                        routeId: route['id'],
-                                        routeCode: route['code'] ?? 'N/A',
-                                      ),
-                                    ),
-                                  );
-                                },
                               );
                             },
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -255,17 +453,18 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AdminAddRoutePage(),
-            ),
+            MaterialPageRoute(builder: (context) => const AdminAddRoutePage()),
           );
-          _loadRoutes();
+          _loadRoutes(); // Reload routes after adding a new one
         },
         backgroundColor: const Color(0xFF5B53C2),
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
           'Add Route',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -299,10 +498,10 @@ class _RouteCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.purple.shade100),
+          border: Border.all(color: Color(0xFFB945AA)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05), // Added subtle elevation
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -335,7 +534,7 @@ class _RouteCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  icon: const Icon(Icons.delete_forever, color: Colors.red),
                   onPressed: onDelete,
                 ),
               ],
@@ -354,10 +553,7 @@ class _RouteCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 description!,
-                style: GoogleFonts.nunito(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
+                style: GoogleFonts.nunito(fontSize: 13, color: Colors.grey),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -365,202 +561,26 @@ class _RouteCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  size: 16,
-                  color: Colors.grey.shade600,
-                ),
+                Icon(Icons.location_on, size: 16, color: Colors.grey.shade700),
                 const SizedBox(width: 4),
                 Text(
                   '$stopCount stops',
                   style: GoogleFonts.nunito(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: Colors.grey.shade700,
                   ),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 14,
-                  color: Colors.grey.shade400,
+                  color: Colors.grey.shade600,
                 ),
               ],
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// Route Details Page
-class RouteDetailsPage extends StatefulWidget {
-  final String routeId;
-  final String routeCode;
-
-  const RouteDetailsPage({
-    super.key,
-    required this.routeId,
-    required this.routeCode,
-  });
-
-  @override
-  State<RouteDetailsPage> createState() => _RouteDetailsPageState();
-}
-
-class _RouteDetailsPageState extends State<RouteDetailsPage> {
-  Map<String, dynamic>? _routeData;
-  List<Map<String, dynamic>> _stops = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRouteDetails();
-  }
-
-  Future<void> _loadRouteDetails() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final supabase = Supabase.instance.client;
-
-      // Load route
-      final routeResponse = await supabase
-          .from('routes')
-          .select()
-          .eq('id', widget.routeId)
-          .single();
-
-      // Load stops
-      final stopsResponse = await supabase
-          .from('route_stops')
-          .select()
-          .eq('route_id', widget.routeId)
-          .order('sequence', ascending: true);
-
-      setState(() {
-        _routeData = routeResponse;
-        _stops = List<Map<String, dynamic>>.from(stopsResponse);
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
-      appBar: AppBar(
-        title: Text(
-          'Route ${widget.routeCode}',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Route Info Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.purple.shade100),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _routeData?['name'] ?? 'Unnamed Route',
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (_routeData?['description'] != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _routeData!['description'],
-                            style: GoogleFonts.nunito(color: Colors.grey),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Stops List
-                  Text(
-                    'Stops (${_stops.length})',
-                    style: GoogleFonts.manrope(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _stops.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final stop = _stops[index];
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.purple.shade100),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF5B53C2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${stop['sequence']}',
-                                  style: GoogleFonts.manrope(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                stop['name'],
-                                style: GoogleFonts.manrope(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
