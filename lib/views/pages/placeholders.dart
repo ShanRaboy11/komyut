@@ -384,7 +384,7 @@ class OperatorTransactionsPage extends StatelessWidget {
   }
 }*/
 
-class OperatorProfilePage extends StatelessWidget {
+/*class OperatorProfilePage extends StatelessWidget {
   const OperatorProfilePage({super.key});
 
   @override
@@ -417,7 +417,7 @@ class OperatorProfilePage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 // ============= ADMIN PLACEHOLDERS =============
 class AdminDashboardPage extends StatelessWidget {
