@@ -11,28 +11,6 @@ class OperatorReportsPage extends StatefulWidget {
 }
 
 class _OperatorReportsPageState extends State<OperatorReportsPage> {
-  void _sortByDate() {
-    reports.sort((a, b) {
-      final da = DateTime.parse(
-        "20${a.date.substring(6)}-${a.date.substring(0, 2)}-${a.date.substring(3, 5)}",
-      );
-      final db = DateTime.parse(
-        "20${b.date.substring(6)}-${b.date.substring(0, 2)}-${b.date.substring(3, 5)}",
-      );
-      return db.compareTo(da); // latest first
-    });
-    setState(() {});
-  }
-
-  void _sortByPriority() {
-    const priorityOrder = {"High": 3, "Medium": 2, "Low": 1};
-
-    reports.sort((a, b) {
-      return priorityOrder[b.priority]!.compareTo(priorityOrder[a.priority]!);
-    });
-    setState(() {});
-  }
-
   final List<ReportCard> reports = [
     ReportCard(
       name: "Aileen Grace B. Santos",
@@ -114,16 +92,10 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final gradientColors = const [
-      Color(0xFFB945AA),
-      Color(0xFF8E4CB6),
-      Color(0xFF5B53C2),
-    ];
-
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
     final filteredReports = reports
-        .where((r) => _priorityValue(r.priority ?? "") == activePriority)
+        .where((r) => _priorityValue(r.priority) == activePriority)
         .toList();
 
     return Scaffold(
@@ -147,49 +119,6 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  /*Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: gradientColors,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        dropdownColor: const Color(0xFF8A56F0),
-                        value: selectedFilter,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white,
-                        ),
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: "Date", child: Text("Date")),
-                          DropdownMenuItem(
-                            value: "Priority",
-                            child: Text("Priority"),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-
-                          setState(() => selectedFilter = value);
-
-                          if (value == "Date") {
-                            _sortByDate();
-                          } else {
-                            _sortByPriority();
-                          }
-                        },
-                      ),
-                    ),
-                  ),*/
                 ],
               ),
 
