@@ -802,98 +802,100 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    if (_isEditing) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF5B53C2).withAlpha(26),
-                              const Color(0xFFB945AA).withAlpha(26),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.purple.shade200),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF5B53C2).withAlpha(26),
+                            const Color(0xFFB945AA).withAlpha(26),
+                          ],
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.touch_app,
-                              color: Colors.purple.shade700,
-                              size: 24,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isEditing ? Icons.touch_app : Icons.map,
+                            color: Colors.purple.shade700,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _isEditing 
+                                  ? 'Tap on the map to add new stops'
+                                  : 'Route map showing all stops',
+                              style: GoogleFonts.nunito(
+                                fontSize: 14,
+                                color: Colors.purple.shade900,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Tap on the map to add new stops',
-                                style: GoogleFonts.nunito(
-                                  fontSize: 14,
-                                  color: Colors.purple.shade900,
-                                  fontWeight: FontWeight.w600,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    Container(
+                      height: 300,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.purple.shade100,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(13),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: _polylinePoints.isNotEmpty
+                              ? _polylinePoints.first
+                              : const LatLng(10.3157, 123.8854),
+                          initialZoom: 13.0,
+                          onTap: _isEditing ? _onMapTap : null,
+                          interactionOptions: const InteractionOptions(
+                            flags:
+                                InteractiveFlag.all & ~InteractiveFlag.rotate,
+                          ),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                            subdomains: const ['a', 'b', 'c', 'd'],
+                            retinaMode: RetinaMode.isHighDensity(context),
+                          ),
+                          if (_polylinePoints.length > 1)
+                            PolylineLayer(
+                              polylines: [
+                                Polyline(
+                                  points: _polylinePoints,
+                                  color: const Color(0xFF5B53C2),
+                                  strokeWidth: 4.0,
+                                  borderStrokeWidth: 2.0,
+                                  borderColor: Colors.white.withAlpha(179),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
+                          MarkerLayer(markers: _markers),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Container(
-                        height: 300,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.purple.shade100,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(13),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: FlutterMap(
-                          mapController: _mapController,
-                          options: MapOptions(
-                            initialCenter: _polylinePoints.isNotEmpty
-                                ? _polylinePoints.first
-                                : const LatLng(10.3157, 123.8854),
-                            initialZoom: 13.0,
-                            onTap: _onMapTap,
-                            interactionOptions: const InteractionOptions(
-                              flags:
-                                  InteractiveFlag.all & ~InteractiveFlag.rotate,
-                            ),
-                          ),
-                          children: [
-                            TileLayer(
-                              urlTemplate:
-                                  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                              subdomains: const ['a', 'b', 'c', 'd'],
-                              retinaMode: RetinaMode.isHighDensity(context),
-                            ),
-                            if (_polylinePoints.length > 1)
-                              PolylineLayer(
-                                polylines: [
-                                  Polyline(
-                                    points: _polylinePoints,
-                                    color: const Color(0xFF5B53C2),
-                                    strokeWidth: 4.0,
-                                    borderStrokeWidth: 2.0,
-                                    borderColor: Colors.white.withAlpha(179),
-                                  ),
-                                ],
-                              ),
-                            MarkerLayer(markers: _markers),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
+                    const SizedBox(height: 24),
 
+                    // STOPS LIST SECTION
                     Row(
                       children: [
                         const Icon(
