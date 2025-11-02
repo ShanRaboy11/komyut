@@ -224,7 +224,7 @@ class DriverNotificationsPage extends StatelessWidget {
   }
 }
 
-class DriverProfilePage extends StatelessWidget {
+/*class DriverProfilePage extends StatelessWidget {
   const DriverProfilePage({super.key});
 
   @override
@@ -257,7 +257,7 @@ class DriverProfilePage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 // ============= OPERATOR PLACEHOLDERS =============
 class OperatorDashboardPage extends StatelessWidget {
