@@ -1,15 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/report_card.dart'; // make sure to import your ReportCard file
+import '../widgets/report_card.dart';
+import '../pages/feedbackdetails_driver.dart'; // make sure to import your ReportCard file
 
-class DriverFeedbackPage extends StatelessWidget {
+class DriverFeedbackPage extends StatefulWidget {
   const DriverFeedbackPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isSmall = width < 400;
+  State<DriverFeedbackPage> createState() => _DriverFeedbackPageState();
+}
 
+class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
+  @override
+  void _sortByDate() {
+    reports.sort((a, b) {
+      final da = DateTime.parse(
+        "20${a.date.substring(6)}-${a.date.substring(0, 2)}-${a.date.substring(3, 5)}",
+      );
+      final db = DateTime.parse(
+        "20${b.date.substring(6)}-${b.date.substring(0, 2)}-${b.date.substring(3, 5)}",
+      );
+      return db.compareTo(da); // latest first
+    });
+    setState(() {});
+  }
+
+  void _sortByPriority() {
+    const priorityOrder = {"High": 3, "Medium": 2, "Low": 1};
+
+    reports.sort((a, b) {
+      return priorityOrder[b.priority]!.compareTo(priorityOrder[a.priority]!);
+    });
+    setState(() {});
+  }
+
+  final List<ReportCard> reports = [
+    ReportCard(
+      name: "Aileen Grace B. Santos",
+      priority: "Low",
+      date: "09/14/25",
+      description:
+          "Passenger reported a minor delay at the jeepney stop due to traffic.",
+      tags: ["Delay", "Traffic"],
+    ),
+    ReportCard(
+      name: "John Erik D. Bautista",
+      priority: "Medium",
+      date: "09/10/25",
+      description:
+          "A wallet was found and turned over to the terminal personnel.",
+      tags: ["Lost Item"],
+    ),
+    ReportCard(
+      name: "Maricel P. Torres",
+      priority: "High",
+      date: "09/09/25",
+      description:
+          "Driver was seen using the phone while driving. Needs investigation.",
+      tags: ["Driver Conduct", "Safety"],
+    ),
+  ];
+  String selectedFilter = "Date";
+  Widget build(BuildContext context) {
     final gradientColors = const [
       Color(0xFFB945AA),
       Color(0xFF8E4CB6),
@@ -79,7 +131,7 @@ class DriverFeedbackPage extends StatelessWidget {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         dropdownColor: const Color(0xFF8A56F0),
-                        value: "Date",
+                        value: selectedFilter,
                         icon: const Icon(
                           Icons.keyboard_arrow_down_rounded,
                           color: Colors.white,
@@ -95,7 +147,17 @@ class DriverFeedbackPage extends StatelessWidget {
                             child: Text("Priority"),
                           ),
                         ],
-                        onChanged: (value) {},
+                        onChanged: (value) {
+                          if (value == null) return;
+
+                          setState(() => selectedFilter = value);
+
+                          if (value == "Date") {
+                            _sortByDate();
+                          } else {
+                            _sortByPriority();
+                          }
+                        },
                       ),
                     ),
                   ),
@@ -107,15 +169,33 @@ class DriverFeedbackPage extends StatelessWidget {
               // --- Reports List ---
               Expanded(
                 child: ListView.builder(
-                  itemCount: 5,
+                  itemCount: reports.length,
                   itemBuilder: (context, index) {
-                    return const ReportCard(
-                      name: "Shan Michael V. Raboy",
-                      priority: "High",
-                      date: "09/11/25",
-                      description:
-                          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna...",
-                      tags: ["Vehicle", "Lost Item"],
+                    final r = reports[index];
+
+                    return ReportCard(
+                      name: r.name,
+                      priority: r.priority,
+                      date: r.date,
+                      description: r.description,
+                      tags: r.tags,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReportDetailsPage(
+                              name: r.name,
+                              role: "Commuter", // or dynamic later
+                              id: "123456789", // or dynamic later
+                              priority: r.priority,
+                              date: r.date,
+                              description: r.description,
+                              tags: r.tags,
+                              imagePath: "assets/images/sample bottle.png",
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
