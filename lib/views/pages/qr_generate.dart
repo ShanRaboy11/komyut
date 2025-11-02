@@ -133,65 +133,65 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   }
 
   Future<void> _downloadQRCode() async {
-  if (_qrCode == null) return;
+    if (_qrCode == null) return;
 
-  setState(() {
-    _isDownloading = true;
-  });
+    setState(() {
+      _isDownloading = true;
+    });
 
-  try {
-    // Capture QR code as image
-    final boundary =
-        _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: 3.0);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final pngBytes = byteData!.buffer.asUint8List();
+    try {
+      // Capture QR code as image
+      final boundary =
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final pngBytes = byteData!.buffer.asUint8List();
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      // Save to temporary directory first
-      final directory = await getTemporaryDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final driverName = _driverData?['driverName'] ?? 'Driver';
-      final fileName = 'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
-      final filePath = '${directory.path}/$fileName';
-
-      // Write file
-      final file = File(filePath);
-      await file.writeAsBytes(pngBytes);
-
-      // Save to gallery using gal - handles all permissions automatically
-      await Gal.putImage(filePath);
-      
-      _showSnackBar('QR Code saved to gallery!', Colors.green);
-    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      final directory = await getDownloadsDirectory();
-      if (directory != null) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        // Save to temporary directory first
+        final directory = await getTemporaryDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final driverName = _driverData?['driverName'] ?? 'Driver';
-        final fileName = 'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
+        final fileName =
+            'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
         final filePath = '${directory.path}/$fileName';
 
+        // Write file
         final file = File(filePath);
         await file.writeAsBytes(pngBytes);
 
-        _showSnackBar('QR Code saved to Downloads folder!', Colors.green);
+        // Save to gallery using gal - handles all permissions automatically
+        await Gal.putImage(filePath);
+
+        _showSnackBar('QR Code saved to gallery!', Colors.green);
+      } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        final directory = await getDownloadsDirectory();
+        if (directory != null) {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final driverName = _driverData?['driverName'] ?? 'Driver';
+          final fileName =
+              'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
+          final filePath = '${directory.path}/$fileName';
+
+          final file = File(filePath);
+          await file.writeAsBytes(pngBytes);
+
+          _showSnackBar('QR Code saved to Downloads folder!', Colors.green);
+        } else {
+          _showSnackBar('Could not access Downloads folder', Colors.red);
+        }
       } else {
-        _showSnackBar('Could not access Downloads folder', Colors.red);
+        _showSnackBar('Platform not supported', Colors.orange);
       }
-    } else {
-      _showSnackBar('Platform not supported', Colors.orange);
+    } catch (e) {
+      debugPrint('Error downloading QR code: $e');
+      _showSnackBar('Failed to download QR code: $e', Colors.red);
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
     }
-  } catch (e) {
-    debugPrint('Error downloading QR code: $e');
-    _showSnackBar('Failed to download QR code: $e', Colors.red);
-  } finally {
-    setState(() {
-      _isDownloading = false;
-    });
   }
-}
-
-
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
@@ -219,85 +219,91 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
     final isTablet = size.width > 600;
 
     return Scaffold(
-  extendBody: true,
-  body: Container(
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-    ),
-    child: SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  tooltip: 'Back',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'QR Code',
-                  style: GoogleFonts.manrope(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
+      extendBody: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-
-          // Main Content
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 20),
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).padding.bottom,
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      tooltip: 'Back',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'QR Code',
+                      style: GoogleFonts.manrope(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isTablet ? 500 : double.infinity,
+
+              // Main Content
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom,
                   ),
-                  child: Padding( // Add padding directly if needed, instead of in scroll view
-                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 30), // Adjusted padding
-                    child: _isLoading
-                        ? _buildLoadingState()
-                        : _qrGenerated
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isTablet ? 500 : double.infinity,
+                      ),
+                      child: Padding(
+                        // Add padding directly if needed, instead of in scroll view
+                        padding: const EdgeInsets.fromLTRB(
+                          30,
+                          30,
+                          30,
+                          30,
+                        ), // Adjusted padding
+                        child: _isLoading
+                            ? _buildLoadingState()
+                            : _qrGenerated
                             ? _buildQRDisplay()
                             : _buildInitialState(),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildLoadingState() {
@@ -494,11 +500,19 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                 children: [
                   const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.only(left: 30, right: 20, top: 20, bottom: 20),
+                    padding: const EdgeInsets.only(
+                      left: 30,
+                      right: 20,
+                      top: 20,
+                      bottom: 20,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF5B53C2), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFF5B53C2),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF8E4CB6).withAlpha(76),
@@ -513,10 +527,10 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                        colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                              colors: [Color(0xFFB945AA), Color(0xFF8E4CB6)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: const Icon(
@@ -566,7 +580,10 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF8E4CB6), width: 3),
+                      border: Border.all(
+                        color: const Color(0xFF8E4CB6),
+                        width: 3,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withAlpha(25),

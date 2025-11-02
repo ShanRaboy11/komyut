@@ -1,4 +1,3 @@
-// lib/services/qr_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
@@ -15,10 +14,7 @@ class QRService {
       // Get current user
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        return {
-          'success': false,
-          'message': 'No authenticated user found',
-        };
+        return {'success': false, 'message': 'No authenticated user found'};
       }
 
       debugPrint('✅ User authenticated: ${user.id}');
@@ -61,7 +57,7 @@ class QRService {
       final driverId = driverResponse['id'];
       final licenseNumber = driverResponse['license_number'];
       final vehiclePlate = driverResponse['vehicle_plate'] ?? 'N/A';
-      
+
       // ✅ UPDATED: Get route info from nested query
       final routeData = driverResponse['routes'];
       final routeCode = routeData?['code'] ?? 'N/A';
@@ -94,21 +90,19 @@ class QRService {
         'data': {
           'driverId': driverId,
           'profileId': profileId,
-          'driverName': '${profileResponse['first_name']} ${profileResponse['last_name']}',
+          'driverName':
+              '${profileResponse['first_name']} ${profileResponse['last_name']}',
           'licenseNumber': licenseNumber,
-          'plateNumber': vehiclePlate,      // ✅ Changed to plateNumber
-          'routeNumber': routeCode,         // ✅ Changed to routeNumber
-          'routeName': routeName,           // ✅ Added routeName
+          'plateNumber': vehiclePlate, // ✅ Changed to plateNumber
+          'routeNumber': routeCode, // ✅ Changed to routeNumber
+          'routeName': routeName, // ✅ Added routeName
           'generatedAt': DateTime.now().toIso8601String(),
           'previousQR': existingQR,
         },
       };
     } catch (e) {
       debugPrint('❌ Error generating QR code: $e');
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -117,10 +111,7 @@ class QRService {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        return {
-          'success': false,
-          'message': 'No authenticated user found',
-        };
+        return {'success': false, 'message': 'No authenticated user found'};
       }
 
       // Get driver's profile
@@ -175,21 +166,20 @@ class QRService {
         'qrCode': qrCode,
         'data': {
           'driverId': driverResponse['id'],
-          'driverName': '${profileResponse['first_name']} ${profileResponse['last_name']}',
+          'driverName':
+              '${profileResponse['first_name']} ${profileResponse['last_name']}',
           'licenseNumber': driverResponse['license_number'],
-          'plateNumber': driverResponse['vehicle_plate'] ?? 'N/A',  // ✅ Changed to plateNumber
-          'routeNumber': routeCode,                                   // ✅ Changed to routeNumber
-          'routeName': routeName,                                     // ✅ Added routeName
+          'plateNumber':
+              driverResponse['vehicle_plate'] ??
+              'N/A', // ✅ Changed to plateNumber
+          'routeNumber': routeCode, // ✅ Changed to routeNumber
+          'routeName': routeName, // ✅ Added routeName
           'lastGenerated': driverResponse['updated_at'],
         },
       };
     } catch (e) {
       debugPrint('❌ Error getting current QR code: $e');
-      return {
-        'success': false,
-        'hasQR': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'hasQR': false, 'message': e.toString()};
     }
   }
 
@@ -197,7 +187,7 @@ class QRService {
   String _generateUniqueQRCode(String driverId) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = Random().nextInt(9999).toString().padLeft(4, '0');
-    
+
     // Format: KOMYUT-DRIVER-[SHORT_ID]-[TIMESTAMP]-[RANDOM]
     final shortId = driverId.substring(0, 8).toUpperCase();
     return 'KOMYUT-DRIVER-$shortId-$timestamp-$random';
@@ -238,16 +228,12 @@ class QRService {
           .maybeSingle();
 
       if (response == null) {
-        return {
-          'success': false,
-          'valid': false,
-          'message': 'Invalid QR code',
-        };
+        return {'success': false, 'valid': false, 'message': 'Invalid QR code'};
       }
 
       final isActive = response['active'] ?? false;
       final status = response['status'] ?? false;
-      
+
       // ✅ UPDATED: Get route info
       final routeData = response['routes'];
       final routeCode = routeData?['code'] ?? 'N/A';
@@ -260,20 +246,17 @@ class QRService {
         'isOnline': status,
         'data': {
           'driverId': response['id'],
-          'driverName': '${response['profiles']['first_name']} ${response['profiles']['last_name']}',
+          'driverName':
+              '${response['profiles']['first_name']} ${response['profiles']['last_name']}',
           'licenseNumber': response['license_number'],
-          'plateNumber': response['vehicle_plate'] ?? 'N/A',  
-          'routeNumber': routeCode,                            
-          'routeName': routeName,                              
+          'plateNumber': response['vehicle_plate'] ?? 'N/A',
+          'routeNumber': routeCode,
+          'routeName': routeName,
         },
       };
     } catch (e) {
       debugPrint('❌ Error verifying QR code: $e');
-      return {
-        'success': false,
-        'valid': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'valid': false, 'message': e.toString()};
     }
   }
 }

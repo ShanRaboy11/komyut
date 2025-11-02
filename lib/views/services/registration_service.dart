@@ -1,4 +1,3 @@
-// lib/services/registration_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -51,8 +50,8 @@ class RegistrationService {
     required String licenseNumber,
     String? assignedOperator,
     required String driverLicensePath,
-    required String vehiclePlate,  // ✨ NEW
-    required String routeCode,     // ✨ NEW
+    required String vehiclePlate, // ✨ NEW
+    required String routeCode, // ✨ NEW
   }) {
     _registrationData['first_name'] = firstName;
     _registrationData['last_name'] = lastName;
@@ -62,8 +61,8 @@ class RegistrationService {
     _registrationData['license_number'] = licenseNumber;
     _registrationData['assigned_operator'] = assignedOperator;
     _registrationData['driver_license_path'] = driverLicensePath;
-    _registrationData['vehicle_plate'] = vehiclePlate;  // ✨ NEW
-    _registrationData['route_code'] = routeCode;        // ✨ NEW
+    _registrationData['vehicle_plate'] = vehiclePlate; // ✨ NEW
+    _registrationData['route_code'] = routeCode; // ✨ NEW
     debugPrint('✅ Driver personal info saved');
     debugPrint('Current data: $_registrationData');
   }
@@ -86,10 +85,7 @@ class RegistrationService {
   }
 
   // Step 3: Save login info
-  void saveLoginInfo({
-    required String email,
-    required String password,
-  }) {
+  void saveLoginInfo({required String email, required String password}) {
     _registrationData['email'] = email;
     _registrationData['password'] = password;
     debugPrint('✅ Login info saved');
@@ -101,19 +97,13 @@ class RegistrationService {
     try {
       debugPrint('📧 Sending OTP to: $email');
 
-      await _supabase.auth.signInWithOtp(
-        email: email,
-        emailRedirectTo: null,
-      );
+      await _supabase.auth.signInWithOtp(email: email, emailRedirectTo: null);
 
       debugPrint('✅ OTP sent successfully');
       return {'success': true};
     } catch (e) {
       debugPrint('❌ Error sending OTP: $e');
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -133,10 +123,7 @@ class RegistrationService {
       );
 
       if (authResponse.user == null) {
-        return {
-          'success': false,
-          'message': 'Invalid verification code',
-        };
+        return {'success': false, 'message': 'Invalid verification code'};
       }
 
       debugPrint('✅ User authenticated: ${authResponse.user!.id}');
@@ -145,19 +132,14 @@ class RegistrationService {
       final password = _registrationData['password'] as String?;
       if (password != null) {
         debugPrint('🔐 Setting user password...');
-        await _supabase.auth.updateUser(
-          UserAttributes(password: password),
-        );
+        await _supabase.auth.updateUser(UserAttributes(password: password));
         debugPrint('✅ Password set successfully');
       }
 
       return {'success': true};
     } catch (e) {
       debugPrint('❌ Error verifying OTP: $e');
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -166,19 +148,13 @@ class RegistrationService {
     try {
       debugPrint('🔄 Resending OTP to: $email');
 
-      await _supabase.auth.signInWithOtp(
-        email: email,
-        emailRedirectTo: null,
-      );
+      await _supabase.auth.signInWithOtp(email: email, emailRedirectTo: null);
 
       debugPrint('✅ OTP resent successfully');
       return {'success': true};
     } catch (e) {
       debugPrint('❌ Error resending OTP: $e');
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -186,7 +162,7 @@ class RegistrationService {
   Future<List<Map<String, dynamic>>> getAvailableRoutes() async {
     try {
       debugPrint('🔍 Fetching available routes...');
-      
+
       final routes = await _supabase
           .from('routes')
           .select('code, name, description')
@@ -205,13 +181,14 @@ class RegistrationService {
     try {
       debugPrint('🔍 Starting completeRegistration');
       debugPrint('📋 Registration data: $_registrationData');
-      
+
       final user = _supabase.auth.currentUser;
       if (user == null) {
         debugPrint('❌ No authenticated user found');
         return {
           'success': false,
-          'message': 'No authenticated user found. Please try logging in again.',
+          'message':
+              'No authenticated user found. Please try logging in again.',
         };
       }
 
@@ -223,7 +200,8 @@ class RegistrationService {
         debugPrint('❌ Role is missing from registration data!');
         return {
           'success': false,
-          'message': 'Role information is missing. Please restart registration.',
+          'message':
+              'Role information is missing. Please restart registration.',
         };
       }
 
@@ -246,7 +224,7 @@ class RegistrationService {
       } else {
         // Create profile
         debugPrint('💾 Creating new profile...');
-        
+
         // FIX: Ensure all required fields are present
         final profileData = <String, dynamic>{
           'user_id': user.id,
@@ -271,16 +249,17 @@ class RegistrationService {
           debugPrint('✅ Profile created with ID: $profileId');
         } catch (insertError) {
           debugPrint('❌ Error inserting profile: $insertError');
-          
+
           // If insert fails due to RLS, try with service role or check RLS policies
           if (insertError is PostgrestException) {
             debugPrint('❌ PostgrestException code: ${insertError.code}');
             debugPrint('❌ PostgrestException message: ${insertError.message}');
             debugPrint('❌ PostgrestException details: ${insertError.details}');
-            
+
             return {
               'success': false,
-              'message': 'Failed to create profile. Error: ${insertError.message}',
+              'message':
+                  'Failed to create profile. Error: ${insertError.message}',
             };
           }
           rethrow;
@@ -335,18 +314,22 @@ class RegistrationService {
           // ✨ CRITICAL FIX: Get route_id from route_code
           String? routeId;
           if (_registrationData['route_code'] != null) {
-            debugPrint('🔍 Fetching route_id for code: ${_registrationData['route_code']}');
+            debugPrint(
+              '🔍 Fetching route_id for code: ${_registrationData['route_code']}',
+            );
             final routeResponse = await _supabase
                 .from('routes')
                 .select('id')
                 .eq('code', _registrationData['route_code'])
                 .maybeSingle();
-            
+
             if (routeResponse != null) {
               routeId = routeResponse['id'];
               debugPrint('✅ Found route_id: $routeId');
             } else {
-              debugPrint('⚠️ Route not found for code: ${_registrationData['route_code']}');
+              debugPrint(
+                '⚠️ Route not found for code: ${_registrationData['route_code']}',
+              );
             }
           }
 
@@ -355,8 +338,8 @@ class RegistrationService {
             'profile_id': profileId,
             'license_number': _registrationData['license_number'] ?? '',
             'operator_name': _registrationData['assigned_operator'],
-            'vehicle_plate': _registrationData['vehicle_plate'] ?? '',  // ✨ NEW
-            'route_id': routeId,  // ✨ Use route_id (FK) instead of route_code
+            'vehicle_plate': _registrationData['vehicle_plate'] ?? '', // ✨ NEW
+            'route_id': routeId, // ✨ Use route_id (FK) instead of route_code
           });
           debugPrint('✅ Driver created with route_id: $routeId');
         } else {
@@ -385,16 +368,12 @@ class RegistrationService {
 
       debugPrint('🎉 Registration completed successfully!');
       debugPrint('📤 Returning role: $role');
-      
+
       // Return role at top level so it can be accessed
       return {
         'success': true,
-        'role': role,  // CRITICAL: Role at top level
-        'data': {
-          'userId': user.id,
-          'profileId': profileId,
-          'role': role,
-        },
+        'role': role, // CRITICAL: Role at top level
+        'data': {'userId': user.id, 'profileId': profileId, 'role': role},
       };
     } catch (e, stackTrace) {
       if (e is PostgrestException) {

@@ -1,4 +1,3 @@
-// lib/views/pages/placeholder_pages.dart
 import 'package:flutter/material.dart';
 
 // ============= COMMUTER PLACEHOLDERS =============
@@ -432,7 +431,11 @@ class AdminDashboardPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.admin_panel_settings_rounded, size: 80, color: Colors.purple),
+              Icon(
+                Icons.admin_panel_settings_rounded,
+                size: 80,
+                color: Colors.purple,
+              ),
               SizedBox(height: 20),
               Text(
                 'Admin Dashboard',

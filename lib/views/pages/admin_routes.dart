@@ -824,7 +824,7 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _isEditing 
+                              _isEditing
                                   ? 'Tap on the map to add new stops'
                                   : 'Route map showing all stops',
                               style: GoogleFonts.nunito(
@@ -838,7 +838,7 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     Container(
                       height: 300,
                       decoration: BoxDecoration(
@@ -1122,44 +1122,40 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
   }
 
   Future<void> _loadRoutes() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    final supabase = Supabase.instance.client;
+    try {
+      final supabase = Supabase.instance.client;
 
-    // Fetch routes with stop count using aggregation
-    final response = await supabase
-        .from('routes')
-        .select('*, route_stops!inner(count)')
-        .order('code', ascending: true);
+      // Fetch routes with stop count using aggregation
+      final response = await supabase
+          .from('routes')
+          .select('*, route_stops!inner(count)')
+          .order('code', ascending: true);
 
-    setState(() {
-      _routes = List<Map<String, dynamic>>.from(response).map((route) {
-        // Extract the count from the nested structure
-        final stopData = route['route_stops'];
-        int stopCount = 0;
-        
-        if (stopData is List && stopData.isNotEmpty) {
-          // If it returns a list with count property
-          stopCount = stopData[0]['count'] ?? 0;
-        } else if (stopData is Map && stopData.containsKey('count')) {
-          // If it returns a map with count
-          stopCount = stopData['count'] ?? 0;
-        }
-        
-        return {
-          ...route,
-          'stop_count': stopCount,
-        };
-      }).toList();
-      _isLoading = false;
-    });
-  } catch (e) {
-    setState(() => _isLoading = false);
-    _showSnackBar('Error loading routes: ${e.toString()}', isError: true);
+      setState(() {
+        _routes = List<Map<String, dynamic>>.from(response).map((route) {
+          // Extract the count from the nested structure
+          final stopData = route['route_stops'];
+          int stopCount = 0;
+
+          if (stopData is List && stopData.isNotEmpty) {
+            // If it returns a list with count property
+            stopCount = stopData[0]['count'] ?? 0;
+          } else if (stopData is Map && stopData.containsKey('count')) {
+            // If it returns a map with count
+            stopCount = stopData['count'] ?? 0;
+          }
+
+          return {...route, 'stop_count': stopCount};
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error loading routes: ${e.toString()}', isError: true);
+    }
   }
-}
-
 
   Future<void> _deleteRoute(String routeId, String routeCode) async {
     final confirm = await showDialog<bool>(
@@ -1455,33 +1451,33 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                         itemCount: _filteredRoutes.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-  final route = _filteredRoutes[index];
-  // Use the pre-calculated stop_count
-  final stopCount = route['stop_count'] ?? 0;
+                          final route = _filteredRoutes[index];
+                          // Use the pre-calculated stop_count
+                          final stopCount = route['stop_count'] ?? 0;
 
-  return _RouteCard(
-    routeCode: route['code'] ?? 'N/A',
-    routeName: route['name'],
-    description: route['description'],
-    stopCount: stopCount,
-    onDelete: () => _deleteRoute(
-      route['id'],
-      route['code'] ?? 'N/A',
-    ),
-    onTap: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RouteDetailsPage(
-            routeId: route['id'],
-            routeCode: route['code'] ?? 'N/A',
-          ),
-        ),
-      );
-      _loadRoutes();
-    },
-  );
-}
+                          return _RouteCard(
+                            routeCode: route['code'] ?? 'N/A',
+                            routeName: route['name'],
+                            description: route['description'],
+                            stopCount: stopCount,
+                            onDelete: () => _deleteRoute(
+                              route['id'],
+                              route['code'] ?? 'N/A',
+                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RouteDetailsPage(
+                                    routeId: route['id'],
+                                    routeCode: route['code'] ?? 'N/A',
+                                  ),
+                                ),
+                              );
+                              _loadRoutes();
+                            },
+                          );
+                        },
                       ),
                     ),
             ),

@@ -545,235 +545,238 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-    canPop: true,
+      canPop: true,
       child: Scaffold(
-      body: Container(
-        // ... (your existing UI code for the scanner) ...
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+        body: Container(
+          // ... (your existing UI code for the scanner) ...
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            const BackgroundCircles(),
-            SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () async {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.arrow_back, size: 28),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'QR Scan',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+          child: Stack(
+            children: [
+              const BackgroundCircles(),
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.arrow_back, size: 28),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Instructions
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40.0),
-                    child: Text(
-                      'Scan QR code when boarding and again when arriving at your destination',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0x99000000),
-                        height: 1.5,
+                          const SizedBox(width: 12),
+                          const Text(
+                            'QR Scan',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 30),
+                    // Instructions
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40.0),
+                      child: Text(
+                        'Scan QR code when boarding and again when arriving at your destination',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0x99000000),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
 
-                  // Camera Scanner
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25.0),
-                        child: Stack(
-                          children: [
-                            // Camera View
-                            MobileScanner(
-                              controller: cameraController,
-                              onDetect: _onDetect,
-                              // No startDelay needed here if you explicitly call controller.start() in initState
-                            ),
+                    const SizedBox(height: 30),
 
-                            // Scanning Overlay
-                            CustomPaint(
-                              painter: ScannerOverlay(),
-                              child: const SizedBox.expand(),
-                            ),
-
-                            // Animated Scanning Line
-                            AnimatedBuilder(
-                              animation: _animation,
-                              builder: (context, child) {
-                                return CustomPaint(
-                                  painter: ScannerLinePainter(_animation.value),
-                                  child: const SizedBox.expand(),
-                                );
-                              },
-                            ),
-
-                            // Center Icon
-                            Center(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5.0),
-                                child: SizedBox(
-                                  width: 250,
-                                  height: 250,
-                                  child: Stack(
-                                    children: [
-                                      Positioned(
-                                        top: -3,
-                                        left: -3,
-                                        child: _buildCorner(true, true),
-                                      ),
-                                      Positioned(
-                                        top: -3,
-                                        right: -3,
-                                        child: _buildCorner(true, false),
-                                      ),
-                                      Positioned(
-                                        bottom: -3,
-                                        left: -3,
-                                        child: _buildCorner(false, true),
-                                      ),
-                                      Positioned(
-                                        bottom: -3,
-                                        right: -3,
-                                        child: _buildCorner(false, false),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                    // Camera Scanner
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(25.0),
+                          child: Stack(
+                            children: [
+                              // Camera View
+                              MobileScanner(
+                                controller: cameraController,
+                                onDetect: _onDetect,
+                                // No startDelay needed here if you explicitly call controller.start() in initState
                               ),
-                            ),
 
-                            // Bottom controls
-                            Positioned(
-                              bottom: 20,
-                              left: 0,
-                              right: 0,
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        isFlashOn = !isFlashOn;
-                                      });
-                                      cameraController.toggleTorch();
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        isFlashOn
-                                            ? Icons.flash_on
-                                            : Icons.flash_off,
-                                        color: const Color(0xFF9C27B0),
-                                        size: 30,
-                                      ),
+                              // Scanning Overlay
+                              CustomPaint(
+                                painter: ScannerOverlay(),
+                                child: const SizedBox.expand(),
+                              ),
+
+                              // Animated Scanning Line
+                              AnimatedBuilder(
+                                animation: _animation,
+                                builder: (context, child) {
+                                  return CustomPaint(
+                                    painter: ScannerLinePainter(
+                                      _animation.value,
+                                    ),
+                                    child: const SizedBox.expand(),
+                                  );
+                                },
+                              ),
+
+                              // Center Icon
+                              Center(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(5.0),
+                                  child: SizedBox(
+                                    width: 250,
+                                    height: 250,
+                                    child: Stack(
+                                      children: [
+                                        Positioned(
+                                          top: -3,
+                                          left: -3,
+                                          child: _buildCorner(true, true),
+                                        ),
+                                        Positioned(
+                                          top: -3,
+                                          right: -3,
+                                          child: _buildCorner(true, false),
+                                        ),
+                                        Positioned(
+                                          bottom: -3,
+                                          left: -3,
+                                          child: _buildCorner(false, true),
+                                        ),
+                                        Positioned(
+                                          bottom: -3,
+                                          right: -3,
+                                          child: _buildCorner(false, false),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-
-                            // Processing overlay
-                            if (_isProcessing)
-                              Container(
-                                color: Colors.black54,
-                                child: const Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(
-                                        color: Colors.white,
-                                      ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Processing...',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
-                          ],
+
+                              // Bottom controls
+                              Positioned(
+                                bottom: 20,
+                                left: 0,
+                                right: 0,
+                                child: Column(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          isFlashOn = !isFlashOn;
+                                        });
+                                        cameraController.toggleTorch();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          isFlashOn
+                                              ? Icons.flash_on
+                                              : Icons.flash_off,
+                                          color: const Color(0xFF9C27B0),
+                                          size: 30,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Processing overlay
+                              if (_isProcessing)
+                                Container(
+                                  color: Colors.black54,
+                                  child: const Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircularProgressIndicator(
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Processing...',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 25),
+                    const SizedBox(height: 25),
 
-                  // Upload QR Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: OutlinedButton.icon(
-                      onPressed: _isProcessing ? null : _pickImageFromGallery,
-                      icon: const Icon(Icons.image, color: Color(0xFF9C27B0)),
-                      label: const Text(
-                        'Upload QR',
-                        style: TextStyle(
-                          color: Color(0xFF9C27B0),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                    // Upload QR Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: OutlinedButton.icon(
+                        onPressed: _isProcessing ? null : _pickImageFromGallery,
+                        icon: const Icon(Icons.image, color: Color(0xFF9C27B0)),
+                        label: const Text(
+                          'Upload QR',
+                          style: TextStyle(
+                            color: Color(0xFF9C27B0),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 16,
-                        ),
-                        side: const BorderSide(
-                          color: Color(0xFF9C27B0),
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 40,
+                            vertical: 16,
+                          ),
+                          side: const BorderSide(
+                            color: Color(0xFF9C27B0),
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 
   // ... (your existing _buildCorner, ScannerOverlay, ScannerLinePainter classes) ...
