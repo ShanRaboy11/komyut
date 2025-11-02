@@ -162,7 +162,7 @@ class DriverActivityPage extends StatelessWidget {
   }
 }
 
-class DriverFeedbackPage extends StatelessWidget {
+/*class DriverFeedbackPage extends StatelessWidget {
   const DriverFeedbackPage({super.key});
 
   @override
@@ -191,7 +191,7 @@ class DriverFeedbackPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class DriverNotificationsPage extends StatelessWidget {
   const DriverNotificationsPage({super.key});
@@ -432,7 +432,11 @@ class AdminDashboardPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.admin_panel_settings_rounded, size: 80, color: Colors.purple),
+              Icon(
+                Icons.admin_panel_settings_rounded,
+                size: 80,
+                color: Colors.purple,
+              ),
               SizedBox(height: 20),
               Text(
                 'Admin Dashboard',
