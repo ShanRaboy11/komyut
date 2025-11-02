@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/report_card.dart';
-import '../pages/feedbackdetails_driver.dart'; // make sure to import your ReportCard file
+import '../pages/feedbackdetails_driver.dart';
 
 class DriverFeedbackPage extends StatefulWidget {
   const DriverFeedbackPage({super.key});
@@ -11,7 +11,6 @@ class DriverFeedbackPage extends StatefulWidget {
 }
 
 class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
-  @override
   void _sortByDate() {
     reports.sort((a, b) {
       final da = DateTime.parse(
@@ -61,6 +60,8 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
     ),
   ];
   String selectedFilter = "Date";
+
+  @override
   Widget build(BuildContext context) {
     final gradientColors = const [
       Color(0xFFB945AA),
