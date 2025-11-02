@@ -1,41 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
+import '../pages/success_page.dart';
 import '../providers/registration_provider.dart';
 
 class RegistrationVerifyEmail extends StatefulWidget {
   final String email;
-  
-  const RegistrationVerifyEmail({
-    super.key,
-    required this.email,
-  });
+
+  const RegistrationVerifyEmail({super.key, required this.email});
 
   @override
-  State<RegistrationVerifyEmail> createState() => _RegistrationVerifyEmailState();
+  State<RegistrationVerifyEmail> createState() =>
+      _RegistrationVerifyEmailState();
 }
 
 class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     with SingleTickerProviderStateMixin {
-  final List<TextEditingController> _otpControllers =
-      List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _otpFocusNodes =
-      List.generate(6, (index) => FocusNode());
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
+  final List<FocusNode> _otpFocusNodes = List.generate(
+    6,
+    (index) => FocusNode(),
+  );
 
   static const int _resendCooldownSeconds = 60;
   int _remainingSeconds = _resendCooldownSeconds;
   late Ticker _ticker;
-  
+
   bool _isVerifying = false;
   bool _isResending = false;
   bool _emailSent = false;
-
-  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -51,43 +51,50 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-      final password = registrationProvider.registrationData['password'] ?? 'TempPass123!';
-      
-      debugPrint('Sending OTP to: ${widget.email}');
-      debugPrint('Using password: ${password.substring(0, 3)}***'); // Debug
-      
-      // Sign up the user with email verification OTP
-      final response = await supabase.auth.signUp(
-        email: widget.email,
-        password: password,
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
       );
 
-      debugPrint('SignUp response: ${response.user?.id}'); // Debug
+      debugPrint('📧 Sending OTP to: ${widget.email}');
+
+      // Send OTP without creating account
+      final result = await registrationProvider.sendEmailVerificationOTP(
+        widget.email,
+      );
 
       if (mounted) {
         setState(() {
           _emailSent = true;
           _isResending = false;
         });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification code sent to your email!'),
-            backgroundColor: Colors.green,
-          ),
-        );
 
-        _startResendTimer();
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Verification code sent to your email!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          _startResendTimer();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to send code'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
-      debugPrint('Error sending OTP: $e'); // Debug
-      
+      debugPrint('Error sending OTP: $e');
+
       if (mounted) {
         setState(() {
           _isResending = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send code: ${e.toString()}'),
@@ -130,35 +137,46 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       });
 
       try {
-        debugPrint('Resending OTP to: ${widget.email}'); // Debug
-        
-        // Resend verification email
-        await supabase.auth.resend(
-          type: OtpType.signup,
-          email: widget.email,
+        final registrationProvider = Provider.of<RegistrationProvider>(
+          context,
+          listen: false,
         );
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('New code sent to your email!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        debugPrint('🔄 Resending OTP to: ${widget.email}');
 
-          _startResendTimer();
+        final result = await registrationProvider.resendOTP(widget.email);
+
+        if (mounted) {
+          if (result['success']) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('New code sent to your email!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            _startResendTimer();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Failed to resend code'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+
           setState(() {
             _isResending = false;
           });
         }
       } catch (e) {
-        debugPrint('Error resending OTP: $e'); // Debug
-        
+        debugPrint('Error resending OTP: $e');
+
         if (mounted) {
           setState(() {
             _isResending = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to resend code: ${e.toString()}'),
@@ -170,9 +188,31 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     }
   }
 
+  // Helper method to get the correct home route based on user role
+  String _getHomeRouteForRole(String? userRole) {
+    if (userRole == null || userRole.isEmpty) {
+      debugPrint('⚠️ User role is null or empty, defaulting to commuter');
+      return '/home_commuter';
+    }
+    
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        return '/home_admin';
+      case 'commuter':
+        return '/home_commuter';
+      case 'driver':
+        return '/home_driver';
+      case 'operator':
+        return '/home_operator';
+      default:
+        debugPrint('⚠️ Unknown user role: $userRole, defaulting to commuter');
+        return '/home_commuter'; // Default fallback
+    }
+  }
+
   Future<void> _onVerifyCode() async {
     String otp = _otpControllers.map((controller) => controller.text).join();
-    
+
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -188,21 +228,38 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     });
 
     try {
-      debugPrint('Verifying OTP: $otp for email: ${widget.email}'); // Debug
-      
-      // Verify OTP with Supabase using type: signup
-      final response = await supabase.auth.verifyOTP(
-        email: widget.email,
-        token: otp,
-        type: OtpType.signup, // Changed from OtpType.email to OtpType.signup
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
       );
 
-      debugPrint('Verify response: ${response.session != null}'); // Debug
+      debugPrint('🔍 Verifying OTP: $otp for email: ${widget.email}');
 
-      if (response.session != null && mounted) {
-        // OTP verified successfully, now complete registration
-        final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-        
+      // Verify OTP and create account
+      final verifyResult = await registrationProvider.verifyOTPAndCreateAccount(
+        widget.email,
+        otp,
+      );
+
+      if (!verifyResult['success']) {
+        if (mounted) {
+          setState(() {
+            _isVerifying = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(verifyResult['message'] ?? 'Verification failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('✅ Email verified, creating profile...');
+
+      if (mounted) {
         // Show processing message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -215,7 +272,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
         // Complete the registration (create profile, wallet, etc.)
         final result = await registrationProvider.completeRegistration();
 
-        debugPrint('Registration result: ${result['success']}'); // Debug
+        debugPrint('Registration result: ${result['success']}');
 
         if (mounted) {
           setState(() {
@@ -223,19 +280,29 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           });
 
           if (result['success']) {
-            // Registration successful
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Account created successfully!'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            // Get role from the registration result instead of database
+            final userRole = result['role'] as String?;
+            debugPrint('👤 User role from registration: $userRole');
 
-            // Navigate to home/dashboard
-            // Replace this with your actual home page
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/home', // or your home route
-              (route) => false,
+            // Get the appropriate home route based on role
+            final homeRoute = _getHomeRouteForRole(userRole);
+            debugPrint('🏠 Navigating to: $homeRoute');
+
+            // Navigate to the SuccessPage with role-specific onClose callback
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SuccessPage(
+                  title: 'Registration Complete!',
+                  subtitle: 'Welcome to komyut',
+                  onClose: () {
+                    // Clear registration data after successful navigation
+                    registrationProvider.clearRegistration();
+                    // Navigate to role-specific dashboard
+                    Navigator.pushReplacementNamed(context, homeRoute);
+                  },
+                ),
+              ),
             );
           } else {
             // Registration failed
@@ -248,33 +315,9 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
           }
         }
       }
-    } on AuthException catch (e) {
-      debugPrint('Auth Exception: ${e.message}'); // Debug
-      
-      if (mounted) {
-        setState(() {
-          _isVerifying = false;
-        });
-
-        String errorMessage = 'Invalid code. Please try again.';
-        if (e.message.contains('expired')) {
-          errorMessage = 'Code expired. Please request a new one.';
-        } else if (e.message.contains('invalid')) {
-          errorMessage = 'Invalid code. Please check and try again.';
-        } else if (e.message.contains('Email not confirmed')) {
-          errorMessage = 'Please check your email and enter the correct code.';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     } catch (e) {
-      debugPrint('General Exception: $e'); // Debug
-      
+      debugPrint('General Exception: $e');
+
       if (mounted) {
         setState(() {
           _isVerifying = false;
@@ -289,6 +332,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       }
     }
   }
+
 
   void _onBackPressed() {
     Navigator.of(context).pop();
@@ -461,7 +505,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                               style: TextStyle(
                                 color: _remainingSeconds == 0
                                     ? const Color.fromRGBO(185, 69, 170, 1)
-                                    : const Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                                    : const Color.fromRGBO(
+                                        0,
+                                        0,
+                                        0,
+                                        0.699999988079071,
+                                      ),
                                 fontFamily: 'Nunito',
                                 fontSize: 16,
                                 fontWeight: FontWeight.normal,

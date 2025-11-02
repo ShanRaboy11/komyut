@@ -1,20 +1,20 @@
-// lib/views/services/registration_service.dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationService {
-  static const String _baseUrl = 'YOUR_API_BASE_URL'; // Update with your API URL
-  
-  // Store registration data temporarily
-  final Map<String, dynamic> _registrationData = {};
+  final _registrationData = <String, dynamic>{};
+  final _supabase = Supabase.instance.client;
 
-  Map<String, dynamic> getRegistrationData() => Map.from(_registrationData);
+  // Get all registration data
+  Map<String, dynamic> getRegistrationData() {
+    return Map<String, dynamic>.from(_registrationData);
+  }
 
   // Step 1: Save role
   void saveRole(String role) {
-    // Store role as lowercase to match ENUM in database
-    _registrationData['role'] = role.toLowerCase();
+    _registrationData['role'] = role;
+    debugPrint('✅ Role saved: $role');
+    debugPrint('Current data: $_registrationData');
   }
 
   // Step 2a: Save commuter personal info
@@ -32,22 +32,15 @@ class RegistrationService {
     _registrationData['age'] = age;
     _registrationData['sex'] = sex;
     _registrationData['address'] = address;
-    
-    // Map UI category to database enum: 'Regular' -> 'regular', 'Discounted' -> handle subcategories
-    // For now, defaulting 'Discounted' to 'student' - you may want to add more granular selection
-    if (category.toLowerCase() == 'regular') {
-      _registrationData['category'] = 'regular';
-    } else {
-      // If discounted, you might want to add a field to select senior/student/pwd
-      _registrationData['category'] = 'student'; // Default to student for now
-    }
-    
+    _registrationData['category'] = category;
     if (idProofPath != null) {
       _registrationData['id_proof_path'] = idProofPath;
     }
+    debugPrint('✅ Personal info saved');
+    debugPrint('Current data: $_registrationData');
   }
 
-  // Step 2b: Save driver personal info
+  // Step 2b: Save driver personal info (UPDATED with vehicle and route)
   void saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -57,6 +50,8 @@ class RegistrationService {
     required String licenseNumber,
     String? assignedOperator,
     required String driverLicensePath,
+    required String vehiclePlate, // ✨ NEW
+    required String routeCode, // ✨ NEW
   }) {
     _registrationData['first_name'] = firstName;
     _registrationData['last_name'] = lastName;
@@ -64,131 +59,334 @@ class RegistrationService {
     _registrationData['sex'] = sex;
     _registrationData['address'] = address;
     _registrationData['license_number'] = licenseNumber;
+    _registrationData['assigned_operator'] = assignedOperator;
     _registrationData['driver_license_path'] = driverLicensePath;
-    
-    if (assignedOperator != null && assignedOperator.isNotEmpty) {
-      _registrationData['operator_name'] = assignedOperator;
+    _registrationData['vehicle_plate'] = vehiclePlate; // ✨ NEW
+    _registrationData['route_code'] = routeCode; // ✨ NEW
+    debugPrint('✅ Driver personal info saved');
+    debugPrint('Current data: $_registrationData');
+  }
+
+  // Step 2c: Save operator personal info
+  void saveOperatorPersonalInfo({
+    required String firstName,
+    required String lastName,
+    required String companyName,
+    required String companyAddress,
+    required String contactEmail,
+  }) {
+    _registrationData['first_name'] = firstName;
+    _registrationData['last_name'] = lastName;
+    _registrationData['company_name'] = companyName;
+    _registrationData['company_address'] = companyAddress;
+    _registrationData['contact_email'] = contactEmail;
+    debugPrint('✅ Operator personal info saved');
+    debugPrint('Current data: $_registrationData');
+  }
+
+  // Step 3: Save login info
+  void saveLoginInfo({required String email, required String password}) {
+    _registrationData['email'] = email;
+    _registrationData['password'] = password;
+    debugPrint('✅ Login info saved');
+    debugPrint('Current data: $_registrationData');
+  }
+
+  // Send email verification OTP
+  Future<Map<String, dynamic>> sendEmailVerificationOTP(String email) async {
+    try {
+      debugPrint('📧 Sending OTP to: $email');
+
+      await _supabase.auth.signInWithOtp(email: email, emailRedirectTo: null);
+
+      debugPrint('✅ OTP sent successfully');
+      return {'success': true};
+    } catch (e) {
+      debugPrint('❌ Error sending OTP: $e');
+      return {'success': false, 'message': e.toString()};
     }
   }
 
-  // Step 2c: Save operator personal info
-  // Step 2c: Save operator personal info
-void saveOperatorPersonalInfo({
-  required String firstName,
-  required String lastName,
-  required String companyName,
-  required String companyAddress,
-  required String contactEmail,
-}) {
-  _registrationData['first_name'] = firstName;
-  _registrationData['last_name'] = lastName;
-  _registrationData['company_name'] = companyName;
-  _registrationData['company_address'] = companyAddress;
-  _registrationData['contact_email'] = contactEmail;
-}
-
-  // Step 3: Save login info
-  void saveLoginInfo({
-    required String email,
-    required String password,
-  }) {
-    _registrationData['email'] = email;
-    _registrationData['password'] = password;
-  }
-
-  // Step 4: Complete registration and send to backend
-  Future<Map<String, dynamic>> completeRegistration() async {
+  // Verify OTP and create auth account
+  Future<Map<String, dynamic>> verifyOTPAndCreateAccount(
+    String email,
+    String otp,
+  ) async {
     try {
-      // Prepare multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$_baseUrl/auth/register'),
+      debugPrint('🔍 Verifying OTP for: $email');
+
+      // Verify OTP
+      final authResponse = await _supabase.auth.verifyOTP(
+        type: OtpType.email,
+        email: email,
+        token: otp,
       );
 
-      final role = _registrationData['role'];
-
-      // Add common fields
-      request.fields['email'] = _registrationData['email'];
-      request.fields['password'] = _registrationData['password'];
-      request.fields['role'] = role;
-      request.fields['first_name'] = _registrationData['first_name'];
-      request.fields['last_name'] = _registrationData['last_name'];
-      request.fields['age'] = _registrationData['age'].toString();
-      request.fields['sex'] = _registrationData['sex'];
-      request.fields['address'] = _registrationData['address'];
-
-      // Add role-specific fields and files
-      if (role == 'commuter') {
-        request.fields['category'] = _registrationData['category'];
-        
-        // Upload ID proof if category is not regular (senior, student, pwd)
-        if (_registrationData['category'] != 'regular' && 
-            _registrationData['id_proof_path'] != null) {
-          final idProofFile = File(_registrationData['id_proof_path']);
-          if (await idProofFile.exists()) {
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                'id_proof',
-                idProofFile.path,
-              ),
-            );
-          }
-        }
-      } else if (role == 'driver') {
-        request.fields['license_number'] = _registrationData['license_number'];
-        
-        if (_registrationData['operator_name'] != null) {
-          request.fields['operator_name'] = _registrationData['operator_name'];
-        }
-        
-        // Upload driver license (required)
-        if (_registrationData['driver_license_path'] != null) {
-          final licenseFile = File(_registrationData['driver_license_path']);
-          if (await licenseFile.exists()) {
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                'license_image',
-                licenseFile.path,
-              ),
-            );
-          }
-        }
-      } else if (role == 'operator') {
-        if (_registrationData['company_name'] != null) {
-          request.fields['company_name'] = _registrationData['company_name'];
-        }
-        if (_registrationData['company_address'] != null) {
-          request.fields['company_address'] = _registrationData['company_address'];
-        }
-        if (_registrationData['contact_phone'] != null) {
-          request.fields['contact_phone'] = _registrationData['contact_phone'];
-        }
+      if (authResponse.user == null) {
+        return {'success': false, 'message': 'Invalid verification code'};
       }
 
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      debugPrint('✅ User authenticated: ${authResponse.user!.id}');
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        clearRegistrationData(); // Clear data after successful registration
-        
-        return {
-          'success': true,
-          'message': 'Registration successful',
-          'data': responseData,
-        };
-      } else {
-        final errorData = json.decode(response.body);
+      // Set password for the account
+      final password = _registrationData['password'] as String?;
+      if (password != null) {
+        debugPrint('🔐 Setting user password...');
+        await _supabase.auth.updateUser(UserAttributes(password: password));
+        debugPrint('✅ Password set successfully');
+      }
+
+      return {'success': true};
+    } catch (e) {
+      debugPrint('❌ Error verifying OTP: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Resend OTP
+  Future<Map<String, dynamic>> resendOTP(String email) async {
+    try {
+      debugPrint('🔄 Resending OTP to: $email');
+
+      await _supabase.auth.signInWithOtp(email: email, emailRedirectTo: null);
+
+      debugPrint('✅ OTP resent successfully');
+      return {'success': true};
+    } catch (e) {
+      debugPrint('❌ Error resending OTP: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // ✨ NEW: Fetch available routes for dropdown
+  Future<List<Map<String, dynamic>>> getAvailableRoutes() async {
+    try {
+      debugPrint('🔍 Fetching available routes...');
+
+      final routes = await _supabase
+          .from('routes')
+          .select('code, name, description')
+          .order('code');
+
+      debugPrint('✅ Fetched ${routes.length} routes');
+      return List<Map<String, dynamic>>.from(routes);
+    } catch (e) {
+      debugPrint('❌ Error fetching routes: $e');
+      return [];
+    }
+  }
+
+  // FIXED: Complete registration after email verification
+  Future<Map<String, dynamic>> completeRegistration() async {
+    try {
+      debugPrint('🔍 Starting completeRegistration');
+      debugPrint('📋 Registration data: $_registrationData');
+
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('❌ No authenticated user found');
         return {
           'success': false,
-          'message': errorData['message'] ?? 'Registration failed',
+          'message':
+              'No authenticated user found. Please try logging in again.',
         };
       }
-    } catch (e) {
+
+      debugPrint('✅ User authenticated: ${user.id}');
+
+      // Verify role exists
+      final role = _registrationData['role'];
+      if (role == null) {
+        debugPrint('❌ Role is missing from registration data!');
+        return {
+          'success': false,
+          'message':
+              'Role information is missing. Please restart registration.',
+        };
+      }
+
+      debugPrint('✅ Role found: $role');
+
+      // CRITICAL FIX: Check if profile already exists
+      debugPrint('🔍 Checking if profile already exists...');
+      final existingProfile = await _supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      String profileId;
+
+      if (existingProfile != null) {
+        debugPrint('⚠️ Profile already exists for user ${user.id}');
+        profileId = existingProfile['id'];
+        debugPrint('✅ Using existing profile ID: $profileId');
+      } else {
+        // Create profile
+        debugPrint('💾 Creating new profile...');
+
+        // FIX: Ensure all required fields are present
+        final profileData = <String, dynamic>{
+          'user_id': user.id,
+          'role': role,
+          'first_name': _registrationData['first_name'] ?? '',
+          'last_name': _registrationData['last_name'] ?? '',
+          'age': _registrationData['age'],
+          'sex': _registrationData['sex'],
+          'address': _registrationData['address'],
+        };
+
+        debugPrint('📤 Profile data to insert: $profileData');
+
+        try {
+          final profileResponse = await _supabase
+              .from('profiles')
+              .insert(profileData)
+              .select('id')
+              .single();
+
+          profileId = profileResponse['id'];
+          debugPrint('✅ Profile created with ID: $profileId');
+        } catch (insertError) {
+          debugPrint('❌ Error inserting profile: $insertError');
+
+          // If insert fails due to RLS, try with service role or check RLS policies
+          if (insertError is PostgrestException) {
+            debugPrint('❌ PostgrestException code: ${insertError.code}');
+            debugPrint('❌ PostgrestException message: ${insertError.message}');
+            debugPrint('❌ PostgrestException details: ${insertError.details}');
+
+            return {
+              'success': false,
+              'message':
+                  'Failed to create profile. Error: ${insertError.message}',
+            };
+          }
+          rethrow;
+        }
+      }
+
+      // Create wallet if it doesn't exist
+      debugPrint('💰 Checking/creating wallet...');
+      final existingWallet = await _supabase
+          .from('wallets')
+          .select('id')
+          .eq('owner_profile_id', profileId)
+          .maybeSingle();
+
+      if (existingWallet == null) {
+        await _supabase.from('wallets').insert({
+          'owner_profile_id': profileId,
+          'balance': 0,
+        });
+        debugPrint('✅ Wallet created!');
+      } else {
+        debugPrint('✅ Wallet already exists');
+      }
+
+      // Create role-specific records
+      if (role == 'commuter') {
+        debugPrint('🚶 Checking/creating commuter record...');
+        final existingCommuter = await _supabase
+            .from('commuters')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingCommuter == null) {
+          await _supabase.from('commuters').insert({
+            'profile_id': profileId,
+            'category': _registrationData['category'] ?? 'regular',
+          });
+          debugPrint('✅ Commuter created!');
+        } else {
+          debugPrint('✅ Commuter already exists');
+        }
+      } else if (role == 'driver') {
+        debugPrint('🚗 Checking/creating driver record...');
+        final existingDriver = await _supabase
+            .from('drivers')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingDriver == null) {
+          // ✨ CRITICAL FIX: Get route_id from route_code
+          String? routeId;
+          if (_registrationData['route_code'] != null) {
+            debugPrint(
+              '🔍 Fetching route_id for code: ${_registrationData['route_code']}',
+            );
+            final routeResponse = await _supabase
+                .from('routes')
+                .select('id')
+                .eq('code', _registrationData['route_code'])
+                .maybeSingle();
+
+            if (routeResponse != null) {
+              routeId = routeResponse['id'];
+              debugPrint('✅ Found route_id: $routeId');
+            } else {
+              debugPrint(
+                '⚠️ Route not found for code: ${_registrationData['route_code']}',
+              );
+            }
+          }
+
+          // ✨ UPDATED: Use route_id instead of route_code
+          await _supabase.from('drivers').insert({
+            'profile_id': profileId,
+            'license_number': _registrationData['license_number'] ?? '',
+            'operator_name': _registrationData['assigned_operator'],
+            'vehicle_plate': _registrationData['vehicle_plate'] ?? '', // ✨ NEW
+            'route_id': routeId, // ✨ Use route_id (FK) instead of route_code
+          });
+          debugPrint('✅ Driver created with route_id: $routeId');
+        } else {
+          debugPrint('✅ Driver already exists');
+        }
+      } else if (role == 'operator') {
+        debugPrint('🏢 Checking/creating operator record...');
+        final existingOperator = await _supabase
+            .from('operators')
+            .select('id')
+            .eq('profile_id', profileId)
+            .maybeSingle();
+
+        if (existingOperator == null) {
+          await _supabase.from('operators').insert({
+            'profile_id': profileId,
+            'company_name': _registrationData['company_name'] ?? '',
+            'company_address': _registrationData['company_address'] ?? '',
+            'contact_email': _registrationData['contact_email'] ?? '',
+          });
+          debugPrint('✅ Operator created!');
+        } else {
+          debugPrint('✅ Operator already exists');
+        }
+      }
+
+      debugPrint('🎉 Registration completed successfully!');
+      debugPrint('📤 Returning role: $role');
+
+      // Return role at top level so it can be accessed
+      return {
+        'success': true,
+        'role': role, // CRITICAL: Role at top level
+        'data': {'userId': user.id, 'profileId': profileId, 'role': role},
+      };
+    } catch (e, stackTrace) {
+      if (e is PostgrestException) {
+        debugPrint('❌ Supabase Error: ${e.message}');
+        debugPrint('❌ Error code: ${e.code}');
+        debugPrint('❌ Error details: ${e.details}');
+      } else {
+        debugPrint('❌ Error completing registration: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
+      }
       return {
         'success': false,
-        'message': 'Network error: ${e.toString()}',
+        'message': 'Registration failed: ${e.toString()}',
       };
     }
   }
@@ -196,5 +394,6 @@ void saveOperatorPersonalInfo({
   // Clear all registration data
   void clearRegistrationData() {
     _registrationData.clear();
+    debugPrint('🗑️ Registration data cleared');
   }
 }
