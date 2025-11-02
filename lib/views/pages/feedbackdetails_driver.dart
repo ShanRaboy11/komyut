@@ -46,7 +46,7 @@ class ReportDetailsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

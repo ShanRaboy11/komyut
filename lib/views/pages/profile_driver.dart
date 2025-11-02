@@ -21,10 +21,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: width * 0.07,
-              vertical: 20,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
