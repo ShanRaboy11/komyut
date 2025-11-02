@@ -28,6 +28,7 @@ class _AdminDashboardNavState extends State<AdminDashboardNav> {
         NavItem(icon: Symbols.verified, label: 'Verified'),
         NavItem(icon: Symbols.rate_review_rounded, label: 'Activity'),
         NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
+        NavItem(icon: Icons.route_rounded, label: 'Routes'),
       ],
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/navbar.dart';
-import '../pages/qr_scan.dart'; // Import QR scanner
+import '../pages/qr_scan.dart'; 
 
 // ============= COMMUTER NAVBAR WRAPPER =============
 class CommuterNavBarWrapper extends StatefulWidget {
@@ -237,6 +237,7 @@ class AdminNavBarWrapper extends StatefulWidget {
   final Widget verifiedPage;
   final Widget activityPage;
   final Widget reportsPage;
+  final Widget routePage;
   final int initialIndex;
 
   const AdminNavBarWrapper({
@@ -245,6 +246,7 @@ class AdminNavBarWrapper extends StatefulWidget {
     required this.verifiedPage,
     required this.activityPage,
     required this.reportsPage,
+    required this.routePage,
     this.initialIndex = 0,
   });
 
@@ -269,12 +271,14 @@ class _AdminNavBarWrapperState extends State<AdminNavBarWrapper> {
         widget.verifiedPage,
         widget.activityPage,
         widget.reportsPage,
+        widget.routePage,
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
         NavItem(icon: Symbols.verified, label: 'Verified'),
         NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
         NavItem(icon: Symbols.assessment, label: 'Reports'),
+        NavItem(icon: Icons.route_rounded, label: 'Routes'),
       ],
       initialIndex: _currentIndex,
       onItemSelected: (index) {
