@@ -203,7 +203,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
       _updatePolyline();
     });
 
-    _showSnackBar('Stop "${name}" added successfully');
+    _showSnackBar('Stop "$name" added successfully');
   }
 
   void _updateMapMarkers() {
