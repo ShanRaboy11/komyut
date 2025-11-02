@@ -5,18 +5,18 @@ import '../widgets/commutercard_report.dart';
 
 class ReportDetailsPage extends StatelessWidget {
   final String name;
-  final String role;
+  final String? role;
   final String id;
   final String? priority;
   final String date;
   final String description;
   final List<String> tags;
-  final String imagePath;
+  final String imagePath; // Path to the image attachment
 
   const ReportDetailsPage({
     super.key,
     required this.name,
-    required this.role,
+    this.role,
     required this.id,
     this.priority,
     required this.date,
@@ -124,7 +124,7 @@ class ReportDetailsPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Profile Card
-            ProfileCard(name: name, role: role, id: id),
+            ProfileCard(name: name, role: role ?? "Unknown", id: id),
 
             const SizedBox(height: 20),
 

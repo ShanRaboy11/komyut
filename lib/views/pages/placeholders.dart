@@ -353,7 +353,7 @@ class OperatorTransactionsPage extends StatelessWidget {
   }
 }
 
-class OperatorReportsPage extends StatelessWidget {
+/*class OperatorReportsPage extends StatelessWidget {
   const OperatorReportsPage({super.key});
 
   @override
@@ -382,7 +382,7 @@ class OperatorReportsPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class OperatorProfilePage extends StatelessWidget {
   const OperatorProfilePage({super.key});
