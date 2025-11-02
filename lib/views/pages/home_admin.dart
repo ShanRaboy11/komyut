@@ -5,7 +5,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
-import 'admin_routes.dart'; 
 
 class AdminDashboardNav extends StatefulWidget {
   const AdminDashboardNav({super.key});

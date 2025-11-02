@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:math' as math;
 
 class RouteService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -34,19 +35,21 @@ class RouteService {
         final route = stop['routes'];
         if (route != null) {
           final routeCode = route['code'];
-          
+
           // Avoid duplicate routes in results
           if (!seenRoutes.contains(routeCode)) {
             seenRoutes.add(routeCode);
-            
-            results.add(RouteSearchResult(
-              routeId: route['id'],
-              routeCode: routeCode,
-              routeName: route['name'],
-              routeDescription: route['description'],
-              matchingStop: stop['name'],
-              stopSequence: stop['sequence'],
-            ));
+
+            results.add(
+              RouteSearchResult(
+                routeId: route['id'],
+                routeCode: routeCode,
+                routeName: route['name'],
+                routeDescription: route['description'],
+                matchingStop: stop['name'],
+                stopSequence: stop['sequence'],
+              ),
+            );
           }
         }
       }
@@ -166,9 +169,7 @@ class RouteService {
   }) async {
     try {
       // Fetch all route stops
-      final response = await _supabase
-          .from('route_stops')
-          .select('''
+      final response = await _supabase.from('route_stops').select('''
             id,
             name,
             sequence,
@@ -205,15 +206,17 @@ class RouteService {
               if (!seenRoutes.contains(routeCode)) {
                 seenRoutes.add(routeCode);
 
-                results.add(RouteSearchResult(
-                  routeId: route['id'],
-                  routeCode: routeCode,
-                  routeName: route['name'],
-                  routeDescription: route['description'],
-                  matchingStop: stop['name'],
-                  stopSequence: stop['sequence'],
-                  distanceKm: distance,
-                ));
+                results.add(
+                  RouteSearchResult(
+                    routeId: route['id'],
+                    routeCode: routeCode,
+                    routeName: route['name'],
+                    routeDescription: route['description'],
+                    matchingStop: stop['name'],
+                    stopSequence: stop['sequence'],
+                    distanceKm: distance,
+                  ),
+                );
               }
             }
           }
@@ -241,19 +244,20 @@ class RouteService {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = (dLat / 2).sin() * (dLat / 2).sin() +
-        _toRadians(lat1).cos() *
-            _toRadians(lat2).cos() *
-            (dLon / 2).sin() *
-            (dLon / 2).sin();
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
 
-    final c = 2 * (a.sqrt()).asin();
+    final c = 2 * math.asin(math.sqrt(a));
 
     return earthRadius * c;
   }
 
   double _toRadians(double degrees) {
-    return degrees * (3.141592653589793 / 180);
+    return degrees * (math.pi / 180);
   }
 }
 

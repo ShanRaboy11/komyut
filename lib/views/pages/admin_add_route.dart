@@ -17,7 +17,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
   final TextEditingController _routeNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  List<RouteStop> _stops = [];
+  final List<RouteStop> _stops = [];
   List<Marker> _markers = [];
   List<LatLng> _polylinePoints = [];
   bool _isSaving = false;
@@ -251,7 +251,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                 ),
                 child: Center(
                   child: Text(
-                    '${stop.sequence}',
+                    '$stop.sequence',
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -319,7 +319,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                   ),
                   child: Center(
                     child: Text(
-                      '${stop.sequence}',
+                      '$stop.sequence',
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -346,7 +346,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                             ? 'Starting Point'
                             : isLast
                             ? 'End Point'
-                            : 'Stop #${stop.sequence}',
+                            : 'Stop #$stop.sequence',
                         style: GoogleFonts.nunito(
                           color: isFirst
                               ? Colors.green
@@ -983,7 +983,7 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            '${stop.sequence}',
+                                            '$stop.sequence',
                                             style: GoogleFonts.manrope(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
