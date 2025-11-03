@@ -32,7 +32,8 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    _oldIndex = widget.initialIndex.toDouble(); // 👈 FIX: Start oldIndex at initialIndex
+    _oldIndex = widget.initialIndex
+        .toDouble(); // 👈 FIX: Start oldIndex at initialIndex
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -43,15 +44,15 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
   @override
   void didUpdateWidget(AnimatedBottomNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // If the parent changed initialIndex, update internal state
-    if (widget.initialIndex != oldWidget.initialIndex && 
+    if (widget.initialIndex != oldWidget.initialIndex &&
         widget.initialIndex != _selectedIndex) {
       setState(() {
         _oldIndex = _selectedIndex.toDouble();
         _selectedIndex = widget.initialIndex;
       });
-      
+
       // Animate the curve to the new position
       _controller.forward(from: 0);
     }
@@ -86,9 +87,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
         animation: _animation,
         builder: (context, _) {
           return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 0.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 0.0),
             child: CustomPaint(
               painter: _MovingCurvePainter(
                 colorStops: const [
@@ -172,6 +171,9 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                               AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeInOutCubic,
+                                softWrap: false,
+                                overflow: TextOverflow.visible,
+                                maxLines: 1,
                                 style: GoogleFonts.manrope(
                                   color: isSelected
                                       ? Colors.white
@@ -182,10 +184,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                       : FontWeight.w500,
                                 ),
                                 child: Transform.translate(
-                                  offset: const Offset(
-                                    0,
-                                    -8,
-                                  ),
+                                  offset: const Offset(0, -8),
                                   child: Text(item.label),
                                 ),
                               ),
