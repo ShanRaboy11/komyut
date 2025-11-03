@@ -279,66 +279,69 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                       _buildLabel("Category"),
                       _buildTextField(categoryController, readOnly: true),
 
-                      _buildLabel("ID"),
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color.fromARGB(255, 161, 165, 170),
+                      // Only show ID section for non-regular commuters
+                      if (commuterCategory != null && commuterCategory != 'regular') ...[
+                        _buildLabel("ID"),
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 161, 165, 170),
+                            ),
+                            color: Colors.grey[200],
                           ),
-                          color: Colors.grey[200],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: attachmentUrl != null
-                              ? Image.network(
-                                  attachmentUrl!,
-                                  fit: BoxFit.cover,
-                                  height: 200,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      height: 200,
-                                      alignment: Alignment.center,
-                                      child: CircularProgressIndicator(
-                                        color: primary1,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.error_outline, size: 48),
-                                          SizedBox(height: 8),
-                                          Text('Failed to load image'),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  height: 200,
-                                  alignment: Alignment.center,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'No ID uploaded',
-                                        style: GoogleFonts.nunito(color: Colors.grey),
-                                      ),
-                                    ],
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: attachmentUrl != null
+                                ? Image.network(
+                                    attachmentUrl!,
+                                    fit: BoxFit.cover,
+                                    height: 200,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 200,
+                                        alignment: Alignment.center,
+                                        child: CircularProgressIndicator(
+                                          color: primary1,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 200,
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.error_outline, size: 48),
+                                            SizedBox(height: 8),
+                                            Text('Failed to load image'),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    height: 200,
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'No ID uploaded',
+                                          style: GoogleFonts.nunito(color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 20),
                     ],
                   ),

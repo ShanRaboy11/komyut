@@ -14,7 +14,7 @@ class CommuterApp extends StatelessWidget {
       homePage: CommuterDashboardNav(),
       activityPage: Trip1Page(),
       notificationsPage: NotificationPage(),
-      profilePage: CommuterProfilePage(),
+      profilePage: ProfilePage(),
     );
   }
 }

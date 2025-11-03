@@ -67,7 +67,26 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       licenseIdController = TextEditingController(
         text: driver['license_number'] ?? '',
       );
-      licenseImageUrl = driver['license_image_url'];
+      
+      // Handle license image URL
+      final rawImageUrl = driver['license_image_url'];
+      if (rawImageUrl != null && rawImageUrl.isNotEmpty) {
+        // Check if it's already a full URL or needs to be converted from storage path
+        if (rawImageUrl.startsWith('http://') || rawImageUrl.startsWith('https://')) {
+          licenseImageUrl = rawImageUrl;
+        } else {
+          // It's a storage path, generate public URL
+          try {
+            licenseImageUrl = _supabase.storage
+                .from('public')
+                .getPublicUrl(rawImageUrl);
+          } catch (e) {
+            debugPrint('Error generating public URL: $e');
+            licenseImageUrl = null;
+          }
+        }
+        debugPrint('Driver license image URL: $licenseImageUrl');
+      }
       
       // Get operator name from nested operator data or operator_name field
       String operatorName = driver['operator_name'] ?? '';
@@ -282,7 +301,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: licenseImageUrl != null
+                          child: licenseImageUrl != null && licenseImageUrl!.isNotEmpty
                               ? Image.network(
                                   licenseImageUrl!,
                                   fit: BoxFit.cover,
@@ -292,21 +311,50 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                                     return Container(
                                       height: 200,
                                       alignment: Alignment.center,
-                                      child: CircularProgressIndicator(
-                                        color: primary1,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          CircularProgressIndicator(
+                                            color: primary1,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Loading image...',
+                                            style: GoogleFonts.nunito(fontSize: 12),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },
                                   errorBuilder: (context, error, stackTrace) {
+                                    debugPrint('Image load error: $error');
+                                    debugPrint('Image URL was: $licenseImageUrl');
                                     return Container(
                                       height: 200,
                                       alignment: Alignment.center,
+                                      padding: EdgeInsets.all(16),
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.error_outline, size: 48),
+                                          Icon(Icons.error_outline, size: 48, color: Colors.red),
                                           SizedBox(height: 8),
-                                          Text('Failed to load image'),
+                                          Text(
+                                            'Failed to load image',
+                                            style: GoogleFonts.manrope(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            error.toString(),
+                                            style: GoogleFonts.nunito(
+                                              fontSize: 11,
+                                              color: Colors.red[700],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ],
                                       ),
                                     );
@@ -324,6 +372,18 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                                         'No license image uploaded',
                                         style: GoogleFonts.nunito(color: Colors.grey),
                                       ),
+                                      if (licenseImageUrl != null)
+                                        Padding(
+                                          padding: EdgeInsets.all(8),
+                                          child: Text(
+                                            'URL: $licenseImageUrl',
+                                            style: GoogleFonts.nunito(
+                                              fontSize: 10,
+                                              color: Colors.grey[600],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

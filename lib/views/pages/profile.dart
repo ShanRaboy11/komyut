@@ -119,17 +119,43 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
       try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: CircularProgressIndicator(
+              color: const Color(0xFF8E4CB6),
+            ),
+          ),
+        );
+
+        // Sign out using Supabase directly
         await _supabase.auth.signOut();
+
         if (mounted) {
+          // Close loading dialog
+          Navigator.pop(context);
+          
           // Navigate to login page - adjust route as needed
-          Navigator.of(context).pushReplacementNamed('/login');
+          // Using pushNamedAndRemoveUntil to clear the navigation stack
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+            (route) => false,
+          );
         }
       } catch (e) {
         if (mounted) {
+          // Close loading dialog if still showing
+          Navigator.pop(context);
+          
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Logout failed: $e')),
+            SnackBar(
+              content: Text('Logout failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }

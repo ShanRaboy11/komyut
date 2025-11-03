@@ -44,7 +44,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
-        const CommuterProfilePage(),
+        const ProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),

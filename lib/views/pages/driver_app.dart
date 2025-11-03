@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
 import './home_driver.dart'; 
 import './placeholders.dart';
+import './profile.dart';
 import './notification_commuter.dart';
 
 class DriverApp extends StatelessWidget {
@@ -14,7 +15,7 @@ class DriverApp extends StatelessWidget {
       activityPage: DriverActivityPage(),
       feedbackPage: DriverFeedbackPage(),
       notificationsPage: NotificationPage(),
-      profilePage: DriverProfilePage(),
+      profilePage: ProfilePage(),
     );
   }
 }
