@@ -36,9 +36,6 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final bool isSmall = size.width < 400;
-
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
@@ -161,29 +158,37 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
             const SizedBox(height: 8),
 
             // Severity options
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: ["Low", "Medium", "High"].map((level) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Radio<String>(
-                      activeColor: Colors.white,
-                      fillColor: WidgetStateProperty.all(Colors.white),
-                      value: level,
-                      groupValue: severity,
-                      onChanged: (value) => setState(() => severity = value!),
-                    ),
-                    Text(
-                      level,
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontSize: 14,
+            RadioGroup<String>(
+              groupValue: severity, // State is managed here for the whole group
+              onChanged: (value) => setState(
+                () => severity = value!,
+              ), // State change is handled here
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: ["Low", "Medium", "High"].map((level) {
+                  // This loop now creates one Radio widget and one Text widget for each level
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 1. Use simple Radio<String>
+                      Radio<String>(
+                        value: level, // This is the unique value for the group
+                        activeColor: Colors.white,
+                        // groupValue and onChanged are managed by the parent RadioGroup
                       ),
-                    ),
-                  ],
-                );
-              }).toList(),
+                      // 2. The Text label
+                      Text(
+                        level,
+                        // Assuming GoogleFonts.nunito is defined
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
 
             const SizedBox(height: 40),

@@ -30,10 +30,6 @@ class _ReportPageState extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
-    final width = screenSize.width;
-    final isSmall = width < 400;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: Stack(
