@@ -2,8 +2,17 @@ import 'package:flutter/foundation.dart';
 import '../services/commuter_dashboard.dart';
 import '../pages/wallet_history.dart';
 
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 class WalletProvider extends ChangeNotifier {
   final CommuterDashboardService _dashboardService = CommuterDashboardService();
+
+  final String _baseUrl = Platform.isAndroid
+      ? 'http://10.0.2.2:3000'
+      : 'http://localhost:3000';
 
   // --- State for WalletPage ---
   bool _isWalletLoading = false;
@@ -65,6 +74,9 @@ class WalletProvider extends ChangeNotifier {
   bool get isProfileLoading => _isProfileLoading;
   String? get profileErrorMessage => _profileErrorMessage;
   Map<String, dynamic>? get userProfile => _userProfile;
+
+  bool _isSendingInstructions = false;
+  bool get isSendingInstructions => _isSendingInstructions;
 
   // --- Methods ---
   Future<void> fetchWalletData() async {
@@ -263,6 +275,45 @@ class WalletProvider extends ChangeNotifier {
       _isCompletionLoading = false;
       notifyListeners();
       return false; // Failure
+    }
+  }
+
+  Future<void> sendPaymentInstructions({
+    required String name,
+    required String email,
+    required double amount,
+    required String source,
+    required String userId,
+    required String transactionCode,
+  }) async {
+    _isSendingInstructions = true;
+    notifyListeners();
+
+    final url = Uri.parse('$_baseUrl/send-payment-instructions');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'amount': amount,
+          'source': source,
+          'userId': userId,
+          'transactionCode': transactionCode,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        final errorBody = json.decode(response.body);
+        throw Exception('Failed to send instructions: ${errorBody['error']}');
+      }
+    } catch (e) {
+      throw Exception('Could not send instructions. Please try again.');
+    } finally {
+      _isSendingInstructions = false;
+      notifyListeners();
     }
   }
 }

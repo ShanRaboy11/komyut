@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,6 +39,77 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
         listen: false,
       ).fetchPaymentSources(widget.paymentMethod);
     });
+  }
+
+  String _generateTransactionCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final part1 = String.fromCharCodes(
+      Iterable.generate(
+        15,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
+  Future<void> _sendInstructions() async {
+    if (_selectedSource == null || !_agreeToTerms) return;
+
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final userId = walletProvider.userProfile?['user_id']?.toString();
+
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not find User ID. Please try again.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    // --- Generate the transaction code here! ---
+    final String transactionCode = _generateTransactionCode();
+
+    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
+    const double serviceFee = 10.00;
+    final double totalValue = amountValue + serviceFee;
+
+    try {
+      await walletProvider.sendPaymentInstructions(
+        name: widget.name,
+        email: widget.email,
+        amount: totalValue,
+        source: _selectedSource!,
+        userId: userId,
+        transactionCode: transactionCode,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pushNamed(
+          '/dw_confirmation',
+          arguments: {
+            'name': widget.name,
+            'email': widget.email,
+            'amount': widget.amount,
+            'source': _selectedSource!,
+            'transactionCode':
+                transactionCode,
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -292,40 +364,55 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   }
 
   Widget _buildSendButton() {
-    bool isEnabled = _agreeToTerms && _selectedSource != null;
-    return Center(
-      child: OutlinedButton(
-        onPressed: isEnabled
-            ? () {
-                Navigator.of(context).pushNamed(
-                  '/dw_confirmation',
-                  arguments: {
-                    'name': widget.name,
-                    'email': widget.email,
-                    'amount': widget.amount,
-                    'source': _selectedSource!,
-                  },
-                );
-              }
-            : null,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: isEnabled ? _brandColor : Colors.grey,
-          backgroundColor: isEnabled
-              ? _brandColor.withValues(alpha: 0.1)
-              : Colors.grey.withValues(alpha: 0.1),
-          side: BorderSide(
-            color: isEnabled ? _brandColor : Colors.grey.withValues(alpha: 0.5),
+    // We now use a Consumer to listen to the provider's loading state
+    return Consumer<WalletProvider>(
+      builder: (context, provider, child) {
+        // Button is enabled if not loading, terms are agreed, and a source is selected
+        bool isEnabled =
+            !provider.isSendingInstructions &&
+            _agreeToTerms &&
+            _selectedSource != null;
+
+        return Center(
+          child: OutlinedButton(
+            // Use our new _sendInstructions method
+            onPressed: isEnabled ? _sendInstructions : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isEnabled ? _brandColor : Colors.grey,
+              backgroundColor: isEnabled
+                  ? _brandColor.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.1),
+              side: BorderSide(
+                color: isEnabled
+                    ? _brandColor
+                    : Colors.grey.withValues(alpha: 0.5),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+            ),
+            child: provider.isSendingInstructions
+                // Show a loading indicator when sending
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(_brandColor),
+                    ),
+                  )
+                // Show the text otherwise
+                : Text(
+                    'Send Instructions',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-        ),
-        child: Text(
-          'Send Instructions',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      ),
+        );
+      },
     );
   }
 }
