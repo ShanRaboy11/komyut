@@ -1,41 +1,157 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class PersonalInfoPage extends StatefulWidget {
-  const PersonalInfoPage({super.key});
+class PersonalInfoDriverPage extends StatefulWidget {
+  final Map<String, dynamic> profileData;
+  
+  const PersonalInfoDriverPage({
+    super.key,
+    required this.profileData,
+  });
 
   @override
-  State<PersonalInfoPage> createState() => _PersonalInfoPageState();
+  State<PersonalInfoDriverPage> createState() => _PersonalInfoDriverPageState();
 }
 
-class _PersonalInfoPageState extends State<PersonalInfoPage> {
+class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
+  final _supabase = Supabase.instance.client;
   bool isEditing = false;
-
+  bool isSaving = false;
   final Color primary1 = const Color(0xFF8E4CB6);
 
-  // controllers for the text fields
-  final TextEditingController emailController = TextEditingController(
-    text: "juandelacruz@gmail.com",
-  );
-  final TextEditingController firstNameController = TextEditingController(
-    text: "Juan",
-  );
-  final TextEditingController lastNameController = TextEditingController(
-    text: "Dela Cruz",
-  );
-  final TextEditingController ageController = TextEditingController(text: "40");
-  final TextEditingController sexController = TextEditingController(
-    text: "Male",
-  );
-  final TextEditingController addressController = TextEditingController(
-    text: "Bulacao, Cebu City, Cebu 6000",
-  );
-  final TextEditingController operatorController = TextEditingController(
-    text: "El Pardo Transport",
-  );
-  final TextEditingController licenseIdController = TextEditingController(
-    text: "1234567890",
-  );
+  late TextEditingController emailController;
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController ageController;
+  late TextEditingController sexController;
+  late TextEditingController addressController;
+  late TextEditingController operatorController;
+  late TextEditingController licenseIdController;
+  
+  String? licenseImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    final profile = widget.profileData;
+    final driver = profile['drivers'] is List 
+        ? (profile['drivers'] as List).firstOrNull 
+        : profile['drivers'];
+    
+    emailController = TextEditingController(
+      text: _supabase.auth.currentUser?.email ?? '',
+    );
+    firstNameController = TextEditingController(
+      text: profile['first_name'] ?? '',
+    );
+    lastNameController = TextEditingController(
+      text: profile['last_name'] ?? '',
+    );
+    ageController = TextEditingController(
+      text: profile['age']?.toString() ?? '',
+    );
+    sexController = TextEditingController(
+      text: profile['sex'] ?? '',
+    );
+    addressController = TextEditingController(
+      text: profile['address'] ?? '',
+    );
+    
+    // Driver specific fields
+    if (driver != null) {
+      licenseIdController = TextEditingController(
+        text: driver['license_number'] ?? '',
+      );
+      licenseImageUrl = driver['license_image_url'];
+      
+      // Get operator name from nested operator data or operator_name field
+      String operatorName = driver['operator_name'] ?? '';
+      if (driver['operators'] != null) {
+        operatorName = driver['operators']['company_name'] ?? operatorName;
+      }
+      operatorController = TextEditingController(text: operatorName);
+    } else {
+      licenseIdController = TextEditingController();
+      operatorController = TextEditingController();
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    setState(() => isSaving = true);
+    
+    try {
+      final profileId = widget.profileData['id'];
+      final driver = widget.profileData['drivers'] is List 
+          ? (widget.profileData['drivers'] as List).firstOrNull 
+          : widget.profileData['drivers'];
+      
+      // Update profile
+      await _supabase
+          .from('profiles')
+          .update({
+            'first_name': firstNameController.text.trim(),
+            'last_name': lastNameController.text.trim(),
+            'age': int.tryParse(ageController.text.trim()),
+            'sex': sexController.text.trim(),
+            'address': addressController.text.trim(),
+          })
+          .eq('id', profileId);
+
+      // Update driver specific info
+      if (driver != null) {
+        await _supabase
+            .from('drivers')
+            .update({
+              'license_number': licenseIdController.text.trim(),
+            })
+            .eq('id', driver['id']);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        setState(() {
+          isEditing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
+    ageController.dispose();
+    sexController.dispose();
+    addressController.dispose();
+    operatorController.dispose();
+    licenseIdController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +159,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     final horizontalPadding = width * 0.07;
 
     return Scaffold(
-      backgroundColor: Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
@@ -53,21 +169,18 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               end: Alignment.bottomRight,
             ),
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 20,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Header ---
-                Row(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 20,
+                ),
+                child: Row(
                   children: [
                     IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.arrow_back, color: Colors.black87),
                     ),
                     Expanded(
@@ -82,103 +195,156 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          isEditing = !isEditing;
-                        });
-                      },
-                      icon: Icon(Icons.edit_outlined, color: primary1),
-                    ),
+                    if (!isEditing)
+                      IconButton(
+                        onPressed: () => setState(() => isEditing = true),
+                        icon: Icon(Icons.edit_outlined, color: primary1),
+                      )
+                    else
+                      IconButton(
+                        onPressed: isSaving ? null : _saveChanges,
+                        icon: isSaving
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: primary1,
+                                ),
+                              )
+                            : Icon(Icons.check, color: primary1),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
+              ),
+              
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel("Email Address"),
+                      _buildTextField(emailController, readOnly: true),
 
-                // --- Email ---
-                _buildLabel("Email Address"),
-                _buildTextField(emailController),
+                      _buildLabel("First Name"),
+                      _buildTextField(firstNameController),
 
-                // --- First & Last Name ---
-                _buildLabel("First Name"),
-                _buildTextField(firstNameController),
+                      _buildLabel("Last Name"),
+                      _buildTextField(lastNameController),
 
-                _buildLabel("Last Name"),
-                _buildTextField(lastNameController),
-
-                // --- Age & Sex ---
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          _buildLabel("Age"),
-                          _buildTextField(ageController),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel("Age"),
+                                _buildTextField(
+                                  ageController,
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel("Sex"),
+                                _buildTextField(sexController),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel("Sex"),
-                          _buildTextField(sexController),
-                        ],
+
+                      _buildLabel("Full Address"),
+                      _buildTextField(addressController),
+
+                      _buildLabel("Assigned Operator"),
+                      _buildTextField(operatorController, readOnly: true),
+
+                      _buildLabel("Driver's License"),
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 161, 165, 170),
+                          ),
+                          color: Colors.grey[200],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: licenseImageUrl != null
+                              ? Image.network(
+                                  licenseImageUrl!,
+                                  fit: BoxFit.cover,
+                                  height: 200,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      height: 200,
+                                      alignment: Alignment.center,
+                                      child: CircularProgressIndicator(
+                                        color: primary1,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 200,
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.error_outline, size: 48),
+                                          SizedBox(height: 8),
+                                          Text('Failed to load image'),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  height: 200,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'No license image uploaded',
+                                        style: GoogleFonts.nunito(color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
 
-                // --- Address ---
-                _buildLabel("Full Address"),
-                _buildTextField(addressController),
-
-                // --- Operator ---
-                _buildLabel("Assigned Operator"),
-                _buildTextField(operatorController),
-
-                // --- Driver’s License ---
-                _buildLabel("Driver’s License"),
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Color.fromARGB(255, 161, 165, 170),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      'assets/images/ID.png', // Replace with your asset
-                      fit: BoxFit.cover,
-                    ),
+                      _buildLabel("Driver License ID No"),
+                      _buildTextField(licenseIdController),
+                      
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-
-                // --- Driver ID ---
-                _buildLabel("Driver License’s ID No"),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    " ${licenseIdController.text}",
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Label Text
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 6),
@@ -193,17 +359,23 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     );
   }
 
-  // Text Field
-  Widget _buildTextField(TextEditingController controller) {
+  Widget _buildTextField(
+    TextEditingController controller, {
+    bool readOnly = false,
+    TextInputType? keyboardType,
+  }) {
+    final effectiveReadOnly = readOnly || !isEditing;
+    
     return TextField(
       controller: controller,
-      readOnly: !isEditing,
+      readOnly: effectiveReadOnly,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         filled: true,
-        fillColor: isEditing ? Colors.white : Colors.transparent,
+        fillColor: effectiveReadOnly ? Colors.transparent : Colors.white,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: Color.fromARGB(255, 161, 165, 170),
             width: 1,
           ),
