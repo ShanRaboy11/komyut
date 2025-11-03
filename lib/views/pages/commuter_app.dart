@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
-import './home_commuter.dart'; 
+import './home_commuter.dart';
 import './trips_commuter.dart';
 import './notification_commuter.dart';
-import './profile.dart';
+import 'profile_commuter.dart';
 
 class CommuterApp extends StatelessWidget {
   const CommuterApp({super.key});

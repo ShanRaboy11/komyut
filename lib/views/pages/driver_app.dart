@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
-import './home_driver.dart'; 
+import './home_driver.dart';
 import './placeholders.dart';
 import './profile.dart';
 import './notification_commuter.dart';
+import 'feedback_driver.dart';
+import 'profile_driver.dart';
 
 class DriverApp extends StatelessWidget {
   const DriverApp({super.key});
@@ -11,7 +13,7 @@ class DriverApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DriverNavBarWrapper(
-      homePage: DriverDashboardNav(), 
+      homePage: DriverDashboardNav(),
       activityPage: DriverActivityPage(),
       feedbackPage: DriverFeedbackPage(),
       notificationsPage: NotificationPage(),
