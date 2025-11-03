@@ -716,8 +716,6 @@ class RegistrationDriverPersonalInfoState
                                               .map((route) {
                                                 final code =
                                                     route['code'] as String;
-                                                final name =
-                                                    route['name'] as String?;
                                                 return DropdownMenuItem<String>(
                                                   value: code,
                                                   child: Column(
