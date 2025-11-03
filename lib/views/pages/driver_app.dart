@@ -5,7 +5,6 @@ import './placeholders.dart';
 import './profile.dart';
 import './notification_commuter.dart';
 import 'feedback_driver.dart';
-import 'profile_driver.dart';
 
 class DriverApp extends StatelessWidget {
   const DriverApp({super.key});
