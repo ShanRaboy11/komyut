@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
-import 'views/services/auth_provider.dart';
+import 'views/providers/auth_provider.dart';
 import 'views/pages/admin_app.dart';
 import 'views/pages/commuter_app.dart';
 import 'views/pages/driver_app.dart';

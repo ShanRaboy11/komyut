@@ -28,6 +28,8 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
   late TextEditingController addressController;
   late TextEditingController operatorController;
   late TextEditingController licenseIdController;
+  late TextEditingController plateNumberController;
+  late TextEditingController routeCodeController;
   
   String? licenseImageUrl;
 
@@ -42,6 +44,14 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     final driver = profile['drivers'] is List 
         ? (profile['drivers'] as List).firstOrNull 
         : profile['drivers'];
+    
+    // Debug log to check driver data
+    debugPrint('Driver data: $driver');
+    if (driver != null) {
+      debugPrint('Vehicle plate: ${driver['vehicle_plate']}');
+      debugPrint('Route code field: ${driver['route_code']}');
+      debugPrint('Routes object: ${driver['routes']}');
+    }
     
     emailController = TextEditingController(
       text: _supabase.auth.currentUser?.email ?? '',
@@ -67,6 +77,22 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       licenseIdController = TextEditingController(
         text: driver['license_number'] ?? '',
       );
+      
+      plateNumberController = TextEditingController(
+        text: driver['vehicle_plate'] ?? '',
+      );
+      
+      // Get route code from the routes relationship (via route_id)
+      String routeCode = '';
+      if (driver['routes'] != null && driver['routes'] is Map) {
+        routeCode = driver['routes']['code'] ?? '';
+      }
+      // Fallback to direct route_code field if routes relationship is not available
+      if (routeCode.isEmpty) {
+        routeCode = driver['route_code'] ?? '';
+      }
+      
+      routeCodeController = TextEditingController(text: routeCode);
       
       // Handle license image URL
       final rawImageUrl = driver['license_image_url'];
@@ -97,6 +123,8 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     } else {
       licenseIdController = TextEditingController();
       operatorController = TextEditingController();
+      plateNumberController = TextEditingController();
+      routeCodeController = TextEditingController();
     }
   }
 
@@ -123,10 +151,33 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
 
       // Update driver specific info
       if (driver != null) {
+        // Look up route_id from route code
+        String? routeId;
+        final routeCode = routeCodeController.text.trim();
+        
+        if (routeCode.isNotEmpty) {
+          try {
+            final routeResult = await _supabase
+                .from('routes')
+                .select('id')
+                .eq('code', routeCode)
+                .maybeSingle();
+            
+            if (routeResult != null) {
+              routeId = routeResult['id'];
+            }
+          } catch (e) {
+            debugPrint('Error looking up route: $e');
+          }
+        }
+        
         await _supabase
             .from('drivers')
             .update({
               'license_number': licenseIdController.text.trim(),
+              'vehicle_plate': plateNumberController.text.trim(),
+              'route_code': routeCodeController.text.trim(),
+              'route_id': routeId, // Update the foreign key
             })
             .eq('id', driver['id']);
       }
@@ -169,6 +220,8 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     addressController.dispose();
     operatorController.dispose();
     licenseIdController.dispose();
+    plateNumberController.dispose();
+    routeCodeController.dispose();
     super.dispose();
   }
 
@@ -392,6 +445,31 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
 
                       _buildLabel("Driver License ID No"),
                       _buildTextField(licenseIdController),
+
+                      // Plate Number and Route Code in a row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel("Plate Number"),
+                                _buildTextField(plateNumberController),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel("Route Code"),
+                                _buildTextField(routeCodeController),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                       
                       const SizedBox(height: 20),
                     ],

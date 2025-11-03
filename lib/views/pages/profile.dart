@@ -7,6 +7,7 @@ import 'personalinfo_driver.dart';
 import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
+import 'landingpage.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -42,7 +43,12 @@ class _ProfilePageState extends State<ProfilePage> {
       // Fetch profile data
       final response = await _supabase
           .from('profiles')
-          .select('*, commuters(*), drivers(*, operators(company_name)), operators(*)')
+          .select('''
+            *, 
+            commuters(*), 
+            drivers(*, operators(company_name), routes(code, name)), 
+            operators(*)
+          ''')
           .eq('user_id', userId)
           .single();
 
@@ -139,10 +145,11 @@ class _ProfilePageState extends State<ProfilePage> {
           // Close loading dialog
           Navigator.pop(context);
           
-          // Navigate to login page - adjust route as needed
-          // Using pushNamedAndRemoveUntil to clear the navigation stack
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
+          // Navigate to Landing Page and clear navigation stack
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LandingPage(),
+            ),
             (route) => false,
           );
         }
