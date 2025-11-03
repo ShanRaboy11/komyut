@@ -96,6 +96,7 @@ CREATE TABLE drivers (
   current_qr text UNIQUE, 
   vehicle_plate text,
   route_code text,
+  puv_type text,
   active boolean DEFAULT true,
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
