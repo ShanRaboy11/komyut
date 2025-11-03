@@ -50,8 +50,9 @@ class RegistrationService {
     required String licenseNumber,
     String? assignedOperator,
     required String driverLicensePath,
-    required String vehiclePlate, // ✨ NEW
-    required String routeCode, // ✨ NEW
+    required String vehiclePlate, 
+    required String routeCode,
+    required String puvType,
   }) {
     _registrationData['first_name'] = firstName;
     _registrationData['last_name'] = lastName;
@@ -61,8 +62,9 @@ class RegistrationService {
     _registrationData['license_number'] = licenseNumber;
     _registrationData['assigned_operator'] = assignedOperator;
     _registrationData['driver_license_path'] = driverLicensePath;
-    _registrationData['vehicle_plate'] = vehiclePlate; // ✨ NEW
-    _registrationData['route_code'] = routeCode; // ✨ NEW
+    _registrationData['vehicle_plate'] = vehiclePlate;
+    _registrationData['route_code'] = routeCode; 
+    _registrationData['puv_type'] = puvType;
     debugPrint('✅ Driver personal info saved');
     debugPrint('Current data: $_registrationData');
   }

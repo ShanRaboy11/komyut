@@ -9,14 +9,14 @@ class RegistrationProvider extends ChangeNotifier {
   String? _errorMessage;
   File? _idProofFile;
   File? _driverLicenseFile;
-  List<Map<String, dynamic>> _availableRoutes = [];  // ✨ NEW
+  List<Map<String, dynamic>> _availableRoutes = [];
 
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   File? get idProofFile => _idProofFile;
   File? get driverLicenseFile => _driverLicenseFile;
-  List<Map<String, dynamic>> get availableRoutes => _availableRoutes;  // ✨ NEW
+  List<Map<String, dynamic>> get availableRoutes => _availableRoutes;
   Map<String, dynamic> get registrationData => _registrationService.getRegistrationData();
 
   // Step 1: Save role
@@ -41,7 +41,6 @@ class RegistrationProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // Store ID proof file reference
       if (idProofFile != null) {
         _idProofFile = idProofFile;
       }
@@ -67,7 +66,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // Step 2b: Save driver personal info (UPDATED with vehicle and route)
+  // Step 2b: Save driver personal info (UPDATED with puv_type)
   Future<bool> saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -77,15 +76,16 @@ class RegistrationProvider extends ChangeNotifier {
     required String licenseNumber,
     String? assignedOperator,
     required File driverLicenseFile,
-    required String vehiclePlate,  // ✨ NEW
-    required String routeCode,     // ✨ NEW
+    required String vehiclePlate,
+    required String routeCode,
+    required String puvType,
+
   }) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      // Store driver license file reference
       _driverLicenseFile = driverLicenseFile;
 
       _registrationService.saveDriverPersonalInfo(
@@ -97,8 +97,9 @@ class RegistrationProvider extends ChangeNotifier {
         licenseNumber: licenseNumber,
         assignedOperator: assignedOperator,
         driverLicensePath: driverLicenseFile.path,
-        vehiclePlate: vehiclePlate,  // ✨ NEW
-        routeCode: routeCode,        // ✨ NEW
+        vehiclePlate: vehiclePlate,
+        routeCode: routeCode,
+        puvType: puvType,
       );
 
       _isLoading = false;
@@ -156,7 +157,7 @@ class RegistrationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✨ NEW: Load available routes for dropdown
+  // Load available routes for dropdown
   Future<void> loadAvailableRoutes() async {
     try {
       _isLoading = true;
@@ -173,7 +174,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // NEW: Send email verification OTP (no account created yet)
+  // Send email verification OTP
   Future<Map<String, dynamic>> sendEmailVerificationOTP(String email) async {
     try {
       _isLoading = true;
@@ -201,7 +202,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // NEW: Verify OTP and create account
+  // Verify OTP and create account
   Future<Map<String, dynamic>> verifyOTPAndCreateAccount(
     String email,
     String otp,
@@ -235,7 +236,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // NEW: Resend OTP
+  // Resend OTP
   Future<Map<String, dynamic>> resendOTP(String email) async {
     try {
       _isLoading = true;
@@ -263,7 +264,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // Complete registration (Step 4 - after email verification)
+  // Complete registration
   Future<Map<String, dynamic>> completeRegistration() async {
     try {
       _isLoading = true;
@@ -296,7 +297,7 @@ class RegistrationProvider extends ChangeNotifier {
     _registrationService.clearRegistrationData();
     _idProofFile = null;
     _driverLicenseFile = null;
-    _availableRoutes = [];  // ✨ NEW
+    _availableRoutes = [];
     _errorMessage = null;
     notifyListeners();
   }

@@ -30,8 +30,10 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
   late TextEditingController licenseIdController;
   late TextEditingController plateNumberController;
   late TextEditingController routeCodeController;
+  late TextEditingController puvTypeController; // ✨ NEW
   
   String? licenseImageUrl;
+  String? puvType; // ✨ NEW - Store actual value
 
   @override
   void initState() {
@@ -94,6 +96,11 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       
       routeCodeController = TextEditingController(text: routeCode);
       
+      // ✨ NEW: Get PUV type
+      puvType = driver['puv_type'] ?? 'traditional';
+      String puvTypeDisplay = puvType == 'modern' ? 'Modern' : 'Traditional';
+      puvTypeController = TextEditingController(text: puvTypeDisplay);
+      
       // Handle license image URL
       final rawImageUrl = driver['license_image_url'];
       if (rawImageUrl != null && rawImageUrl.isNotEmpty) {
@@ -125,6 +132,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       operatorController = TextEditingController();
       plateNumberController = TextEditingController();
       routeCodeController = TextEditingController();
+      puvTypeController = TextEditingController();
     }
   }
 
@@ -178,6 +186,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
               'vehicle_plate': plateNumberController.text.trim(),
               'route_code': routeCodeController.text.trim(),
               'route_id': routeId, // Update the foreign key
+              'puv_type': puvType, // ✨ NEW: Save PUV type
             })
             .eq('id', driver['id']);
       }
@@ -222,6 +231,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     licenseIdController.dispose();
     plateNumberController.dispose();
     routeCodeController.dispose();
+    puvTypeController.dispose(); // ✨ NEW
     super.dispose();
   }
 
@@ -445,6 +455,10 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
 
                       _buildLabel("Driver License ID No"),
                       _buildTextField(licenseIdController),
+
+                      // ✨ NEW: PUV Type field
+                      _buildLabel("PUV Type"),
+                      _buildTextField(puvTypeController, readOnly: true),
 
                       // Plate Number and Route Code in a row
                       Row(
