@@ -17,7 +17,7 @@ CREATE POLICY "Users can update own attachments"
 ON storage.objects
 FOR UPDATE
 TO authenticated
-USING (bucket_id = 'attachments');
+USING (bucket_id = 'attachments' AND owner_profile_id = auth.uid());
 
 -- Allow authenticated users to delete their own attachments
 CREATE POLICY "Users can delete own attachments"
