@@ -198,7 +198,7 @@ class _TripsPageState extends State<TripsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Analytic Summary",
+                          "Analytics",
                           style: GoogleFonts.nunito(
                             fontSize: 22,
                             fontWeight: FontWeight.w600,
@@ -352,7 +352,7 @@ class _TripsPageState extends State<TripsPage> {
                         ),
                         const SizedBox(width: 20),
                         _analyticsCard(
-                          "Amount Spent",
+                          "Expense",
                           analyticsData[selectedRange]!['spent']!,
                         ),
                       ],
@@ -478,7 +478,7 @@ class _TripsPageState extends State<TripsPage> {
             Text(
               title,
               style: GoogleFonts.manrope(
-                fontSize: 18,
+                fontSize: 16,
                 color: Color(0xFFF0D7FF),
                 fontWeight: FontWeight.w500,
               ),
