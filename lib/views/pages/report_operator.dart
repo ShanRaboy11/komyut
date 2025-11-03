@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/report_card.dart';
+import '../widgets/feedback_card.dart';
 import '../pages/reportdetails_operator.dart';
 
 class OperatorReportsPage extends StatefulWidget {

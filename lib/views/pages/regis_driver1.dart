@@ -30,11 +30,11 @@ class RegistrationDriverPersonalInfoState
       TextEditingController();
   final TextEditingController _assignedOperatorController =
       TextEditingController();
-  // ✨ NEW Controllers
   final TextEditingController _vehiclePlateController = TextEditingController();
 
   String? _selectedSex;
-  String? _selectedRouteCode; // ✨ NEW
+  String? _selectedRouteCode;
+  String? _selectedPuvType; // ✨ NEW - PUV Type
   String? _uploadedLicenseFileName;
   File? _driverLicenseFile;
 
@@ -54,7 +54,6 @@ class RegistrationDriverPersonalInfoState
         listen: false,
       );
 
-      // ✨ Load available routes
       registrationProvider.loadAvailableRoutes();
 
       final data = registrationProvider.registrationData;
@@ -82,14 +81,18 @@ class RegistrationDriverPersonalInfoState
       if (data['assigned_operator'] != null) {
         _assignedOperatorController.text = data['assigned_operator'];
       }
-      // ✨ NEW: Load vehicle plate
       if (data['vehicle_plate'] != null) {
         _vehiclePlateController.text = data['vehicle_plate'];
       }
-      // ✨ NEW: Load route code
       if (data['route_code'] != null) {
         setState(() {
           _selectedRouteCode = data['route_code'];
+        });
+      }
+      // ✨ NEW: Load PUV type
+      if (data['puv_type'] != null) {
+        setState(() {
+          _selectedPuvType = data['puv_type'];
         });
       }
       if (data['driver_license_path'] != null) {
@@ -111,7 +114,7 @@ class RegistrationDriverPersonalInfoState
     _addressController.dispose();
     _licenseNumberController.dispose();
     _assignedOperatorController.dispose();
-    _vehiclePlateController.dispose(); // ✨ NEW
+    _vehiclePlateController.dispose();
     super.dispose();
   }
 
@@ -138,13 +141,81 @@ class RegistrationDriverPersonalInfoState
       return;
     }
 
+    // Explicit null checks for required fields
+    if (_selectedPuvType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select PUV type'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedSex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select sex'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedRouteCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select route'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (isFormValid) {
+      // Explicit null checks to prevent runtime exceptions
+      if (_selectedSex == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your sex'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedRouteCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a route code'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a PUV type')),
+        );
+      }
+      if (_selectedSex == null ||
+          _selectedRouteCode == null ||
+          _selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all required fields correctly!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final registrationProvider = Provider.of<RegistrationProvider>(
         context,
         listen: false,
       );
 
-      // ✨ UPDATED: Include vehicle plate and route code
       registrationProvider
           .saveDriverPersonalInfo(
             firstName: _firstNameController.text.trim(),
@@ -157,10 +228,9 @@ class RegistrationDriverPersonalInfoState
                 ? null
                 : _assignedOperatorController.text.trim(),
             driverLicenseFile: _driverLicenseFile!,
-            vehiclePlate: _vehiclePlateController.text
-                .trim()
-                .toUpperCase(), // ✨ NEW
-            routeCode: _selectedRouteCode!, // ✨ NEW
+            vehiclePlate: _vehiclePlateController.text.trim().toUpperCase(),
+            routeCode: _selectedRouteCode!,
+            puvType: _selectedPuvType!,
           )
           .then((success) {
             if (success && mounted) {
@@ -253,7 +323,7 @@ class RegistrationDriverPersonalInfoState
                       const SizedBox(height: 30),
 
                       const Text(
-                        'Driver Personal Information',
+                        'Tell Us About You',
                         style: TextStyle(
                           color: Color.fromRGBO(18, 18, 18, 1),
                           fontFamily: 'Manrope',
@@ -263,7 +333,8 @@ class RegistrationDriverPersonalInfoState
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                        'Please provide your details to complete registration.',
+                        'Provide some basic details so we can set up your account',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Color.fromRGBO(127, 127, 127, 1),
                           fontFamily: 'Nunito',
@@ -477,7 +548,6 @@ class RegistrationDriverPersonalInfoState
                             ),
                             const SizedBox(height: 10),
 
-                            // 🪪 Driver’s License Section
                             CustomTextField(
                               labelText: 'Driver\'s License Number *',
                               controller: _licenseNumberController,
@@ -603,16 +673,41 @@ class RegistrationDriverPersonalInfoState
                             ),
                             const SizedBox(height: 15),
 
+                            CustomTextField(
+                              labelText: 'Plate Number *',
+                              hintText: 'Enter plate number',
+                              controller: _vehiclePlateController,
+                              height: 60,
+                              borderColor: const Color.fromRGBO(
+                                200,
+                                200,
+                                200,
+                                1,
+                              ),
+                              focusedBorderColor: const Color.fromRGBO(
+                                185,
+                                69,
+                                170,
+                                1,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter vehicle plate number';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 15),
+
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Vehicle Plate Number — wider
                                 Expanded(
                                   flex: 3,
-                                  child: CustomTextField(
-                                    labelText: 'Plate Number *',
-                                    hintText: 'Enter plate number',
-                                    controller: _vehiclePlateController,
+                                  child: CustomDropdownField<String>(
+                                    labelText: 'PUV Type *',
+                                    initialValue: _selectedPuvType,
                                     height: 60,
                                     borderColor: const Color.fromRGBO(
                                       200,
@@ -626,18 +721,36 @@ class RegistrationDriverPersonalInfoState
                                       170,
                                       1,
                                     ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'modern',
+                                        child: Text('Modern'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'traditional',
+                                        child: Text('Traditional'),
+                                      ),
+                                    ],
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedPuvType = newValue;
+                                      });
+                                    },
                                     validator: (value) {
-                                      if (value == null ||
-                                          value.trim().isEmpty) {
-                                        return 'Please enter vehicle plate number';
+                                      if (value == null) {
+                                        return 'Please select PUV type';
                                       }
                                       return null;
                                     },
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Color.fromRGBO(185, 69, 170, 1),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 15),
 
-                                // Route Code — narrower
+                                // Route Code
                                 Expanded(
                                   flex: 2,
                                   child: CustomDropdownField<String>(
@@ -664,15 +777,13 @@ class RegistrationDriverPersonalInfoState
                                             const DropdownMenuItem(
                                               value: null,
                                               enabled: false,
-                                              child: Text('routes...'),
+                                              child: Text('Loading...'),
                                             ),
                                           ]
                                         : registrationProvider.availableRoutes
                                               .map((route) {
                                                 final code =
                                                     route['code'] as String;
-                                                final name =
-                                                    route['name'] as String?;
                                                 return DropdownMenuItem<String>(
                                                   value: code,
                                                   child: Column(
@@ -686,27 +797,10 @@ class RegistrationDriverPersonalInfoState
                                                         code,
                                                         style: const TextStyle(
                                                           fontWeight:
-                                                              FontWeight.w800,
+                                                              FontWeight.w400,
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),
-                                                      if (name != null &&
-                                                          name.isNotEmpty)
-                                                        Text(
-                                                          name,
-                                                          style: const TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                Color.fromRGBO(
-                                                                  127,
-                                                                  127,
-                                                                  127,
-                                                                  1,
-                                                                ),
-                                                            fontFamily:
-                                                                'Nunito',
-                                                          ),
-                                                        ),
                                                     ],
                                                   ),
                                                 );
