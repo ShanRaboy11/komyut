@@ -35,7 +35,6 @@ migrate_working_dir/
 
 # Backend
 /backend/node_modules
-/backend/package-lock.json
 /backend/.env
 
 # Symbolication related
