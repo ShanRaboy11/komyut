@@ -20,7 +20,7 @@ const transporter = nodemailer.createTransport({
 
 // --- API Endpoint ---
 app.post("/send-payment-instructions", (req, res) => {
-  console.log("Received request for revised branded email...");
+  console.log("Received request for final, polished email...");
 
   const { name, email, amount, source, userId, transactionCode } = req.body;
 
@@ -28,17 +28,21 @@ app.post("/send-payment-instructions", (req, res) => {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
-  // --- Data Formatting ---
   const fee = 10.0;
   const baseAmount = amount - fee;
   const formattedBaseAmount = `PHP ${baseAmount.toFixed(2)}`;
   const formattedTotalAmount = `PHP ${amount.toFixed(2)}`;
+  const date = new Date();
+  const formattedDate = date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
-  // --- Brand Colors and Fonts ---
   const brandColor = "#8E4CB6";
+  const gradient = "linear-gradient(135deg, #B945AA, #8E4CB6, #5B53C2)";
   const bgColor = "#F6F1FF";
 
-  // --- Email Template
   const htmlBody = `
     <!DOCTYPE html><html><head><meta charset="utf-8">
     <style>
@@ -51,8 +55,8 @@ app.post("/send-payment-instructions", (req, res) => {
             <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 
                 <!-- Header -->
-                <tr><td align="center" style="background: ${brandColor}; padding: 30px 0;">
-                    <h1 style="color: #ffffff; margin: 0; font-family: 'Manrope', Arial, sans-serif; font-size: 26px; font-weight: 600;">Cash In Request</h1>
+                <tr><td align="center" style="background: ${gradient}; padding: 30px 0;">
+                    <h1 style="color: #ffffff; margin: 0; font-family: 'Manrope', Arial, sans-serif; font-size: 28px; font-weight: 800;">Cash In Request</h1>
                 </td></tr>
 
                 <!-- Main Content -->
@@ -62,28 +66,39 @@ app.post("/send-payment-instructions", (req, res) => {
                     <!-- Transaction Summary Card -->
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #faf7ff; border: 1px solid #e9d8f8; border-radius: 8px; padding: 20px; font-size: 15px;">
                         <tr><td style="padding-bottom: 15px;" colspan="2"><h3 style="margin:0; font-family: 'Manrope', Arial, sans-serif; font-size: 18px; color: ${brandColor};">Transaction Summary</h3></td></tr>
+                        <tr><td style="color: #555; padding: 5px 0; font-family: 'Nunito', Arial, sans-serif;">User ID:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${userId}</td></tr>
                         <tr><td style="color: #555; padding: 5px 0; font-family: 'Nunito', Arial, sans-serif;">Name:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${name}</td></tr>
+                        <tr><td style="color: #555; padding: 5px 0; font-family: 'Nunito', Arial, sans-serif;">Date:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${formattedDate}</td></tr>
                         <tr><td style="color: #555; padding: 5px 0; font-family: 'Nunito', Arial, sans-serif;">Amount:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${formattedBaseAmount}</td></tr>
                         <tr><td style="color: #555; padding: 5px 0; font-family: 'Nunito', Arial, sans-serif;">Service Fee:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">PHP 10.00</td></tr>
-                        <tr style="border-top: 1px solid #e9d8f8;"><td style="color: #333; padding: 10px 0 0 0; font-weight: 600; font-family: 'Nunito', Arial, sans-serif; font-size: 16px;">Total Amount Due:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 800; font-size: 18px; padding: 10px 0 0 0;">${formattedTotalAmount}</td></tr>
+                        <tr style="border-top: 1px solid #e9d8f8;"><td style="color: #333; padding: 10px 0 0 0; font-weight: 600; font-family: 'Nunito', Arial, sans-serif; font-size: 16px;">Total Amount Due:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700; font-size: 18px; padding: 10px 0 0 0;">${formattedTotalAmount}</td></tr>
                     </table>
 
                     <!-- Payment Instructions Card -->
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px; background-color: #ffffff; border: 1px solid #e9d8f8; border-radius: 8px; padding: 20px; font-size: 16px;">
-                        <tr><td style="padding-bottom: 15px;" colspan="2"><h3 style="margin:0; font-family: 'Manrope', Arial, sans-serif; font-size: 18px; color: ${brandColor};">Payment Instructions (${source})</h3></td></tr>
-                        <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Biller Name:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">Komyut Services PH</td></tr>
+                        
+                        <tr><td style="padding-bottom: 15px;" colspan="2"><h3 style="margin:0; font-family: 'Manrope', Arial, sans-serif; font-size: 18px; color: ${brandColor};">Payment Instructions</h3></td></tr>
+                        <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Payment Method:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${source}</td></tr>
+                        <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Biller Name:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">Komyut Technologies Inc.</td></tr>
                         <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Reference Number:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${transactionCode}</td></tr>
-                        <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Total Amount Due:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${formattedTotalAmount}</td></tr>
+                        <tr><td style="color: #555; padding: 8px 0; font-family: 'Nunito', Arial, sans-serif;">Amount Due:</td><td style="text-align: right; color: #333; font-family: 'Manrope', Arial, sans-serif; font-weight: 700;">${formattedTotalAmount}</td></tr>
                     </table>
                     
                      <p style="color: #555555; margin: 30px 0 0 0; font-size: 14px; text-align: center; line-height: 1.6;">Your payment will be confirmed and your wallet balance updated within 3-5 business days. Please keep your receipt as proof of payment.</p>
+                </td></tr>
+
+                <!-- Footer -->
+                <tr><td style="background-color: #faf7ff; padding: 20px 30px; border-top: 1px solid #e9d8f8;">
+                    <p style="margin: 0; color: #888888; font-size: 12px; text-align: center; line-height: 1.5;">
+                        If you have any questions, please contact our support team.<br>
+                        &copy; ${new Date().getFullYear()} komyut. All rights reserved.
+                    </p>
                 </td></tr>
             </table>
         </td></tr></table>
     </body></html>
     `;
 
-  // --- Send the Email ---
   transporter.sendMail(
     {
       from: `"komyut" <${process.env.GMAIL_USER}>`,
@@ -98,13 +113,12 @@ app.post("/send-payment-instructions", (req, res) => {
           .status(500)
           .json({ error: "Failed to send email. Check server logs." });
       }
-      console.log("Revised email sent successfully!", info.response);
+      console.log("Final polished email sent successfully!", info.response);
       res.status(200).json({ message: "Instructions sent successfully!" });
     }
   );
 });
 
-// --- Start the Server ---
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
