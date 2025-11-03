@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/report_card.dart';
+import '../widgets/feedback_card.dart';
 import '../pages/feedbackdetails_driver.dart';
+import 'report_driver.dart';
 
 class DriverFeedbackPage extends StatefulWidget {
   const DriverFeedbackPage({super.key});
@@ -94,7 +95,10 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
           child: IconButton(
             onPressed: () {
               // TODO: Navigate to your Add Report page
-              // Navigator.push(context, MaterialPageRoute(builder: (_) => AddReportPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ReportPage()),
+              );
             },
             icon: const Icon(Icons.add_rounded, size: 30, color: Colors.white),
           ),

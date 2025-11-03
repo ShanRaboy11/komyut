@@ -5,6 +5,7 @@ import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
+import 'report_commuter.dart';
 
 class TripDetailsPage extends StatelessWidget {
   final String date;
@@ -51,7 +52,10 @@ class TripDetailsPage extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
 
@@ -156,7 +160,14 @@ class TripDetailsPage extends StatelessWidget {
                     Expanded(
                       child: CustomButton(
                         text: "Report",
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ReportPage(),
+                            ),
+                          );
+                        },
                         icon: Symbols.brightness_alert_rounded,
                         width: (screenWidth - 70) / 2,
                         height: 50,
@@ -219,7 +230,14 @@ class TripDetailsPage extends StatelessWidget {
               ] else ...[
                 CustomButton(
                   text: "Report an Issue",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReportPage(),
+                      ),
+                    );
+                  },
                   icon: Symbols.brightness_alert_rounded,
                   width: screenWidth,
                   height: 50,
