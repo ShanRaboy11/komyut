@@ -41,28 +41,40 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   }
 
   Future<void> _sendInstructions() async {
-    // Guard clause to prevent execution if conditions aren't met
     if (_selectedSource == null || !_agreeToTerms) return;
 
-    // Use the provider from context, but don't listen to rebuilds here
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+
+    // --- NEW: Get the User ID from the provider ---
+    final userId = walletProvider.userProfile?['user_id']?.toString();
+    
+    // --- NEW: Add a check to ensure we have a User ID ---
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not find User ID. Please try again.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return; // Stop execution if no user ID
+    }
 
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
     const double serviceFee = 10.00;
     final double totalValue = amountValue + serviceFee;
 
     try {
-      // Call the provider method to send instructions to the backend
       await walletProvider.sendPaymentInstructions(
         name: widget.name,
         email: widget.email,
         amount: totalValue,
         source: _selectedSource!,
+        userId: userId,
       );
 
-      // If the above line completes without error, navigate to the confirmation page
       if (mounted) {
-        // Check if the widget is still in the tree
         Navigator.of(context).pushNamed(
           '/dw_confirmation',
           arguments: {
@@ -74,7 +86,6 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
         );
       }
     } catch (e) {
-      // If an error occurs, show a SnackBar with the error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

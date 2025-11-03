@@ -283,11 +283,11 @@ class WalletProvider extends ChangeNotifier {
     required String email,
     required double amount,
     required String source,
+    required String userId,
   }) async {
     _isSendingInstructions = true;
     notifyListeners();
 
-    // The endpoint path we created in our Node.js server
     final url = Uri.parse('$_baseUrl/send-payment-instructions');
 
     try {
@@ -299,6 +299,7 @@ class WalletProvider extends ChangeNotifier {
           'email': email,
           'amount': amount,
           'source': source,
+          'userId': userId,
         }),
       );
 
@@ -306,10 +307,7 @@ class WalletProvider extends ChangeNotifier {
         final errorBody = json.decode(response.body);
         throw Exception('Failed to send instructions: ${errorBody['error']}');
       }
-      // If we get here, it means the server responded with 200 OK!
     } catch (e) {
-      // This will catch connection errors if your server isn't running,
-      // or the exception we threw above.
       throw Exception(
         'Could not send instructions. Please check your connection and try again.',
       );
