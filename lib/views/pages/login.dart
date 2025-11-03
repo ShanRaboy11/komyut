@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_provider.dart';
 import '../widgets/button.dart';
+import '../providers/auth_provider.dart';
+
 import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
 import '../widgets/shake_widget.dart';

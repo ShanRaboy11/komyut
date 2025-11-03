@@ -27,13 +27,13 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   Position? _currentPosition;
   bool _isLoading = true;
   int _passengerCount = 1;
-  
-  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854); 
+
+  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854);
 
   @override
   void initState() {
     super.initState();
-    
+
     // Use the trip data
     if (widget.tripId != null) {
       debugPrint('Trip ID: ${widget.tripId}');
@@ -47,17 +47,17 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   Future<void> _getCurrentLocation() async {
     try {
       final permission = await Permission.location.request();
-      
+
       if (permission.isGranted) {
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
-        
+
         setState(() {
           _currentPosition = position;
           _isLoading = false;
         });
-        
+
         // Animate to user location
         Future.delayed(const Duration(milliseconds: 300), () {
           // Check if the widget is still mounted before performing UI updates
@@ -87,7 +87,9 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Location Permission Required'),
-        content: const Text('Please enable location permission to use this feature.'),
+        content: const Text(
+          'Please enable location permission to use this feature.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

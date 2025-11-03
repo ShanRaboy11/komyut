@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
-import 'profile_commuter.dart';
+import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet.dart';
 import 'wallet_history.dart';
@@ -44,7 +44,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
-        const CommuterProfilePage(),
+        const ProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),

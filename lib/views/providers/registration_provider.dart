@@ -1,4 +1,3 @@
-// lib/providers/registration_provider.dart
 import 'package:flutter/foundation.dart';
 import '../services/registration_service.dart';
 import 'dart:io';

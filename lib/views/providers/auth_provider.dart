@@ -53,10 +53,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> signIn({required String email, required String password}) async {
     try {
       _isLoading = true;
       _errorMessage = null;

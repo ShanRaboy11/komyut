@@ -1,4 +1,3 @@
-// lib/views/pages/placeholder_pages.dart
 import 'package:flutter/material.dart';
 
 // ============= COMMUTER PLACEHOLDERS =============

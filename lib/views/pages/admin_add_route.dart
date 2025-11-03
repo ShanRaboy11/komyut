@@ -856,244 +856,240 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                   ),
                   const SizedBox(height: 20),
 
-                  if (_stops.isNotEmpty)
-                    const SizedBox(height: 20),
+                  if (_stops.isNotEmpty) const SizedBox(height: 20),
 
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.purple.shade100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(13),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  gradient: _kGradient,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.list_alt,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.purple.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(13),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                gradient: _kGradient,
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Route Stops',
+                              child: const Icon(
+                                Icons.list_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Route Stops',
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F4FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${_stops.length}',
                                 style: GoogleFonts.manrope(
-                                  fontSize: 18,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF5B53C2),
                                 ),
                               ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _stops.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 24),
+                          itemBuilder: (context, index) {
+                            final stop = _stops[index];
+                            final isFirst = index == 0;
+                            final isLast = index == _stops.length - 1;
+
+                            return InkWell(
+                              onTap: () => _showStopOptions(index),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF7F4FF),
                                   borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${_stops.length}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF5B53C2),
+                                  border: Border.all(
+                                    color: Colors.purple.shade100,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _stops.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 24),
-                            itemBuilder: (context, index) {
-                              final stop = _stops[index];
-                              final isFirst = index == 0;
-                              final isLast = index == _stops.length - 1;
-
-                              return InkWell(
-                                onTap: () => _showStopOptions(index),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF7F4FF),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.purple.shade100,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          gradient: isFirst
-                                              ? LinearGradient(
-                                                  colors: [
-                                                    Colors.green,
-                                                    Colors.green.shade700,
-                                                  ],
-                                                )
-                                              : isLast
-                                              ? LinearGradient(
-                                                  colors: [
-                                                    Colors.red,
-                                                    Colors.red.shade700,
-                                                  ],
-                                                )
-                                              : _kGradient,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color:
-                                                  (isFirst
-                                                          ? Colors.green
-                                                          : isLast
-                                                          ? Colors.red
-                                                          : const Color(
-                                                              0xFF5B53C2,
-                                                            ))
-                                                      .withAlpha(76),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '$stop.sequence',
-                                            style: GoogleFonts.manrope(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        gradient: isFirst
+                                            ? LinearGradient(
+                                                colors: [
+                                                  Colors.green,
+                                                  Colors.green.shade700,
+                                                ],
+                                              )
+                                            : isLast
+                                            ? LinearGradient(
+                                                colors: [
+                                                  Colors.red,
+                                                  Colors.red.shade700,
+                                                ],
+                                              )
+                                            : _kGradient,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                (isFirst
+                                                        ? Colors.green
+                                                        : isLast
+                                                        ? Colors.red
+                                                        : const Color(
+                                                            0xFF5B53C2,
+                                                          ))
+                                                    .withAlpha(76),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$stop.sequence',
+                                          style: GoogleFonts.manrope(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              stop.name,
-                                              style: GoogleFonts.manrope(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15,
-                                              ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            stop.name,
+                                            style: GoogleFonts.manrope(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                if (isFirst)
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 2,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              if (isFirst)
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
                                                         ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: Text(
-                                                      'START',
-                                                      style:
-                                                          GoogleFonts.manrope(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            color: Colors.white,
-                                                          ),
-                                                    ),
-                                                  )
-                                                else if (isLast)
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 2,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.red,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: Text(
-                                                      'END',
-                                                      style:
-                                                          GoogleFonts.manrope(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            color: Colors.white,
-                                                          ),
+                                                  ),
+                                                  child: Text(
+                                                    'START',
+                                                    style: GoogleFonts.manrope(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
                                                     ),
                                                   ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
+                                                )
+                                              else if (isLast)
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
                                                   child: Text(
-                                                    '${stop.latitude.toStringAsFixed(4)}, ${stop.longitude.toStringAsFixed(4)}',
-                                                    style: GoogleFonts.nunito(
-                                                      fontSize: 11,
-                                                      color:
-                                                          Colors.grey.shade600,
+                                                    'END',
+                                                    style: GoogleFonts.manrope(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
                                                     ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  '${stop.latitude.toStringAsFixed(4)}, ${stop.longitude.toStringAsFixed(4)}',
+                                                  style: GoogleFonts.nunito(
+                                                    fontSize: 11,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red.shade600,
-                                          size: 22,
-                                        ),
-                                        onPressed: () => _removeStop(index),
-                                        tooltip: 'Remove Stop',
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red.shade600,
+                                        size: 22,
                                       ),
-                                    ],
-                                  ),
+                                      onPressed: () => _removeStop(index),
+                                      tooltip: 'Remove Stop',
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
+                  ),
                   const SizedBox(height: 80), // Extra padding for save button
                 ],
               ),

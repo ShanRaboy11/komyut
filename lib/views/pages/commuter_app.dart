@@ -3,7 +3,7 @@ import '../widgets/role_navbar_wrapper.dart';
 import './home_commuter.dart';
 import './trips_commuter.dart';
 import './notification_commuter.dart';
-import 'profile_commuter.dart';
+import 'profile.dart';
 
 class CommuterApp extends StatelessWidget {
   const CommuterApp({super.key});
@@ -14,7 +14,7 @@ class CommuterApp extends StatelessWidget {
       homePage: CommuterDashboardNav(),
       activityPage: Trip1Page(),
       notificationsPage: NotificationPage(),
-      profilePage: CommuterProfilePage(),
+      profilePage: ProfilePage(),
     );
   }
 }
