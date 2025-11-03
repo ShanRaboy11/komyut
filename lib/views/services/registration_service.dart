@@ -216,7 +216,8 @@ class RegistrationService {
   }
 
   // FIXED: Complete registration after email verification
-  Future<Map<String, dynamic>> completeRegistration() async {
+  // UPDATED: Complete registration after email verification
+Future<Map<String, dynamic>> completeRegistration() async {
   try {
     debugPrint('🔍 Starting completeRegistration');
     debugPrint('📋 Registration data: $_registrationData');
@@ -364,7 +365,7 @@ class RegistrationService {
           }
         }
 
-        // Get route_id from route_code
+        // 🔥 Get route_id from route_code
         String? routeId;
         if (_registrationData['route_code'] != null) {
           debugPrint('🔍 Fetching route_id for code: ${_registrationData['route_code']}');
@@ -382,20 +383,19 @@ class RegistrationService {
           }
         }
 
-        // Create driver record with uploaded image URL
+        // 🔥 Create driver record - ONLY route_id, NO route_code
         await _supabase.from('drivers').insert({
           'profile_id': profileId,
           'license_number': _registrationData['license_number'] ?? '',
-          'license_image_url': licenseImageUrl, // 🔥 Uploaded URL
+          'license_image_url': licenseImageUrl,
           'operator_name': _registrationData['assigned_operator'],
           'vehicle_plate': _registrationData['vehicle_plate'] ?? '',
-          'route_id': routeId,
-          'route_code': _registrationData['route_code'],
-          'puv_type': _registrationData['puv_type'], // 🔥 PUV Type
+          'route_id': routeId, // ✅ Only route_id (FK)
+          'puv_type': _registrationData['puv_type'],
           'status': false,
           'active': true,
         });
-        debugPrint('✅ Driver created with license URL and PUV type');
+        debugPrint('✅ Driver created with route_id: $routeId');
       } else {
         debugPrint('✅ Driver already exists');
       }
