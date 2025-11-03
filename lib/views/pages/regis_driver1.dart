@@ -196,9 +196,12 @@ class RegistrationDriverPersonalInfoState
 
       if (_selectedPuvType == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a PUV type'),
-      if (_selectedSex == null || _selectedRouteCode == null || _selectedPuvType == null) {
+          const SnackBar(content: Text('Please select a PUV type')),
+        );
+      }
+      if (_selectedSex == null ||
+          _selectedRouteCode == null ||
+          _selectedPuvType == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please fill all required fields correctly!'),
@@ -700,7 +703,6 @@ class RegistrationDriverPersonalInfoState
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                              
                                 Expanded(
                                   flex: 3,
                                   child: CustomDropdownField<String>(
@@ -799,7 +801,6 @@ class RegistrationDriverPersonalInfoState
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),
-                                                      
                                                     ],
                                                   ),
                                                 );
