@@ -284,6 +284,7 @@ class WalletProvider extends ChangeNotifier {
     required double amount,
     required String source,
     required String userId,
+    required String transactionCode,
   }) async {
     _isSendingInstructions = true;
     notifyListeners();
@@ -300,6 +301,7 @@ class WalletProvider extends ChangeNotifier {
           'amount': amount,
           'source': source,
           'userId': userId,
+          'transactionCode': transactionCode,
         }),
       );
 
@@ -308,9 +310,7 @@ class WalletProvider extends ChangeNotifier {
         throw Exception('Failed to send instructions: ${errorBody['error']}');
       }
     } catch (e) {
-      throw Exception(
-        'Could not send instructions. Please check your connection and try again.',
-      );
+      throw Exception('Could not send instructions. Please try again.');
     } finally {
       _isSendingInstructions = false;
       notifyListeners();

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,26 +41,37 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
     });
   }
 
+  String _generateTransactionCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final part1 = String.fromCharCodes(
+      Iterable.generate(
+        15,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
   Future<void> _sendInstructions() async {
     if (_selectedSource == null || !_agreeToTerms) return;
 
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-
-    // --- NEW: Get the User ID from the provider ---
     final userId = walletProvider.userProfile?['user_id']?.toString();
-    
-    // --- NEW: Add a check to ensure we have a User ID ---
+
     if (userId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Could not find User ID. Please try again.'),
-            backgroundColor: Colors.redAccent,
           ),
         );
       }
-      return; // Stop execution if no user ID
+      return;
     }
+
+    // --- Generate the transaction code here! ---
+    final String transactionCode = _generateTransactionCode();
 
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
     const double serviceFee = 10.00;
@@ -72,6 +84,7 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
         amount: totalValue,
         source: _selectedSource!,
         userId: userId,
+        transactionCode: transactionCode,
       );
 
       if (mounted) {
@@ -82,6 +95,8 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
             'email': widget.email,
             'amount': widget.amount,
             'source': _selectedSource!,
+            'transactionCode':
+                transactionCode,
           },
         );
       }

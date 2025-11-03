@@ -152,6 +152,7 @@ class HomeTabNavigator extends StatelessWidget {
               email: args['email']!,
               amount: args['amount']!,
               source: args['source']!,
+              transactionCode: args['transactionCode']!,
             );
             break;
           case '/dw_success':
