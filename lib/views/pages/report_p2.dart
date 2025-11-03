@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'success_page.dart';
+import 'success_reportpage_commuter.dart';
 
 class ReportIssueCard2 extends StatelessWidget {
   const ReportIssueCard2({super.key});
@@ -205,7 +205,7 @@ class ReportIssueCard2 extends StatelessWidget {
                               "Submit Report",
                               style: GoogleFonts.nunito(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: 18,
                               ),
                             ),
                           ),
@@ -224,7 +224,7 @@ class ReportIssueCard2 extends StatelessWidget {
                               style: GoogleFonts.nunito(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: 18,
                               ),
                             ),
                           ),

@@ -212,7 +212,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
                     "Continue",
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
                 ),
@@ -231,7 +231,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
                     style: GoogleFonts.nunito(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
                 ),

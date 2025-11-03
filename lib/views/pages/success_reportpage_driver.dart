@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import 'dart:async';
-import 'home_commuter.dart';
+import 'home_driver.dart';
 
 class SuccessPage extends StatefulWidget {
   final String title;
@@ -14,7 +14,7 @@ class SuccessPage extends StatefulWidget {
     super.key, // Fixed: use_super_parameters
     this.title = 'Report Submitted!',
     this.subtitle =
-        'Thank you for submitting a report. By letting us know about this issue, you help us make your commute safer and better for everyone.',
+        'Thank you for submitting a report. By letting us know about this issue, you help us improve safety and the overall experience for everyone on the road.',
     this.autoCloseDuration = 3,
     this.onClose,
   });
@@ -59,9 +59,7 @@ class _SuccessPageState extends State<SuccessPage>
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const CommuterDashboardNav(),
-            ),
+            MaterialPageRoute(builder: (context) => const DriverDashboardNav()),
           );
         }
       }
