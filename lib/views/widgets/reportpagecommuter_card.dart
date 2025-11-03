@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../pages/report_p2.dart';
 
 class ReportIssueCard extends StatefulWidget {
   const ReportIssueCard({super.key});
@@ -38,7 +39,8 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
     final size = MediaQuery.of(context).size;
     final bool isSmall = size.width < 400;
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 30),
@@ -65,7 +67,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
           children: [
             Text(
               "Report an Issue",
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.manrope(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -84,7 +86,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Category of Concern",
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.manrope(
                   fontSize: 14,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -149,7 +151,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Severity",
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.manrope(
                   fontSize: 14,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -200,7 +202,14 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReportIssueCard2(),
+                      ),
+                    );
+                  },
                   child: Text(
                     "Continue",
                     style: GoogleFonts.nunito(

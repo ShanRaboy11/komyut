@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../pages/report_p2.dart';
 
 class ReportIssueCard extends StatefulWidget {
   const ReportIssueCard({super.key});
@@ -199,7 +200,14 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReportIssueCard2(),
+                      ),
+                    );
+                  },
                   child: Text(
                     "Continue",
                     style: GoogleFonts.nunito(

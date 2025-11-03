@@ -5,7 +5,7 @@ import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
-import 'report_commuter.dart';
+import 'report_p1_commuter.dart';
 
 class TripDetailsPage extends StatelessWidget {
   final String date;
