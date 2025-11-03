@@ -1,23 +1,194 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'personalinfo_commuter.dart';
+import 'personalinfo_driver.dart';
+import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
 
-class CommuterProfilePage extends StatefulWidget {
-  const CommuterProfilePage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+  
   @override
-  State<CommuterProfilePage> createState() => _CommuterProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _CommuterProfilePageState extends State<CommuterProfilePage> {
+class _ProfilePageState extends State<ProfilePage> {
+  final _supabase = Supabase.instance.client;
+  bool _isLoading = true;
+  Map<String, dynamic>? _profileData;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('No user logged in');
+      }
+
+      // Fetch profile data
+      final response = await _supabase
+          .from('profiles')
+          .select('*, commuters(*), drivers(*, operators(company_name)), operators(*)')
+          .eq('user_id', userId)
+          .single();
+
+      setState(() {
+        _profileData = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getUserDisplayName() {
+    if (_profileData == null) return '';
+    return '${_profileData!['first_name'] ?? ''} ${_profileData!['last_name'] ?? ''}';
+  }
+
+  String _getUserId() {
+    if (_profileData == null) return '';
+    // You can customize this based on which ID you want to show
+    return _profileData!['id']?.toString().substring(0, 8) ?? '';
+  }
+
+  String _getUserRole() {
+    if (_profileData == null) return '';
+    final role = _profileData!['role'] ?? '';
+    return role.toString().toUpperCase();
+  }
+
+  Widget _getPersonalInfoPage() {
+    if (_profileData == null) return const SizedBox();
+    
+    final role = _profileData!['role'];
+    switch (role) {
+      case 'commuter':
+        return PersonalInfoCommuterPage(profileData: _profileData!);
+      case 'driver':
+        return PersonalInfoDriverPage(profileData: _profileData!);
+      case 'operator':
+        return PersonalInfoOperatorPage(profileData: _profileData!);
+      default:
+        return PersonalInfoCommuterPage(profileData: _profileData!);
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Confirm Logout',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: GoogleFonts.nunito(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.manrope()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Logout',
+              style: GoogleFonts.manrope(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _supabase.auth.signOut();
+        if (mounted) {
+          // Navigate to login page - adjust route as needed
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Logout failed: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F4FF),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: const Color(0xFF8E4CB6),
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null || _profileData == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F4FF),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load profile',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _errorMessage ?? 'Unknown error',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfileData,
+                child: Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFFF7F4FF),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -28,6 +199,7 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 10),
                 // --- Title ---
                 Text(
                   "Profile",
@@ -39,7 +211,7 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- Profile Header (with layered images) ---
+                // --- Profile Header ---
                 Row(
                   children: [
                     Stack(
@@ -59,31 +231,35 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
                       ],
                     ),
                     const SizedBox(width: 30),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Dela Cruz,",
-                          style: GoogleFonts.manrope(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getUserDisplayName(),
+                            style: GoogleFonts.manrope(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "Juan",
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
-                            color: const Color.fromARGB(255, 0, 0, 0),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getUserRole(),
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              color: const Color(0xFF8E4CB6),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "ID: 123456789",
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            color: Colors.black38,
+                          Text(
+                            "ID: ${_getUserId()}",
+                            style: GoogleFonts.nunito(
+                              fontSize: 14,
+                              color: Colors.black38,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -99,9 +275,9 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const PersonalInfoPage(),
+                        builder: (context) => _getPersonalInfoPage(),
                       ),
-                    );
+                    ).then((_) => _loadProfileData()); // Refresh on return
                   },
                 ),
                 const SizedBox(height: 16),
@@ -133,7 +309,7 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
                   },
                 ),
 
-                const SizedBox(height: 150), // space before bottom button
+                const SizedBox(height: 150),
               ],
             ),
           ),
@@ -146,7 +322,7 @@ class _CommuterProfilePageState extends State<CommuterProfilePage> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _handleLogout,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.red,
