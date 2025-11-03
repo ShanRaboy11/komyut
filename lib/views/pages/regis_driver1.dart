@@ -159,9 +159,7 @@ class RegistrationDriverPersonalInfoState
                 ? null
                 : _assignedOperatorController.text.trim(),
             driverLicenseFile: _driverLicenseFile!,
-            vehiclePlate: _vehiclePlateController.text
-                .trim()
-                .toUpperCase(),
+            vehiclePlate: _vehiclePlateController.text.trim().toUpperCase(),
             routeCode: _selectedRouteCode!,
             puvType: _selectedPuvType!, // ✨ NEW
           )
@@ -606,43 +604,10 @@ class RegistrationDriverPersonalInfoState
                             ),
                             const SizedBox(height: 15),
 
-CustomTextField(
-                                    labelText: 'Plate Number *',
-                                    hintText: 'Enter plate number',
-                                    controller: _vehiclePlateController,
-                                    height: 60,
-                                    borderColor: const Color.fromRGBO(
-                                      200,
-                                      200,
-                                      200,
-                                      1,
-                                    ),
-                                    focusedBorderColor: const Color.fromRGBO(
-                                      185,
-                                      69,
-                                      170,
-                                      1,
-                                    ),
-                                    validator: (value) {
-                                      if (value == null ||
-                                          value.trim().isEmpty) {
-                                        return 'Please enter vehicle plate number';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                            
-                            const SizedBox(height: 15),
-
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Vehicle Plate Number
-                                Expanded(
-                                  flex: 3,
-                                  child: CustomDropdownField<String>(
-                              labelText: 'PUV Type *',
-                              initialValue: _selectedPuvType,
+                            CustomTextField(
+                              labelText: 'Plate Number *',
+                              hintText: 'Enter plate number',
+                              controller: _vehiclePlateController,
                               height: 60,
                               borderColor: const Color.fromRGBO(
                                 200,
@@ -656,32 +621,64 @@ CustomTextField(
                                 170,
                                 1,
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'modern',
-                                  child: Text('Modern'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'traditional',
-                                  child: Text('Traditional'),
-                                ),
-                              ],
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedPuvType = newValue;
-                                });
-                              },
                               validator: (value) {
-                                if (value == null) {
-                                  return 'Please select PUV type';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter vehicle plate number';
                                 }
                                 return null;
                               },
-                              icon: const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Color.fromRGBO(185, 69, 170, 1),
-                              ),
                             ),
+
+                            const SizedBox(height: 15),
+
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                              
+                                Expanded(
+                                  flex: 3,
+                                  child: CustomDropdownField<String>(
+                                    labelText: 'PUV Type *',
+                                    initialValue: _selectedPuvType,
+                                    height: 60,
+                                    borderColor: const Color.fromRGBO(
+                                      200,
+                                      200,
+                                      200,
+                                      1,
+                                    ),
+                                    focusedBorderColor: const Color.fromRGBO(
+                                      185,
+                                      69,
+                                      170,
+                                      1,
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'modern',
+                                        child: Text('Modern'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'traditional',
+                                        child: Text('Traditional'),
+                                      ),
+                                    ],
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedPuvType = newValue;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null) {
+                                        return 'Please select PUV type';
+                                      }
+                                      return null;
+                                    },
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Color.fromRGBO(185, 69, 170, 1),
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 15),
 
@@ -712,7 +709,7 @@ CustomTextField(
                                             const DropdownMenuItem(
                                               value: null,
                                               enabled: false,
-                                              child: Text('Loading routes...'),
+                                              child: Text('Loading...'),
                                             ),
                                           ]
                                         : registrationProvider.availableRoutes
@@ -734,27 +731,11 @@ CustomTextField(
                                                         code,
                                                         style: const TextStyle(
                                                           fontWeight:
-                                                              FontWeight.w800,
+                                                              FontWeight.w400,
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),
-                                                      if (name != null &&
-                                                          name.isNotEmpty)
-                                                        Text(
-                                                          name,
-                                                          style: const TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                Color.fromRGBO(
-                                                                  127,
-                                                                  127,
-                                                                  127,
-                                                                  1,
-                                                                ),
-                                                            fontFamily:
-                                                                'Nunito',
-                                                          ),
-                                                        ),
+                                                      
                                                     ],
                                                   ),
                                                 );

@@ -4,7 +4,7 @@ import 'dart:io';
 
 class RegistrationProvider extends ChangeNotifier {
   final RegistrationService _registrationService = RegistrationService();
-  
+
   bool _isLoading = false;
   String? _errorMessage;
   File? _idProofFile;
@@ -17,7 +17,8 @@ class RegistrationProvider extends ChangeNotifier {
   File? get idProofFile => _idProofFile;
   File? get driverLicenseFile => _driverLicenseFile;
   List<Map<String, dynamic>> get availableRoutes => _availableRoutes;
-  Map<String, dynamic> get registrationData => _registrationService.getRegistrationData();
+  Map<String, dynamic> get registrationData =>
+      _registrationService.getRegistrationData();
 
   // Step 1: Save role
   void saveRole(String role) {
@@ -79,7 +80,6 @@ class RegistrationProvider extends ChangeNotifier {
     required String vehiclePlate,
     required String routeCode,
     required String puvType,
-
   }) async {
     try {
       _isLoading = true;
@@ -88,6 +88,7 @@ class RegistrationProvider extends ChangeNotifier {
 
       _driverLicenseFile = driverLicenseFile;
 
+      // Just save the LOCAL file path (don't upload yet)
       _registrationService.saveDriverPersonalInfo(
         firstName: firstName,
         lastName: lastName,
@@ -96,7 +97,7 @@ class RegistrationProvider extends ChangeNotifier {
         address: address,
         licenseNumber: licenseNumber,
         assignedOperator: assignedOperator,
-        driverLicensePath: driverLicenseFile.path,
+        driverLicensePath: driverLicenseFile.path, // Local path
         vehiclePlate: vehiclePlate,
         routeCode: routeCode,
         puvType: puvType,
@@ -146,14 +147,8 @@ class RegistrationProvider extends ChangeNotifier {
   }
 
   // Step 3: Save login info
-  void saveLoginInfo({
-    required String email,
-    required String password,
-  }) {
-    _registrationService.saveLoginInfo(
-      email: email,
-      password: password,
-    );
+  void saveLoginInfo({required String email, required String password}) {
+    _registrationService.saveLoginInfo(email: email, password: password);
     notifyListeners();
   }
 
@@ -184,21 +179,18 @@ class RegistrationProvider extends ChangeNotifier {
       final result = await _registrationService.sendEmailVerificationOTP(email);
 
       _isLoading = false;
-      
+
       if (!result['success']) {
         _errorMessage = result['message'];
       }
-      
+
       notifyListeners();
       return result;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      return {
-        'success': false,
-        'message': _errorMessage,
-      };
+      return {'success': false, 'message': _errorMessage};
     }
   }
 
@@ -218,21 +210,18 @@ class RegistrationProvider extends ChangeNotifier {
       );
 
       _isLoading = false;
-      
+
       if (!result['success']) {
         _errorMessage = result['message'];
       }
-      
+
       notifyListeners();
       return result;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      return {
-        'success': false,
-        'message': _errorMessage,
-      };
+      return {'success': false, 'message': _errorMessage};
     }
   }
 
@@ -246,21 +235,18 @@ class RegistrationProvider extends ChangeNotifier {
       final result = await _registrationService.resendOTP(email);
 
       _isLoading = false;
-      
+
       if (!result['success']) {
         _errorMessage = result['message'];
       }
-      
+
       notifyListeners();
       return result;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      return {
-        'success': false,
-        'message': _errorMessage,
-      };
+      return {'success': false, 'message': _errorMessage};
     }
   }
 
@@ -274,21 +260,18 @@ class RegistrationProvider extends ChangeNotifier {
       final result = await _registrationService.completeRegistration();
 
       _isLoading = false;
-      
+
       if (!result['success']) {
         _errorMessage = result['message'];
       }
-      
+
       notifyListeners();
       return result;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      return {
-        'success': false,
-        'message': _errorMessage,
-      };
+      return {'success': false, 'message': _errorMessage};
     }
   }
 
