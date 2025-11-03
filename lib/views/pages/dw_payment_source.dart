@@ -26,6 +26,7 @@ class DwSourceSelectionPage extends StatefulWidget {
 class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   String? _selectedSource;
   bool _agreeToTerms = false;
+  bool _isLoading = false;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
 
@@ -38,6 +39,60 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
         listen: false,
       ).fetchPaymentSources(widget.paymentMethod);
     });
+  }
+
+  void _sendInstructions() async {
+    if (_selectedSource == null || !_agreeToTerms) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
+    const double serviceFee = 10.00;
+    final double totalValue = amountValue + serviceFee;
+
+    try {
+      await Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      ).sendPaymentInstructions(
+        name: widget.name,
+        email: widget.email,
+        amount: totalValue,
+        source: _selectedSource!,
+      );
+
+      // Navigate to confirmation on success
+      if (mounted) {
+        Navigator.of(context).pushNamed(
+          '/dw_confirmation',
+          arguments: {
+            'name': widget.name,
+            'email': widget.email,
+            'amount': widget.amount,
+            'source': _selectedSource!,
+          },
+        );
+      }
+    } catch (e) {
+      // Show an error message on failure
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      // Reset loading state
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -292,22 +347,10 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
   }
 
   Widget _buildSendButton() {
-    bool isEnabled = _agreeToTerms && _selectedSource != null;
+    bool isEnabled = _agreeToTerms && _selectedSource != null && !_isLoading;
     return Center(
       child: OutlinedButton(
-        onPressed: isEnabled
-            ? () {
-                Navigator.of(context).pushNamed(
-                  '/dw_confirmation',
-                  arguments: {
-                    'name': widget.name,
-                    'email': widget.email,
-                    'amount': widget.amount,
-                    'source': _selectedSource!,
-                  },
-                );
-              }
-            : null,
+        onPressed: isEnabled ? _sendInstructions : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: isEnabled ? _brandColor : Colors.grey,
           backgroundColor: isEnabled
@@ -321,10 +364,22 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
         ),
-        child: Text(
-          'Send Instructions',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
+        child: _isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(_brandColor),
+                ),
+              )
+            : Text(
+                'Send Instructions',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
       ),
     );
   }
