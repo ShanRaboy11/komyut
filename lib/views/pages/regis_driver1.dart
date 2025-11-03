@@ -174,6 +174,30 @@ class RegistrationDriverPersonalInfoState
 
     if (isFormValid) {
       // Explicit null checks to prevent runtime exceptions
+      if (_selectedSex == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your sex'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedRouteCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a route code'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a PUV type'),
       if (_selectedSex == null || _selectedRouteCode == null || _selectedPuvType == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -203,7 +227,7 @@ class RegistrationDriverPersonalInfoState
             driverLicenseFile: _driverLicenseFile!,
             vehiclePlate: _vehiclePlateController.text.trim().toUpperCase(),
             routeCode: _selectedRouteCode!,
-            puvType: _selectedPuvType!, // ✨ NEW
+            puvType: _selectedPuvType!,
           )
           .then((success) {
             if (success && mounted) {
