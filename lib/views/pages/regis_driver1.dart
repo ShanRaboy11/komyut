@@ -141,6 +141,37 @@ class RegistrationDriverPersonalInfoState
       return;
     }
 
+    // Explicit null checks for required fields
+    if (_selectedPuvType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select PUV type'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedSex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select sex'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedRouteCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select route'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (isFormValid) {
       // Explicit null checks to prevent runtime exceptions
       if (_selectedSex == null) {
@@ -167,6 +198,10 @@ class RegistrationDriverPersonalInfoState
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please select a PUV type'),
+      if (_selectedSex == null || _selectedRouteCode == null || _selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all required fields correctly!'),
             backgroundColor: Colors.red,
           ),
         );
