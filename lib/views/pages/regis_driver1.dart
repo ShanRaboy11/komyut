@@ -142,6 +142,17 @@ class RegistrationDriverPersonalInfoState
     }
 
     if (isFormValid) {
+      // Explicit null checks to prevent runtime exceptions
+      if (_selectedSex == null || _selectedRouteCode == null || _selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all required fields correctly!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final registrationProvider = Provider.of<RegistrationProvider>(
         context,
         listen: false,
