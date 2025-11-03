@@ -24,4 +24,4 @@ CREATE POLICY "Users can delete own attachments"
 ON storage.objects
 FOR DELETE
 TO authenticated
-USING (bucket_id = 'attachments');
+USING (bucket_id = 'attachments' AND owner = auth.uid());
