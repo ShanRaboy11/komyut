@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:gal/gal.dart';
 import '../widgets/map.dart';
+import 'commuter_app.dart';
 
 class RideBookingScreen extends StatefulWidget {
   final String? tripId;
@@ -686,7 +687,12 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CommuterApp(),
+                        ),
+                  );
                 },
                 icon: const Icon(Icons.home),
                 label: const Text('Home'),

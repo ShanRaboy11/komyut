@@ -162,13 +162,13 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       final existingTrip = widget.isArrivalScan && widget.tripId != null
           ? await supabase
               .from('trips')
-              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata')
+              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata, passengers_count')
               .eq('id', widget.tripId!)
               .eq('status', 'ongoing')
               .maybeSingle()
           : await supabase
               .from('trips')
-              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata')
+              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata, passengers_count')
               .eq('created_by_profile_id', profileId)
               .eq('status', 'ongoing')
               .maybeSingle();
@@ -183,6 +183,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           routeStops,
           puvType,
           profileId,
+          existingTrip['passengers_count'] ?? 1,
         );
       } else {
         debugPrint('🚌 First scan - Creating new trip');
@@ -224,6 +225,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             id,
             code,
             name
+          ),
+          profiles:profile_id (
+            first_name,
+            last_name
           )
         ''')
         .eq('active', true)
@@ -499,8 +504,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
 
     try {
-      // Step 3: Check wallet balance for initial payment (10 pesos)
-      const double initialPayment = 10.00;
+      // Step 3: Check wallet balance for initial payment (10 pesos per passenger)
+      const double initialPaymentPerPerson = 10.00;
 
       final walletResponse = await supabase
           .from('wallets')
@@ -516,6 +521,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final walletId = walletResponse['id'] as String;
       final balance = (walletResponse['balance'] as num).toDouble();
+
+      // Calculate initial payment based on default 1 passenger (will be updated after confirmation)
+      final initialPayment = initialPaymentPerPerson;
 
       // Step 4: Check if there's enough balance
       if (balance < initialPayment) {
@@ -584,6 +592,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             'metadata': {
               'payment_type': 'initial_boarding',
               'puv_type': puvType,
+              'initial_payment_per_person': initialPaymentPerPerson,
             },
           })
           .select()
@@ -591,10 +600,14 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final transactionId = transactionResponse['id'] as String;
 
-      // Get driver information before creating trip
+      // Get driver information before creating trip with proper profile join
       final driverInfo = await supabase
           .from('drivers')
           .select('''
+            id,
+            vehicle_plate,
+            puv_type,
+            profile_id,
             profiles:profile_id (
               first_name,
               last_name
@@ -607,11 +620,22 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           .eq('id', driverId)
           .single();
 
+      debugPrint('🔍 Driver Info Retrieved: $driverInfo');
+
       final driverProfile = driverInfo['profiles'];
       final route = driverInfo['routes'];
-      final driverName = driverProfile != null
-          ? '${driverProfile['first_name']} ${driverProfile['last_name']}'
-          : 'Driver';
+      
+      String driverName = 'Driver';
+      if (driverProfile != null) {
+        final firstName = driverProfile['first_name'] ?? '';
+        final lastName = driverProfile['last_name'] ?? '';
+        if (firstName.isNotEmpty || lastName.isNotEmpty) {
+          driverName = '$firstName $lastName'.trim();
+        }
+      }
+      
+      debugPrint('👤 Driver Name: $driverName');
+      
       final routeCodeStr = route?['code'] ?? routeId ?? '';
 
       // Step 6: Create trip with ongoing status
@@ -624,13 +648,17 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             'created_by_profile_id': profileId,
             'status': 'ongoing',
             'fare_amount': initialPayment,
+            'passengers_count': 1, // Default, will be updated when user confirms
             'started_at': DateTime.now().toIso8601String(),
             'metadata': {
               'takeoff_qr': qrCode,
               'boarding_location': boardingLocation,
               'initial_payment': initialPayment,
+              'initial_payment_per_person': initialPaymentPerPerson,
               'puv_type': puvType,
               'driver_name': driverName,
+              'driver_first_name': driverProfile?['first_name'] ?? '',
+              'driver_last_name': driverProfile?['last_name'] ?? '',
               'route_code': routeCodeStr,
             },
           })
@@ -663,7 +691,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             currentLocation: LatLng(position.latitude, position.longitude),
             routeStops: routeStops,
             originStopId: originStop['id'],
-            initialPayment: initialPayment,
+            initialPayment: initialPaymentPerPerson,
           ),
         ),
       );
@@ -683,10 +711,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     List<Map<String, dynamic>> routeStops,
     String puvType,
     String profileId,
+    int passengerCount,
   ) async {
     final supabase = Supabase.instance.client;
 
     debugPrint('🏁 Completing trip: $tripId');
+    debugPrint('👥 Passenger count: $passengerCount');
 
     try {
       // Step 7: Get current location for destination
@@ -724,7 +754,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       debugPrint('📍 Arrived at stop: ${destinationStop['name']}');
 
-      final initialPayment = (tripMetadata['initial_payment'] as num?)?.toDouble() ?? 10.0;
+      final initialPaymentPerPerson = (tripMetadata['initial_payment_per_person'] as num?)?.toDouble() ?? 10.0;
 
       // Step 8: Calculate distance using route stops
       final distanceInMeters = _calculateRouteDistance(
@@ -746,15 +776,23 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       debugPrint('📏 Route distance traveled: ${distanceInKm.toStringAsFixed(2)} km');
 
-      // Calculate fare based on PUV type
-      double totalFare = _calculateFare(distanceInKm, puvType);
+      // Calculate fare per person based on PUV type
+      double farePerPerson = _calculateFare(distanceInKm, puvType);
+      
+      // Calculate total fare for all passengers
+      double totalFare = farePerPerson * passengerCount;
+      
+      // Calculate initial payment made (per person * passenger count)
+      double initialPaymentTotal = initialPaymentPerPerson * passengerCount;
       
       // Subtract initial payment already made
-      double additionalFare = totalFare - initialPayment;
+      double additionalFare = totalFare - initialPaymentTotal;
       if (additionalFare < 0) additionalFare = 0;
 
+      debugPrint('💰 Fare per person: ₱${farePerPerson.toStringAsFixed(2)}');
+      debugPrint('👥 Passengers: $passengerCount');
       debugPrint('💰 Total fare: ₱${totalFare.toStringAsFixed(2)}');
-      debugPrint('💰 Already paid: ₱${initialPayment.toStringAsFixed(2)}');
+      debugPrint('💰 Already paid: ₱${initialPaymentTotal.toStringAsFixed(2)}');
       debugPrint('💰 Additional fare: ₱${additionalFare.toStringAsFixed(2)}');
 
       // Step 9: Process payment if there's additional fare
@@ -799,6 +837,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             'payment_type': 'additional_fare',
             'distance_km': distanceInKm,
             'puv_type': puvType,
+            'passengers': passengerCount,
+            'fare_per_person': farePerPerson,
           },
         });
       }
@@ -845,12 +885,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         'destination_stop_id': destinationStop['id'],
         'distance_meters': distanceInMeters.round(),
         'fare_amount': totalFare,
+        'passengers_count': passengerCount,
         'ended_at': DateTime.now().toIso8601String(),
         'metadata': {
           ...tripMetadata,
           'arrival_location': arrivalLocation,
           'total_fare': totalFare,
+          'fare_per_person': farePerPerson,
           'additional_fare': additionalFare,
+          'passengers': passengerCount,
         },
       }).eq('id', tripId);
 
@@ -860,6 +903,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           .update({
             'status': 'completed',
             'processed_at': DateTime.now().toIso8601String(),
+            'metadata': {
+              'payment_type': 'initial_boarding',
+              'puv_type': puvType,
+              'passengers': passengerCount,
+              'initial_payment_per_person': initialPaymentPerPerson,
+            },
           })
           .eq('related_trip_id', tripId)
           .eq('status', 'pending');
@@ -897,7 +946,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }
   }
 
-  // Step 8: Calculate fare based on distance and PUV type
+  // Step 8: Calculate fare based on distance and PUV type (per person)
   double _calculateFare(double distanceKm, String puvType) {
     double baseFare;
     double baseDistance;
