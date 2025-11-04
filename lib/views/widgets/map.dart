@@ -227,11 +227,23 @@ class _MapWidgetState extends State<MapWidget> {
         final destIndex = widget.routeStops!
             .indexWhere((stop) => stop['id'] == widget.destinationStopId);
 
-        if (originIndex != -1 && destIndex != -1 && originIndex < destIndex) {
-          final traveledPoints = widget.routeStops!
-              .sublist(originIndex, destIndex + 1)
-              .map((stop) => LatLng(stop['latitude'], stop['longitude']))
-              .toList();
+        if (originIndex != -1 && destIndex != -1 && originIndex != destIndex) {
+          List<LatLng> traveledPoints;
+          
+          if (originIndex < destIndex) {
+            // Forward travel
+            traveledPoints = widget.routeStops!
+                .sublist(originIndex, destIndex + 1)
+                .map((stop) => LatLng(stop['latitude'], stop['longitude']))
+                .toList();
+          } else {
+            // Backward travel (return trip)
+            traveledPoints = widget.routeStops!
+                .sublist(destIndex, originIndex + 1)
+                .reversed
+                .map((stop) => LatLng(stop['latitude'], stop['longitude']))
+                .toList();
+          }
 
           polylines.add(
             Polyline(

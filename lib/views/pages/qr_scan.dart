@@ -6,11 +6,22 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../widgets/background_circles.dart';
 import './fare_payment.dart';
+import './ongoing_trip.dart';
+//import './trip_waiting_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
   final VoidCallback? onScanComplete;
+  final String? tripId;
+  final bool isArrivalScan;
+  final int passengerCount;
 
-  const QRScannerScreen({super.key, this.onScanComplete});
+  const QRScannerScreen({
+    super.key,
+    this.onScanComplete,
+    this.tripId,
+    this.isArrivalScan = false,
+    this.passengerCount = 1,
+  });
 
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
@@ -148,13 +159,20 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         return;
       }
 
-      // Check for existing ongoing trip
-      final existingTrip = await supabase
-          .from('trips')
-          .select('id, origin_stop_id, started_at, driver_id, route_id, metadata')
-          .eq('created_by_profile_id', profileId)
-          .eq('status', 'ongoing')
-          .maybeSingle();
+      // Check for existing ongoing trip or if this is a continuation
+      final existingTrip = widget.isArrivalScan && widget.tripId != null
+          ? await supabase
+              .from('trips')
+              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata')
+              .eq('id', widget.tripId!)
+              .eq('status', 'ongoing')
+              .maybeSingle()
+          : await supabase
+              .from('trips')
+              .select('id, origin_stop_id, started_at, driver_id, route_id, metadata')
+              .eq('created_by_profile_id', profileId)
+              .eq('status', 'ongoing')
+              .maybeSingle();
 
       if (existingTrip != null) {
         debugPrint('🔄 Existing trip found: ${existingTrip['id']}');
@@ -298,29 +316,49 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       return 0.0;
     }
 
-    // Ensure origin comes before destination
-    if (originIndex >= destIndex) {
+    // Allow same stop (minimum fare applies)
+    if (originIndex == destIndex) {
+      debugPrint('📏 Same stop - applying minimum fare');
       return 0.0;
     }
 
     // Calculate cumulative distance along the route
+    // Support both forward and backward travel
     double totalDistance = 0.0;
+    
+    if (originIndex < destIndex) {
+      // Forward direction: origin → destination
+      for (int i = originIndex; i < destIndex; i++) {
+        final currentStop = stops[i];
+        final nextStop = stops[i + 1];
 
-    for (int i = originIndex; i < destIndex; i++) {
-      final currentStop = stops[i];
-      final nextStop = stops[i + 1];
+        final distance = Geolocator.distanceBetween(
+          currentStop['latitude'],
+          currentStop['longitude'],
+          nextStop['latitude'],
+          nextStop['longitude'],
+        );
 
-      final distance = Geolocator.distanceBetween(
-        currentStop['latitude'],
-        currentStop['longitude'],
-        nextStop['latitude'],
-        nextStop['longitude'],
-      );
+        totalDistance += distance;
+      }
+      debugPrint('📏 Forward route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m');
+    } else {
+      // Backward direction: destination ← origin (for return trips)
+      for (int i = originIndex; i > destIndex; i--) {
+        final currentStop = stops[i];
+        final prevStop = stops[i - 1];
 
-      totalDistance += distance;
+        final distance = Geolocator.distanceBetween(
+          currentStop['latitude'],
+          currentStop['longitude'],
+          prevStop['latitude'],
+          prevStop['longitude'],
+        );
+
+        totalDistance += distance;
+      }
+      debugPrint('📏 Backward route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m');
     }
-
-    debugPrint('📏 Route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m');
 
     return totalDistance;
   }
@@ -554,6 +592,29 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final transactionId = transactionResponse['id'] as String;
 
+      // Get driver information before creating trip
+      final driverInfo = await supabase
+          .from('drivers')
+          .select('''
+            profiles:profile_id (
+              first_name,
+              last_name
+            ),
+            routes:route_id (
+              code,
+              name
+            )
+          ''')
+          .eq('id', driverId)
+          .single();
+
+      final driverProfile = driverInfo['profiles'];
+      final route = driverInfo['routes'];
+      final driverName = driverProfile != null
+          ? '${driverProfile['first_name']} ${driverProfile['last_name']}'
+          : 'Driver';
+      final routeCodeStr = route?['code'] ?? routeId ?? '';
+
       // Step 6: Create trip with ongoing status
       final result = await supabase
           .from('trips')
@@ -570,6 +631,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               'boarding_location': boardingLocation,
               'initial_payment': initialPayment,
               'puv_type': puvType,
+              'driver_name': driverName,
+              'route_code': routeCodeStr,
             },
           })
           .select()
@@ -589,16 +652,23 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       if (!mounted) return;
 
-      await _showSuccessModal(
-        title: 'Boarding Recorded',
-        message:
-            'Boarded at: ${originStop['name']}\n\n'
-            'Initial payment: ₱${initialPayment.toStringAsFixed(2)}\n\n'
-            'Scan again when you arrive at your destination.',
+      // Navigate to ongoing trip screen (using variables already declared above)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OngoingTripScreen(
+            tripId: tripId,
+            driverName: driverName,
+            routeCode: routeCodeStr,
+            originStopName: originStop['name'],
+            currentLocation: LatLng(position.latitude, position.longitude),
+            routeStops: routeStops,
+            originStopId: originStop['id'],
+          ),
+        ),
       );
 
       widget.onScanComplete?.call();
-      _resetScanner();
     } catch (e) {
       debugPrint('❌ Error creating trip: $e');
       _showError('Failed to create trip: ${e.toString()}');
@@ -663,10 +733,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         routeStops,
       );
 
-      if (distanceInMeters == 0) {
+      if (distanceInMeters == 0 && originStopId != destinationStop['id']) {
         _showError(
-          'Invalid trip!\n\n'
-          'Destination must be after your boarding stop.',
+          'Error calculating distance!\n\n'
+          'Please try scanning again.',
         );
         _resetScanner();
         return;

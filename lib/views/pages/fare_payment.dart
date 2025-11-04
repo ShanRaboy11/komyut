@@ -88,6 +88,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
           .from('transactions')
           .select('transaction_number')
           .eq('related_trip_id', widget.tripId!)
+          .eq('status', 'completed')
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -100,6 +101,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
 
       debugPrint('✅ Trip details loaded');
       debugPrint('📝 Transaction number: $_transactionNumber');
+      debugPrint('👤 Driver info: ${tripResponse['drivers']}');
     } catch (e) {
       debugPrint('❌ Error loading trip details: $e');
       setState(() {
@@ -186,13 +188,19 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
 
     final driver = _tripDetails!['drivers'];
     final route = _tripDetails!['routes'];
-    final driverName = driver != null && driver['profiles'] != null
-        ? '${driver['profiles']['first_name']} ${driver['profiles']['last_name']}'
-        : 'Unknown';
+    final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
+    
+    // Try to get driver name from joined data first, then from metadata
+    String driverName = 'Unknown';
+    if (driver != null && driver['profiles'] != null) {
+      driverName = '${driver['profiles']['first_name']} ${driver['profiles']['last_name']}';
+    } else if (metadata != null && metadata.containsKey('driver_name')) {
+      driverName = metadata['driver_name'];
+    }
+    
     final vehiclePlate = driver?['vehicle_plate'] ?? 'N/A';
-    final puvType = driver?['puv_type'] ?? 'traditional';
-    final routeName = route?['name'] ?? 'Unknown Route';
-    final routeCode = route?['code'] ?? '';
+    final puvType = driver?['puv_type'] ?? metadata?['puv_type'] ?? 'traditional';
+    final routeCode = route?['code'] ?? metadata?['route_code'] ?? 'N/A';
 
     final distanceKm = (widget.distanceMeters ?? 0) / 1000;
 
@@ -294,7 +302,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             // Trip details
             _buildDetailRow('Driver', driverName),
             _buildDetailRow('Vehicle', '$vehiclePlate (${puvType.toUpperCase()})'),
-            _buildDetailRow('Route', '$routeCode - $routeName'),
+            _buildDetailRow('Route', routeCode),
             if (widget.originStopName != null && widget.destinationStopName != null) ...[
               const SizedBox(height: 8),
               Container(
