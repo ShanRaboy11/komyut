@@ -13,6 +13,9 @@ class RideBookingScreen extends StatefulWidget {
   final int? distanceMeters;
   final LatLng? boardingLocation;
   final LatLng? arrivalLocation;
+  final List<Map<String, dynamic>>? routeStops;
+  final String? originStopName;
+  final String? destinationStopName;
 
   const RideBookingScreen({
     super.key,
@@ -21,6 +24,9 @@ class RideBookingScreen extends StatefulWidget {
     this.distanceMeters,
     this.boardingLocation,
     this.arrivalLocation,
+    this.routeStops,
+    this.originStopName,
+    this.destinationStopName,
   });
 
   @override
@@ -132,6 +138,9 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             isLoading: false,
             boardingLocation: widget.boardingLocation,
             arrivalLocation: widget.arrivalLocation,
+            routeStops: widget.routeStops,
+            originStopId: _tripDetails?['origin_stop_id'],
+            destinationStopId: _tripDetails?['destination_stop_id'],
           ),
           Positioned(
             top: 50,
@@ -286,6 +295,64 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             _buildDetailRow('Driver', driverName),
             _buildDetailRow('Vehicle', '$vehiclePlate (${puvType.toUpperCase()})'),
             _buildDetailRow('Route', '$routeCode - $routeName'),
+            if (widget.originStopName != null && widget.destinationStopName != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.trip_origin, color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.originStopName!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Icon(
+                  Icons.arrow_downward,
+                  color: Colors.grey.shade600,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.destinationStopName!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const Divider(height: 32),
             
             // Payment breakdown

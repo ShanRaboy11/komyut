@@ -114,7 +114,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       debugPrint('✅ Profile ID: $profileId');
 
-      // Get driver information
+      // Get driver information with route stops
       final driverResponse = await _findDriver(trimmedQR, normalizedQR);
 
       if (driverResponse == null) {
@@ -133,6 +133,21 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       final routeId = driverResponse['route_id'] as String?;
       final puvType = driverResponse['puv_type'] as String? ?? 'traditional';
 
+      if (routeId == null) {
+        _showError('This driver is not assigned to any route');
+        _resetScanner();
+        return;
+      }
+
+      // Load route stops
+      final routeStops = await _loadRouteStops(routeId);
+
+      if (routeStops.isEmpty) {
+        _showError('Route has no stops configured');
+        _resetScanner();
+        return;
+      }
+
       // Check for existing ongoing trip
       final existingTrip = await supabase
           .from('trips')
@@ -146,14 +161,23 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         // SECOND SCAN - Arrival at destination
         await _handleArrivalScan(
           existingTrip['id'],
+          existingTrip['origin_stop_id'],
           existingTrip['metadata'],
+          routeStops,
           puvType,
           profileId,
         );
       } else {
         debugPrint('🚌 First scan - Creating new trip');
         // FIRST SCAN - Boarding/Takeoff
-        await _handleTakeoffScan(driverId, routeId, profileId, trimmedQR, puvType);
+        await _handleTakeoffScan(
+          driverId,
+          routeId,
+          profileId,
+          trimmedQR,
+          puvType,
+          routeStops,
+        );
       }
     } catch (e, stackTrace) {
       debugPrint('❌ ============ ERROR ============');
@@ -210,6 +234,95 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }
 
     return null;
+  }
+
+  Future<List<Map<String, dynamic>>> _loadRouteStops(String routeId) async {
+    final supabase = Supabase.instance.client;
+
+    final stopsResponse = await supabase
+        .from('route_stops')
+        .select('id, name, sequence, latitude, longitude')
+        .eq('route_id', routeId)
+        .order('sequence', ascending: true);
+
+    return List<Map<String, dynamic>>.from(stopsResponse);
+  }
+
+  // Find the closest stop to a given location
+  Map<String, dynamic>? _findClosestStop(
+    double lat,
+    double lng,
+    List<Map<String, dynamic>> stops,
+  ) {
+    if (stops.isEmpty) return null;
+
+    Map<String, dynamic>? closestStop;
+    double minDistance = double.infinity;
+
+    for (var stop in stops) {
+      final stopLat = stop['latitude'] as double;
+      final stopLng = stop['longitude'] as double;
+
+      final distance = Geolocator.distanceBetween(lat, lng, stopLat, stopLng);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestStop = stop;
+      }
+    }
+
+    // Only return if within 500 meters
+    if (minDistance <= 500) {
+      debugPrint('📍 Closest stop: ${closestStop!['name']} (${minDistance.toStringAsFixed(0)}m away)');
+      return closestStop;
+    }
+
+    return null;
+  }
+
+  // Calculate route distance between two stops
+  double _calculateRouteDistance(
+    String? originStopId,
+    String? destinationStopId,
+    List<Map<String, dynamic>> stops,
+  ) {
+    if (originStopId == null || destinationStopId == null || stops.isEmpty) {
+      return 0.0;
+    }
+
+    // Find origin and destination stops
+    final originIndex = stops.indexWhere((s) => s['id'] == originStopId);
+    final destIndex = stops.indexWhere((s) => s['id'] == destinationStopId);
+
+    if (originIndex == -1 || destIndex == -1) {
+      return 0.0;
+    }
+
+    // Ensure origin comes before destination
+    if (originIndex >= destIndex) {
+      return 0.0;
+    }
+
+    // Calculate cumulative distance along the route
+    double totalDistance = 0.0;
+
+    for (int i = originIndex; i < destIndex; i++) {
+      final currentStop = stops[i];
+      final nextStop = stops[i + 1];
+
+      final distance = Geolocator.distanceBetween(
+        currentStop['latitude'],
+        currentStop['longitude'],
+        nextStop['latitude'],
+        nextStop['longitude'],
+      );
+
+      totalDistance += distance;
+    }
+
+    debugPrint('📏 Route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m');
+
+    return totalDistance;
   }
 
   Future<Position?> _getCurrentPosition() async {
@@ -342,6 +455,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     String profileId,
     String qrCode,
     String puvType,
+    List<Map<String, dynamic>> routeStops,
   ) async {
     final supabase = Supabase.instance.client;
 
@@ -387,11 +501,31 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         return;
       }
 
+      // Find closest stop to boarding location
+      final originStop = _findClosestStop(
+        position.latitude,
+        position.longitude,
+        routeStops,
+      );
+
+      if (originStop == null) {
+        _showError(
+          'You are too far from the route!\n\n'
+          'Please board at a designated stop along the route.',
+        );
+        _resetScanner();
+        return;
+      }
+
       final boardingLocation = {
         'latitude': position.latitude,
         'longitude': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
+        'closest_stop_id': originStop['id'],
+        'closest_stop_name': originStop['name'],
       };
+
+      debugPrint('📍 Boarding at stop: ${originStop['name']}');
 
       // Deduct initial payment from wallet
       await supabase.from('wallets').update({
@@ -426,6 +560,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           .insert({
             'driver_id': driverId,
             'route_id': routeId,
+            'origin_stop_id': originStop['id'],
             'created_by_profile_id': profileId,
             'status': 'ongoing',
             'fare_amount': initialPayment,
@@ -450,14 +585,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       debugPrint('✅ Trip created successfully: $tripId');
       debugPrint('💰 Initial payment: ₱$initialPayment');
       debugPrint('📍 Boarding location: ${position.latitude}, ${position.longitude}');
+      debugPrint('🚏 Origin stop: ${originStop['name']}');
 
       if (!mounted) return;
 
       await _showSuccessModal(
         title: 'Boarding Recorded',
         message:
+            'Boarded at: ${originStop['name']}\n\n'
             'Initial payment: ₱${initialPayment.toStringAsFixed(2)}\n\n'
-            'Your trip has started.\n'
             'Scan again when you arrive at your destination.',
       );
 
@@ -472,7 +608,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   Future<void> _handleArrivalScan(
     String tripId,
+    String? originStopId,
     Map<String, dynamic> tripMetadata,
+    List<Map<String, dynamic>> routeStops,
     String puvType,
     String profileId,
   ) async {
@@ -490,36 +628,53 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         return;
       }
 
-      final arrivalLocation = {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
+      // Find closest stop to arrival location
+      final destinationStop = _findClosestStop(
+        position.latitude,
+        position.longitude,
+        routeStops,
+      );
 
-      // Get boarding location from trip metadata
-      final boardingLocation = tripMetadata['boarding_location'] as Map<String, dynamic>?;
-      final initialPayment = (tripMetadata['initial_payment'] as num?)?.toDouble() ?? 10.0;
-
-      if (boardingLocation == null) {
-        _showError('Error: Boarding location not found');
+      if (destinationStop == null) {
+        _showError(
+          'You are too far from the route!\n\n'
+          'Please scan at a designated stop along the route.',
+        );
         _resetScanner();
         return;
       }
 
-      final boardingLat = boardingLocation['latitude'] as double;
-      final boardingLng = boardingLocation['longitude'] as double;
+      final arrivalLocation = {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+        'closest_stop_id': destinationStop['id'],
+        'closest_stop_name': destinationStop['name'],
+      };
 
-      // Step 8: Calculate distance
-      final distanceInMeters = Geolocator.distanceBetween(
-        boardingLat,
-        boardingLng,
-        position.latitude,
-        position.longitude,
+      debugPrint('📍 Arrived at stop: ${destinationStop['name']}');
+
+      final initialPayment = (tripMetadata['initial_payment'] as num?)?.toDouble() ?? 10.0;
+
+      // Step 8: Calculate distance using route stops
+      final distanceInMeters = _calculateRouteDistance(
+        originStopId,
+        destinationStop['id'],
+        routeStops,
       );
+
+      if (distanceInMeters == 0) {
+        _showError(
+          'Invalid trip!\n\n'
+          'Destination must be after your boarding stop.',
+        );
+        _resetScanner();
+        return;
+      }
 
       final distanceInKm = distanceInMeters / 1000;
 
-      debugPrint('📏 Distance traveled: ${distanceInKm.toStringAsFixed(2)} km');
+      debugPrint('📏 Route distance traveled: ${distanceInKm.toStringAsFixed(2)} km');
 
       // Calculate fare based on PUV type
       double totalFare = _calculateFare(distanceInKm, puvType);
@@ -617,6 +772,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       // Step 13: Update trip as completed
       await supabase.from('trips').update({
         'status': 'completed',
+        'destination_stop_id': destinationStop['id'],
         'distance_meters': distanceInMeters.round(),
         'fare_amount': totalFare,
         'ended_at': DateTime.now().toIso8601String(),
@@ -642,6 +798,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       if (!mounted) return;
 
+      // Get origin stop name from metadata
+      final originStopName = tripMetadata['boarding_location']?['closest_stop_name'] ?? 'Unknown';
+
       // Navigate to payment summary screen
       Navigator.pushReplacement(
         context,
@@ -650,8 +809,14 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             tripId: tripId,
             fareAmount: totalFare,
             distanceMeters: distanceInMeters.round(),
-            boardingLocation: LatLng(boardingLat, boardingLng),
+            boardingLocation: LatLng(
+              tripMetadata['boarding_location']['latitude'],
+              tripMetadata['boarding_location']['longitude'],
+            ),
             arrivalLocation: LatLng(position.latitude, position.longitude),
+            routeStops: routeStops,
+            originStopName: originStopName,
+            destinationStopName: destinationStop['name'],
           ),
         ),
       );
