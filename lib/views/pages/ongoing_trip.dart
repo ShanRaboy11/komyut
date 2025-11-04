@@ -13,6 +13,8 @@ class OngoingTripScreen extends StatefulWidget {
   final LatLng? currentLocation;
   final List<Map<String, dynamic>> routeStops;
   final String? originStopId;
+  final double initialPayment;
+  final String? destinationStopName;
 
   const OngoingTripScreen({
     super.key,
@@ -23,6 +25,8 @@ class OngoingTripScreen extends StatefulWidget {
     this.currentLocation,
     required this.routeStops,
     this.originStopId,
+    this.initialPayment = 10.0,
+    this.destinationStopName,
   });
 
   @override
@@ -34,19 +38,122 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   Position? _currentPosition;
   int _passengerCount = 1;
   bool _isLoadingLocation = false;
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
+  bool _hasConfirmed = false;
+  double _swipeProgress = 0.0;
+  Map<String, dynamic>? _tripDetails;
+  bool _isLoadingTrip = false;
+  double _walletBalance = 0.0;
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _loadTripDetails();
+    _loadWalletBalance();
   }
 
-  @override
-  void dispose() {
-    _sheetController.dispose();
-    super.dispose();
+  Future<void> _loadTripDetails() async {
+    setState(() => _isLoadingTrip = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      
+      final tripResponse = await supabase
+          .from('trips')
+          .select('''
+            *,
+            drivers:driver_id (
+              id,
+              vehicle_plate,
+              operator_name,
+              puv_type,
+              profiles:profile_id (
+                first_name,
+                last_name
+              )
+            ),
+            routes:route_id (
+              code,
+              name
+            ),
+            origin_stops:origin_stop_id (
+              name
+            ),
+            destination_stops:destination_stop_id (
+              name
+            )
+          ''')
+          .eq('id', widget.tripId)
+          .single();
+
+      setState(() {
+        _tripDetails = tripResponse;
+        _isLoadingTrip = false;
+      });
+
+      debugPrint('✅ Trip details loaded: $_tripDetails');
+    } catch (e) {
+      debugPrint('❌ Error loading trip details: $e');
+      setState(() => _isLoadingTrip = false);
+    }
+  }
+
+  Future<void> _loadWalletBalance() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) return;
+
+      final profileResponse = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final walletResponse = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('owner_profile_id', profileResponse['id'])
+          .single();
+
+      setState(() {
+        _walletBalance = (walletResponse['balance'] as num).toDouble();
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading wallet balance: $e');
+    }
+  }
+
+  String _getDriverName() {
+    if (_tripDetails != null) {
+      final driver = _tripDetails!['drivers'];
+      if (driver != null && driver['profiles'] != null) {
+        final profile = driver['profiles'];
+        return '${profile['first_name']} ${profile['last_name']}';
+      }
+    }
+    return widget.driverName;
+  }
+
+  String _getVehiclePlate() {
+    if (_tripDetails != null) {
+      final driver = _tripDetails!['drivers'];
+      if (driver != null) {
+        return driver['vehicle_plate'] ?? 'N/A';
+      }
+    }
+    return 'N/A';
+  }
+
+  String _getPuvType() {
+    if (_tripDetails != null) {
+      final driver = _tripDetails!['drivers'];
+      if (driver != null) {
+        return driver['puv_type'] ?? 'traditional';
+      }
+    }
+    return 'traditional';
   }
 
   Future<void> _getCurrentLocation() async {
@@ -85,7 +192,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
         _isLoadingLocation = false;
       });
 
-      // Animate to user location
       _mapController.move(
         LatLng(position.latitude, position.longitude),
         15.0,
@@ -99,7 +205,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   List<Marker> _buildMarkers() {
     List<Marker> markers = [];
 
-    // Add current location marker
     if (_currentPosition != null) {
       markers.add(
         Marker(
@@ -132,7 +237,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
       );
     }
 
-    // Add route stops
     for (int i = 0; i < widget.routeStops.length; i++) {
       final stop = widget.routeStops[i];
       final stopId = stop['id'];
@@ -211,20 +315,118 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     }
   }
 
+  void _showConfirmationModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFB945AA),
+                  Color(0xFF8E4CB6),
+                  Color(0xFF5B53C2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            padding: const EdgeInsets.all(3),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(21),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8E4CB6), Color(0xFFB945AA)],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Trip Confirmed!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF8E4CB6),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'You\'re traveling with $_passengerCount ${_passengerCount == 1 ? 'passenger' : 'passengers'}.\n\nScan the QR code again when you reach your destination.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        setState(() {
+                          _hasConfirmed = true;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF8E4CB6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _openQRScanner() async {
-    // Update passenger count before scanning
     await _updatePassengerCount();
 
     if (!mounted) return;
 
-    // Navigate to QR scanner for arrival scan
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => QRScannerScreen(
-          onScanComplete: () {
-            // Trip completed, scanner will handle navigation to payment screen
-          },
+          onScanComplete: () {},
         ),
       ),
     );
@@ -239,7 +441,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Map in background
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -262,7 +463,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
             ],
           ),
 
-          // Back button
           Positioned(
             top: 50,
             left: 16,
@@ -285,7 +485,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
             ),
           ),
 
-          // Refresh location button
           Positioned(
             top: 50,
             right: 16,
@@ -320,257 +519,495 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
             ),
           ),
 
-          // Draggable bottom sheet
-          DraggableScrollableSheet(
-            controller: _sheetController,
-            initialChildSize: 0.35,
-            minChildSize: 0.35,
-            maxChildSize: 0.75,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+          if (!_hasConfirmed)
+            _buildTripDetailsSheet()
+          else
+            _buildScanForDepartureButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripDetailsSheet() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.6,
+      maxChildSize: 0.85,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 15,
+                offset: Offset(0, -5),
+              ),
+            ],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.zero,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 15,
-                      offset: Offset(0, -5),
-                    ),
-                  ],
                 ),
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Drag handle
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 8),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
+                    // Driver info
+                    Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF8E4CB6),
+                                Color(0xFFB945AA),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getDriverName(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '4.8',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
+                    const SizedBox(height: 24),
+
+                    // Passenger count selector
+                    const Text(
+                      'How many are you?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: IconButton(
+                            onPressed: _passengerCount > 1
+                                ? () {
+                                    setState(() {
+                                      _passengerCount--;
+                                    });
+                                  }
+                                : null,
+                            icon: Icon(
+                              Icons.remove,
+                              color: _passengerCount > 1
+                                  ? Colors.black
+                                  : Colors.grey.shade400,
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                        Container(
+                          width: 100,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$_passengerCount',
+                            style: const TextStyle(
+                              fontSize: 56,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: IconButton(
+                            onPressed: _passengerCount < 10
+                                ? () {
+                                    setState(() {
+                                      _passengerCount++;
+                                    });
+                                  }
+                                : null,
+                            icon: Icon(
+                              Icons.add,
+                              color: _passengerCount < 10
+                                  ? Colors.black
+                                  : Colors.grey.shade400,
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Trip Details Section
+                    const Text(
+                      'Trip Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Route stops
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Driver info
                           Row(
                             children: [
                               Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF8E4CB6),
-                                      Color(0xFFB945AA),
-                                    ],
-                                  ),
+                                width: 12,
+                                height: 12,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF8E4CB6),
                                   shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 28,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.driverName,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.amber,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '4.8',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Passenger count selector
-                          const Text(
-                            'How many are you?',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Passenger counter
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Minus button
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: IconButton(
-                                  onPressed: _passengerCount > 1
-                                      ? () {
-                                          setState(() {
-                                            _passengerCount--;
-                                          });
-                                        }
-                                      : null,
-                                  icon: Icon(
-                                    Icons.remove,
-                                    color: _passengerCount > 1
-                                        ? Colors.black
-                                        : Colors.grey.shade400,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ),
-
-                              // Count display
-                              Container(
-                                width: 100,
-                                alignment: Alignment.center,
                                 child: Text(
-                                  '$_passengerCount',
+                                  widget.originStopName,
                                   style: const TextStyle(
-                                    fontSize: 56,
-                                    fontWeight: FontWeight.w300,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ),
-                              ),
-
-                              // Plus button
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: IconButton(
-                                  onPressed: _passengerCount < 10
-                                      ? () {
-                                          setState(() {
-                                            _passengerCount++;
-                                          });
-                                        }
-                                      : null,
-                                  icon: Icon(
-                                    Icons.add,
-                                    color: _passengerCount < 10
-                                        ? Colors.black
-                                        : Colors.grey.shade400,
-                                  ),
-                                  padding: EdgeInsets.zero,
                                 ),
                               ),
                             ],
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Scan for departure button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF5B53C2),
-                                    Color(0xFFB945AA),
-                                  ],
+                          Container(
+                            margin: const EdgeInsets.only(left: 5),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 2,
+                                  height: 30,
+                                  color: Colors.grey.shade300,
                                 ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        const Color(0xFF5B53C2).withAlpha(102),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton.icon(
-                                onPressed: _openQRScanner,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.qr_code_scanner,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                label: const Text(
-                                  'Scan for Departure',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
-
-                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  widget.destinationStopName ?? 'Colon',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Wallet and Payment Details
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.account_balance_wallet,
+                              size: 20,
+                              color: Color(0xFF8E4CB6),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'My Wallet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'PHP ${_walletBalance.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF8E4CB6),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Payment Detail',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _buildPaymentRow('Base Fare', 'PHP ${widget.initialPayment.toStringAsFixed(2)}'),
+                    const Divider(height: 20),
+                    _buildPaymentRow(
+                      'Total',
+                      'PHP ${widget.initialPayment.toStringAsFixed(2)}',
+                      isTotal: true,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Swipe to Proceed
+                    _buildSwipeButton(),
+
+                    const SizedBox(height: 20),
                   ],
                 ),
-              );
-            },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentRow(String label, String amount, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: isTotal ? Colors.black : Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 14,
+              fontWeight: FontWeight.bold,
+              color: isTotal ? const Color(0xFF8E4CB6) : Colors.black,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSwipeButton() {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+        ),
+        borderRadius: BorderRadius.circular(35),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5B53C2).withAlpha(102),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Text(
+              'Swipe to Proceed',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withAlpha(204),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 4,
+            top: 4,
+            bottom: 4,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _swipeProgress += details.delta.dx;
+                  if (_swipeProgress < 0) _swipeProgress = 0;
+                  if (_swipeProgress > MediaQuery.of(context).size.width - 110) {
+                    _swipeProgress = MediaQuery.of(context).size.width - 110;
+                  }
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                if (_swipeProgress > MediaQuery.of(context).size.width - 150) {
+                  _updatePassengerCount();
+                  _showConfirmationModal();
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                } else {
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.only(left: _swipeProgress),
+                width: 62,
+                height: 62,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.qr_code_scanner,
+                  color: Color(0xFF8E4CB6),
+                  size: 30,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanForDepartureButton() {
+    return Positioned(
+      bottom: 40,
+      left: 20,
+      right: 20,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF5B53C2).withAlpha(102),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: _openQRScanner,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          icon: const Icon(
+            Icons.qr_code_scanner,
+            color: Colors.white,
+            size: 28,
+          ),
+          label: const Text(
+            'Scan for Departure',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }

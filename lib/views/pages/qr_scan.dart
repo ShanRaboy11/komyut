@@ -7,7 +7,6 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../widgets/background_circles.dart';
 import './fare_payment.dart';
 import './ongoing_trip.dart';
-//import './trip_waiting_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
   final VoidCallback? onScanComplete;
@@ -652,7 +651,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       if (!mounted) return;
 
-      // Navigate to ongoing trip screen (using variables already declared above)
+      // Navigate to ongoing trip screen with all required parameters
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -664,6 +663,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             currentLocation: LatLng(position.latitude, position.longitude),
             routeStops: routeStops,
             originStopId: originStop['id'],
+            initialPayment: initialPayment,
           ),
         ),
       );
