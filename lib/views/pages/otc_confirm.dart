@@ -128,8 +128,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               time: time,
               amount: formattedAmount,
               total: formattedTotal,
-              transactionCode:
-                  _transactionCode,
+              transactionCode: _transactionCode,
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -249,7 +248,8 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               onTap: () {
                 Navigator.of(
                   context,
-                ).popUntil((route) => route.settings.name == '/wallet');
+                  rootNavigator: true,
+                ).popUntil((route) => route.settings.name == '/home_commuter');
               },
               child: Container(
                 padding: const EdgeInsets.all(2),

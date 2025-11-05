@@ -14,7 +14,6 @@ import 'views/pages/admin_app.dart';
 import 'views/pages/commuter_app.dart';
 import 'views/pages/driver_app.dart';
 import 'views/pages/operator_app.dart';
-import 'views/pages/wallet.dart';
 
 import 'views/pages/otc.dart';
 import 'views/pages/otc_confirm.dart';
