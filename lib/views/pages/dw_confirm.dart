@@ -132,10 +132,7 @@ class DwConfirmationPage extends StatelessWidget {
                   return OutlinedButton(
                     onPressed: provider.isCashInLoading
                         ? null
-                        : () => _onConfirmPressed(
-                            context,
-                            transactionCode,
-                          ),
+                        : () => _onConfirmPressed(context, transactionCode),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: brandColor,
                       backgroundColor: brandColor.withValues(alpha: 0.1),
@@ -243,7 +240,8 @@ class DwConfirmationPage extends StatelessWidget {
               onTap: () {
                 Navigator.of(
                   context,
-                ).popUntil((route) => route.settings.name == '/wallet');
+                  rootNavigator: true,
+                ).popUntil((route) => route.settings.name == '/home_commuter');
               },
               child: Container(
                 padding: const EdgeInsets.all(2),

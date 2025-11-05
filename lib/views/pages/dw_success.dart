@@ -114,7 +114,10 @@ class _DwSuccessPageState extends State<DwSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil('/home_commuter', (route) => false);
       },
       isFilled: true,
       textColor: Colors.white,
@@ -127,7 +130,10 @@ class _DwSuccessPageState extends State<DwSuccessPage>
       onPressed: () {
         Navigator.of(
           context,
-        ).popUntil((route) => route.settings.name == '/wallet');
+          rootNavigator: true,
+        ).popUntil((route) => route.settings.name == '/home_commuter');
+
+        Navigator.of(context).pushNamed('/wallet');
       },
       isFilled: false,
     );
