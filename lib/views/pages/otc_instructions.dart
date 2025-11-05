@@ -32,7 +32,7 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
     );
 
     if (success && mounted) {
-      Navigator.of(context).pushNamed('/payment_success');
+      Navigator.of(context, rootNavigator: true).pushNamed('/payment_success');
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

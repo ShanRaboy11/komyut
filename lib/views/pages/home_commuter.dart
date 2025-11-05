@@ -98,66 +98,6 @@ class HomeTabNavigator extends StatelessWidget {
             builder = (BuildContext context) =>
                 TransactionHistoryPage(type: type);
             break;
-          case '/otc':
-            builder = (BuildContext context) => const OverTheCounterPage();
-            break;
-          case '/otc_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                OtcConfirmationPage(amount: amount);
-            break;
-          case '/otc_instructions':
-            final transaction = settings.arguments as Map<String, dynamic>;
-            builder = (BuildContext context) =>
-                OtcInstructionsPage(transaction: transaction);
-            break;
-          case '/payment_success':
-            builder = (BuildContext context) => const PaymentSuccessPage();
-            break;
-          case '/redeem_tokens':
-            builder = (BuildContext context) => const RedeemTokensPage();
-            break;
-          case '/token_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                TokenConfirmationPage(tokenAmount: amount);
-            break;
-          case '/token_success':
-            builder = (BuildContext context) => const TokenSuccessPage();
-            break;
-          case '/digital_wallet':
-            builder = (BuildContext context) => const DigitalWalletPage();
-            break;
-          case '/dw_payment_method':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwPaymentMethodPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-            );
-            break;
-          case '/dw_payment_source':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwSourceSelectionPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              paymentMethod: args['paymentMethod']!,
-            );
-            break;
-          case '/dw_confirmation':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwConfirmationPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              source: args['source']!,
-              transactionCode: args['transactionCode']!,
-            );
-            break;
-          case '/dw_success':
-            builder = (BuildContext context) => const DwSuccessPage();
-            break;
           default:
             builder = (BuildContext context) => const CommuterDashboardPage();
             break;

@@ -432,16 +432,17 @@ class _WalletPageState extends State<WalletPage>
     if (!mounted) return;
 
     if (optionText == 'Over-the-Counter') {
-      Navigator.of(context).push(
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
       );
     } else if (optionText == 'Digital Wallet') {
-      Navigator.of(context).push(
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
       );
     } else if (optionText == 'Wheel Tokens') {
       Navigator.of(
         context,
+        rootNavigator: true,
       ).push(MaterialPageRoute(builder: (context) => const RedeemTokensPage()));
     }
   }
@@ -764,7 +765,7 @@ class _WalletPageState extends State<WalletPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -790,7 +791,7 @@ class _WalletPageState extends State<WalletPage>
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: ['100', '75', '50', '25', '0']
+                  children: ['500', '375', '250', '125', '0']
                       .map(
                         (e) => Text(
                           e,
@@ -813,10 +814,8 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
-    final double maxVal = weeklyData.values.fold(
-      100.0,
-      (max, v) => v > max ? v : max,
-    );
+    const double maxVal = 500.0;
+
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return Row(
@@ -824,11 +823,13 @@ class _WalletPageState extends State<WalletPage>
       crossAxisAlignment: CrossAxisAlignment.end,
       children: days.map((day) {
         final value = weeklyData[day] ?? 0.0;
+        final barHeight = (value / maxVal) * chartHeight;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              height: (value / maxVal) * chartHeight,
+              height: min(barHeight, chartHeight),
               width: 20,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
