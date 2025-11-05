@@ -106,8 +106,8 @@ class CommuterDashboardPage extends StatefulWidget {
 
 class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
-  bool _isBalanceVisible = true;
-  bool _isTokensVisible = true;
+  bool _isBalanceVisible = false;
+  bool _isTokensVisible = false;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -117,7 +117,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   final gradientColors1 = const [Color(0xFFB945AA), Color(0xFF8E4CB6)];
   final gradientColors2 = const [Color(0xFF8E4CB6), Color(0xFF5B53C2)];
 
-  // 👇 ADD THIS - Load data when page opens
   @override
   void initState() {
     super.initState();
@@ -474,14 +473,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               _buildAnalyticsItem(
                 Icons.directions_bus,
                 'Trips',
-                '${provider.totalTripsCount} trips', // 👈 DYNAMIC TRIPS COUNT
+                '${provider.totalTripsCount} trips',
                 subtitle:
                     '12.6 mi', // Keep this static or calculate from trip data
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
                 'Spend',
-                '₱${provider.totalSpent.toStringAsFixed(0)} total', // 👈 DYNAMIC TOTAL SPENT
+                '₱${provider.totalSpent.toStringAsFixed(0)} total',
               ),
             ],
           ),
