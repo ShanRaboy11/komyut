@@ -305,11 +305,17 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   Future<void> _updatePassengerCount() async {
     try {
       final supabase = Supabase.instance.client;
+      
+      // Calculate total initial payment based on passenger count
+      final totalInitialPayment = widget.initialPayment * _passengerCount;
+      
       await supabase.from('trips').update({
         'passengers_count': _passengerCount,
+        'fare_amount': totalInitialPayment,
       }).eq('id', widget.tripId);
 
       debugPrint('✅ Updated passenger count to: $_passengerCount');
+      debugPrint('✅ Updated initial fare to: ₱$totalInitialPayment');
     } catch (e) {
       debugPrint('❌ Error updating passenger count: $e');
     }
@@ -779,7 +785,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  widget.destinationStopName ?? 'Colon',
+                                  widget.destinationStopName ?? 'Destination',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey.shade600,
@@ -837,11 +843,12 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    _buildPaymentRow('Base Fare', 'PHP ${widget.initialPayment.toStringAsFixed(2)}'),
+                    _buildPaymentRow('Base Fare (per person)', 'PHP ${widget.initialPayment.toStringAsFixed(2)}'),
+                    _buildPaymentRow('Passengers', '$_passengerCount'),
                     const Divider(height: 20),
                     _buildPaymentRow(
                       'Total',
-                      'PHP ${widget.initialPayment.toStringAsFixed(2)}',
+                      'PHP ${(widget.initialPayment * _passengerCount).toStringAsFixed(2)}',
                       isTotal: true,
                     ),
 
