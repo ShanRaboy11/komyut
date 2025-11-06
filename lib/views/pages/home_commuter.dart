@@ -9,8 +9,8 @@ import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
-import 'wallet.dart';
-import 'wallet_history.dart';
+import 'wallet_commuter.dart';
+import 'wallet_history_commuter.dart';
 import 'activity_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {

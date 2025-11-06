@@ -15,6 +15,9 @@ import 'views/pages/commuter_app.dart';
 import 'views/pages/driver_app.dart';
 import 'views/pages/operator_app.dart';
 
+import 'views/pages/wallet_commuter.dart';
+import 'views/pages/wallet_history_commuter.dart';
+
 import 'views/pages/otc.dart';
 import 'views/pages/otc_confirm.dart';
 import 'views/pages/otc_instructions.dart';
@@ -72,6 +75,7 @@ class MyApp extends StatelessWidget {
           '/home_commuter': (context) => const CommuterApp(),
           '/home_driver': (context) => const DriverApp(),
           '/home_operator': (context) => const OperatorApp(),
+          '/wallet': (context) => WalletPage(),
 
           '/otc': (context) => const OverTheCounterPage(),
           '/otc_confirmation': (context) {
@@ -128,6 +132,18 @@ class MyApp extends StatelessWidget {
             return TokenConfirmationPage(tokenAmount: amount);
           },
           '/token_success': (context) => const TokenSuccessPage(),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/history') {
+            final args = settings.arguments as HistoryType;
+
+            return MaterialPageRoute(
+              builder: (context) {
+                return TransactionHistoryPage(type: args);
+              },
+            );
+          }
+          return null;
         },
       ),
     );

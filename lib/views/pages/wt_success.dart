@@ -108,7 +108,10 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil('/home_commuter', (route) => false);
       },
       isFilled: true,
       textColor: Colors.white,
@@ -119,7 +122,12 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/wallet', (route) => false);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).popUntil((route) => route.settings.name == '/home_commuter');
+
+        Navigator.of(context).pushNamed('/wallet');
       },
       isFilled: false,
     );

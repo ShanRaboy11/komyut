@@ -128,12 +128,12 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(
-          context,
-          rootNavigator: true,
-        ).popUntil((route) => route.settings.name == '/home_commuter');
-
-        Navigator.of(context).pushNamed('/wallet');
+        // This command removes all routes until it finds one named '/home_commuter'
+        // and then pushes '/wallet' on top of it.
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/wallet',
+          (route) => route.settings.name == '/home_commuter',
+        );
       },
       isFilled: false,
     );

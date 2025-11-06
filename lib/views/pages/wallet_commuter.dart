@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:komyut/views/pages/dw.dart';
 import 'package:komyut/views/pages/wt.dart';
 import 'package:provider/provider.dart';
-import 'wallet_history.dart';
+import 'wallet_history_commuter.dart';
 import 'otc.dart';
 import 'dart:math';
 import 'package:barcode_widget/barcode_widget.dart';

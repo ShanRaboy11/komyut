@@ -260,9 +260,12 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(
-                context,
-              ).popUntil((route) => route.settings.name == '/wallet'),
+              onTap: () {
+                Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).popUntil((route) => route.settings.name == '/home_commuter');
+              },
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(
