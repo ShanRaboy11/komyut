@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class DwSourceSelectionPage extends StatefulWidget {
   final String name;
@@ -70,7 +71,6 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
       return;
     }
 
-    // --- Generate the transaction code here! ---
     final String transactionCode = _generateTransactionCode();
 
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
@@ -88,15 +88,14 @@ class _DwSourceSelectionPageState extends State<DwSourceSelectionPage> {
       );
 
       if (mounted) {
-        Navigator.of(context).pushNamed(
+        CommuterApp.navigatorKey.currentState?.pushNamed(
           '/dw_confirmation',
           arguments: {
             'name': widget.name,
             'email': widget.email,
             'amount': widget.amount,
             'source': _selectedSource!,
-            'transactionCode':
-                transactionCode,
+            'transactionCode': transactionCode,
           },
         );
       }

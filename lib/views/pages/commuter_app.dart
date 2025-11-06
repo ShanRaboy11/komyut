@@ -13,6 +13,12 @@ import 'otc_confirm.dart';
 import 'otc_instructions.dart';
 import 'otc_success.dart';
 
+import 'dw.dart';
+import 'dw_payment_method.dart';
+import 'dw_payment_source.dart';
+import 'dw_confirm.dart';
+import 'dw_success.dart';
+
 class CommuterApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -61,7 +67,41 @@ class CommuterApp extends StatelessWidget {
         page = const PaymentSuccessPage();
         break;
 
-      // TODO: Add cases for '/digital_wallet', '/redeem_tokens' etc. here
+      case '/digital_wallet':
+        page = const DigitalWalletPage();
+        break;
+      case '/dw_payment_method':
+        final args = settings.arguments as Map<String, String>;
+        page = DwPaymentMethodPage(
+          name: args['name']!,
+          email: args['email']!,
+          amount: args['amount']!,
+        );
+        break;
+      case '/dw_payment_source':
+        final args = settings.arguments as Map<String, String>;
+        page = DwSourceSelectionPage(
+          name: args['name']!,
+          email: args['email']!,
+          amount: args['amount']!,
+          paymentMethod: args['paymentMethod']!,
+        );
+        break;
+      case '/dw_confirmation':
+        final args = settings.arguments as Map<String, String>;
+        page = DwConfirmationPage(
+          name: args['name']!,
+          email: args['email']!,
+          amount: args['amount']!,
+          source: args['source']!,
+          transactionCode: args['transactionCode']!,
+        );
+        break;
+      case '/dw_success':
+        page = const DwSuccessPage();
+        break;
+
+      // TODO: Add cases for '/redeem_tokens'
 
       default:
         page = const CommuterNavBarWrapper(

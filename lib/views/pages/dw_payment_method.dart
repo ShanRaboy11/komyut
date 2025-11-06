@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class DwPaymentMethodPage extends StatefulWidget {
   final String name;
@@ -271,7 +272,7 @@ class _DwPaymentMethodPageState extends State<DwPaymentMethodPage> {
       child: OutlinedButton(
         onPressed: isEnabled
             ? () {
-                Navigator.of(context).pushNamed(
+                CommuterApp.navigatorKey.currentState?.pushNamed(
                   '/dw_payment_source',
                   arguments: {
                     'name': widget.name,

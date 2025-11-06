@@ -435,8 +435,7 @@ class _WalletPageState extends State<WalletPage>
     if (optionText == 'Over-the-Counter') {
       CommuterApp.navigatorKey.currentState?.pushNamed('/otc');
     } else if (optionText == 'Digital Wallet') {
-      // TODO: When you're ready, do the same for this route
-      // CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
+      CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
     } else if (optionText == 'Wheel Tokens') {
       // TODO: And for this one
       // CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');

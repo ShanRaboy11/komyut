@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'commuter_app.dart';
 
 class DigitalWalletPage extends StatefulWidget {
   const DigitalWalletPage({super.key});
@@ -27,7 +28,7 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
 
   void _onSubmit() {
     if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pushNamed(
+      CommuterApp.navigatorKey.currentState?.pushNamed(
         '/dw_payment_method',
         arguments: {
           'name': _nameController.text,
