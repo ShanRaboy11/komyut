@@ -629,10 +629,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             vehicle_plate,
             puv_type,
             profile_id,
-            profiles:profile_id (
-              first_name,
-              last_name
-            ),
             routes:route_id (
               code,
               name
@@ -643,19 +639,48 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       debugPrint('🔍 Driver Info Retrieved: $driverInfo');
 
-      final driverProfile = driverInfo['profiles'];
+      // Fetch driver profile separately (fixes the join issue)
+      Map<String, dynamic>? driverProfile;
+      final driverProfileId = driverInfo['profile_id'] as String?;
+      
+      if (driverProfileId != null && driverProfileId.isNotEmpty) {
+        try {
+          debugPrint('🔍 Fetching profile for ID: $driverProfileId');
+          driverProfile = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', driverProfileId)
+              .single();
+          debugPrint('✅ Driver profile fetched successfully: $driverProfile');
+        } catch (e) {
+          debugPrint('❌ Error fetching driver profile: $e');
+        }
+      } else {
+        debugPrint('⚠️ No profile_id found for driver');
+      }
+
       final route = driverInfo['routes'];
       
+      // Construct driver name from fetched profile
       String driverName = 'Driver';
+      String driverFirstName = '';
+      String driverLastName = '';
+      
       if (driverProfile != null) {
-        final firstName = driverProfile['first_name'] ?? '';
-        final lastName = driverProfile['last_name'] ?? '';
-        if (firstName.isNotEmpty || lastName.isNotEmpty) {
-          driverName = '$firstName $lastName'.trim();
+        driverFirstName = driverProfile['first_name'] as String? ?? '';
+        driverLastName = driverProfile['last_name'] as String? ?? '';
+        
+        if (driverFirstName.isNotEmpty || driverLastName.isNotEmpty) {
+          driverName = '$driverFirstName $driverLastName'.trim();
+          debugPrint('✅ Driver name constructed: $driverName');
+        } else {
+          debugPrint('⚠️ Profile exists but names are empty');
         }
+      } else {
+        debugPrint('⚠️ Could not fetch driver profile, using default name');
       }
       
-      debugPrint('👤 Driver Name: $driverName');
+      debugPrint('👤 Final Driver Name: $driverName');
       
       final routeCodeStr = route?['code'] ?? routeId ?? '';
 
@@ -678,8 +703,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               'initial_payment_per_person': initialPaymentPerPerson,
               'puv_type': puvType,
               'driver_name': driverName,
-              'driver_first_name': driverProfile?['first_name'] ?? '',
-              'driver_last_name': driverProfile?['last_name'] ?? '',
+              'driver_first_name': driverFirstName,
+              'driver_last_name': driverLastName,
               'route_code': routeCodeStr,
             },
           })
@@ -1431,7 +1456,7 @@ Future<void> _awardWheelTokens(String profileId, String tripId) async {
   try {
     final supabase = Supabase.instance.client;
     
-    // Get commuter ID
+    // Get commuter ID and current tokens
     final commuterResponse = await supabase
         .from('commuters')
         .select('id, wheel_tokens')
@@ -1440,7 +1465,8 @@ Future<void> _awardWheelTokens(String profileId, String tripId) async {
     
     final commuterId = commuterResponse['id'] as String;
     final currentTokens = (commuterResponse['wheel_tokens'] as num).toDouble();
-    final newBalance = currentTokens + 1.0;
+    final tokenReward = 0.5; // Changed from 1.0 to 0.5
+    final newBalance = currentTokens + tokenReward;
     
     // Update wheel tokens
     await supabase.from('commuters').update({
@@ -1450,7 +1476,7 @@ Future<void> _awardWheelTokens(String profileId, String tripId) async {
     // Record transaction
     await supabase.from('points_transactions').insert({
       'commuter_id': commuterId,
-      'change': 1.0,
+      'change': tokenReward,
       'reason': 'Trip completion reward',
       'related_transaction_id': null,
       'balance_after': newBalance,
@@ -1460,7 +1486,7 @@ Future<void> _awardWheelTokens(String profileId, String tripId) async {
       },
     });
     
-    debugPrint('🎁 Awarded 1.0 wheel token! New balance: $newBalance');
+    debugPrint('🎁 Awarded $tokenReward wheel token! New balance: $newBalance');
   } catch (e) {
     debugPrint('❌ Error awarding wheel tokens: $e');
     // Don't fail the trip completion if token award fails

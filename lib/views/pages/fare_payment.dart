@@ -59,6 +59,8 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
     try {
       final supabase = Supabase.instance.client;
       
+      debugPrint('🔍 === FETCHING TRIP DETAILS ===');
+      
       // Get trip details with driver information
       final tripResponse = await supabase
           .from('trips')
@@ -69,11 +71,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
               vehicle_plate,
               operator_name,
               puv_type,
-              profile_id,
-              profiles:profile_id (
-                first_name,
-                last_name
-              )
+              profile_id
             ),
             routes:route_id (
               code,
@@ -89,7 +87,57 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
           .eq('id', widget.tripId!)
           .single();
 
-      // Get transaction number - get the most recent completed transaction
+      debugPrint('✅ Trip response received');
+      debugPrint('👤 Driver data: ${tripResponse['drivers']}');
+
+      // Get driver's profile separately using the profile_id
+      Map<String, dynamic>? driverProfile;
+      if (tripResponse['drivers'] != null) {
+        final driverData = tripResponse['drivers'] as Map<String, dynamic>;
+        final driverProfileId = driverData['profile_id'] as String?;
+        
+        debugPrint('🔍 Extracted profile_id: $driverProfileId');
+        
+        if (driverProfileId != null && driverProfileId.isNotEmpty) {
+          try {
+            debugPrint('🔍 Attempting to fetch profile for ID: $driverProfileId');
+            
+            driverProfile = await supabase
+                .from('profiles')
+                .select('first_name, last_name')
+                .eq('id', driverProfileId)
+                .maybeSingle();
+            
+            if (driverProfile != null) {
+              debugPrint('✅ Profile fetched successfully: $driverProfile');
+              // Add profile data to driver object
+              tripResponse['drivers']['profiles'] = driverProfile;
+            } else {
+              debugPrint('⚠️ Profile query returned null');
+              debugPrint('⚠️ Checking if profile exists in database...');
+              
+              // Try to get ANY profile to see if table is accessible
+              final testQuery = await supabase
+                  .from('profiles')
+                  .select('id, first_name, last_name')
+                  .eq('id', driverProfileId)
+                  .maybeSingle();
+              
+              debugPrint('🔍 Test query result: $testQuery');
+            }
+          } catch (e, stackTrace) {
+            debugPrint('❌ Error fetching driver profile: $e');
+            debugPrint('❌ Stack trace: $stackTrace');
+            debugPrint('⚠️ Will use metadata fallback');
+          }
+        } else {
+          debugPrint('⚠️ profile_id is null or empty');
+        }
+      } else {
+        debugPrint('⚠️ No driver data in trip response');
+      }
+
+      // Get transaction number
       final transactionResponse = await supabase
           .from('transactions')
           .select('transaction_number')
@@ -109,8 +157,10 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       debugPrint('📝 Transaction number: $_transactionNumber');
       debugPrint('👤 Driver info: ${tripResponse['drivers']}');
       debugPrint('👤 Driver profile: ${tripResponse['drivers']?['profiles']}');
-    } catch (e) {
+      debugPrint('👤 Trip metadata: ${tripResponse['metadata']}');
+    } catch (e, stackTrace) {
       debugPrint('❌ Error loading trip details: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       setState(() {
         _isLoading = false;
       });
@@ -118,26 +168,59 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   }
 
   String _getDriverName() {
-    if (_tripDetails != null) {
-      final driver = _tripDetails!['drivers'];
-      if (driver != null) {
-        final profiles = driver['profiles'];
-        if (profiles != null) {
-          final firstName = profiles['first_name'] ?? '';
-          final lastName = profiles['last_name'] ?? '';
-          if (firstName.isNotEmpty || lastName.isNotEmpty) {
-            return '$firstName $lastName'.trim();
-          }
-        }
-      }
-      
-      // Fallback to metadata if driver info not available
-      final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
-      if (metadata != null && metadata.containsKey('driver_name')) {
-        return metadata['driver_name'];
+    if (_tripDetails == null) {
+      debugPrint('⚠️ _tripDetails is null');
+      return 'Unknown Driver';
+    }
+
+    debugPrint('🔍 === GETTING DRIVER NAME ===');
+    
+    // Try to get from metadata first (most reliable as it's stored during trip creation)
+    final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
+    debugPrint('📋 Metadata: $metadata');
+    
+    // Check for driver_name in metadata (stored during trip creation)
+    if (metadata != null && metadata.containsKey('driver_name')) {
+      final driverName = metadata['driver_name'] as String?;
+      debugPrint('🔍 Found driver_name in metadata: "$driverName"');
+      if (driverName != null && driverName.isNotEmpty && driverName != 'Driver') {
+        debugPrint('✅ Using driver name from metadata: $driverName');
+        return driverName;
       }
     }
-    return 'Unknown Driver';
+
+    // Try to construct from metadata first/last name
+    if (metadata != null) {
+      final firstName = metadata['driver_first_name'] as String? ?? '';
+      final lastName = metadata['driver_last_name'] as String? ?? '';
+      debugPrint('🔍 Metadata first_name: "$firstName", last_name: "$lastName"');
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        final name = '$firstName $lastName'.trim();
+        debugPrint('✅ Constructed driver name from metadata: $name');
+        return name;
+      }
+    }
+
+    // Try to get from driver's profile (from database join)
+    final driver = _tripDetails!['drivers'];
+    debugPrint('🔍 Driver object: $driver');
+    if (driver != null) {
+      final profiles = driver['profiles'];
+      debugPrint('🔍 Profiles object: $profiles');
+      if (profiles != null) {
+        final firstName = profiles['first_name'] as String? ?? '';
+        final lastName = profiles['last_name'] as String? ?? '';
+        debugPrint('🔍 Profile first_name: "$firstName", last_name: "$lastName"');
+        if (firstName.isNotEmpty || lastName.isNotEmpty) {
+          final name = '$firstName $lastName'.trim();
+          debugPrint('✅ Got driver name from profiles: $name');
+          return name;
+        }
+      }
+    }
+
+    debugPrint('⚠️ Could not find driver name anywhere, using fallback');
+    return 'Driver';
   }
 
   Future<void> _downloadReceipt() async {
@@ -236,6 +319,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         title: const Text('Trip Receipt'),
         backgroundColor: const Color(0xFF8E4CB6),
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -286,11 +370,12 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CommuterApp(),
-                              ),
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CommuterApp(),
+                          ),
+                          (route) => false,
                         );
                       },
                       icon: const Icon(Icons.home),
