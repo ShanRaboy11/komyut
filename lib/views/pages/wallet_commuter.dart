@@ -429,16 +429,12 @@ class _WalletPageState extends State<WalletPage>
   void _handleDepositNavigation(String optionText) {
     if (!mounted) return;
 
-    // We don't need the `navigator` variable anymore.
-    // We directly use the key to access the correct navigator's state.
-
     if (optionText == 'Over-the-Counter') {
       CommuterApp.navigatorKey.currentState?.pushNamed('/otc');
     } else if (optionText == 'Digital Wallet') {
       CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
     } else if (optionText == 'Wheel Tokens') {
-      // TODO: And for this one
-      // CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');
+      CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');
     }
   }
 

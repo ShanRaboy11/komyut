@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class TokenConfirmationPage extends StatefulWidget {
   final String tokenAmount;
@@ -56,9 +57,9 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
     );
 
     if (success && context.mounted) {
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/token_success', (route) => false);
+      CommuterApp.navigatorKey.currentState?.pushReplacementNamed(
+        '/token_success',
+      );
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -261,10 +262,9 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                Navigator.of(
-                  context,
-                  rootNavigator: true,
-                ).popUntil((route) => route.settings.name == '/home_commuter');
+                CommuterApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(2),

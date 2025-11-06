@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class RedeemTokensPage extends StatefulWidget {
   const RedeemTokensPage({super.key});
@@ -292,7 +293,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         child: ElevatedButton(
           onPressed: _isButtonEnabled
               ? () {
-                  Navigator.of(context).pushNamed(
+                  CommuterApp.navigatorKey.currentState?.pushNamed(
                     '/token_confirmation',
                     arguments: _tokenController.text,
                   );

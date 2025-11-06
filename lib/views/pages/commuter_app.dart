@@ -19,6 +19,10 @@ import 'dw_payment_source.dart';
 import 'dw_confirm.dart';
 import 'dw_success.dart';
 
+import 'wt.dart';
+import 'wt_confirm.dart';
+import 'wt_success.dart';
+
 class CommuterApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -101,7 +105,16 @@ class CommuterApp extends StatelessWidget {
         page = const DwSuccessPage();
         break;
 
-      // TODO: Add cases for '/redeem_tokens'
+      case '/redeem_tokens':
+        page = const RedeemTokensPage();
+        break;
+      case '/token_confirmation':
+        final amount = settings.arguments as String;
+        page = TokenConfirmationPage(tokenAmount: amount);
+        break;
+      case '/token_success':
+        page = const TokenSuccessPage();
+        break;
 
       default:
         page = const CommuterNavBarWrapper(
