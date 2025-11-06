@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'dart:ui' as ui;
@@ -11,7 +8,6 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:gal/gal.dart';
-import '../widgets/map.dart';
 import 'commuter_app.dart';
 
 class RideBookingScreen extends StatefulWidget {
@@ -41,15 +37,11 @@ class RideBookingScreen extends StatefulWidget {
 }
 
 class _RideBookingScreenState extends State<RideBookingScreen> {
-  final MapController _mapController = MapController();
-  Position? _currentPosition;
   bool _isLoading = true;
   String? _transactionNumber;
   Map<String, dynamic>? _tripDetails;
   bool _isDownloading = false;
   final GlobalKey _receiptKey = GlobalKey();
-
-  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854);
 
   @override
   void initState() {
@@ -61,8 +53,6 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       debugPrint('Distance: ${widget.distanceMeters}m');
       _loadTripDetails();
     }
-
-    _getCurrentLocation();
   }
 
   Future<void> _loadTripDetails() async {
@@ -124,24 +114,6 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       setState(() {
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _getCurrentLocation() async {
-    try {
-      final permission = await Permission.location.request();
-
-      if (permission.isGranted) {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-
-        setState(() {
-          _currentPosition = position;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error getting location: $e');
     }
   }
 
@@ -260,97 +232,84 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Map background
-          MapWidget(
-            mapController: _mapController,
-            currentPosition: _currentPosition,
-            defaultLocation: _defaultLocation,
-            isLoading: false,
-            boardingLocation: widget.boardingLocation,
-            arrivalLocation: widget.arrivalLocation,
-            routeStops: widget.routeStops,
-            originStopId: _tripDetails?['origin_stop_id'],
-            destinationStopId: _tripDetails?['destination_stop_id'],
-          ),
-          
-          // Back button
-          Positioned(
-            top: 50,
-            left: 16,
-            child: Container(
-              decoration: const BoxDecoration(
+      appBar: AppBar(
+        title: const Text('Trip Receipt'),
+        backgroundColor: const Color(0xFF8E4CB6),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Receipt content wrapped with RepaintBoundary for screenshot
+            RepaintBoundary(
+              key: _receiptKey,
+              child: Container(
                 color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
+                padding: const EdgeInsets.all(24),
+                child: _buildReceiptContent(),
               ),
             ),
-          ),
-          
-          // Draggable scrollable receipt
-          DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.3,
-            maxChildSize: 0.9,
-            builder: (BuildContext context, ScrollController scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      offset: Offset(0, -5),
+            
+            // Action buttons (NOT included in screenshot)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isDownloading ? null : _downloadReceipt,
+                      icon: _isDownloading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.download),
+                      label: Text(_isDownloading ? 'Saving...' : 'Download'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF8E4CB6),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
                     ),
-                  ],
-                ),
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: [
-                    // Drag handle
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 8),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CommuterApp(),
+                              ),
+                        );
+                      },
+                      icon: const Icon(Icons.home),
+                      label: const Text('Home'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Color(0xFF8E4CB6)),
+                        foregroundColor: const Color(0xFF8E4CB6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
-                    
-                    // Receipt content wrapped with RepaintBoundary for screenshot
-                    RepaintBoundary(
-                      key: _receiptKey,
-                      child: Container(
-                        color: Colors.white,
-                        padding: const EdgeInsets.all(24),
-                        child: _buildReceiptContent(),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -396,6 +355,11 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
     
     final dateFormat = '${startedAt.month}/${startedAt.day}/${startedAt.year}';
     final timeFormat = '${startedAt.hour.toString().padLeft(2, '0')}:${startedAt.minute.toString().padLeft(2, '0')}';
+
+    // Check if discount was applied
+    final discountApplied = metadata?['discount_applied'] == true;
+    final discountRate = (metadata?['discount_rate'] as num?)?.toDouble() ?? 0.0;
+    final originalFare = metadata?['original_fare'] as num?;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -637,6 +601,21 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
           'Passenger${(_tripDetails!['passengers_count'] ?? 1) > 1 ? 's' : ''}',
           '${_tripDetails!['passengers_count'] ?? 1}',
         ),
+        
+        // Show discount information if applicable
+        if (discountApplied && originalFare != null) ...[
+          const SizedBox(height: 8),
+          _buildDetailRow(
+            'Original Fare',
+            '₱${originalFare.toStringAsFixed(2)}',
+          ),
+          _buildDetailRow(
+            'Discount (${(discountRate * 100).toStringAsFixed(0)}%)',
+            '-₱${(originalFare - (widget.fareAmount ?? 0)).toStringAsFixed(2)}',
+            valueColor: Colors.green,
+          ),
+        ],
+        
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(12),
@@ -652,69 +631,11 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         ),
 
         const SizedBox(height: 24),
-
-        // Action buttons
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _isDownloading ? null : _downloadReceipt,
-                icon: _isDownloading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : const Icon(Icons.download),
-                label: Text(_isDownloading ? 'Saving...' : 'Download'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: const Color(0xFF8E4CB6),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CommuterApp(),
-                        ),
-                  );
-                },
-                icon: const Icon(Icons.home),
-                label: const Text('Home'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Color(0xFF8E4CB6)),
-                  foregroundColor: const Color(0xFF8E4CB6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 20),
       ],
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildDetailRow(String label, String value, {bool isTotal = false, Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -733,7 +654,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
               fontWeight: FontWeight.bold,
-              color: isTotal ? const Color(0xFF8E4CB6) : Colors.black,
+              color: valueColor ?? (isTotal ? const Color(0xFF8E4CB6) : Colors.black),
             ),
           ),
         ],

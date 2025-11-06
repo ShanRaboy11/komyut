@@ -843,11 +843,12 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    _buildPaymentRow('Base Fare (per person)', 'PHP ${widget.initialPayment.toStringAsFixed(2)}'),
+                    _buildPaymentRow('Base Fare', 'PHP ${widget.initialPayment.toStringAsFixed(2)}'),
                     _buildPaymentRow('Passengers', '$_passengerCount'),
+                    _buildPaymentRow('Subtotal', 'PHP ${(widget.initialPayment * _passengerCount).toStringAsFixed(2)}'),
                     const Divider(height: 20),
                     _buildPaymentRow(
-                      'Total',
+                      'Total Initial Payment',
                       'PHP ${(widget.initialPayment * _passengerCount).toStringAsFixed(2)}',
                       isTotal: true,
                     ),

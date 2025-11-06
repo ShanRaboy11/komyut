@@ -947,41 +947,38 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   }
 
   // Step 8: Calculate fare based on distance and PUV type (per person)
-  double _calculateFare(double distanceKm, String puvType) {
-    double baseFare;
-    double baseDistance;
-    double perKmRate = 1.0;
+  // Modified Step 8: Calculate fare based on distance, PUV type, and discount (per person)
+double _calculateFare(double distanceKm, String puvType, {double discountRate = 0.0}) {
+  double baseFare;
+  double baseDistance;
+  double perKmRate = 1.0;
 
-    if (puvType.toLowerCase() == 'modern') {
-      baseFare = 15.0;
-      baseDistance = 4.0;
-    } else {
-      // traditional
-      baseFare = 13.0;
-      baseDistance = 4.0;
-    }
+  if (puvType.toLowerCase() == 'modern') {
+    baseFare = 15.0;
+    baseDistance = 4.0;
+  } else {
+    // traditional
+    baseFare = 13.0;
+    baseDistance = 4.0;
+  }
 
-    if (distanceKm <= baseDistance) {
-      return baseFare;
-    }
-
+  double fare;
+  if (distanceKm <= baseDistance) {
+    fare = baseFare;
+  } else {
     double additionalDistance = distanceKm - baseDistance;
     double additionalFare = additionalDistance * perKmRate;
-
-    return baseFare + additionalFare;
+    fare = baseFare + additionalFare;
+  }
+  
+  // Apply discount if eligible
+  if (discountRate > 0) {
+    fare = fare * (1 - discountRate);
+    debugPrint('💰 Discount applied: ${(discountRate * 100).toStringAsFixed(0)}% off');
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
+  return fare;
+}
 
   Future<void> _pickImageFromGallery() async {
     try {
@@ -1341,5 +1338,88 @@ class ScannerLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(ScannerLinePainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;
+  }
+}
+
+// Check if commuter is eligible for 20% discount
+Future<Map<String, dynamic>> _checkDiscountEligibility(String profileId) async {
+  try {
+    final supabase = Supabase.instance.client;
+    
+    final commuterResponse = await supabase
+        .from('commuters')
+        .select('category, id_verified')
+        .eq('profile_id', profileId)
+        .maybeSingle();
+    
+    if (commuterResponse == null) {
+      return {
+        'eligible': false,
+        'discount_rate': 0.0,
+        'category': 'regular',
+      };
+    }
+    
+    final category = commuterResponse['category'] as String;
+    final isVerified = commuterResponse['id_verified'] == true;
+    
+    // Eligible if: (senior OR student OR pwd) AND id_verified
+    final isEligible = isVerified && (category == 'senior' || category == 'student' || category == 'pwd');
+    
+    debugPrint('🎫 Discount check - Category: $category, Verified: $isVerified, Eligible: $isEligible');
+    
+    return {
+      'eligible': isEligible,
+      'discount_rate': isEligible ? 0.20 : 0.0,
+      'category': category,
+    };
+  } catch (e) {
+    debugPrint('❌ Error checking discount eligibility: $e');
+    return {
+      'eligible': false,
+      'discount_rate': 0.0,
+      'category': 'regular',
+    };
+  }
+}
+
+// Award 1.0 wheel token for completed trip
+Future<void> _awardWheelTokens(String profileId, String tripId) async {
+  try {
+    final supabase = Supabase.instance.client;
+    
+    // Get commuter ID
+    final commuterResponse = await supabase
+        .from('commuters')
+        .select('id, wheel_tokens')
+        .eq('profile_id', profileId)
+        .single();
+    
+    final commuterId = commuterResponse['id'] as String;
+    final currentTokens = (commuterResponse['wheel_tokens'] as num).toDouble();
+    final newBalance = currentTokens + 1.0;
+    
+    // Update wheel tokens
+    await supabase.from('commuters').update({
+      'wheel_tokens': newBalance,
+    }).eq('id', commuterId);
+    
+    // Record transaction
+    await supabase.from('points_transactions').insert({
+      'commuter_id': commuterId,
+      'change': 1.0,
+      'reason': 'Trip completion reward',
+      'related_transaction_id': null,
+      'balance_after': newBalance,
+      'metadata': {
+        'trip_id': tripId,
+        'reward_type': 'trip_completion',
+      },
+    });
+    
+    debugPrint('🎁 Awarded 1.0 wheel token! New balance: $newBalance');
+  } catch (e) {
+    debugPrint('❌ Error awarding wheel tokens: $e');
+    // Don't fail the trip completion if token award fails
   }
 }
