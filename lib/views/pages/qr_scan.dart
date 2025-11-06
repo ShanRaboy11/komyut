@@ -705,249 +705,271 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   }
 
   Future<void> _handleArrivalScan(
-    String tripId,
-    String? originStopId,
-    Map<String, dynamic> tripMetadata,
-    List<Map<String, dynamic>> routeStops,
-    String puvType,
-    String profileId,
-    int passengerCount,
-  ) async {
-    final supabase = Supabase.instance.client;
+  String tripId,
+  String? originStopId,
+  Map<String, dynamic> tripMetadata,
+  List<Map<String, dynamic>> routeStops,
+  String puvType,
+  String profileId,
+  int passengerCount,
+) async {
+  final supabase = Supabase.instance.client;
 
-    debugPrint('🏁 Completing trip: $tripId');
-    debugPrint('👥 Passenger count: $passengerCount');
+  debugPrint('🏁 Completing trip: $tripId');
+  debugPrint('👥 Passenger count: $passengerCount');
 
-    try {
-      // Step 7: Get current location for destination
-      final position = await _getCurrentPosition();
+  try {
+    // Step 7: Get current location for destination
+    final position = await _getCurrentPosition();
 
-      if (position == null) {
-        _showError('Unable to get your location. Please enable location services.');
-        _resetScanner();
-        return;
-      }
+    if (position == null) {
+      _showError('Unable to get your location. Please enable location services.');
+      _resetScanner();
+      return;
+    }
 
-      // Find closest stop to arrival location
-      final destinationStop = _findClosestStop(
-        position.latitude,
-        position.longitude,
-        routeStops,
+    // Find closest stop to arrival location
+    final destinationStop = _findClosestStop(
+      position.latitude,
+      position.longitude,
+      routeStops,
+    );
+
+    if (destinationStop == null) {
+      _showError(
+        'You are too far from the route!\n\n'
+        'Please scan at a designated stop along the route.',
       );
+      _resetScanner();
+      return;
+    }
 
-      if (destinationStop == null) {
-        _showError(
-          'You are too far from the route!\n\n'
-          'Please scan at a designated stop along the route.',
-        );
-        _resetScanner();
-        return;
-      }
+    final arrivalLocation = {
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'timestamp': DateTime.now().toIso8601String(),
+      'closest_stop_id': destinationStop['id'],
+      'closest_stop_name': destinationStop['name'],
+    };
 
-      final arrivalLocation = {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-        'closest_stop_id': destinationStop['id'],
-        'closest_stop_name': destinationStop['name'],
-      };
+    debugPrint('📍 Arrived at stop: ${destinationStop['name']}');
 
-      debugPrint('📍 Arrived at stop: ${destinationStop['name']}');
+    final initialPaymentPerPerson = (tripMetadata['initial_payment_per_person'] as num?)?.toDouble() ?? 10.0;
 
-      final initialPaymentPerPerson = (tripMetadata['initial_payment_per_person'] as num?)?.toDouble() ?? 10.0;
+    // Step 8: Calculate distance using route stops
+    final distanceInMeters = _calculateRouteDistance(
+      originStopId,
+      destinationStop['id'],
+      routeStops,
+    );
 
-      // Step 8: Calculate distance using route stops
-      final distanceInMeters = _calculateRouteDistance(
-        originStopId,
-        destinationStop['id'],
-        routeStops,
+    if (distanceInMeters == 0 && originStopId != destinationStop['id']) {
+      _showError(
+        'Error calculating distance!\n\n'
+        'Please try scanning again.',
       );
+      _resetScanner();
+      return;
+    }
 
-      if (distanceInMeters == 0 && originStopId != destinationStop['id']) {
-        _showError(
-          'Error calculating distance!\n\n'
-          'Please try scanning again.',
-        );
-        _resetScanner();
-        return;
-      }
+    final distanceInKm = distanceInMeters / 1000;
 
-      final distanceInKm = distanceInMeters / 1000;
+    debugPrint('📏 Route distance traveled: ${distanceInKm.toStringAsFixed(2)} km');
 
-      debugPrint('📏 Route distance traveled: ${distanceInKm.toStringAsFixed(2)} km');
+    // NEW: Check discount eligibility
+    final discountInfo = await _checkDiscountEligibility(profileId);
+    final isDiscountEligible = discountInfo['eligible'] as bool;
+    final discountRate = (discountInfo['discount_rate'] as num).toDouble();
 
-      // Calculate fare per person based on PUV type
-      double farePerPerson = _calculateFare(distanceInKm, puvType);
-      
-      // Calculate total fare for all passengers
-      double totalFare = farePerPerson * passengerCount;
-      
-      // Calculate initial payment made (per person * passenger count)
-      double initialPaymentTotal = initialPaymentPerPerson * passengerCount;
-      
-      // Subtract initial payment already made
-      double additionalFare = totalFare - initialPaymentTotal;
-      if (additionalFare < 0) additionalFare = 0;
+    // Calculate fare per person with discount if eligible
+    double farePerPerson = _calculateFare(distanceInKm, puvType, discountRate: discountRate);
+    
+    // Calculate original fare (without discount) for display
+    double originalFarePerPerson = _calculateFare(distanceInKm, puvType, discountRate: 0.0);
+    double originalFareTotal = originalFarePerPerson * passengerCount;
+    
+    // Calculate total fare for all passengers (with discount applied)
+    double totalFare = farePerPerson * passengerCount;
+    
+    // Calculate initial payment made (per person * passenger count)
+    double initialPaymentTotal = initialPaymentPerPerson * passengerCount;
+    
+    // Subtract initial payment already made
+    double additionalFare = totalFare - initialPaymentTotal;
+    if (additionalFare < 0) additionalFare = 0;
 
-      debugPrint('💰 Fare per person: ₱${farePerPerson.toStringAsFixed(2)}');
-      debugPrint('👥 Passengers: $passengerCount');
-      debugPrint('💰 Total fare: ₱${totalFare.toStringAsFixed(2)}');
-      debugPrint('💰 Already paid: ₱${initialPaymentTotal.toStringAsFixed(2)}');
-      debugPrint('💰 Additional fare: ₱${additionalFare.toStringAsFixed(2)}');
+    debugPrint('💰 Fare per person (original): ₱${originalFarePerPerson.toStringAsFixed(2)}');
+    if (isDiscountEligible) {
+      debugPrint('🎫 Discount applied: ${(discountRate * 100).toStringAsFixed(0)}%');
+      debugPrint('💰 Fare per person (discounted): ₱${farePerPerson.toStringAsFixed(2)}');
+    }
+    debugPrint('👥 Passengers: $passengerCount');
+    debugPrint('💰 Original total fare: ₱${originalFareTotal.toStringAsFixed(2)}');
+    debugPrint('💰 Final total fare: ₱${totalFare.toStringAsFixed(2)}');
+    debugPrint('💰 Already paid: ₱${initialPaymentTotal.toStringAsFixed(2)}');
+    debugPrint('💰 Additional fare: ₱${additionalFare.toStringAsFixed(2)}');
 
-      // Step 9: Process payment if there's additional fare
-      if (additionalFare > 0) {
-        final walletResponse = await supabase
-            .from('wallets')
-            .select('id, balance')
-            .eq('owner_profile_id', profileId)
-            .single();
-
-        final walletId = walletResponse['id'] as String;
-        final balance = (walletResponse['balance'] as num).toDouble();
-
-        if (balance < additionalFare) {
-          _showError(
-            'Insufficient balance for additional fare!\n\n'
-            'Current balance: ₱${balance.toStringAsFixed(2)}\n'
-            'Required: ₱${additionalFare.toStringAsFixed(2)}',
-          );
-          _resetScanner();
-          return;
-        }
-
-        // Deduct additional fare
-        await supabase.from('wallets').update({
-          'balance': balance - additionalFare,
-        }).eq('id', walletId);
-
-        // Step 10: Create transaction with barcode
-        final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
-
-        await supabase.from('transactions').insert({
-          'transaction_number': transactionNumber,
-          'wallet_id': walletId,
-          'initiated_by_profile_id': profileId,
-          'type': 'fare_payment',
-          'amount': additionalFare,
-          'status': 'completed',
-          'related_trip_id': tripId,
-          'processed_at': DateTime.now().toIso8601String(),
-          'metadata': {
-            'payment_type': 'additional_fare',
-            'distance_km': distanceInKm,
-            'puv_type': puvType,
-            'passengers': passengerCount,
-            'fare_per_person': farePerPerson,
-          },
-        });
-      }
-
-      // Step 11 & 12: Update trip and complete transaction
-      final tripResponse = await supabase
-          .from('trips')
-          .select('driver_id')
-          .eq('id', tripId)
-          .single();
-
-      final driverId = tripResponse['driver_id'] as String;
-
-      // Get driver's profile to find their wallet
-      final driverProfileResponse = await supabase
-          .from('drivers')
-          .select('profile_id')
-          .eq('id', driverId)
-          .single();
-
-      final driverProfileId = driverProfileResponse['profile_id'] as String;
-
-      // Step 12: Transfer payment to driver's wallet
-      final driverWalletResponse = await supabase
+    // Step 9: Process payment if there's additional fare
+    if (additionalFare > 0) {
+      final walletResponse = await supabase
           .from('wallets')
           .select('id, balance')
-          .eq('owner_profile_id', driverProfileId)
-          .maybeSingle();
+          .eq('owner_profile_id', profileId)
+          .single();
 
-      if (driverWalletResponse != null) {
-        final driverWalletId = driverWalletResponse['id'] as String;
-        final driverBalance = (driverWalletResponse['balance'] as num).toDouble();
+      final walletId = walletResponse['id'] as String;
+      final balance = (walletResponse['balance'] as num).toDouble();
 
-        await supabase.from('wallets').update({
-          'balance': driverBalance + totalFare,
-        }).eq('id', driverWalletId);
-
-        debugPrint('✅ Transferred ₱${totalFare.toStringAsFixed(2)} to driver wallet');
+      if (balance < additionalFare) {
+        _showError(
+          'Insufficient balance for additional fare!\n\n'
+          'Current balance: ₱${balance.toStringAsFixed(2)}\n'
+          'Required: ₱${additionalFare.toStringAsFixed(2)}',
+        );
+        _resetScanner();
+        return;
       }
 
-      // Step 13: Update trip as completed
-      await supabase.from('trips').update({
+      // Deduct additional fare
+      await supabase.from('wallets').update({
+        'balance': balance - additionalFare,
+      }).eq('id', walletId);
+
+      // Step 10: Create transaction with barcode
+      final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
+
+      await supabase.from('transactions').insert({
+        'transaction_number': transactionNumber,
+        'wallet_id': walletId,
+        'initiated_by_profile_id': profileId,
+        'type': 'fare_payment',
+        'amount': additionalFare,
         'status': 'completed',
-        'destination_stop_id': destinationStop['id'],
-        'distance_meters': distanceInMeters.round(),
-        'fare_amount': totalFare,
-        'passengers_count': passengerCount,
-        'ended_at': DateTime.now().toIso8601String(),
+        'related_trip_id': tripId,
+        'processed_at': DateTime.now().toIso8601String(),
         'metadata': {
-          ...tripMetadata,
-          'arrival_location': arrivalLocation,
-          'total_fare': totalFare,
-          'fare_per_person': farePerPerson,
-          'additional_fare': additionalFare,
+          'payment_type': 'additional_fare',
+          'distance_km': distanceInKm,
+          'puv_type': puvType,
           'passengers': passengerCount,
+          'fare_per_person': farePerPerson,
+          'discount_applied': isDiscountEligible,
         },
-      }).eq('id', tripId);
-
-      // Mark initial transaction as completed
-      await supabase
-          .from('transactions')
-          .update({
-            'status': 'completed',
-            'processed_at': DateTime.now().toIso8601String(),
-            'metadata': {
-              'payment_type': 'initial_boarding',
-              'puv_type': puvType,
-              'passengers': passengerCount,
-              'initial_payment_per_person': initialPaymentPerPerson,
-            },
-          })
-          .eq('related_trip_id', tripId)
-          .eq('status', 'pending');
-
-      debugPrint('✅ Trip completed successfully');
-
-      if (!mounted) return;
-
-      // Get origin stop name from metadata
-      final originStopName = tripMetadata['boarding_location']?['closest_stop_name'] ?? 'Unknown';
-
-      // Navigate to payment summary screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RideBookingScreen(
-            tripId: tripId,
-            fareAmount: totalFare,
-            distanceMeters: distanceInMeters.round(),
-            boardingLocation: LatLng(
-              tripMetadata['boarding_location']['latitude'],
-              tripMetadata['boarding_location']['longitude'],
-            ),
-            arrivalLocation: LatLng(position.latitude, position.longitude),
-            routeStops: routeStops,
-            originStopName: originStopName,
-            destinationStopName: destinationStop['name'],
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('❌ Error completing trip: $e');
-      _showError('Failed to complete trip: ${e.toString()}');
-      _resetScanner();
+      });
     }
+
+    // Step 11 & 12: Update trip and complete transaction
+    final tripResponse = await supabase
+        .from('trips')
+        .select('driver_id')
+        .eq('id', tripId)
+        .single();
+
+    final driverId = tripResponse['driver_id'] as String;
+
+    // Get driver's profile to find their wallet
+    final driverProfileResponse = await supabase
+        .from('drivers')
+        .select('profile_id')
+        .eq('id', driverId)
+        .single();
+
+    final driverProfileId = driverProfileResponse['profile_id'] as String;
+
+    // Step 12: Transfer payment to driver's wallet
+    final driverWalletResponse = await supabase
+        .from('wallets')
+        .select('id, balance')
+        .eq('owner_profile_id', driverProfileId)
+        .maybeSingle();
+
+    if (driverWalletResponse != null) {
+      final driverWalletId = driverWalletResponse['id'] as String;
+      final driverBalance = (driverWalletResponse['balance'] as num).toDouble();
+
+      await supabase.from('wallets').update({
+        'balance': driverBalance + totalFare,
+      }).eq('id', driverWalletId);
+
+      debugPrint('✅ Transferred ₱${totalFare.toStringAsFixed(2)} to driver wallet');
+    }
+
+    // Step 13: Update trip as completed with discount information
+    await supabase.from('trips').update({
+      'status': 'completed',
+      'destination_stop_id': destinationStop['id'],
+      'distance_meters': distanceInMeters.round(),
+      'fare_amount': totalFare,
+      'passengers_count': passengerCount,
+      'ended_at': DateTime.now().toIso8601String(),
+      'metadata': {
+        ...tripMetadata,
+        'arrival_location': arrivalLocation,
+        'total_fare': totalFare,
+        'fare_per_person': farePerPerson,
+        'additional_fare': additionalFare,
+        'passengers': passengerCount,
+        'discount_applied': isDiscountEligible,
+        'discount_rate': discountRate,
+        'original_fare': originalFareTotal,
+        'category': discountInfo['category'],
+      },
+    }).eq('id', tripId);
+
+    // Mark initial transaction as completed
+    await supabase
+        .from('transactions')
+        .update({
+          'status': 'completed',
+          'processed_at': DateTime.now().toIso8601String(),
+          'metadata': {
+            'payment_type': 'initial_boarding',
+            'puv_type': puvType,
+            'passengers': passengerCount,
+            'initial_payment_per_person': initialPaymentPerPerson,
+          },
+        })
+        .eq('related_trip_id', tripId)
+        .eq('status', 'pending');
+
+    // NEW: Award wheel tokens for completed trip
+    await _awardWheelTokens(profileId, tripId);
+
+    debugPrint('✅ Trip completed successfully');
+    debugPrint('🎁 Wheel token awarded');
+
+    if (!mounted) return;
+
+    // Get origin stop name from metadata
+    final originStopName = tripMetadata['boarding_location']?['closest_stop_name'] ?? 'Unknown';
+
+    // Navigate to payment summary screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RideBookingScreen(
+          tripId: tripId,
+          fareAmount: totalFare,
+          distanceMeters: distanceInMeters.round(),
+          boardingLocation: LatLng(
+            tripMetadata['boarding_location']['latitude'],
+            tripMetadata['boarding_location']['longitude'],
+          ),
+          arrivalLocation: LatLng(position.latitude, position.longitude),
+          routeStops: routeStops,
+          originStopName: originStopName,
+          destinationStopName: destinationStop['name'],
+        ),
+      ),
+    );
+  } catch (e) {
+    debugPrint('❌ Error completing trip: $e');
+    _showError('Failed to complete trip: ${e.toString()}');
+    _resetScanner();
   }
+}
 
   // Step 8: Calculate fare based on distance and PUV type (per person)
-  // Modified Step 8: Calculate fare based on distance, PUV type, and discount (per person)
 double _calculateFare(double distanceKm, String puvType, {double discountRate = 0.0}) {
   double baseFare;
   double baseDistance;
