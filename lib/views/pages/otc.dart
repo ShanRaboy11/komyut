@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OverTheCounterPage extends StatefulWidget {
   const OverTheCounterPage({super.key});
@@ -35,10 +36,10 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamed('/otc_confirmation', arguments: _amountController.text);
+    CommuterApp.navigatorKey.currentState?.pushNamed(
+      '/otc_confirmation',
+      arguments: _amountController.text,
+    );
   }
 
   @override
@@ -52,7 +53,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
           onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/wallet');
+            CommuterApp.navigatorKey.currentState?.pop();
           },
         ),
         title: Text(

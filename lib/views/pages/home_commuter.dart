@@ -10,7 +10,6 @@ import '../providers/commuter_dashboard.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet_commuter.dart';
-import 'wallet_history_commuter.dart';
 import 'activity_commuter.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
@@ -76,21 +75,20 @@ class HomeTabNavigator extends StatelessWidget {
     return Navigator(
       initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
+        late Widget page;
         switch (settings.name) {
           case '/wallet':
-            builder = (BuildContext context) => const WalletPage();
+            page = const WalletPage();
             break;
-          case '/history':
-            final type = settings.arguments as HistoryType;
-            builder = (BuildContext context) =>
-                TransactionHistoryPage(type: type);
-            break;
+          case '/':
           default:
-            builder = (BuildContext context) => const CommuterDashboardPage();
+            page = const CommuterDashboardPage();
             break;
         }
-        return MaterialPageRoute(builder: builder, settings: settings);
+        return MaterialPageRoute(
+          builder: (context) => page,
+          settings: settings,
+        );
       },
     );
   }

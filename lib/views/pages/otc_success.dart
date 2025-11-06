@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
+import 'commuter_app.dart';
 
 class PaymentSuccessPage extends StatefulWidget {
   const PaymentSuccessPage({super.key});
@@ -114,10 +115,10 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(
-          context,
-          rootNavigator: true,
-        ).pushNamedAndRemoveUntil('/home_commuter', (route) => false);
+        CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       },
       isFilled: true,
       textColor: Colors.white,
@@ -128,11 +129,8 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        // This command removes all routes until it finds one named '/home_commuter'
-        // and then pushes '/wallet' on top of it.
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/wallet',
-          (route) => route.settings.name == '/home_commuter',
+        CommuterApp.navigatorKey.currentState?.popUntil(
+          ModalRoute.withName('/'),
         );
       },
       isFilled: false,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OtcInstructionsPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
@@ -32,7 +33,7 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
     );
 
     if (success && mounted) {
-      Navigator.of(context, rootNavigator: true).pushNamed('/payment_success');
+      CommuterApp.navigatorKey.currentState?.pushNamed('/payment_success');
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

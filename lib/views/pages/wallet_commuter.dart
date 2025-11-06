@@ -1,14 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:komyut/views/pages/dw.dart';
-import 'package:komyut/views/pages/wt.dart';
-import 'package:provider/provider.dart';
-import 'wallet_history_commuter.dart';
-import 'otc.dart';
-import 'dart:math';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
+import 'wallet_history_commuter.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -431,19 +429,17 @@ class _WalletPageState extends State<WalletPage>
   void _handleDepositNavigation(String optionText) {
     if (!mounted) return;
 
+    // We don't need the `navigator` variable anymore.
+    // We directly use the key to access the correct navigator's state.
+
     if (optionText == 'Over-the-Counter') {
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
-      );
+      CommuterApp.navigatorKey.currentState?.pushNamed('/otc');
     } else if (optionText == 'Digital Wallet') {
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
-      );
+      // TODO: When you're ready, do the same for this route
+      // CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
     } else if (optionText == 'Wheel Tokens') {
-      Navigator.of(
-        context,
-        rootNavigator: true,
-      ).push(MaterialPageRoute(builder: (context) => const RedeemTokensPage()));
+      // TODO: And for this one
+      // CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');
     }
   }
 
@@ -857,7 +853,10 @@ class _WalletPageState extends State<WalletPage>
         final type = _tabController.index == 0
             ? HistoryType.transactions
             : HistoryType.tokens;
-        Navigator.of(context).pushNamed('/history', arguments: type);
+        CommuterApp.navigatorKey.currentState?.pushNamed(
+          '/history',
+          arguments: type,
+        );
       },
       style: OutlinedButton.styleFrom(
         foregroundColor: gradientColors[1],

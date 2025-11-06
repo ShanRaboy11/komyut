@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OtcConfirmationPage extends StatefulWidget {
   final String amount;
@@ -56,10 +57,10 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     );
 
     if (success && mounted) {
-      Navigator.of(
-        context,
-        rootNavigator: true,
-      ).pushNamed('/otc_instructions', arguments: provider.pendingTransaction);
+      CommuterApp.navigatorKey.currentState?.pushNamed(
+        '/otc_instructions',
+        arguments: provider.pendingTransaction,
+      );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -246,10 +247,9 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                Navigator.of(
-                  context,
-                  rootNavigator: true,
-                ).popUntil((route) => route.settings.name == '/home_commuter');
+                CommuterApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(2),
