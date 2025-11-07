@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
-import './home_driver.dart';
-import './placeholders.dart';
-import './profile.dart';
-import './notification_commuter.dart';
+import 'home_driver.dart';
+import 'activity_driver.dart';
+import 'profile.dart';
+import 'notification_commuter.dart';
 import 'feedback_driver.dart';
 
 class DriverApp extends StatelessWidget {
