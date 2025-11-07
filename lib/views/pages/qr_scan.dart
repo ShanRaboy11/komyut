@@ -1380,7 +1380,7 @@ Future<void> _awardWheelTokens(String profileId, String tripId) async {
     
     final commuterId = commuterResponse['id'] as String;
     final currentTokens = (commuterResponse['wheel_tokens'] as num).toDouble();
-    final tokenReward = 0.5; // Changed from 1.0 to 0.5
+    final tokenReward = 0.5; // 0.5 tokens per completed trip
     final newBalance = currentTokens + tokenReward;
     
     // Update wheel tokens

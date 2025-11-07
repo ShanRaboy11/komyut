@@ -42,7 +42,7 @@ BEGIN
     END IF;
 
     -- Generate transaction number
-    v_transaction_number := 'TXN-' || EXTRACT(EPOCH FROM now())::bigint || '-' || floor(random() * 1000)::int;
+    v_transaction_number := 'TXN-' || gen_random_uuid();
 
     -- Deduct from wallet
     UPDATE wallets
