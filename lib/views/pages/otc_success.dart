@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
+import 'commuter_app.dart';
 
 class PaymentSuccessPage extends StatefulWidget {
   const PaymentSuccessPage({super.key});
@@ -29,7 +30,6 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
       duration: const Duration(seconds: 3),
     );
 
-    // Softer fade range for gentler glow
     _glowAnimation = Tween<double>(begin: 0.55, end: 0.75).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
@@ -58,7 +58,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 130), // moved content downward
+            const SizedBox(height: 130),
             _buildSuccessIcon(),
             const SizedBox(height: 32),
             Text(
@@ -70,9 +70,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(
-              height: 150,
-            ), // increased gap between text and buttons
+            const SizedBox(height: 150),
             _buildHomeButton(context),
             const SizedBox(height: 24),
             _buildWalletButton(context),
@@ -98,8 +96,8 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
                     color: const Color(
                       0xFF5B53C2,
                     ).withValues(alpha: _glowAnimation.value),
-                    blurRadius: 30, // softer diffusion
-                    spreadRadius: 4, // close but soft
+                    blurRadius: 30,
+                    spreadRadius: 4,
                     offset: Offset.zero,
                   ),
                 ],
@@ -117,7 +115,10 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       },
       isFilled: true,
       textColor: Colors.white,
@@ -128,9 +129,9 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(
-          context,
-        ).popUntil((route) => route.settings.name == '/wallet');
+        CommuterApp.navigatorKey.currentState?.popUntil(
+          ModalRoute.withName('/'),
+        );
       },
       isFilled: false,
     );

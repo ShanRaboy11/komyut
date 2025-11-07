@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/commuter_dashboard.dart';
-import '../pages/wallet_history.dart';
+import '../pages/wallet_history_commuter.dart';
 
 import 'dart:convert';
 import 'dart:io' show Platform;

@@ -9,21 +9,8 @@ import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
-import 'wallet.dart';
-import 'wallet_history.dart';
-import 'otc.dart';
-import 'otc_confirm.dart';
-import 'otc_instructions.dart';
-import 'otc_success.dart';
+import 'wallet_commuter.dart';
 import 'activity_commuter.dart';
-import 'wt.dart';
-import 'wt_confirm.dart';
-import 'wt_success.dart';
-import 'dw.dart';
-import 'dw_payment_method.dart';
-import 'dw_payment_source.dart';
-import 'dw_confirm.dart';
-import 'dw_success.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -88,81 +75,20 @@ class HomeTabNavigator extends StatelessWidget {
     return Navigator(
       initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
+        late Widget page;
         switch (settings.name) {
           case '/wallet':
-            builder = (BuildContext context) => const WalletPage();
+            page = const WalletPage();
             break;
-          case '/history':
-            final type = settings.arguments as HistoryType;
-            builder = (BuildContext context) =>
-                TransactionHistoryPage(type: type);
-            break;
-          case '/otc':
-            builder = (BuildContext context) => const OverTheCounterPage();
-            break;
-          case '/otc_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                OtcConfirmationPage(amount: amount);
-            break;
-          case '/otc_instructions':
-            final transaction = settings.arguments as Map<String, dynamic>;
-            builder = (BuildContext context) =>
-                OtcInstructionsPage(transaction: transaction);
-            break;
-          case '/payment_success':
-            builder = (BuildContext context) => const PaymentSuccessPage();
-            break;
-          case '/redeem_tokens':
-            builder = (BuildContext context) => const RedeemTokensPage();
-            break;
-          case '/token_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                TokenConfirmationPage(tokenAmount: amount);
-            break;
-          case '/token_success':
-            builder = (BuildContext context) => const TokenSuccessPage();
-            break;
-          case '/digital_wallet':
-            builder = (BuildContext context) => const DigitalWalletPage();
-            break;
-          case '/dw_payment_method':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwPaymentMethodPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-            );
-            break;
-          case '/dw_payment_source':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwSourceSelectionPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              paymentMethod: args['paymentMethod']!,
-            );
-            break;
-          case '/dw_confirmation':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwConfirmationPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              source: args['source']!,
-              transactionCode: args['transactionCode']!,
-            );
-            break;
-          case '/dw_success':
-            builder = (BuildContext context) => const DwSuccessPage();
-            break;
+          case '/':
           default:
-            builder = (BuildContext context) => const CommuterDashboardPage();
+            page = const CommuterDashboardPage();
             break;
         }
-        return MaterialPageRoute(builder: builder, settings: settings);
+        return MaterialPageRoute(
+          builder: (context) => page,
+          settings: settings,
+        );
       },
     );
   }
@@ -178,8 +104,8 @@ class CommuterDashboardPage extends StatefulWidget {
 
 class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
-  bool _isBalanceVisible = true;
-  bool _isTokensVisible = true;
+  bool _isBalanceVisible = false;
+  bool _isTokensVisible = false;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -189,7 +115,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   final gradientColors1 = const [Color(0xFFB945AA), Color(0xFF8E4CB6)];
   final gradientColors2 = const [Color(0xFF8E4CB6), Color(0xFF5B53C2)];
 
-  // 👇 ADD THIS - Load data when page opens
   @override
   void initState() {
     super.initState();
@@ -546,14 +471,14 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               _buildAnalyticsItem(
                 Icons.directions_bus,
                 'Trips',
-                '${provider.totalTripsCount} trips', // 👈 DYNAMIC TRIPS COUNT
+                '${provider.totalTripsCount} trips',
                 subtitle:
                     '12.6 mi', // Keep this static or calculate from trip data
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
                 'Spend',
-                '₱${provider.totalSpent.toStringAsFixed(0)} total', // 👈 DYNAMIC TOTAL SPENT
+                '₱${provider.totalSpent.toStringAsFixed(0)} total',
               ),
             ],
           ),

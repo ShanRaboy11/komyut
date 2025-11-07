@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
+import 'commuter_app.dart';
 
 class TokenSuccessPage extends StatefulWidget {
   const TokenSuccessPage({super.key});
@@ -108,7 +109,10 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       },
       isFilled: true,
       textColor: Colors.white,
@@ -119,7 +123,9 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/wallet', (route) => false);
+        CommuterApp.navigatorKey.currentState?.popUntil(
+          ModalRoute.withName('/'),
+        );
       },
       isFilled: false,
     );

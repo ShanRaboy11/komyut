@@ -1,14 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:komyut/views/pages/dw.dart';
-import 'package:komyut/views/pages/wt.dart';
-import 'package:provider/provider.dart';
-import 'wallet_history.dart';
-import 'otc.dart';
-import 'dart:math';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
+import 'wallet_history_commuter.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -432,17 +430,11 @@ class _WalletPageState extends State<WalletPage>
     if (!mounted) return;
 
     if (optionText == 'Over-the-Counter') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
-      );
+      CommuterApp.navigatorKey.currentState?.pushNamed('/otc');
     } else if (optionText == 'Digital Wallet') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
-      );
+      CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
     } else if (optionText == 'Wheel Tokens') {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const RedeemTokensPage()));
+      CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');
     }
   }
 
@@ -790,7 +782,7 @@ class _WalletPageState extends State<WalletPage>
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: ['100', '75', '50', '25', '0']
+                  children: ['500', '375', '250', '125', '0']
                       .map(
                         (e) => Text(
                           e,
@@ -813,10 +805,8 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
-    final double maxVal = weeklyData.values.fold(
-      100.0,
-      (max, v) => v > max ? v : max,
-    );
+    const double maxVal = 500.0;
+
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return Row(
@@ -824,11 +814,13 @@ class _WalletPageState extends State<WalletPage>
       crossAxisAlignment: CrossAxisAlignment.end,
       children: days.map((day) {
         final value = weeklyData[day] ?? 0.0;
+        final barHeight = (value / maxVal) * chartHeight;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              height: (value / maxVal) * chartHeight,
+              height: min(barHeight, chartHeight),
               width: 20,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
@@ -856,7 +848,10 @@ class _WalletPageState extends State<WalletPage>
         final type = _tabController.index == 0
             ? HistoryType.transactions
             : HistoryType.tokens;
-        Navigator.of(context).pushNamed('/history', arguments: type);
+        CommuterApp.navigatorKey.currentState?.pushNamed(
+          '/history',
+          arguments: type,
+        );
       },
       style: OutlinedButton.styleFrom(
         foregroundColor: gradientColors[1],

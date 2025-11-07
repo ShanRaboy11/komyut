@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OverTheCounterPage extends StatefulWidget {
   const OverTheCounterPage({super.key});
@@ -12,7 +13,6 @@ class OverTheCounterPage extends StatefulWidget {
 }
 
 class _OverTheCounterPageState extends State<OverTheCounterPage> {
-  // Start with an empty controller. We will display "0" in the UI as a fallback.
   final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
 
@@ -25,8 +25,6 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
   }
 
   void _onAmountChanged(String value) {
-    // This logic runs every time the text field's value changes.
-    // It's much faster than a listener and prevents flickering.
     setState(() {
       final isEnabled =
           value.isNotEmpty &&
@@ -38,9 +36,10 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    Navigator.of(
-      context,
-    ).pushNamed('/otc_confirmation', arguments: _amountController.text);
+    CommuterApp.navigatorKey.currentState?.pushNamed(
+      '/otc_confirmation',
+      arguments: _amountController.text,
+    );
   }
 
   @override
@@ -54,7 +53,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
           onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/wallet');
+            CommuterApp.navigatorKey.currentState?.pop();
           },
         ),
         title: Text(
