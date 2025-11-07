@@ -434,9 +434,6 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
     final startedAt = _tripDetails!['started_at'] != null 
         ? DateTime.parse(_tripDetails!['started_at'])
         : DateTime.now();
-    final endedAt = _tripDetails!['ended_at'] != null 
-        ? DateTime.parse(_tripDetails!['ended_at'])
-        : DateTime.now();
     
     final dateFormat = '${startedAt.month}/${startedAt.day}/${startedAt.year}';
     final timeFormat = '${startedAt.hour.toString().padLeft(2, '0')}:${startedAt.minute.toString().padLeft(2, '0')}';

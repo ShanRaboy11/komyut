@@ -41,7 +41,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   bool _hasConfirmed = false;
   double _swipeProgress = 0.0;
   Map<String, dynamic>? _tripDetails;
-  bool _isLoadingTrip = false;
   double _walletBalance = 0.0;
 
   @override
@@ -53,8 +52,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   }
 
   Future<void> _loadTripDetails() async {
-    setState(() => _isLoadingTrip = true);
-
     try {
       final supabase = Supabase.instance.client;
       
@@ -88,13 +85,11 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
 
       setState(() {
         _tripDetails = tripResponse;
-        _isLoadingTrip = false;
       });
 
       debugPrint('✅ Trip details loaded: $_tripDetails');
     } catch (e) {
       debugPrint('❌ Error loading trip details: $e');
-      setState(() => _isLoadingTrip = false);
     }
   }
 
@@ -134,26 +129,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
       }
     }
     return widget.driverName;
-  }
-
-  String _getVehiclePlate() {
-    if (_tripDetails != null) {
-      final driver = _tripDetails!['drivers'];
-      if (driver != null) {
-        return driver['vehicle_plate'] ?? 'N/A';
-      }
-    }
-    return 'N/A';
-  }
-
-  String _getPuvType() {
-    if (_tripDetails != null) {
-      final driver = _tripDetails!['drivers'];
-      if (driver != null) {
-        return driver['puv_type'] ?? 'traditional';
-      }
-    }
-    return 'traditional';
   }
 
   Future<void> _getCurrentLocation() async {
