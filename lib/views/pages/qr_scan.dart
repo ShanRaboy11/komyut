@@ -207,56 +207,56 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   }
 
   Future<Map<String, dynamic>?> _findDriver(
-      String trimmedQR, String normalizedQR) async {
-    final supabase = Supabase.instance.client;
+    String trimmedQR, String normalizedQR) async {
+  final supabase = Supabase.instance.client;
 
-    final allDriversResponse = await supabase
-        .from('drivers')
-        .select('''
-          id, 
-          profile_id,
-          current_qr,
-          route_id,
-          vehicle_plate,
-          operator_name,
-          puv_type,
-          active,
-          routes:route_id (
-            id,
-            code,
-            name
-          ),
-          profiles:profile_id (
-            first_name,
-            last_name
-          )
-        ''')
-        .eq('active', true)
-        .not('current_qr', 'is', null);
+  final allDriversResponse = await supabase
+      .from('drivers')
+      .select('''
+        id,
+        profile_id,
+        current_qr,
+        route_id,
+        vehicle_plate,
+        operator_name,
+        puv_type,
+        active,
+        routes:route_id (
+          id,
+          code,
+          name
+        ),
+        profiles:profile_id (
+          first_name,
+          last_name
+        )
+      ''')
+      .eq('active', true)
+      .not('current_qr', 'is', null);
 
-    if (allDriversResponse.isEmpty) {
-      return null;
-    }
-
-    // Try exact match
-    for (var driver in allDriversResponse) {
-      final dbQR = (driver['current_qr'] as String?)?.trim() ?? '';
-      if (dbQR == trimmedQR) {
-        return driver;
-      }
-    }
-
-    // Try case-insensitive match
-    for (var driver in allDriversResponse) {
-      final dbQR =
-          (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
-      if (dbQR == normalizedQR) {
-        return driver;
-      }
-    }
-
+  if (allDriversResponse.isEmpty) {
     return null;
   }
+
+  // Try exact match
+  for (var driver in allDriversResponse) {
+    final dbQR = (driver['current_qr'] as String?)?.trim() ?? '';
+    if (dbQR == trimmedQR) {
+      return driver;
+    }
+  }
+
+  // Try case-insensitive match
+  for (var driver in allDriversResponse) {
+    final dbQR =
+        (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
+    if (dbQR == normalizedQR) {
+      return driver;
+    }
+  }
+
+  return null;
+}
 
   Future<List<Map<String, dynamic>>> _loadRouteStops(String routeId) async {
     final supabase = Supabase.instance.client;
@@ -513,242 +513,252 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   }
 
   Future<void> _handleTakeoffScan(
-    String driverId,
-    String? routeId,
-    String profileId,
-    String qrCode,
-    String puvType,
-    List<Map<String, dynamic>> routeStops,
-  ) async {
-    final supabase = Supabase.instance.client;
+  String driverId,
+  String? routeId,
+  String profileId,
+  String qrCode,
+  String puvType,
+  List<Map<String, dynamic>> routeStops,
+) async {
+  final supabase = Supabase.instance.client;
 
-    debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
+  debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
+
+  try {
+    // Step 3: Check wallet balance for initial payment (10 pesos per passenger)
+    const double initialPaymentPerPerson = 10.00;
+
+    final walletResponse = await supabase
+        .from('wallets')
+        .select('id, balance')
+        .eq('owner_profile_id', profileId)
+        .maybeSingle();
+
+    if (walletResponse == null) {
+      _showError('Wallet not found. Please contact support.');
+      _resetScanner();
+      return;
+    }
+
+    final walletId = walletResponse['id'] as String;
+    final balance = (walletResponse['balance'] as num).toDouble();
+
+    // Calculate initial payment based on default 1 passenger (will be updated after confirmation)
+    final initialPayment = initialPaymentPerPerson;
+
+    // Step 4: Check if there's enough balance
+    if (balance < initialPayment) {
+      _showError(
+        'Insufficient balance!\n\n'
+        'Current balance: ₱${balance.toStringAsFixed(2)}\n'
+        'Required: ₱${initialPayment.toStringAsFixed(2)}\n\n'
+        'Please top up your wallet.',
+      );
+      _resetScanner();
+      return;
+    }
+
+    // Step 5: Get current location
+    final position = await _getCurrentPosition();
+
+    if (position == null) {
+      _showError('Unable to get your location. Please enable location services.');
+      _resetScanner();
+      return;
+    }
+
+    // Find closest stop to boarding location
+    final originStop = _findClosestStop(
+      position.latitude,
+      position.longitude,
+      routeStops,
+    );
+
+    if (originStop == null) {
+      _showError(
+        'You are too far from the route!\n\n'
+        'Please board at a designated stop along the route.',
+      );
+      _resetScanner();
+      return;
+    }
+
+    final boardingLocation = {
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'timestamp': DateTime.now().toIso8601String(),
+      'closest_stop_id': originStop['id'],
+      'closest_stop_name': originStop['name'],
+    };
+
+    debugPrint('📍 Boarding at stop: ${originStop['name']}');
+
+    // Deduct initial payment from wallet
+    await supabase.from('wallets').update({
+      'balance': balance - initialPayment,
+    }).eq('id', walletId);
+
+    // Create initial transaction for boarding
+    final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
+    
+    final transactionResponse = await supabase
+        .from('transactions')
+        .insert({
+          'transaction_number': transactionNumber,
+          'wallet_id': walletId,
+          'initiated_by_profile_id': profileId,
+          'type': 'fare_payment',
+          'amount': initialPayment,
+          'status': 'pending',
+          'metadata': {
+            'payment_type': 'initial_boarding',
+            'puv_type': puvType,
+            'initial_payment_per_person': initialPaymentPerPerson,
+          },
+        })
+        .select()
+        .single();
+
+    final transactionId = transactionResponse['id'] as String;
+
+    // ==========================================
+    // FETCH DRIVER INFO WITH PROFILE
+    // ==========================================
+    debugPrint('🔍 Fetching driver info for ID: $driverId');
+
+    String driverName = 'Driver';
+    String driverFirstName = '';
+    String driverLastName = '';
+    String? driverProfileId;
+    String routeCodeStr = '';
 
     try {
-      // Step 3: Check wallet balance for initial payment (10 pesos per passenger)
-      const double initialPaymentPerPerson = 10.00;
-
-      final walletResponse = await supabase
-          .from('wallets')
-          .select('id, balance')
-          .eq('owner_profile_id', profileId)
-          .maybeSingle();
-
-      if (walletResponse == null) {
-        _showError('Wallet not found. Please contact support.');
-        _resetScanner();
-        return;
-      }
-
-      final walletId = walletResponse['id'] as String;
-      final balance = (walletResponse['balance'] as num).toDouble();
-
-      // Calculate initial payment based on default 1 passenger (will be updated after confirmation)
-      final initialPayment = initialPaymentPerPerson;
-
-      // Step 4: Check if there's enough balance
-      if (balance < initialPayment) {
-        _showError(
-          'Insufficient balance!\n\n'
-          'Current balance: ₱${balance.toStringAsFixed(2)}\n'
-          'Required: ₱${initialPayment.toStringAsFixed(2)}\n\n'
-          'Please top up your wallet.',
-        );
-        _resetScanner();
-        return;
-      }
-
-      // Step 5: Get current location
-      final position = await _getCurrentPosition();
-
-      if (position == null) {
-        _showError('Unable to get your location. Please enable location services.');
-        _resetScanner();
-        return;
-      }
-
-      // Find closest stop to boarding location
-      final originStop = _findClosestStop(
-        position.latitude,
-        position.longitude,
-        routeStops,
-      );
-
-      if (originStop == null) {
-        _showError(
-          'You are too far from the route!\n\n'
-          'Please board at a designated stop along the route.',
-        );
-        _resetScanner();
-        return;
-      }
-
-      final boardingLocation = {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-        'closest_stop_id': originStop['id'],
-        'closest_stop_name': originStop['name'],
-      };
-
-      debugPrint('📍 Boarding at stop: ${originStop['name']}');
-
-      // Deduct initial payment from wallet
-      await supabase.from('wallets').update({
-        'balance': balance - initialPayment,
-      }).eq('id', walletId);
-
-      // Create initial transaction for boarding
-      final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
-      
-      final transactionResponse = await supabase
-          .from('transactions')
-          .insert({
-            'transaction_number': transactionNumber,
-            'wallet_id': walletId,
-            'initiated_by_profile_id': profileId,
-            'type': 'fare_payment',
-            'amount': initialPayment,
-            'status': 'pending',
-            'metadata': {
-              'payment_type': 'initial_boarding',
-              'puv_type': puvType,
-              'initial_payment_per_person': initialPaymentPerPerson,
-            },
-          })
-          .select()
-          .single();
-
-      final transactionId = transactionResponse['id'] as String;
-
-      // Get driver information before creating trip with proper profile join
-      final driverInfo = await supabase
+      // Fetch driver with profile data using join
+      final driverWithProfile = await supabase
           .from('drivers')
           .select('''
-            id,
-            vehicle_plate,
-            puv_type,
             profile_id,
-            routes:route_id (
-              code,
-              name
+            route_id,
+            profiles!drivers_profile_id_fkey (
+              first_name,
+              last_name
             )
           ''')
           .eq('id', driverId)
-          .single();
+          .maybeSingle();
 
-      debugPrint('🔍 Driver Info Retrieved: $driverInfo');
-
-      // Fetch driver profile separately (fixes the join issue)
-      Map<String, dynamic>? driverProfile;
-      final driverProfileId = driverInfo['profile_id'] as String?;
-      
-      if (driverProfileId != null && driverProfileId.isNotEmpty) {
-        try {
-          debugPrint('🔍 Fetching profile for ID: $driverProfileId');
-          driverProfile = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', driverProfileId)
-              .single();
-          debugPrint('✅ Driver profile fetched successfully: $driverProfile');
-        } catch (e) {
-          debugPrint('❌ Error fetching driver profile: $e');
-        }
-      } else {
-        debugPrint('⚠️ No profile_id found for driver');
-      }
-
-      final route = driverInfo['routes'];
-      
-      // Construct driver name from fetched profile
-      String driverName = 'Driver';
-      String driverFirstName = '';
-      String driverLastName = '';
-      
-      if (driverProfile != null) {
-        driverFirstName = driverProfile['first_name'] as String? ?? '';
-        driverLastName = driverProfile['last_name'] as String? ?? '';
+      if (driverWithProfile != null) {
+        driverProfileId = driverWithProfile['profile_id'] as String?;
+        final profileData = driverWithProfile['profiles'];
         
-        if (driverFirstName.isNotEmpty || driverLastName.isNotEmpty) {
-          driverName = '$driverFirstName $driverLastName'.trim();
-          debugPrint('✅ Driver name constructed: $driverName');
-        } else {
-          debugPrint('⚠️ Profile exists but names are empty');
+        if (profileData != null) {
+          Map<String, dynamic>? profile;
+          if (profileData is Map<String, dynamic>) {
+            profile = profileData;
+          } else if (profileData is List && profileData.isNotEmpty) {
+            profile = profileData.first as Map<String, dynamic>;
+          }
+          
+          if (profile != null) {
+            driverFirstName = (profile['first_name'] as String?)?.trim() ?? '';
+            driverLastName = (profile['last_name'] as String?)?.trim() ?? '';
+            if (driverFirstName.isNotEmpty || driverLastName.isNotEmpty) {
+              driverName = '$driverFirstName $driverLastName'.trim();
+            }
+          }
         }
-      } else {
-        debugPrint('⚠️ Could not fetch driver profile, using default name');
       }
-      
-      debugPrint('👤 Final Driver Name: $driverName');
-      
-      final routeCodeStr = route?['code'] ?? routeId ?? '';
-
-      // Step 6: Create trip with ongoing status
-      final result = await supabase
-          .from('trips')
-          .insert({
-            'driver_id': driverId,
-            'route_id': routeId,
-            'origin_stop_id': originStop['id'],
-            'created_by_profile_id': profileId,
-            'status': 'ongoing',
-            'fare_amount': initialPayment,
-            'passengers_count': 1, // Default, will be updated when user confirms
-            'started_at': DateTime.now().toIso8601String(),
-            'metadata': {
-              'takeoff_qr': qrCode,
-              'boarding_location': boardingLocation,
-              'initial_payment': initialPayment,
-              'initial_payment_per_person': initialPaymentPerPerson,
-              'puv_type': puvType,
-              'driver_name': driverName,
-              'driver_first_name': driverFirstName,
-              'driver_last_name': driverLastName,
-              'route_code': routeCodeStr,
-            },
-          })
-          .select()
-          .single();
-
-      final tripId = result['id'] as String;
-
-      // Link transaction to trip
-      await supabase.from('transactions').update({
-        'related_trip_id': tripId,
-      }).eq('id', transactionId);
-
-      debugPrint('✅ Trip created successfully: $tripId');
-      debugPrint('💰 Initial payment: ₱$initialPayment');
-      debugPrint('📍 Boarding location: ${position.latitude}, ${position.longitude}');
-      debugPrint('🚏 Origin stop: ${originStop['name']}');
-
-      if (!mounted) return;
-
-      // Navigate to ongoing trip screen with all required parameters
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OngoingTripScreen(
-            tripId: tripId,
-            driverName: driverName,
-            routeCode: routeCodeStr,
-            originStopName: originStop['name'],
-            currentLocation: LatLng(position.latitude, position.longitude),
-            routeStops: routeStops,
-            originStopId: originStop['id'],
-            initialPayment: initialPaymentPerPerson,
-          ),
-        ),
-      );
-
-      widget.onScanComplete?.call();
     } catch (e) {
-      debugPrint('❌ Error creating trip: $e');
-      _showError('Failed to create trip: ${e.toString()}');
-      _resetScanner();
+      debugPrint('❌ Error fetching driver info: $e');
     }
+
+    // Get route code
+    if (routeId != null) {
+      try {
+        final routeData = await supabase
+            .from('routes')
+            .select('code')
+            .eq('id', routeId)
+            .maybeSingle();
+        
+        if (routeData != null) {
+          routeCodeStr = routeData['code'] as String? ?? '';
+        }
+      } catch (e) {
+        debugPrint('❌ Error fetching route: $e');
+      }
+    }
+    
+    debugPrint('👤 Driver: "$driverName" | Route: $routeCodeStr');
+
+    // Step 6: Create trip with ongoing status and store driver name in metadata
+    final result = await supabase
+        .from('trips')
+        .insert({
+          'driver_id': driverId,
+          'route_id': routeId,
+          'origin_stop_id': originStop['id'],
+          'created_by_profile_id': profileId,
+          'status': 'ongoing',
+          'fare_amount': initialPayment,
+          'passengers_count': 1, // Default, will be updated when user confirms
+          'started_at': DateTime.now().toIso8601String(),
+          'metadata': {
+            'takeoff_qr': qrCode,
+            'boarding_location': boardingLocation,
+            'initial_payment': initialPayment,
+            'initial_payment_per_person': initialPaymentPerPerson,
+            'puv_type': puvType,
+            'driver_name': driverName,
+            'driver_first_name': driverFirstName,
+            'driver_last_name': driverLastName,
+            'driver_profile_id': driverProfileId,
+            'route_code': routeCodeStr,
+          },
+        })
+        .select()
+        .single();
+
+    final tripId = result['id'] as String;
+
+    // Link transaction to trip
+    await supabase.from('transactions').update({
+      'related_trip_id': tripId,
+    }).eq('id', transactionId);
+
+    debugPrint('✅ Trip created successfully: $tripId');
+    debugPrint('💰 Initial payment: ₱$initialPayment');
+    debugPrint('📍 Boarding location: ${position.latitude}, ${position.longitude}');
+    debugPrint('🚏 Origin stop: ${originStop['name']}');
+    debugPrint('👤 Driver name stored: "$driverName"');
+
+    if (!mounted) return;
+
+    // Navigate to ongoing trip screen with all required parameters
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OngoingTripScreen(
+          tripId: tripId,
+          driverName: driverName,
+          routeCode: routeCodeStr,
+          originStopName: originStop['name'],
+          currentLocation: LatLng(position.latitude, position.longitude),
+          routeStops: routeStops,
+          originStopId: originStop['id'],
+          initialPayment: initialPaymentPerPerson,
+        ),
+      ),
+    );
+
+    widget.onScanComplete?.call();
+  } catch (e, stackTrace) {
+    debugPrint('❌ Error creating trip: $e');
+    debugPrint('❌ Stack trace: $stackTrace');
+    _showError('Failed to create trip: ${e.toString()}');
+    _resetScanner();
   }
+}
 
   Future<void> _handleArrivalScan(
   String tripId,
