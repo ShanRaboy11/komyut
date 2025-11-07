@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/logo.dart';
-import '../widgets/button.dart'; 
-import '../widgets/big_card.dart'; 
+import '../widgets/button.dart';
+import '../widgets/big_card.dart';
 import '../widgets/social_button.dart';
-import '../pages/login.dart'; 
-import '../pages/registration_role.dart';
+import 'login.dart';
+import 'registration_role.dart';
 
 class CreateAccountPage extends StatelessWidget {
   const CreateAccountPage({super.key});
@@ -23,10 +24,7 @@ class CreateAccountPage extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Back',
-          style: TextStyle(color: Colors.black),
-        ),
+        title: Text('Back', style: GoogleFonts.nunito(color: Colors.black)),
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -72,36 +70,47 @@ class CreateAccountPage extends StatelessWidget {
                 ),
               ),
             ),
-
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
-              height: screenSize.height * 0.57, 
-              child: BigCard( 
-                child: Padding( 
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 65.0),
+              height: screenSize.height * 0.57,
+              child: BigCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 65.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Create your Account",
-                        style: TextStyle(
+                        style: GoogleFonts.manrope(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Manrope',
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        "We're here to help you reach the peaks\nof every ride. Are you ready?",
+                      RichText(
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Manrope',
-                          color: Colors.white.withAlpha(204),
-                          height: 1.5,
+                        text: TextSpan(
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: Colors.white.withAlpha(204),
+                            height: 1.5,
+                          ),
+                          children: const <TextSpan>[
+                            TextSpan(
+                              text:
+                                  "We're here to help you reach the peaks\nof every ride. ",
+                            ),
+                            TextSpan(
+                              text: 'Are you ready?',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -111,40 +120,43 @@ class CreateAccountPage extends StatelessWidget {
                         isFilled: true,
                         fillColor: Colors.white,
                         onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                           builder: (context) => const RegistrationRolePage()),
-                        );
-                      },
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const RegistrationRolePage(),
+                            ),
+                          );
+                        },
                         width: screenSize.width * 0.8,
                         height: 60,
                       ),
 
                       const SizedBox(height: 65),
-                      
-                       Row(
+
+                      Row(
                         children: [
                           Expanded(
                             child: Divider(
-                              color: Colors.white.withAlpha(100), 
+                              color: Colors.white.withAlpha(100),
                               thickness: 1,
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10.0,
+                            ),
                             child: Text(
                               "Sign up with",
-                              style: TextStyle(
+                              style: GoogleFonts.nunito(
                                 fontSize: 14,
                                 color: Colors.white,
-                                fontFamily: 'Manrope',
                               ),
                             ),
                           ),
                           Expanded(
                             child: Divider(
-                              color: Colors.white.withAlpha(100), 
+                              color: Colors.white.withAlpha(100),
                               thickness: 1,
                             ),
                           ),
@@ -177,16 +189,17 @@ class CreateAccountPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const LoginPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
                           );
                         },
                         child: RichText(
                           text: TextSpan(
                             text: "Already have an account? ",
-                            style: TextStyle(
+                            style: GoogleFonts.nunito(
                               fontSize: 14,
                               color: Colors.white.withAlpha(204),
-                              fontFamily: 'Manrope',
                             ),
                             children: const [
                               TextSpan(

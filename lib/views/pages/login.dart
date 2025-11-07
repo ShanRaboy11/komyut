@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/button.dart';
-import '../providers/auth_provider.dart';
-
-import '../widgets/social_button.dart';
-import '../pages/create_account.dart';
-import '../widgets/shake_widget.dart';
-import '../../utils/toast_utils.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../widgets/button.dart';
+import '../widgets/social_button.dart';
+import '../widgets/shake_widget.dart';
+
+import '../providers/auth_provider.dart';
+import '../../utils/toast_utils.dart';
+import 'create_account.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,17 +19,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // State for password visibility and checkbox
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  // Controllers and FocusNodes for TextFields
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
 
-  // NEW: Create separate keys for each text field to shake them individually
   final _emailShakeKey = GlobalKey<ShakeWidgetState>();
   final _passwordShakeKey = GlobalKey<ShakeWidgetState>();
 
@@ -39,7 +38,6 @@ class _LoginPageState extends State<LoginPage> {
     _emailFocusNode = FocusNode();
     _passwordFocusNode = FocusNode();
 
-    // Add listeners to rebuild the UI when focus or text changes
     _emailFocusNode.addListener(() => setState(() {}));
     _passwordFocusNode.addListener(() => setState(() {}));
     _emailController.addListener(() => setState(() {}));
@@ -48,7 +46,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    // Dispose controllers and focus nodes to prevent memory leaks
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
@@ -56,13 +53,12 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // Helper method to get the correct home route based on user role
   String _getHomeRouteForRole(String? userRole) {
     if (userRole == null || userRole.isEmpty) {
       debugPrint('⚠️ User role is null or empty, defaulting to commuter');
       return '/home_commuter';
     }
-    
+
     switch (userRole.toLowerCase()) {
       case 'admin':
         return '/home_admin';
@@ -78,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-   Future<String?> _fetchUserRole() async {
+  Future<String?> _fetchUserRole() async {
     try {
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
@@ -90,14 +86,12 @@ class _LoginPageState extends State<LoginPage> {
 
       debugPrint('🔍 Fetching profile for user ID: $userId');
 
-      // FIX 1: Try both 'id' and 'user_id' column names
-      // First, try with 'id' (most common in Supabase)
       try {
         final response = await supabase
             .from('profiles')
             .select('role')
             .eq('id', userId)
-            .maybeSingle(); // Use maybeSingle() instead of single() to avoid exceptions
+            .maybeSingle();
 
         if (response != null && response['role'] != null) {
           final role = response['role'] as String;
@@ -108,7 +102,6 @@ class _LoginPageState extends State<LoginPage> {
         debugPrint('⚠️ Failed to fetch with "id" column, trying "user_id": $e');
       }
 
-      // If that fails, try with 'user_id'
       try {
         final response = await supabase
             .from('profiles')
@@ -125,15 +118,14 @@ class _LoginPageState extends State<LoginPage> {
         debugPrint('⚠️ Failed to fetch with "user_id" column: $e');
       }
 
-      // FIX 2: If no profile found, check if profile exists at all
       final profileCheck = await supabase
           .from('profiles')
           .select('id, user_id')
           .limit(1);
-      
+
       debugPrint('📊 Profile table structure check: $profileCheck');
       debugPrint('❌ No profile found for user ID: $userId');
-      
+
       return null;
     } catch (e, stackTrace) {
       debugPrint('❌ Error fetching user role: $e');
@@ -143,85 +135,74 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-  FocusScope.of(context).unfocus();
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
+    FocusScope.of(context).unfocus();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
-    _emailShakeKey.currentState?.shake();
-    _passwordShakeKey.currentState?.shake();
+    if (email.isEmpty || password.isEmpty) {
+      _emailShakeKey.currentState?.shake();
+      _passwordShakeKey.currentState?.shake();
 
-    ToastUtils.showCustomToast(
-      context,
-      'Please fill in both email and password.',
-      Colors.redAccent,
-    );
-    return;
-  }
-
-  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-  final success = await authProvider.signIn(email: email, password: password);
-
-  if (!mounted) return;
-
-  if (success) {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final userRole = await _fetchUserRole();
-
-    if (!mounted) return;
-
-    if (userRole == null) {
       ToastUtils.showCustomToast(
         context,
-        'Unable to retrieve your profile. Please contact support.',
-        Colors.orangeAccent,
+        'Please fill in both email and password.',
+        Colors.redAccent,
       );
-      Navigator.pushReplacementNamed(context, '/home_commuter');
       return;
     }
 
-    final homeRoute = _getHomeRouteForRole(userRole);
-    debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.signIn(email: email, password: password);
 
-    ToastUtils.showCustomToast(
-      context,
-      'Login Successful!',
-      Colors.green,
-    );
+    if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, homeRoute);
-  } else {
-    _emailShakeKey.currentState?.shake();
-    _passwordShakeKey.currentState?.shake();
+    if (success) {
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    // Convert technical error to friendly message
-    String errorMsg;
-    final error = authProvider.errorMessage?.toLowerCase() ?? '';
+      final userRole = await _fetchUserRole();
 
-    if (error.contains('user-not-found')) {
-      errorMsg = 'No account found with this email.';
-    } else if (error.contains('wrong-password')) {
-      errorMsg = 'Incorrect password. Please try again.';
-    } else if (error.contains('invalid-email')) {
-      errorMsg = 'Please enter a valid email address.';
-    } else if (error.contains('network-request-failed')) {
-      errorMsg = 'Network error. Please check your internet connection.';
-    } else if (error.contains('too-many-requests')) {
-      errorMsg = 'Too many failed attempts. Please try again later.';
+      if (!mounted) return;
+
+      if (userRole == null) {
+        ToastUtils.showCustomToast(
+          context,
+          'Unable to retrieve your profile. Please contact support.',
+          Colors.orangeAccent,
+        );
+        Navigator.pushReplacementNamed(context, '/home_commuter');
+        return;
+      }
+
+      final homeRoute = _getHomeRouteForRole(userRole);
+      debugPrint('🏠 Redirecting to: $homeRoute for role: $userRole');
+
+      ToastUtils.showCustomToast(context, 'Login Successful!', Colors.green);
+
+      Navigator.pushReplacementNamed(context, homeRoute);
     } else {
-      errorMsg = 'Login failed. Please check your credentials and try again.';
+      _emailShakeKey.currentState?.shake();
+      _passwordShakeKey.currentState?.shake();
+
+      String errorMsg;
+      final error = authProvider.errorMessage?.toLowerCase() ?? '';
+
+      if (error.contains('user-not-found')) {
+        errorMsg = 'No account found with this email.';
+      } else if (error.contains('wrong-password')) {
+        errorMsg = 'Incorrect password. Please try again.';
+      } else if (error.contains('invalid-email')) {
+        errorMsg = 'Please enter a valid email address.';
+      } else if (error.contains('network-request-failed')) {
+        errorMsg = 'Network error. Please check your internet connection.';
+      } else if (error.contains('too-many-requests')) {
+        errorMsg = 'Too many failed attempts. Please try again later.';
+      } else {
+        errorMsg = 'Login failed. Please check your credentials and try again.';
+      }
+
+      ToastUtils.showCustomToast(context, errorMsg, Colors.redAccent);
     }
-
-    ToastUtils.showCustomToast(
-      context,
-      errorMsg,
-      Colors.redAccent,
-    );
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.pop(context);
           },
         ),
-        title: const Text('Back', style: TextStyle(color: Colors.black)),
+        title: Text('Back', style: GoogleFonts.nunito(color: Colors.black)),
       ),
       extendBodyBehindAppBar: true,
       body: GestureDetector(
@@ -276,7 +257,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -318,25 +298,23 @@ class _LoginPageState extends State<LoginPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               "Welcome Back",
-                              style: TextStyle(
+                              style: GoogleFonts.manrope(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                fontFamily: 'Manrope',
                                 color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 10),
-                            const Column(
+                            Column(
                               children: [
                                 Text(
                                   'Ready to make your rides smoother and smarter?',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: GoogleFonts.nunito(
                                     color: Colors.white,
                                     fontSize: 14,
-                                    fontFamily: 'Nunito',
                                     fontWeight: FontWeight.w400,
                                     height: 1.5,
                                   ),
@@ -344,10 +322,9 @@ class _LoginPageState extends State<LoginPage> {
                                 Text(
                                   'Your next trip starts here.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: GoogleFonts.nunito(
                                     color: Colors.white,
                                     fontSize: 14,
-                                    fontFamily: 'Nunito',
                                     fontWeight: FontWeight.w800,
                                     height: 1.5,
                                   ),
@@ -355,21 +332,16 @@ class _LoginPageState extends State<LoginPage> {
                               ],
                             ),
                             const SizedBox(height: 30),
-
                             ShakeWidget(
                               key: _emailShakeKey,
                               child: TextFormField(
                                 controller: _emailController,
                                 focusNode: _emailFocusNode,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Nunito',
-                                ),
+                                style: GoogleFonts.nunito(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: 'Email Address',
-                                  hintStyle: TextStyle(
+                                  hintStyle: GoogleFonts.nunito(
                                     color: Colors.white.withAlpha(204),
-                                    fontFamily: 'Nunito',
                                   ),
                                   filled: true,
                                   fillColor: _emailFocusNode.hasFocus
@@ -397,22 +369,17 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-
                             ShakeWidget(
                               key: _passwordShakeKey,
                               child: TextFormField(
                                 controller: _passwordController,
                                 focusNode: _passwordFocusNode,
                                 obscureText: !_isPasswordVisible,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Nunito',
-                                ),
+                                style: GoogleFonts.nunito(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: 'Password',
-                                  hintStyle: TextStyle(
+                                  hintStyle: GoogleFonts.nunito(
                                     color: Colors.white.withAlpha(204),
-                                    fontFamily: 'Nunito',
                                   ),
                                   filled: true,
                                   fillColor: _passwordFocusNode.hasFocus
@@ -455,7 +422,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 4.0,
@@ -496,27 +462,23 @@ class _LoginPageState extends State<LoginPage> {
                                             _rememberMe = !_rememberMe;
                                           });
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'Remember me',
-                                          style: TextStyle(
+                                          style: GoogleFonts.nunito(
                                             color: Colors.white,
                                             fontSize: 14,
-                                            fontFamily: 'Nunito',
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
                                   GestureDetector(
-                                    onTap: () {
-                                      // Handle forgot password
-                                    },
-                                    child: const Text(
+                                    onTap: () {},
+                                    child: Text(
                                       'Forgot password?',
-                                      style: TextStyle(
+                                      style: GoogleFonts.nunito(
                                         color: Colors.white,
                                         fontSize: 14,
-                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                   ),
@@ -547,16 +509,15 @@ class _LoginPageState extends State<LoginPage> {
                                     thickness: 1,
                                   ),
                                 ),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 10.0,
                                   ),
                                   child: Text(
                                     "Sign in with",
-                                    style: TextStyle(
+                                    style: GoogleFonts.nunito(
                                       fontSize: 14,
                                       color: Colors.white,
-                                      fontFamily: 'Nunito',
                                     ),
                                   ),
                                 ),
@@ -600,10 +561,9 @@ class _LoginPageState extends State<LoginPage> {
                               child: RichText(
                                 text: TextSpan(
                                   text: "Don't have an account? ",
-                                  style: TextStyle(
+                                  style: GoogleFonts.nunito(
                                     fontSize: 14,
                                     color: Colors.white.withAlpha(204),
-                                    fontFamily: 'Nunito',
                                   ),
                                   children: const [
                                     TextSpan(
