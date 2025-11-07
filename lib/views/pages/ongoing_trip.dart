@@ -42,6 +42,8 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
   double _swipeProgress = 0.0;
   Map<String, dynamic>? _tripDetails;
   double _walletBalance = 0.0;
+  double? _driverRating;
+  bool _isLoadingRating = true;
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     _getCurrentLocation();
     _loadTripDetails();
     _loadWalletBalance();
+    _loadDriverRating();
   }
 
   Future<void> _loadTripDetails() async {
@@ -117,6 +120,65 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
       });
     } catch (e) {
       debugPrint('❌ Error loading wallet balance: $e');
+    }
+  }
+
+  Future<void> _loadDriverRating() async {
+    setState(() => _isLoadingRating = true);
+    
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get driver_id from the trip
+      final tripResponse = await supabase
+          .from('trips')
+          .select('driver_id')
+          .eq('id', widget.tripId)
+          .single();
+      
+      final driverId = tripResponse['driver_id'] as String?;
+      
+      if (driverId != null) {
+        // Calculate average rating for this driver
+        final ratingsResponse = await supabase
+            .from('ratings')
+            .select('overall')
+            .eq('driver_id', driverId);
+        
+        if (ratingsResponse.isNotEmpty) {
+          double totalRating = 0;
+          int count = 0;
+          
+          for (var rating in ratingsResponse) {
+            final overall = rating['overall'] as int?;
+            if (overall != null) {
+              totalRating += overall;
+              count++;
+            }
+          }
+          
+          if (count > 0) {
+            setState(() {
+              _driverRating = totalRating / count;
+              _isLoadingRating = false;
+            });
+            debugPrint('✅ Driver rating loaded: $_driverRating');
+            return;
+          }
+        }
+      }
+      
+      // If no ratings found, set to null
+      setState(() {
+        _driverRating = null;
+        _isLoadingRating = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading driver rating: $e');
+      setState(() {
+        _driverRating = null;
+        _isLoadingRating = false;
+      });
     }
   }
 
@@ -584,23 +646,63 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '4.8',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              _isLoadingRating
+                                  ? Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Loading rating...',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : _driverRating != null
+                                      ? Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _driverRating!.toStringAsFixed(1),
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Row(
+                                          children: [
+                                            Icon(
+                                              Icons.star_border,
+                                              color: Colors.grey.shade400,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'No ratings yet',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                             ],
                           ),
                         ),
