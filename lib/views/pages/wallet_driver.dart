@@ -34,15 +34,15 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
   final double _todayEarnings = 850.00;
 
   Map<String, double> _getDummyWeeklyData(int weekOffset) {
-    final random = Random(weekOffset); // Seed random for consistent "old" data
+    final random = Random(weekOffset);
     return {
-      'Mon': random.nextDouble() * 800 + 100,
-      'Tue': random.nextDouble() * 900 + 150,
-      'Wed': random.nextDouble() * 750 + 50,
-      'Thu': random.nextDouble() * 1000 + 200,
-      'Fri': random.nextDouble() * 1200 + 250,
+      'Mon': random.nextDouble() * 1200 + 200,
+      'Tue': random.nextDouble() * 2500 + 300, // Added higher value for testing
+      'Wed': random.nextDouble() * 1800 + 150,
+      'Thu': random.nextDouble() * 2800 + 400, // Added higher value for testing
+      'Fri': random.nextDouble() * 2200 + 250,
       'Sat': random.nextDouble() * 1500 + 300,
-      'Sun': random.nextDouble() * 600,
+      'Sun': random.nextDouble() * 900,
     };
   }
 
@@ -71,35 +71,32 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
       date: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
       description: 'Trip #EF789',
     ),
-    Transaction(
-      type: 'earning',
-      amount: 120.00,
-      date: DateTime.now().subtract(const Duration(days: 1, hours: 6)),
-      description: 'Trip #GH012',
-    ),
-    Transaction(
-      type: 'remittance',
-      amount: -1000.00,
-      date: DateTime.now().subtract(const Duration(days: 2, hours: 2)),
-      description: 'To Operator J. Doe',
-    ),
-    Transaction(
-      type: 'earning',
-      amount: 60.00,
-      date: DateTime.now().subtract(const Duration(days: 2, hours: 8)),
-      description: 'Trip #IJ345',
-    ),
   ];
 
-  // Helper to get date range string
-  String _getWeekDateRange(int offset) {
+  String _getMonthAndYear(int offset) {
+    final now = DateTime.now();
+    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
+    // Change the format to "MMM yyyy" (e.g., "Nov 2025")
+    return DateFormat('MMM yyyy').format(dayInSelectedWeek);
+  }
+
+  List<DateTime> _getWeekDates(int offset) {
     final now = DateTime.now();
     final startOfWeek = now.subtract(
       Duration(days: now.weekday - 1 + (-offset * 7)),
     );
-    final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    final format = DateFormat('MMM d');
-    return '${format.format(startOfWeek)} - ${format.format(endOfWeek)}';
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  String _formatKiloValue(num value) {
+    if (value >= 1000) {
+      String formatted = (value / 1000).toStringAsFixed(1);
+      if (formatted.endsWith('.0')) {
+        formatted = formatted.substring(0, formatted.length - 2);
+      }
+      return '${formatted}k';
+    }
+    return value.toInt().toString();
   }
 
   @override
@@ -113,9 +110,12 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false, // No back button needed on a tab page
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
-          'Wallet & Activity',
+          'Wallet',
           style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -231,7 +231,21 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     );
   }
 
+  // --- REBUILT CHART WIDGET ---
+  // --- REBUILT CHART WIDGET ---
+  // --- REBUILT CHART WIDGET ---
   Widget _buildEarningsChartCard(Color brandColor) {
+    const double chartHeight = 130;
+    const double fixedMaxValue = 3000.0;
+
+    final yAxisValues = [
+      fixedMaxValue,
+      fixedMaxValue * 0.75,
+      fixedMaxValue * 0.5,
+      fixedMaxValue * 0.25,
+      0,
+    ];
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -239,17 +253,18 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Weekly Earnings',
@@ -259,78 +274,112 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                   color: Colors.black87,
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: brandColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: () {
-                        setState(() {
-                          _selectedWeekOffset--;
-                        });
-                      },
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => setState(() => _selectedWeekOffset--),
+                    color: brandColor,
+                    splashRadius: 20,
+                  ),
+                  Text(
+                    _getMonthAndYear(_selectedWeekOffset),
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                       color: brandColor,
-                      iconSize: 20,
-                      splashRadius: 20,
                     ),
-                    Text(
-                      _getWeekDateRange(_selectedWeekOffset),
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: brandColor,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: _selectedWeekOffset < 0
-                          ? () {
-                              setState(() {
-                                _selectedWeekOffset++;
-                              });
-                            }
-                          : null, // Disable for future weeks
-                      color: brandColor,
-                      disabledColor: brandColor.withValues(alpha: 0.3),
-                      iconSize: 20,
-                      splashRadius: 20,
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _selectedWeekOffset < 0
+                        ? () => setState(() => _selectedWeekOffset++)
+                        : null,
+                    color: brandColor,
+                    disabledColor: brandColor.withValues(alpha: 0.3),
+                    splashRadius: 20,
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           SizedBox(
-            height: 120,
-            child: _buildBarChart(_getDummyWeeklyData(_selectedWeekOffset)),
+            height: chartHeight + 40,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    ...yAxisValues.map(
+                      (value) => Text(
+                        _formatKiloValue(value),
+                        style: GoogleFonts.nunito(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildBarChart(
+                    chartHeight,
+                    _getDummyWeeklyData(_selectedWeekOffset),
+                    fixedMaxValue,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBarChart(Map<String, double> weeklyData) {
-    final double maxVal = weeklyData.values.fold(
-      0.0,
-      (prev, e) => e > prev ? e : prev,
-    );
+  // --- REBUILT BAR CHART WIDGET ---
+  Widget _buildBarChart(
+    double chartHeight,
+    Map<String, double> weeklyData,
+    double maxVal,
+  ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDates = _getWeekDates(_selectedWeekOffset);
+
+    // This is the key: we calculate bar heights against a slightly larger "virtual" maximum
+    // to ensure even a full 3k bar doesn't touch the top edge of the chart area.
+    final effectiveMaxVal = maxVal * 1.20; // 20% headroom
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: days.map((day) {
+      children: List.generate(days.length, (index) {
+        final day = days[index];
         final value = weeklyData[day] ?? 0.0;
-        final barHeight = (value / (maxVal == 0 ? 1 : maxVal)) * 100;
+
+        // Calculate bar height against the effective max value.
+        // This will be shorter than the full chart height.
+        final barHeight = (value / effectiveMaxVal) * chartHeight;
+        final date = weekDates[index];
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // The value label
+            Text(
+              _formatKiloValue(value),
+              style: GoogleFonts.nunito(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 2), // Small space between label and bar
+            // The bar
             Container(
               height: barHeight,
               width: 18,
@@ -340,6 +389,8 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               ),
             ),
             const SizedBox(height: 8),
+
+            // Day of the week and date number
             Text(
               day,
               style: GoogleFonts.nunito(
@@ -348,9 +399,17 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                 fontSize: 12,
               ),
             ),
+            Text(
+              DateFormat('dd').format(date),
+              style: GoogleFonts.nunito(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+              ),
+            ),
           ],
         );
-      }).toList(),
+      }),
     );
   }
 
