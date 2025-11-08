@@ -440,37 +440,40 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses();
+DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses(integer);
 
-CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses()
+CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses(week_offset integer DEFAULT 0)
 RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    target_week_start date;
 BEGIN
-  RETURN QUERY
-  
-  WITH days AS (
-    SELECT 
-      to_char(d, 'Dy') as day_name_short, 
-      d::date as full_date
-    FROM generate_series(
-      date_trunc('day', now() - interval '6 days'),
-      date_trunc('day', now()),
-      '1 day'
-    ) as d
-  )
-  
-  SELECT
-    d.day_name_short,
-    COALESCE(SUM(t.amount), 0) AS total
-  FROM days d
-  LEFT JOIN transactions t ON date_trunc('day', t.created_at) = d.full_date
-    AND t.type = 'fare_payment'
-    AND t.wallet_id = (
-      SELECT w.id FROM wallets w
-      JOIN profiles p ON w.owner_profile_id = p.id
-      WHERE p.user_id = auth.uid()
-      LIMIT 1
-    )
-  GROUP BY d.day_name_short, d.full_date
-  ORDER BY d.full_date;
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
 
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT
+            to_char(d, 'Dy') as day_name_short,
+            d::date as full_date
+        FROM generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        ) as d
+    )
+    SELECT
+        wd.day_name_short,
+        COALESCE(SUM(t.amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN transactions t
+        ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.full_date
+        AND t.type = 'fare_payment'
+        AND t.wallet_id = (
+            SELECT w.id FROM wallets w
+            JOIN profiles p ON w.owner_profile_id = p.id
+            WHERE p.user_id = auth.uid()
+            LIMIT 1
+        )
+    GROUP BY wd.day_name_short, wd.full_date
+    ORDER BY wd.full_date;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

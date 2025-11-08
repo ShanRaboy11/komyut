@@ -47,6 +47,8 @@ class WalletProvider extends ChangeNotifier {
   String? _profileErrorMessage;
   Map<String, dynamic>? _userProfile;
 
+  bool _isFareExpensesLoading = false;
+
   // --- Getters ---
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
@@ -78,6 +80,8 @@ class WalletProvider extends ChangeNotifier {
   bool _isSendingInstructions = false;
   bool get isSendingInstructions => _isSendingInstructions;
 
+  bool get isFareExpensesLoading => _isFareExpensesLoading;
+
   // --- Methods ---
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
@@ -89,7 +93,7 @@ class WalletProvider extends ChangeNotifier {
         _dashboardService.getWheelTokens(),
         _dashboardService.getRecentTransactions(),
         _dashboardService.getRecentTokens(),
-        _dashboardService.getFareExpensesWeekly(),
+        _dashboardService.getFareExpensesWeekly(weekOffset: 0),
       ]);
       _balance = (results[0] as num).toDouble();
       _wheelTokens = (results[1] as num).toDouble();
@@ -313,6 +317,22 @@ class WalletProvider extends ChangeNotifier {
       throw Exception('Could not send instructions. Please try again.');
     } finally {
       _isSendingInstructions = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchFareExpensesForWeek(int offset) async {
+    _isFareExpensesLoading = true;
+    notifyListeners();
+    try {
+      _fareExpenses = await _dashboardService.getFareExpensesWeekly(
+        weekOffset: offset,
+      );
+    } catch (e) {
+      debugPrint('Failed to load fare expenses for offset $offset: $e');
+      _fareExpenses = {};
+    } finally {
+      _isFareExpensesLoading = false;
       notifyListeners();
     }
   }

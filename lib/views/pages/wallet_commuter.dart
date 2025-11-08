@@ -18,6 +18,7 @@ class WalletPage extends StatefulWidget {
 class _WalletPageState extends State<WalletPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _selectedWeekOffset = 0;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -53,6 +54,20 @@ class _WalletPageState extends State<WalletPage>
       ),
     );
     return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
+  String _getMonthAndYear(int offset) {
+    final now = DateTime.now();
+    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
+    return DateFormat('MMM yyyy').format(dayInSelectedWeek);
+  }
+
+  List<DateTime> _getWeekDates(int offset) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(
+      Duration(days: now.weekday - 1 + (-offset * 7)),
+    );
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
   void _showTransactionDetailModal(
@@ -748,9 +763,13 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildFareExpensesCard(Map<String, double> expenses) {
-    const double chartHeight = 110;
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final brandColor = const Color(0xFF8E4CB6);
+    const double chartHeight = 130;
+    const double fixedMaxValue = 500.0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -763,82 +782,160 @@ class _WalletPageState extends State<WalletPage>
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Fare Expenses',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Fare Expenses',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      setState(() => _selectedWeekOffset--);
+                      provider.fetchFareExpensesForWeek(_selectedWeekOffset);
+                    },
+                    color: brandColor,
+                    splashRadius: 20,
+                  ),
+                  Text(
+                    _getMonthAndYear(_selectedWeekOffset),
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: brandColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _selectedWeekOffset < 0
+                        ? () {
+                            setState(() => _selectedWeekOffset++);
+                            provider.fetchFareExpensesForWeek(
+                              _selectedWeekOffset,
+                            );
+                          }
+                        : null,
+                    color: brandColor,
+                    disabledColor: brandColor.withValues(alpha: 0.3),
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: chartHeight + 24,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: ['500', '375', '250', '125', '0']
-                      .map(
-                        (e) => Text(
-                          e,
-                          style: GoogleFonts.nunito(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: _buildBarChart(chartHeight, expenses)),
-              ],
-            ),
+          Consumer<WalletProvider>(
+            builder: (context, walletProvider, child) {
+              if (walletProvider.isFareExpensesLoading) {
+                return SizedBox(
+                  height: chartHeight + 48,
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              }
+              return Column(
+                children: [
+                  SizedBox(
+                    height: chartHeight,
+                    child: _buildBarChart(
+                      chartHeight,
+                      walletProvider.fareExpenses,
+                      fixedMaxValue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildXAxisLabels(),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
-    const double maxVal = 500.0;
-
+  Widget _buildBarChart(
+    double chartHeight,
+    Map<String, double> weeklyData,
+    double maxVal,
+  ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final effectiveMaxVal = maxVal;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: days.map((day) {
+      children: List.generate(days.length, (index) {
+        final day = days[index];
         final value = weeklyData[day] ?? 0.0;
-        final barHeight = (value / maxVal) * chartHeight;
+        final barHeight = (value / effectiveMaxVal) * chartHeight;
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            Text(
+              value > 0 ? value.toInt().toString() : '',
+              style: GoogleFonts.nunito(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 2),
             Container(
-              height: min(barHeight, chartHeight),
-              width: 20,
+              height: barHeight,
+              width: 18,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
                 borderRadius: BorderRadius.circular(5),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              day,
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
           ],
         );
-      }).toList(),
+      }),
+    );
+  }
+
+  Widget _buildXAxisLabels() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDates = _getWeekDates(_selectedWeekOffset);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(days.length, (index) {
+        return SizedBox(
+          width: 28,
+          child: Column(
+            children: [
+              Text(
+                days[index],
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                DateFormat('dd').format(weekDates[index]),
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
