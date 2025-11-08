@@ -766,7 +766,13 @@ class _WalletPageState extends State<WalletPage>
     final provider = Provider.of<WalletProvider>(context, listen: false);
     final brandColor = const Color(0xFF8E4CB6);
     const double chartHeight = 130;
-    const double fixedMaxValue = 500.0;
+
+    final double maxWeeklyExpense = expenses.values.isEmpty
+        ? 0.0
+        : expenses.values.reduce(max);
+    final double dynamicMaxValue = maxWeeklyExpense > 0
+        ? maxWeeklyExpense
+        : 100.0;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -849,7 +855,7 @@ class _WalletPageState extends State<WalletPage>
                     child: _buildBarChart(
                       chartHeight,
                       walletProvider.fareExpenses,
-                      fixedMaxValue,
+                      dynamicMaxValue,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -869,7 +875,7 @@ class _WalletPageState extends State<WalletPage>
     double maxVal,
   ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final effectiveMaxVal = maxVal;
+    final effectiveMaxVal = maxVal * 1.20;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,

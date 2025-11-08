@@ -125,7 +125,8 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 40.0),
+        // MODIFIED: Increased bottom padding to prevent being covered by a nav bar.
+        padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -236,18 +237,11 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
   // --- REBUILT CHART WIDGET ---
   Widget _buildEarningsChartCard(Color brandColor) {
     const double chartHeight = 130;
+    // The max value is still needed to calculate the relative height of the bars
     const double fixedMaxValue = 3000.0;
 
-    final yAxisValues = [
-      fixedMaxValue,
-      fixedMaxValue * 0.75,
-      fixedMaxValue * 0.5,
-      fixedMaxValue * 0.25,
-      0,
-    ];
-
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16), // Adjusted padding
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -262,6 +256,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The header row for title and week navigation remains the same
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -304,37 +299,20 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: chartHeight + 40,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    ...yAxisValues.map(
-                      (value) => Text(
-                        _formatKiloValue(value),
-                        style: GoogleFonts.nunito(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+          // MODIFIED: This now contains a Column to hold the chart and the new labels widget
+          Column(
+            children: [
+              SizedBox(
+                height: chartHeight, // This SizedBox now only holds the bars
+                child: _buildBarChart(
+                  chartHeight,
+                  _getDummyWeeklyData(_selectedWeekOffset),
+                  fixedMaxValue,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildBarChart(
-                    chartHeight,
-                    _getDummyWeeklyData(_selectedWeekOffset),
-                    fixedMaxValue,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+              _buildXAxisLabels(), // The new, separate widget for the X-axis
+            ],
           ),
         ],
       ),
@@ -348,11 +326,8 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     double maxVal,
   ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final weekDates = _getWeekDates(_selectedWeekOffset);
-
-    // This is the key: we calculate bar heights against a slightly larger "virtual" maximum
-    // to ensure even a full 3k bar doesn't touch the top edge of the chart area.
-    final effectiveMaxVal = maxVal * 1.20; // 20% headroom
+    // MODIFIED: Re-added the 20% headroom to prevent overflow
+    final effectiveMaxVal = maxVal * 1.20;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -360,26 +335,20 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
       children: List.generate(days.length, (index) {
         final day = days[index];
         final value = weeklyData[day] ?? 0.0;
-
-        // Calculate bar height against the effective max value.
-        // This will be shorter than the full chart height.
         final barHeight = (value / effectiveMaxVal) * chartHeight;
-        final date = weekDates[index];
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // The value label
             Text(
-              _formatKiloValue(value),
+              value > 0 ? _formatKiloValue(value) : '',
               style: GoogleFonts.nunito(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
               ),
             ),
-            const SizedBox(height: 2), // Small space between label and bar
-            // The bar
+            const SizedBox(height: 2),
             Container(
               height: barHeight,
               width: 18,
@@ -388,28 +357,63 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                 borderRadius: BorderRadius.circular(5),
               ),
             ),
-            const SizedBox(height: 8),
-
-            // Day of the week and date number
-            Text(
-              day,
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-            Text(
-              DateFormat('dd').format(date),
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
-            ),
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildXAxisLabels() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDates = _getWeekDates(_selectedWeekOffset);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(days.length, (index) {
+        return SizedBox(
+          width: 28,
+          child: Column(
+            children: [
+              Text(
+                days[index],
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                DateFormat('dd').format(weekDates[index]),
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildViewAllButton() {
+    final brandColor = const Color(0xFF8E4CB6);
+    return OutlinedButton(
+      onPressed: () {
+        // TODO: Navigate to the driver's full transaction history page.
+        // For example: Navigator.pushNamed(context, '/driver_history');
+      },
+      style: OutlinedButton.styleFrom(
+        foregroundColor: brandColor,
+        side: BorderSide(color: brandColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+      ),
+      child: Text(
+        'View All',
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -426,23 +430,40 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
           ),
         ),
         const SizedBox(height: 8),
-        _dummyTransactions.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('No transactions yet.'),
-                ),
-              )
-            : Column(
-                children: _dummyTransactions.map((tx) {
-                  return _buildTransactionItem(tx, currencyFormat);
-                }).toList(),
-              ),
+        if (_dummyTransactions.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text('No transactions yet.'),
+            ),
+          )
+        else
+          Column(
+            children: [
+              // MODIFIED: This loop now tracks the index
+              ..._dummyTransactions.asMap().entries.map((entry) {
+                final int index = entry.key;
+                final Transaction tx = entry.value;
+                return _buildTransactionItem(
+                  tx,
+                  currencyFormat,
+                  // Pass a boolean to identify the last item
+                  isLast: index == _dummyTransactions.length - 1,
+                );
+              }),
+              const SizedBox(height: 20),
+              _buildViewAllButton(),
+            ],
+          ),
       ],
     );
   }
 
-  Widget _buildTransactionItem(Transaction tx, NumberFormat currencyFormat) {
+  Widget _buildTransactionItem(
+    Transaction tx,
+    NumberFormat currencyFormat, {
+    bool isLast = false, // New optional parameter
+  }) {
     final bool isEarning = tx.type == 'earning';
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
@@ -455,7 +476,12 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        // MODIFIED: The border color is now conditional
+        border: Border(
+          bottom: BorderSide(
+            color: isLast ? Colors.transparent : Colors.grey[200]!,
+          ),
+        ),
       ),
       child: Row(
         children: [
