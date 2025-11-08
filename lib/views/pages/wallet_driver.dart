@@ -64,19 +64,23 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
               provider.recentTransactions.isEmpty) {
             return Center(child: Text(provider.errorMessage!));
           }
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildBalanceCards(currencyFormat, provider),
-                const SizedBox(height: 24),
-                _buildRemitButton(),
-                const SizedBox(height: 32),
-                _buildEarningsChartCard(provider),
-                const SizedBox(height: 32),
-                _buildHistorySection(currencyFormat, provider),
-              ],
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchWalletData(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildBalanceCards(currencyFormat, provider),
+                  const SizedBox(height: 24),
+                  _buildRemitButton(),
+                  const SizedBox(height: 32),
+                  _buildEarningsChartCard(provider),
+                  const SizedBox(height: 32),
+                  _buildHistorySection(currencyFormat, provider),
+                ],
+              ),
             ),
           );
         },
@@ -178,7 +182,6 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     const double chartHeight = 130;
     final weeklyData = provider.weeklyEarnings;
     final brandColor = const Color(0xFF8E4CB6);
-
     final double maxWeeklyValue = weeklyData.values.isEmpty
         ? 0.0
         : weeklyData.values.reduce(max);
@@ -242,7 +245,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                           }
                         : null,
                     color: brandColor,
-                    disabledColor: brandColor.withValues(alpha: 0.3),
+                    disabledColor: brandColor.withValues(alpha: .3),
                     splashRadius: 20,
                   ),
                 ],
@@ -285,8 +288,9 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     String formatKiloValue(num value) {
       if (value >= 1000) {
         String formatted = (value / 1000).toStringAsFixed(1);
-        if (formatted.endsWith('.0'))
+        if (formatted.endsWith('.0')) {
           formatted = formatted.substring(0, formatted.length - 2);
+        }
         return '${formatted}k';
       }
       return value.toInt().toString();
@@ -434,11 +438,12 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
   }) {
     final String type = tx['type'] ?? 'fare_payment';
     final double amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+
     final bool isEarning = type == 'fare_payment';
+    final String title = isEarning ? 'Trip Earning' : 'Remittance';
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
-    final String title = isEarning ? 'Trip Earning' : 'Remittance';
     final String date = DateFormat(
       'MM/d/yy hh:mm a',
     ).format(DateTime.parse(tx['created_at']));
@@ -495,6 +500,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final String type = transaction['type'] ?? 'fare_payment';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+
     final bool isEarning = type == 'fare_payment';
     final String modalTitle = isEarning ? 'Trip Earning' : 'Remittance';
 

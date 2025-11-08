@@ -354,8 +354,6 @@ class DriverWalletProvider extends ChangeNotifier {
   Map<String, double> _weeklyEarnings = {};
   List<Map<String, dynamic>> _recentTransactions = [];
   List<Map<String, dynamic>> _allTransactions = [];
-  int _historyPage = 0;
-  bool _hasMoreHistory = true;
 
   // Getters
   bool get isPageLoading => _isPageLoading;
@@ -368,8 +366,8 @@ class DriverWalletProvider extends ChangeNotifier {
   Map<String, double> get weeklyEarnings => _weeklyEarnings;
   List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
   List<Map<String, dynamic>> get allTransactions => _allTransactions;
-  bool get hasMoreHistory => _hasMoreHistory;
 
+  /// Fetches the initial data for the main wallet page.
   Future<void> fetchWalletData() async {
     _isPageLoading = true;
     _errorMessage = null;
@@ -394,6 +392,7 @@ class DriverWalletProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetches earnings for a specific week for the chart
   Future<void> fetchWeeklyEarnings(int offset) async {
     _isChartLoading = true;
     notifyListeners();
@@ -410,25 +409,14 @@ class DriverWalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchAllTransactions({bool loadMore = false}) async {
-    if (_isHistoryLoading) return;
+  /// Fetches transaction history
+  Future<void> fetchFullDriverHistory() async {
     _isHistoryLoading = true;
-    if (!loadMore) {
-      _allTransactions = [];
-      _historyPage = 0;
-      _hasMoreHistory = true;
-    }
+    _errorMessage = null;
+    _allTransactions = [];
     notifyListeners();
-
     try {
-      final newItems = await _dashboardService.getAllTransactions(
-        page: _historyPage,
-      );
-      if (newItems.length < 15) {
-        _hasMoreHistory = false;
-      }
-      _allTransactions.addAll(newItems);
-      _historyPage++;
+      _allTransactions = await _dashboardService.getAllTransactions();
     } catch (e) {
       _errorMessage = 'Failed to load history: $e';
     } finally {

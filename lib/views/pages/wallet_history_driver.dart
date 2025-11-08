@@ -6,20 +6,25 @@ import 'package:barcode_widget/barcode_widget.dart';
 
 import '../providers/wallet_provider.dart';
 
-class WalletHistoryDriverPage extends StatelessWidget {
+class WalletHistoryDriverPage extends StatefulWidget {
   const WalletHistoryDriverPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DriverWalletProvider()..fetchAllTransactions(),
-      child: const _WalletHistoryDriverView(),
-    );
-  }
+  State<WalletHistoryDriverPage> createState() =>
+      _WalletHistoryDriverPageState();
 }
 
-class _WalletHistoryDriverView extends StatelessWidget {
-  const _WalletHistoryDriverView();
+class _WalletHistoryDriverPageState extends State<WalletHistoryDriverPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DriverWalletProvider>(
+        context,
+        listen: false,
+      ).fetchFullDriverHistory();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +39,7 @@ class _WalletHistoryDriverView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Transaction History',
+          'Transactions',
           style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -43,51 +48,45 @@ class _WalletHistoryDriverView extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: Consumer<DriverWalletProvider>(
-        builder: (context, provider, child) {
-          if (provider.isHistoryLoading && provider.allTransactions.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (provider.errorMessage != null &&
-              provider.allTransactions.isEmpty) {
-            return Center(child: Text(provider.errorMessage!));
-          }
-          if (provider.allTransactions.isEmpty) {
-            return const Center(child: Text('No transactions found.'));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            itemCount: provider.allTransactions.length + 1,
-            itemBuilder: (context, index) {
-              if (index == provider.allTransactions.length) {
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 16.0),
+            child: Text(
+              'All Transactions',
+              style: GoogleFonts.manrope(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Consumer<DriverWalletProvider>(
+              builder: (context, provider, child) {
                 if (provider.isHistoryLoading) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
-                return provider.hasMoreHistory
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0),
-                        child: TextButton(
-                          onPressed: () =>
-                              provider.fetchAllTransactions(loadMore: true),
-                          child: const Text('Load More'),
-                        ),
-                      )
-                    : const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32.0),
-                        child: Center(child: Text('End of history')),
-                      );
-              }
-              final tx = provider.allTransactions[index];
-              return _TransactionItem(transaction: tx);
-            },
-          );
-        },
+                if (provider.errorMessage != null) {
+                  return Center(child: Text(provider.errorMessage!));
+                }
+                if (provider.allTransactions.isEmpty) {
+                  return const Center(child: Text('No history found.'));
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
+                  itemCount: provider.allTransactions.length,
+                  itemBuilder: (context, index) {
+                    final item = provider.allTransactions[index];
+                    final isLast = index == provider.allTransactions.length - 1;
+                    return _TransactionItem(transaction: item, isLast: isLast);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -95,19 +94,21 @@ class _WalletHistoryDriverView extends StatelessWidget {
 
 class _TransactionItem extends StatelessWidget {
   final Map<String, dynamic> transaction;
+  final bool isLast;
 
-  const _TransactionItem({required this.transaction});
+  const _TransactionItem({required this.transaction, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final String type = transaction['type'] ?? 'fare_payment';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+
     final bool isEarning = type == 'fare_payment';
+    final String title = isEarning ? 'Trip Earning' : 'Remittance';
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
-    final String title = isEarning ? 'Trip Earning' : 'Remittance';
     final String date = DateFormat(
       'MM/d/yy hh:mm a',
     ).format(DateTime.parse(transaction['created_at']));
@@ -117,7 +118,11 @@ class _TransactionItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+          border: Border(
+            bottom: BorderSide(
+              color: isLast ? Colors.transparent : Colors.grey[200]!,
+            ),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -166,32 +171,30 @@ class _TransactionItem extends StatelessWidget {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (dialogContext) {
-        return _buildDetailModal(
-          context: dialogContext,
-          title: modalTitle,
-          details: [
-            _buildDetailRow(
-              'Date:',
-              DateFormat(
-                'MM/dd/yyyy',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-            _buildDetailRow(
-              'Time:',
-              DateFormat(
-                'hh:mm a',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-          ],
-          totalRow: _buildDetailRow(
-            'Amount:',
-            currencyFormat.format(amount.abs()),
-            isTotal: true,
+      builder: (dialogContext) => _buildDetailModal(
+        context: dialogContext,
+        title: modalTitle,
+        details: [
+          _buildDetailRow(
+            'Date:',
+            DateFormat(
+              'MM/dd/yyyy',
+            ).format(DateTime.parse(transaction['created_at'])),
           ),
-          transactionCode: transaction['transaction_number'] ?? 'N/A',
-        );
-      },
+          _buildDetailRow(
+            'Time:',
+            DateFormat(
+              'hh:mm a',
+            ).format(DateTime.parse(transaction['created_at'])),
+          ),
+        ],
+        totalRow: _buildDetailRow(
+          'Amount:',
+          currencyFormat.format(amount.abs()),
+          isTotal: true,
+        ),
+        transactionCode: transaction['transaction_number'] ?? 'N/A',
+      ),
     );
   }
 

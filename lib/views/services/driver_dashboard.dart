@@ -294,17 +294,11 @@ class DriverDashboardService {
   }
 
   /// Get all transactions for the driver's wallet
-  Future<List<Map<String, dynamic>>> getAllTransactions({
-    int page = 0,
-    int pageSize = 15,
-  }) async {
-    return _getTransactions(offset: page * pageSize, limit: pageSize);
+  Future<List<Map<String, dynamic>>> getAllTransactions() async {
+    return _getTransactions();
   }
 
-  Future<List<Map<String, dynamic>>> _getTransactions({
-    int offset = 0,
-    int? limit,
-  }) async {
+  Future<List<Map<String, dynamic>>> _getTransactions({int? limit}) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated.');
@@ -324,14 +318,22 @@ class DriverDashboardService {
           .from('transactions')
           .select('transaction_number, type, amount, created_at, metadata')
           .eq('wallet_id', wallet['id'])
-          .order('created_at', ascending: false)
-          .range(offset, offset + (limit ?? 1000) - 1);
+          .inFilter('type', [
+            'fare_payment',
+            'operator_payout',
+            'driver_payout',
+          ])
+          .order('created_at', ascending: false);
+
+      if (limit != null) {
+        query = query.limit(limit);
+      }
 
       final transactions = await query;
-      debugPrint('✅ Fetched ${transactions.length} transactions');
+      debugPrint('✅ Fetched ${transactions.length} driver transactions');
       return transactions;
     } catch (e) {
-      debugPrint('❌ Error fetching transactions: $e');
+      debugPrint('❌ Error fetching driver transactions: $e');
       rethrow;
     }
   }
