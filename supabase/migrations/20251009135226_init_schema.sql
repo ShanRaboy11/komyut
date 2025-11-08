@@ -477,3 +477,42 @@ BEGIN
     ORDER BY wd.full_date;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_driver_weekly_earnings(week_offset integer DEFAULT 0)
+RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    v_driver_id uuid;
+    target_week_start date;
+BEGIN
+    SELECT d.id INTO v_driver_id
+    FROM public.profiles p
+    JOIN public.drivers d ON p.id = d.profile_id
+    WHERE p.user_id = auth.uid()
+    LIMIT 1;
+
+    IF v_driver_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        )::date AS day
+    )
+    SELECT
+        to_char(wd.day, 'Dy') AS day_name,
+        COALESCE(SUM(t.fare_amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN trips t
+        ON date_trunc('day', t.started_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
+        AND t.driver_id = v_driver_id
+        AND t.status = 'completed'
+    GROUP BY wd.day
+    ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

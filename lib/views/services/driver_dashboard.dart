@@ -99,7 +99,9 @@ class DriverDashboardService {
         totalEarnings += (trip['fare_amount'] as num?)?.toDouble() ?? 0.0;
       }
 
-      debugPrint('✅ Today\'s earnings fetched: $totalEarnings (${trips.length} trips)');
+      debugPrint(
+        '✅ Today\'s earnings fetched: $totalEarnings (${trips.length} trips)',
+      );
       return totalEarnings;
     } catch (e) {
       debugPrint('❌ Error fetching today\'s earnings: $e');
@@ -145,7 +147,9 @@ class DriverDashboardService {
       }
 
       final average = sum / ratings.length;
-      debugPrint('✅ Average rating fetched: $average (${ratings.length} ratings)');
+      debugPrint(
+        '✅ Average rating fetched: $average (${ratings.length} ratings)',
+      );
       return average;
     } catch (e) {
       debugPrint('❌ Error fetching average rating: $e');
@@ -256,6 +260,78 @@ class DriverDashboardService {
       };
     } catch (e) {
       debugPrint('❌ Error fetching dashboard data: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, double>> getWeeklyEarnings({int weekOffset = 0}) async {
+    try {
+      final response = await _supabase.rpc(
+        'get_driver_weekly_earnings',
+        params: {'week_offset': weekOffset},
+      );
+
+      if (response is List) {
+        final earningsMap = {
+          for (var item in response)
+            (item['day_name'] as String): (item['total'] as num).toDouble(),
+        };
+        debugPrint(
+          '✅ Weekly earnings for offset $weekOffset fetched: $earningsMap',
+        );
+        return earningsMap;
+      }
+      return {};
+    } catch (e) {
+      debugPrint('❌ Error fetching weekly earnings for offset $weekOffset: $e');
+      rethrow;
+    }
+  }
+
+  /// Get recent transactions for the driver's wallet
+  Future<List<Map<String, dynamic>>> getRecentTransactions() async {
+    return _getTransactions(limit: 10);
+  }
+
+  /// Get all transactions for the driver's wallet
+  Future<List<Map<String, dynamic>>> getAllTransactions({
+    int page = 0,
+    int pageSize = 15,
+  }) async {
+    return _getTransactions(offset: page * pageSize, limit: pageSize);
+  }
+
+  Future<List<Map<String, dynamic>>> _getTransactions({
+    int offset = 0,
+    int? limit,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated.');
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      final wallet = await _supabase
+          .from('wallets')
+          .select('id')
+          .eq('owner_profile_id', profile['id'])
+          .single();
+
+      var query = _supabase
+          .from('transactions')
+          .select('transaction_number, type, amount, created_at, metadata')
+          .eq('wallet_id', wallet['id'])
+          .order('created_at', ascending: false)
+          .range(offset, offset + (limit ?? 1000) - 1);
+
+      final transactions = await query;
+      debugPrint('✅ Fetched ${transactions.length} transactions');
+      return transactions;
+    } catch (e) {
+      debugPrint('❌ Error fetching transactions: $e');
       rethrow;
     }
   }
