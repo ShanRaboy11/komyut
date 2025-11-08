@@ -1,6 +1,7 @@
 // In lib/pages/remit_page_driver.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
@@ -15,9 +16,19 @@ class RemitPageDriver extends StatefulWidget {
 
 class _RemitPageDriverState extends State<RemitPageDriver> {
   final TextEditingController _amountController = TextEditingController();
-  final double _currentBalance = 12540.50; // Dummy data
-  final String _operatorName = 'Juan Dela Cruz'; // Dummy data
   bool _isButtonEnabled = false;
+  String? _errorText;
+
+  // Dummy Data
+  final double _currentBalance = 12540.50;
+  final String _operatorName = 'Nunito Porcalla';
+
+  final Color _brandColor = const Color(0xFF8E4CB6);
+  final List<Color> _gradientColors = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
 
   @override
   void initState() {
@@ -26,9 +37,27 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   }
 
   void _validateInput() {
+    // Handle leading zeros
+    if (_amountController.text.length > 1 &&
+        _amountController.text.startsWith('0')) {
+      _amountController.text = _amountController.text.substring(1);
+      _amountController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _amountController.text.length),
+      );
+    }
+
     final amount = double.tryParse(_amountController.text) ?? 0;
     setState(() {
-      _isButtonEnabled = amount > 0 && amount <= _currentBalance;
+      if (amount <= 0) {
+        _isButtonEnabled = false;
+        _errorText = null;
+      } else if (amount > _currentBalance) {
+        _isButtonEnabled = false;
+        _errorText = 'Amount exceeds your current balance.';
+      } else {
+        _isButtonEnabled = true;
+        _errorText = null;
+      }
     });
   }
 
@@ -39,13 +68,12 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   }
 
   void _onReviewPressed() {
-    // Navigate to the new confirmation page
+    if (!_isButtonEnabled) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => RemitConfirmationPage(
           amount: _amountController.text,
-          currentBalance: _currentBalance,
           operatorName: _operatorName,
         ),
       ),
@@ -55,6 +83,9 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final amountValue = double.tryParse(_amountController.text) ?? 0;
+    final remainingBalance = _currentBalance - amountValue;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
@@ -83,56 +114,28 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             ),
             const SizedBox(height: 16),
             _buildInfoCard('Recipient', _operatorName, Symbols.person),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
+            _buildAmountCard(),
+            const SizedBox(height: 16),
             Center(
-              child: Text(
-                'Enter Amount to Remit',
-                style: GoogleFonts.nunito(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _amountController,
-              textAlign: TextAlign.center,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              style: GoogleFonts.manrope(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: InputDecoration(
-                prefixText: '₱',
-                prefixStyle: GoogleFonts.manrope(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[400],
-                ),
-                hintText: '0.00',
-                hintStyle: TextStyle(color: Colors.grey[300]),
-                border: InputBorder.none,
-              ),
+              child: _errorText != null
+                  ? Text(
+                      _errorText!,
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: Colors.red,
+                      ),
+                    )
+                  : Text(
+                      'Remaining Balance: ${currencyFormat.format(remainingBalance)}',
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _isButtonEnabled ? _onReviewPressed : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Review Remittance',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
+            _buildNextButton(),
           ],
         ),
       ),
@@ -141,15 +144,33 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
 
   Widget _buildInfoCard(String title, String subtitle, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: _brandColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: _brandColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF8E4CB6), size: 28),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,6 +193,115 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAmountCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _brandColor.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: _brandColor.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Enter Amount',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Divider(color: _brandColor.withOpacity(0.5), height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 80,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₱',
+                      style: GoogleFonts.manrope(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _amountController.text.isEmpty
+                          ? "0"
+                          : _amountController.text,
+                      style: GoogleFonts.manrope(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                TextField(
+                  controller: _amountController,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  showCursor: false,
+                  style: const TextStyle(color: Colors.transparent),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(5),
+                  ],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    fillColor: Colors.transparent,
+                    filled: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextButton() {
+    return Center(
+      child: OutlinedButton(
+        onPressed: _isButtonEnabled ? _onReviewPressed : null,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
+          backgroundColor: _isButtonEnabled
+              ? _brandColor.withOpacity(0.1)
+              : Colors.grey.withOpacity(0.1),
+          side: BorderSide(
+            color: _isButtonEnabled
+                ? _brandColor
+                : Colors.grey.withOpacity(0.5),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+        ),
+        child: Text(
+          'Next',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
       ),
     );
   }

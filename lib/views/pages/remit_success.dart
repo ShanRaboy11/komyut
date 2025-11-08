@@ -1,19 +1,46 @@
-// In lib/pages/remit_success_driver.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/button.dart';
 
-class RemittanceSuccessPage extends StatelessWidget {
-  final double amount;
-  final String operatorName;
-  final String transactionCode;
+class RemittanceSuccessPage extends StatefulWidget {
+  const RemittanceSuccessPage({super.key});
 
-  const RemittanceSuccessPage({
-    super.key,
-    required this.amount,
-    required this.operatorName,
-    required this.transactionCode,
-  });
+  @override
+  State<RemittanceSuccessPage> createState() => _RemittanceSuccessPageState();
+}
+
+class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
+
+  final gradientColors = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+
+    _glowAnimation = Tween<double>(begin: 0.55, end: 0.75).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
+    _glowController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +54,11 @@ class RemittanceSuccessPage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Spacer(),
-            const Center(
-              child: Icon(
-                Icons.check_circle_outline_rounded,
-                color: Colors.green,
-                size: 100,
-              ),
-            ),
+            const SizedBox(height: 130),
+            _buildSuccessIcon(),
             const SizedBox(height: 32),
             Text(
               'Remittance Successful!',
@@ -45,27 +66,68 @@ class RemittanceSuccessPage extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'You have successfully sent funds to your operator.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey[600]),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.pop(context), // Go back to the wallet page
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text('Done'),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 150),
+            _buildActivityButton(context),
+            const SizedBox(height: 24),
+            _buildWalletButton(context),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSuccessIcon() {
+    return Center(
+      child: SizedBox(
+        width: 180,
+        height: 180,
+        child: AnimatedBuilder(
+          animation: _glowController,
+          builder: (context, child) {
+            return Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(
+                      0xFF5B53C2,
+                    ).withValues(alpha: _glowAnimation.value),
+                    blurRadius: 30,
+                    spreadRadius: 4,
+                    offset: Offset.zero,
+                  ),
+                ],
+              ),
+              child: child,
+            );
+          },
+          child: Image.asset('assets/images/gradient_check.png'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityButton(BuildContext context) {
+    return CustomButton(
+      text: "Activity",
+      onPressed: () {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      },
+      isFilled: true,
+      textColor: Colors.white,
+    );
+  }
+
+  Widget _buildWalletButton(BuildContext context) {
+    return CustomButton(
+      text: "Wallet",
+      onPressed: () {
+        Navigator.of(context).popUntil(ModalRoute.withName('/wallet'));
+      },
+      isFilled: false,
     );
   }
 }

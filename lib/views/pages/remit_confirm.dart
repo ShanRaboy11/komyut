@@ -1,21 +1,17 @@
-// In lib/pages/remit_confirmation_driver.dart
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-import 'remit_success.dart'; // Import for the next page
+import 'remit_success.dart';
 
 class RemitConfirmationPage extends StatefulWidget {
   final String amount;
-  final double currentBalance;
   final String operatorName;
 
   const RemitConfirmationPage({
     super.key,
     required this.amount,
-    required this.currentBalance,
     required this.operatorName,
   });
 
@@ -36,25 +32,23 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
   String _generateTransactionCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();
-    return 'K0MYUT-DRV-${String.fromCharCodes(Iterable.generate(10, (_) => chars.codeUnitAt(random.nextInt(chars.length))))}';
+    final part1 = String.fromCharCodes(
+      Iterable.generate(
+        15,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return 'K0MYUT-RMT$part1'.substring(0, 25);
   }
 
   void _onConfirmPressed() {
     setState(() => _isLoading = true);
-    // Simulate a network call
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      Navigator.pushAndRemoveUntil(
+      Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => RemittanceSuccessPage(
-            amount: double.tryParse(widget.amount) ?? 0.0,
-            operatorName: widget.operatorName,
-            transactionCode: _transactionCode,
-          ),
-        ),
-        (route) => route.isFirst, // Go back to the wallet page
+        MaterialPageRoute(builder: (_) => const RemittanceSuccessPage()),
       );
     });
   }
@@ -63,7 +57,6 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
   Widget build(BuildContext context) {
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
-    final now = DateTime.now();
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -77,7 +70,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Confirm Remittance',
+          'Remittance',
           style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -87,12 +80,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
         child: Column(
           children: [
             _buildTransactionCard(
-              date: DateFormat('MM/dd/yyyy').format(now),
-              time: DateFormat('hh:mm a').format(now),
               amount: currencyFormat.format(amountValue),
-              total: currencyFormat.format(
-                amountValue,
-              ), // Remittance has no extra fees
               transactionCode: _transactionCode,
               brandColor: brandColor,
             ),
@@ -140,10 +128,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
   }
 
   Widget _buildTransactionCard({
-    required String date,
-    required String time,
     required String amount,
-    required String total,
     required String transactionCode,
     required Color brandColor,
   }) {
@@ -161,35 +146,63 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(
-            'Remittance Transaction',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            children: [
+              Text(
+                'Remittance Transaction',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              _buildDetailRow(
+                'Date:',
+                DateFormat('MM/dd/yyyy').format(DateTime.now()),
+              ),
+              _buildDetailRow(
+                'Time:',
+                DateFormat('hh:mm a').format(DateTime.now()),
+              ),
+              _buildDetailRow('Recipient:', widget.operatorName),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              _buildDetailRow('Amount:', amount, isTotal: true),
+              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              BarcodeWidget(
+                barcode: Barcode.code128(),
+                data: transactionCode,
+                height: 50,
+                drawText: false,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                transactionCode,
+                style: GoogleFonts.sourceCodePro(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          _buildDetailRow('Date:', date),
-          _buildDetailRow('Time:', time),
-          _buildDetailRow('Recipient:', widget.operatorName),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          _buildDetailRow('Amount:', total, isTotal: true),
-          Divider(color: brandColor.withOpacity(0.5), height: 24),
-          BarcodeWidget(
-            barcode: Barcode.code128(),
-            data: transactionCode,
-            height: 50,
-            drawText: false,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            transactionCode,
-            style: GoogleFonts.sourceCodePro(
-              fontSize: 14,
-              color: Colors.black54,
-              letterSpacing: 1.5,
+          Positioned(
+            top: -12,
+            right: -12,
+            child: GestureDetector(
+              onTap: () => Navigator.of(
+                context,
+              ).popUntil((route) => route.settings.name == '/wallet'),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.close, color: brandColor),
+              ),
             ),
           ),
         ],
