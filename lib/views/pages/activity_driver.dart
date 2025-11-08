@@ -3,17 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'wallet_driver.dart';
-//import 'driver_trip_history_page.dart';
+import 'trips_driver.dart';
 
-/// This is the main widget for the "Activity" tab.
-/// It IS a Navigator, which allows it to handle its own sub-navigation.
 class DriverActivityPage extends StatelessWidget {
   const DriverActivityPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Navigator(
-      initialRoute: '/', // The initial route shows the Hub UI
+      initialRoute: '/',
       onGenerateRoute: (settings) {
         late Widget page;
         switch (settings.name) {
@@ -21,11 +19,11 @@ class DriverActivityPage extends StatelessWidget {
             page = const DriverWalletPage();
             break;
           case '/trip_history':
-            //page = const DriverTripHistoryPage();
+            page = const DriverTripHistoryPage();
             break;
           case '/':
           default:
-            page = const _ActivityHub(); // The UI with the buttons
+            page = const _ActivityHub();
             break;
         }
         return MaterialPageRoute(
@@ -37,8 +35,6 @@ class DriverActivityPage extends StatelessWidget {
   }
 }
 
-/// This is the private UI widget for the Hub.
-/// It's the first thing the DriverActivityPage's navigator shows.
 class _ActivityHub extends StatelessWidget {
   const _ActivityHub();
 
@@ -71,8 +67,6 @@ class _ActivityHub extends StatelessWidget {
               title: 'Wallet',
               subtitle: 'View earnings, balance, and make remittances.',
               onTap: () {
-                // This call finds the Navigator inside DriverActivityPage
-                // and pushes the '/wallet' route.
                 Navigator.of(context).pushNamed('/wallet');
               },
             ),
