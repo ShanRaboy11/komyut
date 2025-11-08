@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
 import 'wallet_history_driver.dart';
+import 'remit_driver.dart';
 
 class DriverWalletPage extends StatelessWidget {
   const DriverWalletPage({super.key});
@@ -163,7 +164,12 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
 
   Widget _buildRemitButton() {
     return ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RemitPageDriver()),
+        );
+      },
       icon: const Icon(Symbols.upload_rounded, size: 20),
       label: Text(
         'Remit to Operator',
