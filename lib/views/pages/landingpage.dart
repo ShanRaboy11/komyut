@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
 import '../widgets/logo.dart';
-import '../pages/create_account.dart';
-import '../pages/login.dart';
-//import '../pages/home_commuter.dart';
+import 'create_account.dart';
+import 'login.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -23,7 +23,6 @@ class LandingPage extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Your Positioned background elements
             Positioned(
               top: 39,
               left: 172,
@@ -75,22 +74,12 @@ class LandingPage extends StatelessWidget {
               child: Image.asset("assets/images/Ellipse 5.png"),
             ),
 
-            // Foreground content wrapped in SingleChildScrollView
             Center(
               child: SingleChildScrollView(
-                // Added SingleChildScrollView here
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Welcome",
-                      style: TextStyle(
-                        fontSize: 50,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Manrope',
-                        color: Color(0xFF7B3CBF),
-                      ),
-                    ),
+                    _buildWelcomeText(),
                     const SizedBox(height: 80),
 
                     const Logo(),
@@ -118,7 +107,6 @@ class LandingPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const LoginPage(),
-                            //builder: (context) => const CommuterDashboardNav(),
                           ),
                         );
                       },
@@ -129,6 +117,29 @@ class LandingPage extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeText() {
+    const gradient = LinearGradient(
+      colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      child: Text(
+        "Welcome",
+        style: GoogleFonts.manrope(
+          fontSize: 50,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );

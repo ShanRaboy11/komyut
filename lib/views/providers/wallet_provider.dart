@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/commuter_dashboard.dart';
+import '../services/driver_dashboard.dart';
 import '../pages/wallet_history_commuter.dart';
 
 import 'dart:convert';
@@ -47,6 +48,8 @@ class WalletProvider extends ChangeNotifier {
   String? _profileErrorMessage;
   Map<String, dynamic>? _userProfile;
 
+  bool _isFareExpensesLoading = false;
+
   // --- Getters ---
   bool get isWalletLoading => _isWalletLoading;
   String? get walletErrorMessage => _walletErrorMessage;
@@ -78,6 +81,8 @@ class WalletProvider extends ChangeNotifier {
   bool _isSendingInstructions = false;
   bool get isSendingInstructions => _isSendingInstructions;
 
+  bool get isFareExpensesLoading => _isFareExpensesLoading;
+
   // --- Methods ---
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
@@ -89,7 +94,7 @@ class WalletProvider extends ChangeNotifier {
         _dashboardService.getWheelTokens(),
         _dashboardService.getRecentTransactions(),
         _dashboardService.getRecentTokens(),
-        _dashboardService.getFareExpensesWeekly(),
+        _dashboardService.getFareExpensesWeekly(weekOffset: 0),
       ]);
       _balance = (results[0] as num).toDouble();
       _wheelTokens = (results[1] as num).toDouble();
@@ -313,6 +318,109 @@ class WalletProvider extends ChangeNotifier {
       throw Exception('Could not send instructions. Please try again.');
     } finally {
       _isSendingInstructions = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchFareExpensesForWeek(int offset) async {
+    _isFareExpensesLoading = true;
+    notifyListeners();
+    try {
+      _fareExpenses = await _dashboardService.getFareExpensesWeekly(
+        weekOffset: offset,
+      );
+    } catch (e) {
+      debugPrint('Failed to load fare expenses for offset $offset: $e');
+      _fareExpenses = {};
+    } finally {
+      _isFareExpensesLoading = false;
+      notifyListeners();
+    }
+  }
+}
+
+class DriverWalletProvider extends ChangeNotifier {
+  final DriverDashboardService _dashboardService = DriverDashboardService();
+
+  // Loading states
+  bool _isPageLoading = false;
+  bool _isChartLoading = false;
+  bool _isHistoryLoading = false;
+  String? _errorMessage;
+
+  // Data
+  double _totalBalance = 0.0;
+  double _todayEarnings = 0.0;
+  Map<String, double> _weeklyEarnings = {};
+  List<Map<String, dynamic>> _recentTransactions = [];
+  List<Map<String, dynamic>> _allTransactions = [];
+
+  // Getters
+  bool get isPageLoading => _isPageLoading;
+  bool get isChartLoading => _isChartLoading;
+  bool get isHistoryLoading => _isHistoryLoading;
+  String? get errorMessage => _errorMessage;
+
+  double get totalBalance => _totalBalance;
+  double get todayEarnings => _todayEarnings;
+  Map<String, double> get weeklyEarnings => _weeklyEarnings;
+  List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
+  List<Map<String, dynamic>> get allTransactions => _allTransactions;
+
+  /// Fetches the initial data for the main wallet page.
+  Future<void> fetchWalletData() async {
+    _isPageLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final results = await Future.wait([
+        _dashboardService.getWalletBalance(),
+        _dashboardService.getTodayEarnings(),
+        _dashboardService.getWeeklyEarnings(weekOffset: 0),
+        _dashboardService.getRecentTransactions(),
+      ]);
+
+      _totalBalance = (results[0] as num).toDouble();
+      _todayEarnings = (results[1] as num).toDouble();
+      _weeklyEarnings = results[2] as Map<String, double>;
+      _recentTransactions = results[3] as List<Map<String, dynamic>>;
+    } catch (e) {
+      _errorMessage = 'Failed to load wallet data: $e';
+    } finally {
+      _isPageLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches earnings for a specific week for the chart
+  Future<void> fetchWeeklyEarnings(int offset) async {
+    _isChartLoading = true;
+    notifyListeners();
+    try {
+      _weeklyEarnings = await _dashboardService.getWeeklyEarnings(
+        weekOffset: offset,
+      );
+    } catch (e) {
+      debugPrint('Failed to load weekly earnings for offset $offset: $e');
+      _weeklyEarnings = {};
+    } finally {
+      _isChartLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches transaction history
+  Future<void> fetchFullDriverHistory() async {
+    _isHistoryLoading = true;
+    _errorMessage = null;
+    _allTransactions = [];
+    notifyListeners();
+    try {
+      _allTransactions = await _dashboardService.getAllTransactions();
+    } catch (e) {
+      _errorMessage = 'Failed to load history: $e';
+    } finally {
+      _isHistoryLoading = false;
       notifyListeners();
     }
   }

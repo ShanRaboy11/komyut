@@ -1,17 +1,18 @@
-// lib/pages/driver_dashboard.dart - WITH PROVIDER WRAPPER FIX
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../services/qr_service.dart';
 import '../providers/driver_dashboard.dart';
-import 'qr_generate.dart';
 
-// ✅ WRAP THE NAV WITH PROVIDER
+import 'qr_generate.dart';
+import 'activity_driver.dart';
+
 class DriverDashboardNav extends StatelessWidget {
   const DriverDashboardNav({super.key});
 
@@ -28,15 +29,18 @@ class _DriverDashboardNavContent extends StatefulWidget {
   const _DriverDashboardNavContent();
 
   @override
-  State<_DriverDashboardNavContent> createState() => _DriverDashboardNavContentState();
+  State<_DriverDashboardNavContent> createState() =>
+      _DriverDashboardNavContentState();
 }
 
-class _DriverDashboardNavContentState extends State<_DriverDashboardNavContent> {
+class _DriverDashboardNavContentState
+    extends State<_DriverDashboardNavContent> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
       pages: const [
         DriverDashboard(),
+        DriverActivityPage(),
         Center(child: Text("📋 Activity")),
         Center(child: Text("✍️ Feedback")),
         Center(child: Text("🔔 Notifications")),
@@ -74,7 +78,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
   @override
   void initState() {
     super.initState();
-    // ✅ Use addPostFrameCallback to load data AFTER build completes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -106,9 +109,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
   void _navigateToQRGeneration() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const DriverQRGenerateNav(),
-      ),
+      MaterialPageRoute(builder: (context) => const DriverQRGenerateNav()),
     ).then((_) {
       _loadCurrentQR();
     });
@@ -124,9 +125,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
         if (dashboardProvider.isLoading) {
           return const Scaffold(
             body: Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFB945AA),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFFB945AA)),
             ),
           );
         }
@@ -139,7 +138,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading dashboard',
@@ -210,7 +213,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // LOGO & GREETING
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -244,7 +246,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                               ),
                               const SizedBox(height: 20),
 
-                              // EARNINGS + BALANCE (FROM DATABASE)
+                              // EARNINGS + BALANCE
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
@@ -285,7 +287,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
                         ),
                         const SizedBox(height: 15),
                         Padding(
-                          padding: const EdgeInsets.only(left: 30.0, right: 30.0),
+                          padding: const EdgeInsets.only(
+                            left: 30.0,
+                            right: 30.0,
+                          ),
                           child: Column(
                             children: [
                               // MAIN QR DISPLAY AREA
@@ -304,7 +309,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 padding: const EdgeInsets.all(24),
                                 child: Column(
                                   children: [
-                                    // Header with Info Icon
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
@@ -325,9 +329,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                           child: Container(
                                             padding: const EdgeInsets.all(4),
                                             decoration: BoxDecoration(
-                                              color:
-                                                  const Color(0xFFB945AA)
-                                                      .withAlpha(26),
+                                              color: const Color(
+                                                0xFFB945AA,
+                                              ).withAlpha(26),
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
@@ -340,15 +344,17 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                       ],
                                     ),
 
-                                    // Info Tooltip
                                     if (showTooltip) ...[
                                       const SizedBox(height: 12),
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFB945AA)
-                                              .withAlpha(26),
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: const Color(
+                                            0xFFB945AA,
+                                          ).withAlpha(26),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: Row(
                                           children: [
@@ -363,8 +369,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                                 'Generate your QR code for passengers to scan and pay fares.',
                                                 style: GoogleFonts.nunito(
                                                   fontSize: 12,
-                                                  color:
-                                                      const Color(0xFF5B53C2),
+                                                  color: const Color(
+                                                    0xFF5B53C2,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -415,7 +422,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                         padding: const EdgeInsets.all(20),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                           border: Border.all(
                                             color: const Color(0xFFB945AA),
                                             width: 2,
@@ -438,13 +447,15 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                             ),
                                             const SizedBox(height: 16),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 8,
-                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFB945AA)
-                                                    .withAlpha(26),
+                                                color: const Color(
+                                                  0xFFB945AA,
+                                                ).withAlpha(26),
                                                 borderRadius:
                                                     BorderRadius.circular(20),
                                               ),
@@ -453,7 +464,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                                 style: GoogleFonts.manrope(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFFB945AA),
+                                                  color: const Color(
+                                                    0xFFB945AA,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -481,13 +494,15 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
                               const SizedBox(height: 20),
 
-                              // ANALYTICS CARD (FROM DATABASE)
+                              // ANALYTICS CARD
                               _buildAnalyticsCard(dashboardProvider.rating),
 
                               const SizedBox(height: 20),
 
-                              // FEEDBACK CARD (FROM DATABASE)
-                              _buildFeedbackCard(dashboardProvider.reportsCount),
+                              // FEEDBACK CARD
+                              _buildFeedbackCard(
+                                dashboardProvider.reportsCount,
+                              ),
 
                               const SizedBox(height: 30),
                             ],
@@ -559,7 +574,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  isBalanceVisible ? amount : '••••••',
+                  isBalanceVisible ? amount : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 32,
@@ -583,11 +598,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF8E4CB6), width: 0.7),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -656,11 +667,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF8E4CB6), width: 0.7),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3)),
         ],
       ),
       child: Column(
