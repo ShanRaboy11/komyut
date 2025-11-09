@@ -7,8 +7,7 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
-import 'wallet_history_driver.dart';
-import 'remit_driver.dart';
+import 'driver_app.dart';
 
 class DriverWalletPage extends StatelessWidget {
   const DriverWalletPage({super.key});
@@ -165,10 +164,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
   Widget _buildRemitButton() {
     return ElevatedButton.icon(
       onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RemitPageDriver()),
-        );
+        DriverApp.navigatorKey.currentState?.pushNamed('/remit');
       },
       icon: const Icon(Symbols.upload_rounded, size: 20),
       label: Text(
@@ -418,12 +414,9 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
 
   Widget _buildViewAllButton() {
     return OutlinedButton(
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const WalletHistoryDriverPage(),
-        ),
-      ),
+      onPressed: () {
+        DriverApp.navigatorKey.currentState?.pushNamed('/driver_history');
+      },
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFF8E4CB6),
         side: const BorderSide(color: Color(0xFF8E4CB6)),

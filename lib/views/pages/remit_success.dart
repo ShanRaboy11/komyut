@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
+import 'driver_app.dart';
 
 class RemittanceSuccessPage extends StatefulWidget {
   const RemittanceSuccessPage({super.key});
@@ -70,7 +71,7 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
               ),
             ),
             const SizedBox(height: 150),
-            _buildActivityButton(context),
+            _buildHomeButton(context),
             const SizedBox(height: 24),
             _buildWalletButton(context),
           ],
@@ -110,11 +111,14 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
     );
   }
 
-  Widget _buildActivityButton(BuildContext context) {
+  Widget _buildHomeButton(BuildContext context) {
     return CustomButton(
-      text: "Activity",
+      text: "Home",
       onPressed: () {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        DriverApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       },
       isFilled: true,
       textColor: Colors.white,
@@ -125,7 +129,7 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(context).popUntil(ModalRoute.withName('/wallet'));
+        DriverApp.navigatorKey.currentState?.popUntil(ModalRoute.withName('/'));
       },
       isFilled: false,
     );

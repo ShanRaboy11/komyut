@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-import 'remit_success.dart';
+import 'driver_app.dart';
 
 class RemitConfirmationPage extends StatefulWidget {
   final String amount;
@@ -46,9 +46,8 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const RemittanceSuccessPage()),
+      DriverApp.navigatorKey.currentState?.pushReplacementNamed(
+        '/remit_success',
       );
     });
   }
@@ -103,7 +102,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
         onPressed: _isLoading ? null : _onConfirmPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: brandColor,
-          backgroundColor: brandColor.withOpacity(0.1),
+          backgroundColor: brandColor.withValues(alpha: 0.1),
           side: BorderSide(color: brandColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -137,10 +136,10 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: brandColor.withOpacity(0.5)),
+        border: Border.all(color: brandColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: brandColor.withOpacity(0.1),
+            color: brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -158,7 +157,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow(
                 'Date:',
                 DateFormat('MM/dd/yyyy').format(DateTime.now()),
@@ -168,9 +167,9 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
                 DateFormat('hh:mm a').format(DateTime.now()),
               ),
               _buildDetailRow('Recipient:', widget.operatorName),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Amount:', amount, isTotal: true),
-              Divider(color: brandColor.withOpacity(0.5), height: 24),
+              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
@@ -192,9 +191,11 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(
-                context,
-              ).popUntil((route) => route.settings.name == '/wallet'),
+              onTap: () {
+                DriverApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
+              },
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(

@@ -1,11 +1,9 @@
-// In lib/pages/remit_page_driver.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'remit_confirm.dart';
+import 'driver_app.dart';
 
 class RemitPageDriver extends StatefulWidget {
   const RemitPageDriver({super.key});
@@ -19,7 +17,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   bool _isButtonEnabled = false;
   String? _errorText;
 
-  // Dummy Data
+  // dummy data
   final double _currentBalance = 12540.50;
   final String _operatorName = 'Nunito Porcalla';
 
@@ -37,7 +35,6 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   }
 
   void _validateInput() {
-    // Handle leading zeros
     if (_amountController.text.length > 1 &&
         _amountController.text.startsWith('0')) {
       _amountController.text = _amountController.text.substring(1);
@@ -67,16 +64,14 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
     super.dispose();
   }
 
-  void _onReviewPressed() {
+  void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RemitConfirmationPage(
-          amount: _amountController.text,
-          operatorName: _operatorName,
-        ),
-      ),
+    DriverApp.navigatorKey.currentState?.pushNamed(
+      '/remit_confirmation',
+      arguments: {
+        'amount': _amountController.text,
+        'operatorName': _operatorName,
+      },
     );
   }
 
@@ -148,10 +143,10 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _brandColor.withOpacity(0.2)),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: _brandColor.withOpacity(0.05),
+            color: _brandColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -203,10 +198,10 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _brandColor.withOpacity(0.5)),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: _brandColor.withOpacity(0.1),
+            color: _brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -221,7 +216,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          Divider(color: _brandColor.withOpacity(0.5), height: 24),
+          Divider(color: _brandColor.withValues(alpha: 0.5), height: 24),
           SizedBox(
             width: double.infinity,
             height: 80,
@@ -282,16 +277,16 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   Widget _buildNextButton() {
     return Center(
       child: OutlinedButton(
-        onPressed: _isButtonEnabled ? _onReviewPressed : null,
+        onPressed: _isButtonEnabled ? _onNextPressed : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
           backgroundColor: _isButtonEnabled
-              ? _brandColor.withOpacity(0.1)
-              : Colors.grey.withOpacity(0.1),
+              ? _brandColor.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.1),
           side: BorderSide(
             color: _isButtonEnabled
                 ? _brandColor
-                : Colors.grey.withOpacity(0.5),
+                : Colors.grey.withValues(alpha: 0.5),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
