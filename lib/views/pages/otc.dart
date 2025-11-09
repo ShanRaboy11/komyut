@@ -25,12 +25,16 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
   }
 
   void _onAmountChanged(String value) {
+    if (value.length > 1 && value.startsWith('0')) {
+      _amountController.text = value.substring(1);
+      _amountController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _amountController.text.length),
+      );
+    }
+
     setState(() {
-      final isEnabled =
-          value.isNotEmpty &&
-          int.tryParse(value) != null &&
-          int.parse(value) > 0;
-      _isButtonEnabled = isEnabled;
+      final amount = int.tryParse(_amountController.text) ?? 0;
+      _isButtonEnabled = amount > 0;
     });
   }
 
@@ -137,10 +141,10 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _brandColor.withValues(alpha: 0.5)),
+        border: Border.all(color: _brandColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: _brandColor.withValues(alpha: 0.1),
+            color: _brandColor.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -156,32 +160,37 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          Divider(color: _brandColor.withValues(alpha: 0.5), height: 20),
-          const SizedBox(height: 6),
-
-          Text(
-            'PHP',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 1),
+          Divider(color: _brandColor.withOpacity(0.5), height: 24),
           SizedBox(
             width: double.infinity,
             height: 80,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Text(
-                  _amountController.text.isEmpty ? "0" : _amountController.text,
-                  style: GoogleFonts.manrope(
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₱',
+                      style: GoogleFonts.manrope(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _amountController.text.isEmpty
+                          ? "0"
+                          : _amountController.text,
+                      style: GoogleFonts.manrope(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
                 TextField(
                   controller: _amountController,
@@ -193,21 +202,18 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                   style: const TextStyle(color: Colors.transparent),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
+                    LengthLimitingTextInputFormatter(5),
                   ],
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     fillColor: Colors.transparent,
                     filled: true,
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: 30),
+          const SizedBox(height: 32),
           Text(
             'A PHP 5.00 fee will be charged per transaction.',
             style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
