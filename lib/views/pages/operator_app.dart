@@ -4,6 +4,7 @@ import './home_operator.dart';
 import './report_operator.dart';
 import './placeholders.dart';
 import './profile.dart';
+import 'driver_operator copy.dart';
 
 class OperatorApp extends StatelessWidget {
   const OperatorApp({super.key});
@@ -12,7 +13,7 @@ class OperatorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return OperatorNavBarWrapper(
       homePage: OperatorDashboardNav(),
-      driversPage: OperatorDriversPage(),
+      driversPage: AnalyticsCard(),
       transactionsPage: OperatorTransactionsPage(),
       reportsPage: OperatorReportsPage(),
       profilePage: ProfilePage(),
