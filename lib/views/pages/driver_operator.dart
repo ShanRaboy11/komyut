@@ -4,14 +4,14 @@ import 'driverlist_operator.dart';
 import '../widgets/drivercard_operator.dart';
 import 'driverdetails_operator.dart';
 
-class AnalyticsCard extends StatefulWidget {
-  const AnalyticsCard({super.key});
+class OperatorDriversPage extends StatefulWidget {
+  const OperatorDriversPage({super.key});
 
   @override
-  State<AnalyticsCard> createState() => _AnalyticsCardState();
+  State<OperatorDriversPage> createState() => _OperatorDriversPageState();
 }
 
-class _AnalyticsCardState extends State<AnalyticsCard> {
+class _OperatorDriversPageState extends State<OperatorDriversPage> {
   String rangeFilter = "Weekly";
   String metricFilter = "Top Earners";
   DateTime currentDate = DateTime.now();

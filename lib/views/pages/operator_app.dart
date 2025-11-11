@@ -13,7 +13,7 @@ class OperatorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return OperatorNavBarWrapper(
       homePage: OperatorDashboardNav(),
-      driversPage: AnalyticsCard(),
+      driversPage: OperatorDriversPage(),
       transactionsPage: OperatorTransactionsPage(),
       reportsPage: OperatorReportsPage(),
       profilePage: ProfilePage(),

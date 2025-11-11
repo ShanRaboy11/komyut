@@ -290,7 +290,7 @@ class OperatorDashboardPage extends StatelessWidget {
   }
 }
 
-class OperatorDriversPage extends StatelessWidget {
+/*class OperatorDriversPage extends StatelessWidget {
   const OperatorDriversPage({super.key});
 
   @override
@@ -319,7 +319,7 @@ class OperatorDriversPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class OperatorTransactionsPage extends StatelessWidget {
   const OperatorTransactionsPage({super.key});
