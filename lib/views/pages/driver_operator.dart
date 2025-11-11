@@ -1,134 +1,143 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'trips_commuter.dart';
-import '../widgets/trip_card.dart';
+import 'driverlist_operator.dart';
+import '../widgets/drivercard_operator.dart';
 
-class DriverPage extends StatefulWidget {
-  const DriverPage({super.key});
+class AnalyticsCard extends StatefulWidget {
+  const AnalyticsCard({super.key});
 
   @override
-  State<DriverPage> createState() => _DriverPageState();
+  State<AnalyticsCard> createState() => _AnalyticsCardState();
 }
 
-class _DriverPageState extends State<DriverPage> {
-  String selectedRange = 'Weekly';
-  int currentIndex = 0;
+class _AnalyticsCardState extends State<AnalyticsCard> {
+  String rangeFilter = "Weekly";
+  String metricFilter = "Top Earners";
+  DateTime currentDate = DateTime.now();
 
-  final gradientColors = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
-  // Simulated ranges
-  List<String> weeklyRanges = [
-    'Sep 29 - Oct 5',
-    'Oct 6 - Oct 12',
-    'Oct 13 - Oct 19',
-    'Oct 20 - Oct 26',
-  ];
-  List<String> monthlyRanges = [
-    'September 2025',
-    'October 2025',
-    'November 2025',
-  ];
-  List<String> yearlyRanges = ['2024', '2025', '2026'];
-  List<String> allTimeRanges = ['2022 - 2023', '2023 - 2024', '2024 - 2025'];
-
-  String getCurrentRange() {
-    switch (selectedRange) {
-      case 'Weekly':
-        return weeklyRanges[currentIndex % weeklyRanges.length];
-      case 'Monthly':
-        return monthlyRanges[currentIndex % monthlyRanges.length];
-      case 'Yearly':
-        return yearlyRanges[currentIndex % yearlyRanges.length];
-      case 'All Trips':
-        return allTimeRanges[currentIndex % allTimeRanges.length];
-      default:
-        return '';
-    }
-  }
-
-  List<String> getXLabels() {
-    switch (selectedRange) {
-      case 'Weekly':
-        return ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-      case 'Monthly':
-        return ['W1', 'W2', 'W3', 'W4'];
-      case 'Yearly':
-        return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-      case 'All Trips':
-        return ['2022', '2023', '2024', '2025'];
-      default:
-        return [];
-    }
-  }
-
-  List<FlSpot> getData() {
-    switch (selectedRange) {
-      case 'Weekly':
-        return [
-          FlSpot(0, 3),
-          FlSpot(1, 4),
-          FlSpot(2, 2),
-          FlSpot(3, 5),
-          FlSpot(4, 4),
-          FlSpot(5, 6),
-          FlSpot(6, 3),
-        ];
-      case 'Monthly':
-        return [FlSpot(0, 12), FlSpot(1, 8), FlSpot(2, 15), FlSpot(3, 10)];
-      case 'Yearly':
-        return List.generate(
-          12,
-          (i) => FlSpot(i.toDouble(), (5 + (i % 4) * 2).toDouble()),
-        );
-      case 'All Trips':
-        return [FlSpot(0, 20), FlSpot(1, 35), FlSpot(2, 50), FlSpot(3, 70)];
-      default:
-        return [];
-    }
-  }
-
-  final Map<String, Map<String, String>> analyticsData = {
-    'Weekly': {'trips': '12', 'distance': '45 km', 'spent': '₱650'},
-    'Monthly': {'trips': '54', 'distance': '230 km', 'spent': '₱2,400'},
-    'Yearly': {'trips': '620', 'distance': '3,200 km', 'spent': '₱28,000'},
-    'All Trips': {
-      'trips': '2,430',
-      'distance': '12,540 km',
-      'spent': '₱95,000',
-    },
+  // Dummy data variations
+  final Map<String, List<Map<String, dynamic>>> dummyData = {
+    "Top Earners": [
+      {"name": "Gio", "value": 1500},
+      {"name": "James", "value": 1000},
+      {"name": "Noel", "value": 900},
+      {"name": "Brent", "value": 400},
+      {"name": "Dean", "value": 100},
+    ],
+    "Top Ratings": [
+      {"name": "Noel", "value": 4.9},
+      {"name": "James", "value": 4.7},
+      {"name": "Gio", "value": 4.6},
+      {"name": "Dean", "value": 4.2},
+      {"name": "Brent", "value": 3.9},
+    ],
+    "Top Trips": [
+      {"name": "James", "value": 320},
+      {"name": "Gio", "value": 250},
+      {"name": "Brent", "value": 150},
+      {"name": "Noel", "value": 120},
+      {"name": "Dean", "value": 60},
+    ],
   };
 
-  void prevRange() {
+  // --------- DATE LABEL LOGIC ----------
+  String getFormattedDate() {
+    switch (rangeFilter) {
+      case "Daily":
+        return "${currentDate.month}/${currentDate.day}/${currentDate.year}";
+      case "Weekly":
+        final start = currentDate.subtract(
+          Duration(days: currentDate.weekday - 1),
+        );
+        final end = start.add(const Duration(days: 6));
+        return "${start.month}/${start.day} - ${end.month}/${end.day}";
+      case "Monthly":
+        return "${_monthName(currentDate.month)} ${currentDate.year}";
+      case "Yearly":
+        return "${currentDate.year}";
+    }
+    return "";
+  }
+
+  String _monthName(int m) {
+    const names = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return names[m];
+  }
+
+  // --------- NAVIGATION ---------
+  void goPrevious() {
     setState(() {
-      currentIndex = (currentIndex - 1).clamp(0, 999);
+      switch (rangeFilter) {
+        case "Daily":
+          currentDate = currentDate.subtract(const Duration(days: 1));
+          break;
+        case "Weekly":
+          currentDate = currentDate.subtract(const Duration(days: 7));
+          break;
+        case "Monthly":
+          currentDate = DateTime(currentDate.year, currentDate.month - 1, 1);
+          break;
+        case "Yearly":
+          currentDate = DateTime(currentDate.year - 1, 1, 1);
+          break;
+      }
     });
   }
 
-  void nextRange() {
+  void goNext() {
     setState(() {
-      currentIndex = (currentIndex + 1).clamp(0, 999);
+      switch (rangeFilter) {
+        case "Daily":
+          currentDate = currentDate.add(const Duration(days: 1));
+          break;
+        case "Weekly":
+          currentDate = currentDate.add(const Duration(days: 7));
+          break;
+        case "Monthly":
+          currentDate = DateTime(currentDate.year, currentDate.month + 1, 1);
+          break;
+        case "Yearly":
+          currentDate = DateTime(currentDate.year + 1, 1, 1);
+          break;
+      }
     });
   }
+
+  final List<Map<String, String>> driverList = [
+    {"name": "James Rodriguez", "puvType": "Modern", "plate": "NBG 4521"},
+    {"name": "Noel Fernandez", "puvType": "Modern", "plate": "TAX 9132"},
+    {"name": "Brent Castillo", "puvType": "Traditional", "plate": "AB 24567"},
+    {"name": "Dean Alvarez", "puvType": "Modern", "plate": "TRI 889"},
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final labels = getXLabels();
-    final data = getData();
-    final size = MediaQuery.of(context).size;
+    final data = dummyData[metricFilter]!;
+    final maxValue = data.first["value"].toDouble();
 
     return Scaffold(
-      backgroundColor: Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 30),
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header & Dropdown
+              // Title Row + Range Filter
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -137,121 +146,112 @@ class _DriverPageState extends State<DriverPage> {
                     style: GoogleFonts.manrope(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 25),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: gradientColors,
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFB945AA),
+                          Color(0xFF8E4CB6),
+                          Color(0xFF5B53C2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(30),
                     ),
-
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        dropdownColor: const Color(0xFF8A56F0),
-                        value: selectedRange,
-                        iconEnabledColor: Colors.white,
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        items: ['Weekly', 'Monthly', 'Yearly', 'All Trips']
-                            .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRange = value!;
-                            currentIndex = 0; // reset when switching
-                          });
-                        },
+                    child: DropdownButton<String>(
+                      value: rangeFilter,
+                      dropdownColor: const Color(0xFF8A56F0),
+                      underline: const SizedBox(),
+                      iconEnabledColor: Colors.white,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
+                      onChanged: (v) => setState(() => rangeFilter = v!),
+                      items: ["Daily", "Weekly", "Monthly", "Yearly"]
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 20),
 
-              // Analytics Card
+              // MAIN CARD
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.only(
+                  top: 18,
+                  bottom: 18,
+                  left: 20,
+                  right: 20,
+                ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter, // start at the top
-                    end: Alignment.bottomCenter, // end at the bottom
-                    colors: gradientColors,
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFB945AA),
+                      Color(0xFF8E4CB6),
+                      Color(0xFF5B53C2),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title + Range + Navigation
+                    // Metric Filter + Date Navigation
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 25),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedRange,
-                              alignment: Alignment.centerLeft,
-                              dropdownColor: const Color(0xFF8A56F0),
-                              borderRadius: BorderRadius.circular(12),
-                              iconEnabledColor: Colors.white,
-                              style: GoogleFonts.nunito(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              items:
-                                  [
-                                        'Top Earners',
-                                        'Top Ratings',
-                                        'Top Trips Completed',
-                                      ]
-                                      .map(
-                                        (e) => DropdownMenuItem(
-                                          value: e,
-                                          child: Text(e),
-                                        ),
-                                      )
-                                      .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedRange = value!;
-                                  currentIndex = 0;
-                                });
-                              },
-                            ),
+                        DropdownButton<String>(
+                          value: metricFilter,
+                          dropdownColor: const Color(0xFF8E4CB6),
+                          underline: const SizedBox(),
+                          iconEnabledColor: Colors.white,
+                          style: GoogleFonts.nunito(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
                           ),
+                          onChanged: (v) => setState(() => metricFilter = v!),
+                          items: ["Top Earners", "Top Ratings", "Top Trips"]
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
                         ),
-
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              onPressed: prevRange,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: goPrevious,
                               icon: const Icon(
                                 Icons.chevron_left,
                                 color: Colors.white,
                               ),
                             ),
                             Text(
-                              getCurrentRange(),
-                              style: GoogleFonts.nunito(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
+                              getFormattedDate(),
+                              style: GoogleFonts.nunito(color: Colors.white70),
                             ),
                             IconButton(
-                              onPressed: nextRange,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: goNext,
                               icon: const Icon(
                                 Icons.chevron_right,
                                 color: Colors.white,
@@ -261,89 +261,85 @@ class _DriverPageState extends State<DriverPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
 
-                    // Line Chart
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: SizedBox(
-                            height: size.height * 0.15,
-                            child: LineChart(
-                              LineChartData(
-                                gridData: const FlGridData(show: false),
-                                titlesData: FlTitlesData(
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      interval: 1,
-                                      getTitlesWidget: (value, meta) {
-                                        int index = value.toInt();
-                                        if (index < 0 ||
-                                            index >= labels.length) {
-                                          return const SizedBox();
-                                        }
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4,
-                                          ),
-                                          child: Text(
-                                            labels[index],
-                                            style: GoogleFonts.nunito(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
+                    const SizedBox(height: 16),
+                    Column(
+                      children: data.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        final name = item["name"];
+                        final value = item["value"];
+                        final barFactor = (value.toDouble() / maxValue).clamp(
+                          0.05,
+                          1.0,
+                        );
+
+                        // Dynamic label formats
+                        String displayValue() {
+                          if (metricFilter == "Top Ratings") return "$value ★";
+                          if (metricFilter == "Top Trips")
+                            return "$value trips";
+                          return "PHP $value";
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              Text(
+                                "${i + 1}.  ",
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                borderData: FlBorderData(show: false),
-                                lineBarsData: [
-                                  LineChartBarData(
-                                    spots: data,
-                                    isCurved: true,
-                                    color: Colors.white,
-                                    barWidth: 2,
-                                    dotData: const FlDotData(show: false),
-                                  ),
-                                ],
                               ),
-                            ),
+                              Expanded(
+                                child: Stack(
+                                  alignment: Alignment.centerLeft,
+                                  children: [
+                                    Container(
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white24,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
+                                    FractionallySizedBox(
+                                      widthFactor: barFactor,
+                                      child: Container(
+                                        height: 26,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Text(
+                                        "$name • ${displayValue()}",
+                                        style: GoogleFonts.nunito(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // Stats
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _analyticsCard(
-                          "Distance",
-                          analyticsData[selectedRange]!['distance']!,
-                        ),
-                        const SizedBox(width: 20),
-                        _analyticsCard(
-                          "Expense",
-                          analyticsData[selectedRange]!['spent']!,
-                        ),
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
@@ -356,7 +352,7 @@ class _DriverPageState extends State<DriverPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Recent Trips",
+                    "List of Drivers",
                     style: GoogleFonts.manrope(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -368,7 +364,7 @@ class _DriverPageState extends State<DriverPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const Trip1Page(),
+                          builder: (context) => const DriverListPage(),
                         ),
                       );
                     },
@@ -382,105 +378,26 @@ class _DriverPageState extends State<DriverPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: driverList.length,
+                itemBuilder: (context, index) {
+                  final driver = driverList[index];
 
-              // Status Legend
-              Row(
-                children: [
-                  Text(
-                    "Status",
-                    style: GoogleFonts.nunito(
-                      color: const Color.fromARGB(255, 0, 0, 0),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: DriverCard(
+                      name: driver["name"]!,
+                      puvType: driver["puvType"]!,
+                      plate: driver["plate"]!,
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                  _buildStatusDot(Colors.yellow, "Ongoing"),
-                  const SizedBox(width: 16),
-                  _buildStatusDot(Colors.green, "Completed"),
-                  const SizedBox(width: 16),
-                  _buildStatusDot(Colors.red, "Cancelled"),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Recent Trips List
-              TripsCard(
-                date: "September 11, 2025",
-                time: "04:26 PM",
-                from: "SM Cebu",
-                to: "Colon",
-                tripCode: "01K",
-                status: "ongoing",
-              ),
-              TripsCard(
-                date: "September 10, 2025",
-                time: "03:15 PM",
-                from: "Ayala",
-                to: "IT Park",
-                tripCode: "02C",
-                status: "completed",
-              ),
-              TripsCard(
-                date: "September 09, 2025",
-                time: "06:45 PM",
-                from: "Colon",
-                to: "Talamban",
-                tripCode: "03B",
-                status: "cancelled",
+                  );
+                },
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusDot(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.nunito(fontSize: 14)),
-      ],
-    );
-  }
-
-  Widget _analyticsCard(String title, String value) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD999FF).withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                color: Color(0xFFF0D7FF),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: GoogleFonts.manrope(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: const Color.fromARGB(255, 255, 255, 255),
-              ),
-            ),
-          ],
         ),
       ),
     );

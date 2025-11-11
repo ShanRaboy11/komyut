@@ -1,8 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/trip_card.dart';
 import '../widgets/drivercard_operator.dart';
+import 'driverdetails_operator.dart';
 
 class DriverListPage extends StatefulWidget {
   const DriverListPage({super.key});
@@ -14,18 +14,54 @@ class DriverListPage extends StatefulWidget {
 class DriverListPageState extends State<DriverListPage>
     with SingleTickerProviderStateMixin {
   final List<Map<String, String>> driverList = [
-    {"name": "James Rodriguez", "puvType": "Modern", "plate": "NBG 4521"},
-    {"name": "Noel Fernandez", "puvType": "Modern", "plate": "TAX 9132"},
-    {"name": "Brent Castillo", "puvType": "Traditional", "plate": "AB 24567"},
-    {"name": "Dean Alvarez", "puvType": "Modern", "plate": "TRI 889"},
-    {"name": "Mark Adrian Cruz", "puvType": "Traditional", "plate": "XFR 6375"},
+    {
+      "name": "James Rodriguez",
+      "puvType": "Modern",
+      "plate": "NBG 4521",
+      "status": "active",
+    },
+    {
+      "name": "Noel Fernandez",
+      "puvType": "Modern",
+      "plate": "TAX 9132",
+      "status": "active",
+    },
+    {
+      "name": "Brent Castillo",
+      "puvType": "Traditional",
+      "plate": "AB 24567",
+      "status": "active",
+    },
+    {
+      "name": "Dean Alvarez",
+      "puvType": "Modern",
+      "plate": "TRI 889",
+      "status": "inactive",
+    },
+    {
+      "name": "Mark Adrian Cruz",
+      "puvType": "Traditional",
+      "plate": "XFR 6375",
+      "status": "active",
+    },
     {
       "name": "Raymund S. Villanueva",
       "puvType": "Traditional",
       "plate": "JKL 4412",
+      "status": "active",
     },
-    {"name": "Alexis Ramos", "puvType": "Modern", "plate": "TXI 3728"},
-    {"name": "John Carlo Mendoza", "puvType": "Modern", "plate": "UVE 0291"},
+    {
+      "name": "Alexis Ramos",
+      "puvType": "Modern",
+      "plate": "TXI 3728",
+      "status": "suspended",
+    },
+    {
+      "name": "John Carlo Mendoza",
+      "puvType": "Modern",
+      "plate": "UVE 0291",
+      "status": "inactive",
+    },
   ];
 
   @override
@@ -74,28 +110,8 @@ class DriverListPageState extends State<DriverListPage>
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 10),
 
-              // Tabs with animated selection
-              Row(
-                children: [
-                  Text(
-                    "Status",
-                    style: GoogleFonts.nunito(
-                      color: const Color.fromARGB(255, 0, 0, 0),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  _buildStatusDot(Colors.yellow, "Ongoing"),
-                  const SizedBox(width: 20),
-                  _buildStatusDot(Colors.green, "Completed"),
-                  const SizedBox(width: 20),
-                  _buildStatusDot(Colors.red, "Cancelled"),
-                ],
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 15),
 
               // Recent Trips List
               ListView.builder(
@@ -111,6 +127,21 @@ class DriverListPageState extends State<DriverListPage>
                       name: driver["name"]!,
                       puvType: driver["puvType"]!,
                       plate: driver["plate"]!,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DriverDetailsPage(
+                              name: driver["name"]!,
+                              puvType: driver["puvType"]!,
+                              plate: driver["plate"]!,
+                              to: "Colon",
+                              tripCode: "01K",
+                              status: driver["status"]!,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
