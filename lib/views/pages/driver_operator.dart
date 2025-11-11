@@ -302,9 +302,14 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
 
                         // Dynamic label formats
                         String displayValue() {
-                          if (metricFilter == "Top Ratings") return "$value ★";
-                          if (metricFilter == "Top Trips")
+                          if (metricFilter == "Top Ratings") {
+                            return "$value ★";
+                          }
+
+                          if (metricFilter == "Top Trips") {
                             return "$value trips";
+                          }
+
                           return "PHP $value";
                         }
 

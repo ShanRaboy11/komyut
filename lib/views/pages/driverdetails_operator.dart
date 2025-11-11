@@ -291,7 +291,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                               barWidth: 3,
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: Colors.white.withOpacity(0.15),
+                                color: Colors.white.withValues(alpha: 0.15),
                               ),
                               spots: List.generate(
                                 week["graph"].length,
