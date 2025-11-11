@@ -13,6 +13,21 @@ class DriverListPage extends StatefulWidget {
 
 class DriverListPageState extends State<DriverListPage>
     with SingleTickerProviderStateMixin {
+  final List<Map<String, String>> driverList = [
+    {"name": "James Rodriguez", "puvType": "Modern", "plate": "NBG 4521"},
+    {"name": "Noel Fernandez", "puvType": "Modern", "plate": "TAX 9132"},
+    {"name": "Brent Castillo", "puvType": "Traditional", "plate": "AB 24567"},
+    {"name": "Dean Alvarez", "puvType": "Modern", "plate": "TRI 889"},
+    {"name": "Mark Adrian Cruz", "puvType": "Traditional", "plate": "XFR 6375"},
+    {
+      "name": "Raymund S. Villanueva",
+      "puvType": "Traditional",
+      "plate": "JKL 4412",
+    },
+    {"name": "Alexis Ramos", "puvType": "Modern", "plate": "TXI 3728"},
+    {"name": "John Carlo Mendoza", "puvType": "Modern", "plate": "UVE 0291"},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,43 +98,23 @@ class DriverListPageState extends State<DriverListPage>
               const SizedBox(height: 16),
 
               // Recent Trips List
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
-              const SizedBox(height: 16),
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
-              const SizedBox(height: 16),
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
-              const SizedBox(height: 16),
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
-              const SizedBox(height: 16),
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
-              const SizedBox(height: 16),
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                puvType: "Driver",
-                plate: "735TUK",
-              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: driverList.length,
+                itemBuilder: (context, index) {
+                  final driver = driverList[index];
 
-              const SizedBox(height: 20),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: DriverCard(
+                      name: driver["name"]!,
+                      puvType: driver["puvType"]!,
+                      plate: driver["plate"]!,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),

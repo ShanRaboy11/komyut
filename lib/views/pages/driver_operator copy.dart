@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'driverlist_operator.dart';
+import '../widgets/drivercard_operator.dart';
 
 class AnalyticsCard extends StatefulWidget {
   const AnalyticsCard({super.key});
@@ -115,6 +116,13 @@ class _AnalyticsCardState extends State<AnalyticsCard> {
       }
     });
   }
+
+  final List<Map<String, String>> driverList = [
+    {"name": "James Rodriguez", "puvType": "Modern", "plate": "NBG 4521"},
+    {"name": "Noel Fernandez", "puvType": "Modern", "plate": "TAX 9132"},
+    {"name": "Brent Castillo", "puvType": "Traditional", "plate": "AB 24567"},
+    {"name": "Dean Alvarez", "puvType": "Modern", "plate": "TRI 889"},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +358,7 @@ class _AnalyticsCardState extends State<AnalyticsCard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Recent Trips",
+                    "List of Drivers",
                     style: GoogleFonts.manrope(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -376,7 +384,24 @@ class _AnalyticsCardState extends State<AnalyticsCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: driverList.length,
+                itemBuilder: (context, index) {
+                  final driver = driverList[index];
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: DriverCard(
+                      name: driver["name"]!,
+                      puvType: driver["puvType"]!,
+                      plate: driver["plate"]!,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
