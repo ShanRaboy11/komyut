@@ -126,7 +126,7 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Color(0xFF9C6BFF).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
