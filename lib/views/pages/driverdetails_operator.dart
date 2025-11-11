@@ -3,6 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/drivercard_operator.dart';
 import '../widgets/button.dart';
+import 'success_acceptacc_operator copy.dart';
+import 'success_rejectacc_operator.dart';
+import 'success_removeacc_operator.dart';
 
 class DriverDetailsPage extends StatefulWidget {
   final String name;
@@ -78,7 +81,12 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
             ElevatedButton(
               onPressed: () {
                 // Perform account removal here
-                Navigator.of(context).pop(); // Close the dialog after action
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RemoveSuccessPage(),
+                  ),
+                ); // Close the dialog after action
               },
               child: const Text('Remove'),
             ),
@@ -336,6 +344,13 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                               textColor: Colors.white,
                               onPressed: () {
                                 // Confirm rejection logic here
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RejectSuccessPage(),
+                                  ),
+                                );
                                 print(
                                   "Rejected with reason: ${_reasonController.text}",
                                 );
@@ -367,7 +382,13 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                               isFilled: true,
                               textColor: Colors.white,
                               onPressed: () {
-                                // Accept logic here
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AcceptSuccessPage(),
+                                  ),
+                                );
                               },
                             ),
                           ),
