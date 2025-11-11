@@ -91,7 +91,7 @@ class DriverListPageState extends State<DriverListPage>
       "registeredDate": "November 5, 2025",
     },
   ];
-  final List<Map<String, dynamic>> StatusTabs = [
+  final List<Map<String, dynamic>> statusTabs = [
     {"label": "Active", "value": 1},
     {"label": "Pending", "value": 2},
     {"label": "Inactive", "value": 3},
@@ -185,17 +185,19 @@ class DriverListPageState extends State<DriverListPage>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
-                  children: StatusTabs.map(
-                    (tab) => _buildPillTab(
-                      tab["label"] == "Pending" && pendingCount > 0
-                          ? "Pending ($pendingCount)"
-                          : tab["label"],
-                      tab["value"],
-                      activeStatus == tab["value"],
-                      isSmall,
-                      pendingCount: pendingCount, // 👈 added
-                    ),
-                  ).toList(),
+                  children: statusTabs
+                      .map(
+                        (tab) => _buildPillTab(
+                          tab["label"] == "Pending" && pendingCount > 0
+                              ? "Pending ($pendingCount)"
+                              : tab["label"],
+                          tab["value"],
+                          activeStatus == tab["value"],
+                          isSmall,
+                          pendingCount: pendingCount, // 👈 added
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
 
@@ -207,7 +209,7 @@ class DriverListPageState extends State<DriverListPage>
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Text(
-                          "No ${StatusTabs.firstWhere((tab) => tab['value'] == activeStatus)['label']} Drivers",
+                          "No ${statusTabs.firstWhere((tab) => tab['value'] == activeStatus)['label']} Drivers",
                           style: GoogleFonts.nunito(
                             fontSize: 20,
                             color: Colors.grey[600],

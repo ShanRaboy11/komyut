@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/drivercard_operator.dart';
 import '../widgets/button.dart';
-import 'success_acceptacc_operator copy.dart';
+import 'success_acceptacc_operator.dart';
 import 'success_rejectacc_operator.dart';
 import 'success_removeacc_operator.dart';
 
@@ -350,9 +350,6 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                     builder: (context) =>
                                         const RejectSuccessPage(),
                                   ),
-                                );
-                                print(
-                                  "Rejected with reason: ${_reasonController.text}",
                                 );
                               },
                             ),
