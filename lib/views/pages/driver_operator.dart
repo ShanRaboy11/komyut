@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'driverlist_operator.dart';
 import '../widgets/drivercard_operator.dart';
+import 'driverdetails_operator.dart';
 
 class AnalyticsCard extends StatefulWidget {
   const AnalyticsCard({super.key});
@@ -118,10 +119,35 @@ class _AnalyticsCardState extends State<AnalyticsCard> {
   }
 
   final List<Map<String, String>> driverList = [
-    {"name": "James Rodriguez", "puvType": "Modern", "plate": "NBG 4521"},
-    {"name": "Noel Fernandez", "puvType": "Modern", "plate": "TAX 9132"},
-    {"name": "Brent Castillo", "puvType": "Traditional", "plate": "AB 24567"},
-    {"name": "Dean Alvarez", "puvType": "Modern", "plate": "TRI 889"},
+    {
+      "name": "James Rodriguez",
+      "puvType": "Modern",
+      "plate": "NBG 4521",
+      "status": "active",
+      "registeredDate": "January 5, 2024",
+    },
+    {
+      "name": "Noel Fernandez",
+      "puvType": "Modern",
+      "plate": "TAX 9132",
+      "status": "active",
+      "registeredDate": "February 12, 2024",
+    },
+    {
+      "name": "Brent Castillo",
+      "puvType": "Traditional",
+      "plate": "AB 24567",
+      "status": "active",
+      "registeredDate": "March 8, 2024",
+    },
+    {
+      "name": "Dean Alvarez",
+      "puvType": "Modern",
+      "plate": "TRI 889",
+      "status": "inactive",
+      "inactiveDate": "September 10, 2025",
+      "registeredDate": "May 20, 2024",
+    },
   ];
 
   @override
@@ -392,6 +418,25 @@ class _AnalyticsCardState extends State<AnalyticsCard> {
                       name: driver["name"]!,
                       puvType: driver["puvType"]!,
                       plate: driver["plate"]!,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DriverDetailsPage(
+                              name: driver["name"]!,
+                              puvType: driver["puvType"]!,
+                              plate: driver["plate"]!,
+                              registeredDate: driver["registeredDate"]!,
+                              status: driver["status"]!,
+                              inactiveDate:
+                                  driver["inactiveDate"], // optional, can be null
+                              suspensionDate:
+                                  driver["suspensionDate"], // optional, can be null
+                              returnDate: driver["returnDate"],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },

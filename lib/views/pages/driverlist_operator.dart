@@ -19,48 +19,60 @@ class DriverListPageState extends State<DriverListPage>
       "puvType": "Modern",
       "plate": "NBG 4521",
       "status": "active",
+      "registeredDate": "January 5, 2024",
     },
     {
       "name": "Noel Fernandez",
       "puvType": "Modern",
       "plate": "TAX 9132",
       "status": "active",
+      "registeredDate": "February 12, 2024",
     },
     {
       "name": "Brent Castillo",
       "puvType": "Traditional",
       "plate": "AB 24567",
       "status": "active",
+      "registeredDate": "March 8, 2024",
     },
     {
       "name": "Dean Alvarez",
       "puvType": "Modern",
       "plate": "TRI 889",
       "status": "inactive",
+      "inactiveDate": "September 10, 2025",
+      "registeredDate": "May 20, 2024",
     },
     {
       "name": "Mark Adrian Cruz",
       "puvType": "Traditional",
       "plate": "XFR 6375",
       "status": "active",
+      "registeredDate": "April 3, 2024",
     },
     {
       "name": "Raymund S. Villanueva",
       "puvType": "Traditional",
       "plate": "JKL 4412",
       "status": "active",
+      "registeredDate": "June 15, 2024",
     },
     {
       "name": "Alexis Ramos",
       "puvType": "Modern",
       "plate": "TXI 3728",
       "status": "suspended",
+      "suspensionDate": "October 18, 2025",
+      "returnDate": "November 5, 2025",
+      "registeredDate": "July 21, 2024",
     },
     {
       "name": "John Carlo Mendoza",
       "puvType": "Modern",
       "plate": "UVE 0291",
       "status": "inactive",
+      "inactiveDate": "August 14, 2025",
+      "registeredDate": "August 2, 2024",
     },
   ];
 
@@ -135,9 +147,13 @@ class DriverListPageState extends State<DriverListPage>
                               name: driver["name"]!,
                               puvType: driver["puvType"]!,
                               plate: driver["plate"]!,
-                              to: "Colon",
-                              tripCode: "01K",
                               status: driver["status"]!,
+                              registeredDate: driver["registeredDate"]!,
+                              inactiveDate:
+                                  driver["inactiveDate"], // optional, can be null
+                              suspensionDate:
+                                  driver["suspensionDate"], // optional, can be null
+                              returnDate: driver["returnDate"],
                             ),
                           ),
                         );
@@ -150,20 +166,6 @@ class DriverListPageState extends State<DriverListPage>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStatusDot(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.nunito(fontSize: 14)),
-      ],
     );
   }
 }
