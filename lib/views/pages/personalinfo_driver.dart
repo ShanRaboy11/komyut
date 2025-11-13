@@ -368,28 +368,30 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                                   height: 200,
                                   loadingBuilder:
                                       (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
+                                        if (loadingProgress == null) {
                                           return child;
-                                        return Container(
-                                          height: 200,
-                                          alignment: Alignment.center,
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              CircularProgressIndicator(
-                                                color: primary1,
-                                              ),
-                                              SizedBox(height: 8),
-                                              Text(
-                                                'Loading image...',
-                                                style: GoogleFonts.nunito(
-                                                  fontSize: 12,
+                                        } else {
+                                          return Container(
+                                            height: 200,
+                                            alignment: Alignment.center,
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                CircularProgressIndicator(
+                                                  color: primary1,
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'Loading image...',
+                                                  style: GoogleFonts.nunito(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
                                       },
                                   errorBuilder: (context, error, stackTrace) {
                                     debugPrint('Image load error: $error');

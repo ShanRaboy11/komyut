@@ -297,15 +297,18 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                                     height: 200,
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
-                                          if (loadingProgress == null)
+                                          if (loadingProgress == null) {
                                             return child;
-                                          return Container(
-                                            height: 200,
-                                            alignment: Alignment.center,
-                                            child: CircularProgressIndicator(
-                                              color: primary1,
-                                            ),
-                                          );
+                                          }
+                                          {
+                                            return Container(
+                                              height: 200,
+                                              alignment: Alignment.center,
+                                              child: CircularProgressIndicator(
+                                                color: primary1,
+                                              ),
+                                            );
+                                          }
                                         },
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
