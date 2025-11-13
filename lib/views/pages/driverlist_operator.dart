@@ -93,21 +93,18 @@ class DriverListPageState extends State<DriverListPage>
   ];
   final List<Map<String, dynamic>> statusTabs = [
     {"label": "Active", "value": 1},
-    {"label": "Pending", "value": 2},
-    {"label": "Inactive", "value": 3},
-    {"label": "Suspended", "value": 4},
+    {"label": "Inactive", "value": 2},
+    {"label": "Suspended", "value": 3},
   ];
 
   int _statusValue(String? status) {
     switch (status?.toLowerCase()) {
       case "active":
         return 1;
-      case "pending":
-        return 2;
       case "inactive":
-        return 3;
+        return 2;
       case "suspended":
-        return 4;
+        return 3;
       default:
         return 0; // no priority
     }
@@ -129,15 +126,11 @@ class DriverListPageState extends State<DriverListPage>
     final filteredDrivers = driverList
         .where((driver) => _statusValue(driver["status"]) == activeStatus)
         .toList();
-    final pendingCount = driverList
-        .where((d) => d["status"] == "pending")
-        .length;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,7 +144,10 @@ class DriverListPageState extends State<DriverListPage>
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
 
@@ -188,13 +184,10 @@ class DriverListPageState extends State<DriverListPage>
                   children: statusTabs
                       .map(
                         (tab) => _buildPillTab(
-                          tab["label"] == "Pending" && pendingCount > 0
-                              ? "Pending ($pendingCount)"
-                              : tab["label"],
+                          tab["label"],
                           tab["value"],
                           activeStatus == tab["value"],
-                          isSmall,
-                          pendingCount: pendingCount, // 👈 added
+                          isSmall, // 👈 added
                         ),
                       )
                       .toList(),
@@ -259,13 +252,7 @@ class DriverListPageState extends State<DriverListPage>
     );
   }
 
-  Widget _buildPillTab(
-    String label,
-    int value,
-    bool isActive,
-    bool isSmall, {
-    int pendingCount = 0,
-  }) {
+  Widget _buildPillTab(String label, int value, bool isActive, bool isSmall) {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => activeStatus = value),
@@ -279,10 +266,7 @@ class DriverListPageState extends State<DriverListPage>
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.nunito(
-              fontSize:
-                  (label.contains("Suspended") || label.contains("Pending"))
-                  ? 13
-                  : 15,
+              fontSize: 15,
               color: isActive ? Color(0xFF8E4CB6) : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),
