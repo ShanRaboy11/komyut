@@ -5,9 +5,14 @@ import '../widgets/drivercard_operator.dart';
 import 'driverdetails_operator.dart';
 
 class DriverListPage extends StatefulWidget {
-  final int initialStatus; // 👈 add this
+  final int initialStatus;
+  final bool showPendingOnly; // 👈 add this
 
-  const DriverListPage({super.key, this.initialStatus = 1});
+  const DriverListPage({
+    super.key,
+    this.initialStatus = 1,
+    this.showPendingOnly = false,
+  });
 
   @override
   State<DriverListPage> createState() => DriverListPageState();
@@ -123,6 +128,9 @@ class DriverListPageState extends State<DriverListPage>
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
+    final pendingDrivers = driverList
+        .where((driver) => driver["status"] == "pending")
+        .toList();
     final filteredDrivers = driverList
         .where((driver) => _statusValue(driver["status"]) == activeStatus)
         .toList();
@@ -164,87 +172,147 @@ class DriverListPageState extends State<DriverListPage>
               ),
 
               const SizedBox(height: 30),
+
               // Header
-              Text(
-                'All Drivers',
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              if (widget.showPendingOnly) ...[
+                Text(
+                  'Pending Drivers',
+                  style: GoogleFonts.manrope(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: primary1.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: statusTabs
-                      .map(
-                        (tab) => _buildPillTab(
-                          tab["label"],
-                          tab["value"],
-                          activeStatus == tab["value"],
-                          isSmall, // 👈 added
+                const SizedBox(height: 16),
+                pendingDrivers.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            "No Pending Drivers",
+                            style: GoogleFonts.nunito(
+                              fontSize: 20,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       )
-                      .toList(),
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: pendingDrivers.length,
+                        itemBuilder: (context, index) {
+                          final driver = pendingDrivers[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: DriverCard(
+                              name: driver["name"]!,
+                              puvType: driver["puvType"]!,
+                              plate: driver["plate"]!,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DriverDetailsPage(
+                                      name: driver["name"]!,
+                                      puvType: driver["puvType"]!,
+                                      plate: driver["plate"]!,
+                                      status: driver["status"]!,
+                                      registeredDate: driver["registeredDate"]!,
+                                      inactiveDate: driver["inactiveDate"],
+                                      suspensionDate: driver["suspensionDate"],
+                                      returnDate: driver["returnDate"],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ] else ...[
+                // ✅ Otherwise show the tabbed layout for Active/Inactive/Suspended
+                Text(
+                  'All Drivers',
+                  style: GoogleFonts.manrope(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 15),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: primary1.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: statusTabs
+                        .map(
+                          (tab) => _buildPillTab(
+                            tab["label"],
+                            tab["value"],
+                            activeStatus == tab["value"],
+                            isSmall,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
 
-              // Recent Trips List
-              filteredDrivers.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        child: Text(
-                          "No ${statusTabs.firstWhere((tab) => tab['value'] == activeStatus)['label']} Drivers",
-                          style: GoogleFonts.nunito(
-                            fontSize: 20,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w600,
+                const SizedBox(height: 15),
+
+                filteredDrivers.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            "No ${statusTabs.firstWhere((tab) => tab['value'] == activeStatus)['label']} Drivers",
+                            style: GoogleFonts.nunito(
+                              fontSize: 20,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredDrivers.length,
-                      itemBuilder: (context, index) {
-                        final driver = filteredDrivers[index];
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: DriverCard(
-                            name: driver["name"]!,
-                            puvType: driver["puvType"]!,
-                            plate: driver["plate"]!,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DriverDetailsPage(
-                                    name: driver["name"]!,
-                                    puvType: driver["puvType"]!,
-                                    plate: driver["plate"]!,
-                                    status: driver["status"]!,
-                                    registeredDate: driver["registeredDate"]!,
-                                    inactiveDate: driver["inactiveDate"],
-                                    suspensionDate: driver["suspensionDate"],
-                                    returnDate: driver["returnDate"],
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: filteredDrivers.length,
+                        itemBuilder: (context, index) {
+                          final driver = filteredDrivers[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: DriverCard(
+                              name: driver["name"]!,
+                              puvType: driver["puvType"]!,
+                              plate: driver["plate"]!,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DriverDetailsPage(
+                                      name: driver["name"]!,
+                                      puvType: driver["puvType"]!,
+                                      plate: driver["plate"]!,
+                                      status: driver["status"]!,
+                                      registeredDate: driver["registeredDate"]!,
+                                      inactiveDate: driver["inactiveDate"],
+                                      suspensionDate: driver["suspensionDate"],
+                                      returnDate: driver["returnDate"],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ],
             ],
           ),
         ),

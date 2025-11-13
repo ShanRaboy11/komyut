@@ -455,7 +455,8 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DriverListPage(),
+                          builder: (context) =>
+                              const DriverListPage(showPendingOnly: false),
                         ),
                       );
                     },
@@ -537,7 +538,8 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DriverListPage(),
+                          builder: (context) =>
+                              const DriverListPage(showPendingOnly: true),
                         ),
                       );
                     },
