@@ -55,8 +55,6 @@ class _OperatorListPageState extends State<OperatorListPage> {
           operator["end"]!.toLowerCase().contains(query);
     }).toList();
 
-    final isSmall = MediaQuery.of(context).size.width < 400;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
@@ -77,9 +75,7 @@ class _OperatorListPageState extends State<OperatorListPage> {
         ),
         centerTitle: true,
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
+      body: SizedBox.expand(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
