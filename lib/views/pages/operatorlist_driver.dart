@@ -58,38 +58,41 @@ class _OperatorListPageState extends State<OperatorListPage> {
     final isSmall = MediaQuery.of(context).size.width < 400;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F1FF),
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Operator List',
+          style: GoogleFonts.manrope(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF7F1FF), Color(0xFFECE5FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
-                Text(
-                  "Operator List",
-                  style: GoogleFonts.nunito(
-                    fontSize: isSmall ? 22 : 26,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
+                const SizedBox(height: 10),
                 // Search Bar
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.05),
