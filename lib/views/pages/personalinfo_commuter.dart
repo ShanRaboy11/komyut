@@ -4,14 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PersonalInfoCommuterPage extends StatefulWidget {
   final Map<String, dynamic> profileData;
-  
-  const PersonalInfoCommuterPage({
-    super.key,
-    required this.profileData,
-  });
+
+  const PersonalInfoCommuterPage({super.key, required this.profileData});
 
   @override
-  State<PersonalInfoCommuterPage> createState() => _PersonalInfoCommuterPageState();
+  State<PersonalInfoCommuterPage> createState() =>
+      _PersonalInfoCommuterPageState();
 }
 
 class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
@@ -27,7 +25,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
   late TextEditingController sexController;
   late TextEditingController addressController;
   late TextEditingController categoryController;
-  
+
   String? attachmentUrl;
   String? commuterCategory;
 
@@ -39,10 +37,10 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
 
   void _initializeControllers() {
     final profile = widget.profileData;
-    final commuter = profile['commuters'] is List 
-        ? (profile['commuters'] as List).firstOrNull 
+    final commuter = profile['commuters'] is List
+        ? (profile['commuters'] as List).firstOrNull
         : profile['commuters'];
-    
+
     emailController = TextEditingController(
       text: _supabase.auth.currentUser?.email ?? '',
     );
@@ -55,18 +53,14 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
     ageController = TextEditingController(
       text: profile['age']?.toString() ?? '',
     );
-    sexController = TextEditingController(
-      text: profile['sex'] ?? '',
-    );
-    addressController = TextEditingController(
-      text: profile['address'] ?? '',
-    );
-    
+    sexController = TextEditingController(text: profile['sex'] ?? '');
+    addressController = TextEditingController(text: profile['address'] ?? '');
+
     commuterCategory = commuter?['category'] ?? 'regular';
     categoryController = TextEditingController(
       text: _formatCategory(commuterCategory ?? 'regular'),
     );
-    
+
     // Get attachment URL if exists
     if (commuter != null && commuter['attachment_id'] != null) {
       _loadAttachment(commuter['attachment_id']);
@@ -94,7 +88,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
           .select('url')
           .eq('id', attachmentId)
           .single();
-      
+
       if (mounted) {
         setState(() {
           attachmentUrl = response['url'];
@@ -107,10 +101,10 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
 
   Future<void> _saveChanges() async {
     setState(() => isSaving = true);
-    
+
     try {
       final profileId = widget.profileData['id'];
-      
+
       // Update profile
       await _supabase
           .from('profiles')
@@ -130,7 +124,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         setState(() {
           isEditing = false;
         });
@@ -191,7 +185,10 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Center(
@@ -227,13 +224,11 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -280,7 +275,8 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                       _buildTextField(categoryController, readOnly: true),
 
                       // Only show ID section for non-regular commuters
-                      if (commuterCategory != null && commuterCategory != 'regular') ...[
+                      if (commuterCategory != null &&
+                          commuterCategory != 'regular') ...[
                         _buildLabel("ID"),
                         Container(
                           width: double.infinity,
@@ -299,22 +295,25 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                                     attachmentUrl!,
                                     fit: BoxFit.cover,
                                     height: 200,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        height: 200,
-                                        alignment: Alignment.center,
-                                        child: CircularProgressIndicator(
-                                          color: primary1,
-                                        ),
-                                      );
-                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Container(
+                                            height: 200,
+                                            alignment: Alignment.center,
+                                            child: CircularProgressIndicator(
+                                              color: primary1,
+                                            ),
+                                          );
+                                        },
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         height: 200,
                                         alignment: Alignment.center,
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Icon(Icons.error_outline, size: 48),
                                             SizedBox(height: 8),
@@ -328,13 +327,20 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                                     height: 200,
                                     alignment: Alignment.center,
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                                        Icon(
+                                          Icons.image_not_supported,
+                                          size: 48,
+                                          color: Colors.grey,
+                                        ),
                                         SizedBox(height: 8),
                                         Text(
                                           'No ID uploaded',
-                                          style: GoogleFonts.nunito(color: Colors.grey),
+                                          style: GoogleFonts.nunito(
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -374,7 +380,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
     TextInputType? keyboardType,
   }) {
     final effectiveReadOnly = readOnly || !isEditing;
-    
+
     return TextField(
       controller: controller,
       readOnly: effectiveReadOnly,

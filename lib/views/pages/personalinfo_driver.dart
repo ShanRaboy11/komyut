@@ -4,11 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PersonalInfoDriverPage extends StatefulWidget {
   final Map<String, dynamic> profileData;
-  
-  const PersonalInfoDriverPage({
-    super.key,
-    required this.profileData,
-  });
+
+  const PersonalInfoDriverPage({super.key, required this.profileData});
 
   @override
   State<PersonalInfoDriverPage> createState() => _PersonalInfoDriverPageState();
@@ -31,7 +28,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
   late TextEditingController plateNumberController;
   late TextEditingController routeCodeController;
   late TextEditingController puvTypeController; // ✨ NEW
-  
+
   String? licenseImageUrl;
   String? puvType; // ✨ NEW - Store actual value
 
@@ -43,10 +40,10 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
 
   void _initializeControllers() {
     final profile = widget.profileData;
-    final driver = profile['drivers'] is List 
-        ? (profile['drivers'] as List).firstOrNull 
+    final driver = profile['drivers'] is List
+        ? (profile['drivers'] as List).firstOrNull
         : profile['drivers'];
-    
+
     // Debug log to check driver data
     debugPrint('Driver data: $driver');
     if (driver != null) {
@@ -54,7 +51,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       debugPrint('Route code field: ${driver['route_code']}');
       debugPrint('Routes object: ${driver['routes']}');
     }
-    
+
     emailController = TextEditingController(
       text: _supabase.auth.currentUser?.email ?? '',
     );
@@ -67,23 +64,19 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     ageController = TextEditingController(
       text: profile['age']?.toString() ?? '',
     );
-    sexController = TextEditingController(
-      text: profile['sex'] ?? '',
-    );
-    addressController = TextEditingController(
-      text: profile['address'] ?? '',
-    );
-    
+    sexController = TextEditingController(text: profile['sex'] ?? '');
+    addressController = TextEditingController(text: profile['address'] ?? '');
+
     // Driver specific fields
     if (driver != null) {
       licenseIdController = TextEditingController(
         text: driver['license_number'] ?? '',
       );
-      
+
       plateNumberController = TextEditingController(
         text: driver['vehicle_plate'] ?? '',
       );
-      
+
       // Get route code from the routes relationship (via route_id)
       String routeCode = '';
       if (driver['routes'] != null && driver['routes'] is Map) {
@@ -93,19 +86,20 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
       if (routeCode.isEmpty) {
         routeCode = driver['route_code'] ?? '';
       }
-      
+
       routeCodeController = TextEditingController(text: routeCode);
-      
+
       // ✨ NEW: Get PUV type
       puvType = driver['puv_type'] ?? 'traditional';
       String puvTypeDisplay = puvType == 'modern' ? 'Modern' : 'Traditional';
       puvTypeController = TextEditingController(text: puvTypeDisplay);
-      
+
       // Handle license image URL
       final rawImageUrl = driver['license_image_url'];
       if (rawImageUrl != null && rawImageUrl.isNotEmpty) {
         // Check if it's already a full URL or needs to be converted from storage path
-        if (rawImageUrl.startsWith('http://') || rawImageUrl.startsWith('https://')) {
+        if (rawImageUrl.startsWith('http://') ||
+            rawImageUrl.startsWith('https://')) {
           licenseImageUrl = rawImageUrl;
         } else {
           // It's a storage path, generate public URL
@@ -120,7 +114,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
         }
         debugPrint('Driver license image URL: $licenseImageUrl');
       }
-      
+
       // Get operator name from nested operator data or operator_name field
       String operatorName = driver['operator_name'] ?? '';
       if (driver['operators'] != null) {
@@ -138,13 +132,13 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
 
   Future<void> _saveChanges() async {
     setState(() => isSaving = true);
-    
+
     try {
       final profileId = widget.profileData['id'];
-      final driver = widget.profileData['drivers'] is List 
-          ? (widget.profileData['drivers'] as List).firstOrNull 
+      final driver = widget.profileData['drivers'] is List
+          ? (widget.profileData['drivers'] as List).firstOrNull
           : widget.profileData['drivers'];
-      
+
       // Update profile
       await _supabase
           .from('profiles')
@@ -162,7 +156,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
         // Look up route_id from route code
         String? routeId;
         final routeCode = routeCodeController.text.trim();
-        
+
         if (routeCode.isNotEmpty) {
           try {
             final routeResult = await _supabase
@@ -170,7 +164,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                 .select('id')
                 .eq('code', routeCode)
                 .maybeSingle();
-            
+
             if (routeResult != null) {
               routeId = routeResult['id'];
             }
@@ -178,7 +172,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
             debugPrint('Error looking up route: $e');
           }
         }
-        
+
         await _supabase
             .from('drivers')
             .update({
@@ -198,7 +192,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         setState(() {
           isEditing = false;
         });
@@ -263,7 +257,10 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Center(
@@ -299,13 +296,11 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -364,42 +359,56 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: licenseImageUrl != null && licenseImageUrl!.isNotEmpty
+                          child:
+                              licenseImageUrl != null &&
+                                  licenseImageUrl!.isNotEmpty
                               ? Image.network(
                                   licenseImageUrl!,
                                   fit: BoxFit.cover,
                                   height: 200,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      height: 200,
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          CircularProgressIndicator(
-                                            color: primary1,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          height: 200,
+                                          alignment: Alignment.center,
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                color: primary1,
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Loading image...',
+                                                style: GoogleFonts.nunito(
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          SizedBox(height: 8),
-                                          Text(
-                                            'Loading image...',
-                                            style: GoogleFonts.nunito(fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                                        );
+                                      },
                                   errorBuilder: (context, error, stackTrace) {
                                     debugPrint('Image load error: $error');
-                                    debugPrint('Image URL was: $licenseImageUrl');
+                                    debugPrint(
+                                      'Image URL was: $licenseImageUrl',
+                                    );
                                     return Container(
                                       height: 200,
                                       alignment: Alignment.center,
                                       padding: EdgeInsets.all(16),
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.error_outline, size: 48, color: Colors.red),
+                                          Icon(
+                                            Icons.error_outline,
+                                            size: 48,
+                                            color: Colors.red,
+                                          ),
                                           SizedBox(height: 8),
                                           Text(
                                             'Failed to load image',
@@ -429,11 +438,17 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                                      Icon(
+                                        Icons.image_not_supported,
+                                        size: 48,
+                                        color: Colors.grey,
+                                      ),
                                       SizedBox(height: 8),
                                       Text(
                                         'No license image uploaded',
-                                        style: GoogleFonts.nunito(color: Colors.grey),
+                                        style: GoogleFonts.nunito(
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                       if (licenseImageUrl != null)
                                         Padding(
@@ -484,7 +499,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -517,7 +532,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
     TextInputType? keyboardType,
   }) {
     final effectiveReadOnly = readOnly || !isEditing;
-    
+
     return TextField(
       controller: controller,
       readOnly: effectiveReadOnly,

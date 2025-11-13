@@ -136,43 +136,36 @@ class DriverListPageState extends State<DriverListPage>
         .toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
+      appBar: AppBar(
+        titleSpacing: 50,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Drivers',
+          style: GoogleFonts.manrope(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+          padding: const EdgeInsets.only(
+            left: 30,
+            right: 30,
+            bottom: 30,
+            top: 10,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Back button (aligned to the left)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.chevron_left_rounded,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-
-                  // Centered title
-                  Text(
-                    "Drivers",
-                    style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
               // Header
               if (widget.showPendingOnly) ...[
                 Text(
@@ -334,7 +327,7 @@ class DriverListPageState extends State<DriverListPage>
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.nunito(
-              fontSize: 15,
+              fontSize: 16,
               color: isActive ? Color(0xFF8E4CB6) : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),
