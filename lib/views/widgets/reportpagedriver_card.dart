@@ -189,7 +189,7 @@ class _ReportIssueCardState extends State<ReportIssueCard> {
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
 
             // Buttons
             Column(

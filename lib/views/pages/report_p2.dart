@@ -178,7 +178,7 @@ class ReportIssueCard2 extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 40),
 
                       Column(
                         crossAxisAlignment: CrossAxisAlignment

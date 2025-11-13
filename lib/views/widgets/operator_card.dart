@@ -140,7 +140,7 @@ class _OperatorCardState extends State<OperatorCard> {
                   },
             height: 42,
             isFilled: false,
-            outlinedFillColor: _isApplied ? Colors.grey[200]! : Colors.white,
+            outlinedFillColor: _isApplied ? Colors.grey[300]! : Colors.white,
             textColor: _isApplied ? Colors.grey : const Color(0xFF5B53C2),
             hasShadow: false,
             fontSize: 15,
