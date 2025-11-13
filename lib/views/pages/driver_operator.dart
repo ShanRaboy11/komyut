@@ -141,14 +141,19 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
       "registeredDate": "March 8, 2024",
     },
     {
-      "name": "Dean Alvarez",
-      "puvType": "Modern",
-      "plate": "TRI 889",
-      "status": "inactive",
-      "inactiveDate": "September 10, 2025",
-      "registeredDate": "May 20, 2024",
+      "name": "Mark Adrian Cruz",
+      "puvType": "Traditional",
+      "plate": "XFR 6375",
+      "status": "active",
+      "registeredDate": "April 3, 2024",
     },
   ];
+  final gradientColors = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
+  int pendingApplications = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +162,73 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 100, right: 10),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // The FAB Container
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: gradientColors,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const DriverListPage(initialStatus: 2),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.assignment_ind_rounded,
+                  size: 30,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+
+            // Notification Badge
+            if (pendingApplications > 0)
+              Positioned(
+                right: -5,
+                top: -12,
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    pendingApplications.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
@@ -383,7 +455,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "List of Drivers",
+                    "Active Drivers",
                     style: GoogleFonts.manrope(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
