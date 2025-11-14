@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'wallet_driver.dart';
 import 'trips_driver.dart';
+import 'operatorlist_driver.dart';
 
 class DriverActivityPage extends StatelessWidget {
   const DriverActivityPage({super.key});
@@ -20,6 +21,9 @@ class DriverActivityPage extends StatelessWidget {
             break;
           case '/trip_history':
             page = const DriverTripHistoryPage();
+            break;
+          case '/operator_list':
+            page = const OperatorListPage();
             break;
           case '/':
           default:
@@ -78,6 +82,16 @@ class _ActivityHub extends StatelessWidget {
               subtitle: 'Browse your completed trips and earnings per ride.',
               onTap: () {
                 Navigator.of(context).pushNamed('/trip_history');
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildOptionCard(
+              context: context,
+              icon: Symbols.handshake_rounded,
+              title: 'Join an Operator',
+              subtitle: 'Find and apply to your preferred transport operator.',
+              onTap: () {
+                Navigator.of(context).pushNamed('/operator_list');
               },
             ),
           ],

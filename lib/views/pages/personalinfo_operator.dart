@@ -4,14 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PersonalInfoOperatorPage extends StatefulWidget {
   final Map<String, dynamic> profileData;
-  
-  const PersonalInfoOperatorPage({
-    super.key,
-    required this.profileData,
-  });
+
+  const PersonalInfoOperatorPage({super.key, required this.profileData});
 
   @override
-  State<PersonalInfoOperatorPage> createState() => _PersonalInfoOperatorPageState();
+  State<PersonalInfoOperatorPage> createState() =>
+      _PersonalInfoOperatorPageState();
 }
 
 class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
@@ -36,10 +34,10 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
 
   void _initializeControllers() {
     final profile = widget.profileData;
-    final operator = profile['operators'] is List 
-        ? (profile['operators'] as List).firstOrNull 
+    final operator = profile['operators'] is List
+        ? (profile['operators'] as List).firstOrNull
         : profile['operators'];
-    
+
     emailController = TextEditingController(
       text: _supabase.auth.currentUser?.email ?? '',
     );
@@ -49,7 +47,7 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
     lastNameController = TextEditingController(
       text: profile['last_name'] ?? '',
     );
-    
+
     // Operator specific fields
     if (operator != null) {
       companyController = TextEditingController(
@@ -74,13 +72,13 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
 
   Future<void> _saveChanges() async {
     setState(() => isSaving = true);
-    
+
     try {
       final profileId = widget.profileData['id'];
-      final operator = widget.profileData['operators'] is List 
-          ? (widget.profileData['operators'] as List).firstOrNull 
+      final operator = widget.profileData['operators'] is List
+          ? (widget.profileData['operators'] as List).firstOrNull
           : widget.profileData['operators'];
-      
+
       // Update profile
       await _supabase
           .from('profiles')
@@ -110,7 +108,7 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         setState(() {
           isEditing = false;
         });
@@ -171,7 +169,10 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Center(
@@ -207,13 +208,11 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -243,7 +242,7 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
                         contactPhoneController,
                         keyboardType: TextInputType.phone,
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -276,7 +275,7 @@ class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
     TextInputType? keyboardType,
   }) {
     final effectiveReadOnly = readOnly || !isEditing;
-    
+
     return TextField(
       controller: controller,
       readOnly: effectiveReadOnly,

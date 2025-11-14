@@ -96,6 +96,88 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
     );
   }
 
+  void _showSuspendDialog() async {
+    DateTime? selectedDate;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Suspend Account"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Select end date of suspension:"),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 1),
+                        ),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+
+                      if (pickedDate != null) {
+                        setState(() => selectedDate = pickedDate);
+                      }
+                    },
+                    child: Text(
+                      selectedDate == null
+                          ? "Choose Date"
+                          : "${selectedDate!.toLocal()}".split(' ')[0],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedDate != null) {
+                  Navigator.pop(context);
+                  _confirmSuspension(selectedDate!);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmSuspension(DateTime endDate) {
+    // Example action – replace this with your backend or database logic
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Suspension Confirmed"),
+        content: Text(
+          "The account has been suspended until ${endDate.toLocal()}".split(
+            ' ',
+          )[0],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _reasonController.dispose();
@@ -120,48 +202,36 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
+      appBar: AppBar(
+        titleSpacing: 50,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Drivers',
+          style: GoogleFonts.manrope(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(
             left: 30,
             right: 30,
             bottom: 30,
-            top: 20,
+            top: 10,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Back button (aligned to the left)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.chevron_left_rounded,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-
-                  // Centered title
-                  Text(
-                    "Drivers",
-                    style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
               // Title
               Text(
                 "Driver Details",
@@ -537,7 +607,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                   ),
                 ),
 
-                const SizedBox(height: 25),
+                const SizedBox(height: 35),
                 if (widget.status.toLowerCase() == "inactive")
                   Positioned(
                     child: SizedBox(
@@ -551,7 +621,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           elevation: 3,
                           shadowColor: Colors.redAccent.withValues(alpha: 0.2),
                         ),
@@ -559,7 +629,39 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                           "Remove Account",
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w600,
-                            fontSize: 18,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else if (widget.status.toLowerCase() == "active")
+                  Positioned(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _showSuspendDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(
+                            color: Colors.orange,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          elevation: 3,
+                          shadowColor: Colors.orangeAccent.withValues(
+                            alpha: 0.2,
+                          ),
+                        ),
+                        child: Text(
+                          "Suspend Account",
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
                       ),

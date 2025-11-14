@@ -141,11 +141,57 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
       "registeredDate": "March 8, 2024",
     },
     {
+      "name": "Dean Alvarez",
+      "puvType": "Modern",
+      "plate": "TRI 889",
+      "status": "inactive",
+      "inactiveDate": "September 10, 2025",
+      "registeredDate": "May 20, 2024",
+    },
+    {
       "name": "Mark Adrian Cruz",
       "puvType": "Traditional",
       "plate": "XFR 6375",
       "status": "active",
       "registeredDate": "April 3, 2024",
+    },
+    {
+      "name": "Raymund S. Villanueva",
+      "puvType": "Traditional",
+      "plate": "JKL 4412",
+      "status": "active",
+      "registeredDate": "June 15, 2024",
+    },
+    {
+      "name": "Alexis Ramos",
+      "puvType": "Modern",
+      "plate": "TXI 3728",
+      "status": "suspended",
+      "suspensionDate": "October 18, 2025",
+      "returnDate": "November 5, 2025",
+      "registeredDate": "July 21, 2024",
+    },
+    {
+      "name": "John Carlo Mendoza",
+      "puvType": "Modern",
+      "plate": "UVE 0291",
+      "status": "inactive",
+      "inactiveDate": "August 14, 2025",
+      "registeredDate": "August 2, 2024",
+    },
+    {
+      "name": "John Doe",
+      "puvType": "Modern",
+      "plate": "UVE 0291",
+      "status": "pending",
+      "registeredDate": "October 13, 2025",
+    },
+    {
+      "name": "Carlo Mendoza",
+      "puvType": "Modern",
+      "plate": "UVE 0491",
+      "status": "pending",
+      "registeredDate": "November 5, 2025",
     },
   ];
   final gradientColors = const [
@@ -159,76 +205,18 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
   Widget build(BuildContext context) {
     final data = dummyData[metricFilter]!;
     final maxValue = data.first["value"].toDouble();
+    final activeDrivers = driverList
+        .where((d) => d["status"] == "active")
+        .take(4)
+        .toList();
+
+    final pendingDrivers = driverList
+        .where((d) => d["status"] == "pending")
+        .take(2)
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 100, right: 10),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // The FAB Container
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: gradientColors,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const DriverListPage(initialStatus: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.assignment_ind_rounded,
-                  size: 30,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-
-            // Notification Badge
-            if (pendingApplications > 0)
-              Positioned(
-                right: -5,
-                top: -12,
-                child: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    pendingApplications.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
@@ -467,7 +455,8 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DriverListPage(),
+                          builder: (context) =>
+                              const DriverListPage(showPendingOnly: false),
                         ),
                       );
                     },
@@ -482,42 +471,137 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                 ],
               ),
               const SizedBox(height: 15),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: driverList.length,
-                itemBuilder: (context, index) {
-                  final driver = driverList[index];
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: DriverCard(
-                      name: driver["name"]!,
-                      puvType: driver["puvType"]!,
-                      plate: driver["plate"]!,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DriverDetailsPage(
-                              name: driver["name"]!,
-                              puvType: driver["puvType"]!,
-                              plate: driver["plate"]!,
-                              registeredDate: driver["registeredDate"]!,
-                              status: driver["status"]!,
-                              inactiveDate:
-                                  driver["inactiveDate"], // optional, can be null
-                              suspensionDate:
-                                  driver["suspensionDate"], // optional, can be null
-                              returnDate: driver["returnDate"],
-                            ),
-                          ),
-                        );
-                      },
+              if (activeDrivers.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No Active Drivers",
+                      style: GoogleFonts.nunito(
+                        fontSize: 20,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  );
-                },
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: activeDrivers.length,
+                  itemBuilder: (context, index) {
+                    final driver = activeDrivers[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: DriverCard(
+                        name: driver["name"]!,
+                        puvType: driver["puvType"]!,
+                        plate: driver["plate"]!,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DriverDetailsPage(
+                                name: driver["name"]!,
+                                puvType: driver["puvType"]!,
+                                plate: driver["plate"]!,
+                                registeredDate: driver["registeredDate"]!,
+                                status: driver["status"]!,
+                                inactiveDate: driver["inactiveDate"],
+                                suspensionDate: driver["suspensionDate"],
+                                returnDate: driver["returnDate"],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+
+              const SizedBox(height: 30),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Pending Drivers",
+                    style: GoogleFonts.manrope(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 30),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const DriverListPage(showPendingOnly: true),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "View All",
+                      style: GoogleFonts.nunito(
+                        color: const Color.fromARGB(255, 42, 42, 42),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 15),
+              if (pendingDrivers.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No Pending Drivers",
+                      style: GoogleFonts.nunito(
+                        fontSize: 20,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: pendingDrivers.length,
+                  itemBuilder: (context, index) {
+                    final driver = pendingDrivers[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: DriverCard(
+                        name: driver["name"]!,
+                        puvType: driver["puvType"]!,
+                        plate: driver["plate"]!,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DriverDetailsPage(
+                                name: driver["name"]!,
+                                puvType: driver["puvType"]!,
+                                plate: driver["plate"]!,
+                                registeredDate: driver["registeredDate"]!,
+                                status: driver["status"]!,
+                                inactiveDate: driver["inactiveDate"],
+                                suspensionDate: driver["suspensionDate"],
+                                returnDate: driver["returnDate"],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         ),
