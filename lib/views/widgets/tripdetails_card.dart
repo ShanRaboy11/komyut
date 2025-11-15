@@ -36,7 +36,7 @@ class TripDetailsCard extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 4,
             spreadRadius: 1,
             offset: const Offset(0, 2),
@@ -45,20 +45,27 @@ class TripDetailsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Map
+          // Map (support asset or network URL)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.asset(
-              mapImage,
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
+            child: mapImage.startsWith('http')
+                ? Image.network(
+                    mapImage,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  )
+                : Image.asset(
+                    mapImage,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
           ),
-          SizedBox(height: 15),
+          const SizedBox(height: 15),
           // Distance + Code
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -81,7 +88,7 @@ class TripDetailsCard extends StatelessWidget {
           ),
 
           Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, bottom: 15),
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 15),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -106,13 +113,13 @@ class TripDetailsCard extends StatelessWidget {
 
           // Divider
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Divider(color: Colors.grey[300], height: 1, thickness: 1),
           ),
 
           // Route Details
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -197,7 +204,7 @@ class TripDetailsCard extends StatelessWidget {
           ],
         ),
 
-        SizedBox(width: 20),
+        const SizedBox(width: 20),
 
         // Text
         Column(
@@ -214,7 +221,7 @@ class TripDetailsCard extends StatelessWidget {
               time,
               style: GoogleFonts.nunito(
                 fontSize: 16,
-                color: Colors.black.withValues(alpha: 0.6),
+                color: Colors.black.withOpacity(0.6),
               ),
             ),
           ],

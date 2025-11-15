@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../services/trips.dart';
+import '../models/trips.dart';
+
 class TripsProvider with ChangeNotifier {
   final TripsService _tripsService = TripsService();
 
@@ -66,10 +69,10 @@ class TripsProvider with ChangeNotifier {
       );
 
       _analyticsData = AnalyticsData(
-        period: data['period'],
-        totalTrips: data['total_trips'],
-        totalDistance: data['total_distance'],
-        totalSpent: data['total_spent'],
+        period: data['period'] as String,
+        totalTrips: data['total_trips'] as int,
+        totalDistance: data['total_distance'] as double,
+        totalSpent: data['total_spent'] as double,
       );
     } catch (e) {
       print('Error loading analytics: $e');
@@ -113,7 +116,7 @@ class TripsProvider with ChangeNotifier {
 
   // Navigate to previous range
   Future<void> prevRange() async {
-    _currentIndex = (_currentIndex - 1).clamp(-999, 0);
+    _currentIndex = (_currentIndex - 1).clamp(-999, 0).toInt();
     notifyListeners();
     await _loadAnalytics();
     await _loadChartData();
@@ -122,8 +125,7 @@ class TripsProvider with ChangeNotifier {
   // Navigate to next range
   Future<void> nextRange() async {
     if (_currentIndex >= 0) return; // Don't go into future
-    
-    _currentIndex = (_currentIndex + 1).clamp(-999, 0);
+    _currentIndex = (_currentIndex + 1).clamp(-999, 0).toInt();
     notifyListeners();
     await _loadAnalytics();
     await _loadChartData();

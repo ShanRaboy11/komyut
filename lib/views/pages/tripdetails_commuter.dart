@@ -6,8 +6,11 @@ import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
 import 'report_p1_commuter.dart';
+import '../services/trips.dart';
+import '../models/trips.dart';
 
-class TripDetailsPage extends StatelessWidget {
+class TripDetailsPage extends StatefulWidget {
+  final String tripId;
   final String date;
   final String time;
   final String from;
@@ -17,6 +20,7 @@ class TripDetailsPage extends StatelessWidget {
 
   const TripDetailsPage({
     super.key,
+    required this.tripId,
     required this.date,
     required this.time,
     required this.from,
@@ -26,8 +30,54 @@ class TripDetailsPage extends StatelessWidget {
   });
 
   @override
+  State<TripDetailsPage> createState() => _TripDetailsPageState();
+}
+
+class _TripDetailsPageState extends State<TripDetailsPage> {
+  final TripsService _service = TripsService();
+  TripDetails? _details;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetails();
+  }
+
+  Future<void> _loadDetails() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final d = await _service.getTripDetails(widget.tripId);
+      setState(() {
+        _details = d;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load trip details: $e';
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+
+    String mapUrl = 'assets/images/map.png';
+    if (_details != null && _details!.originLat != null && _details!.destLat != null) {
+      // Build a simple static OSM map image with origin & dest markers
+      final centerLat = (_details!.originLat! + _details!.destLat!) / 2.0;
+      final centerLng = (_details!.originLng! + _details!.destLng!) / 2.0;
+      final markers = 'markers=${_details!.originLat},${_details!.originLng},lightblue1|${_details!.destLat},${_details!.destLng},red1';
+      mapUrl = 'https://staticmap.openstreetmap.de/staticmap.php?center=$centerLat,$centerLng&zoom=13&size=800x400&$markers';
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -45,7 +95,6 @@ class TripDetailsPage extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Back button (aligned to the left)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
@@ -58,8 +107,6 @@ class TripDetailsPage extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Centered title
                   Text(
                     "Trips",
                     style: GoogleFonts.nunito(
@@ -89,10 +136,10 @@ class TripDetailsPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "$date, $time",
+                    "${widget.date}, ${widget.time}",
                     style: GoogleFonts.nunito(
                       fontSize: 14,
-                      color: Colors.black.withValues(alpha: 0.7),
+                      color: Colors.black.withOpacity(0.7),
                     ),
                   ),
                   Container(
@@ -101,13 +148,13 @@ class TripDetailsPage extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _statusBackground(status),
+                      color: _statusBackground(widget.status),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      status[0].toUpperCase() + status.substring(1),
+                      widget.status[0].toUpperCase() + widget.status.substring(1),
                       style: GoogleFonts.nunito(
-                        color: _statusColor(status),
+                        color: _statusColor(widget.status),
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -118,7 +165,7 @@ class TripDetailsPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Driver Card
+              // Driver Card (kept static for now)
               const DriverCard(
                 name: "Gio Christian D. Macatual",
                 role: "Driver",
@@ -127,21 +174,24 @@ class TripDetailsPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Trip Details Card
+              // Trip Details Card (mapUrl might be network or asset)
               TripDetailsCard(
-                mapImage: "assets/images/map.png",
-                distance: "4 kilometers",
-                routeCode: tripCode,
-                from: from,
-                fromTime: "03:17PM",
-                to: to,
-                toTime: time,
+                mapImage: mapUrl,
+                distance: _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' : '—',
+                routeCode: widget.tripCode,
+                from: widget.from,
+                fromTime: widget.time,
+                to: widget.to,
+                toTime: widget.time,
               ),
 
               const SizedBox(height: 20),
 
-              // 🟣 Conditional Buttons based on trip status
-              if (status.toLowerCase() == "cancelled") ...[
+              if (_loading) const Center(child: CircularProgressIndicator()),
+              if (_error != null) Center(child: Text(_error!)),
+
+              // Buttons (same behavior as before)
+              if (widget.status.toLowerCase() == "cancelled") ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -197,7 +247,7 @@ class TripDetailsPage extends StatelessWidget {
                   textColor: const Color(0xFF5B53C2),
                   hasShadow: false,
                 ),
-              ] else if (status.toLowerCase() == "completed") ...[
+              ] else if (widget.status.toLowerCase() == "completed") ...[
                 CustomButton(
                   text: "Rate Your Trip",
                   onPressed: () {},

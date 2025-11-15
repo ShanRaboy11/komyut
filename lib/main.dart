@@ -9,6 +9,7 @@ import 'views/providers/wallet_provider.dart';
 import 'views/providers/commuter_dashboard.dart';
 import 'views/providers/driver_dashboard.dart';
 import 'views/providers/operator_dashboard.dart';
+import 'views/providers/trips.dart';
 
 import 'views/pages/landingpage.dart';
 import 'views/pages/admin_app.dart';
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DriverDashboardProvider()),
         ChangeNotifierProvider(create: (_) => OperatorDashboardProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => TripsProvider()),
       ],
       child: MaterialApp(
         title: 'KOMYUT',
