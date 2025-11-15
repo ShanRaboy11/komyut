@@ -132,8 +132,8 @@ class _ProfilePageState extends State<ProfilePage> {
           context: context,
           barrierDismissible: false,
           useRootNavigator: true,
-          builder: (context) => WillPopScope(
-            onWillPop: () async => false,
+          builder: (context) => PopScope(
+            canPop: false,
             child: const Center(
               child: CircularProgressIndicator(
                 color: Color(0xFF8E4CB6),

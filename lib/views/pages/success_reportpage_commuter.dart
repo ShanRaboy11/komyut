@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import 'dart:async';
-import 'home_commuter.dart';
+import 'commuter_app.dart';
 
 class SuccessPage extends StatefulWidget {
   final String title;
@@ -57,11 +57,9 @@ class _SuccessPageState extends State<SuccessPage>
         if (widget.onClose != null) {
           widget.onClose!();
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CommuterDashboardNav(),
-            ),
+          CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
           );
         }
       }

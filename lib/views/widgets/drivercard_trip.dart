@@ -46,7 +46,7 @@ class DriverCard extends StatelessWidget {
               size: 28,
             ),
           ),
-          SizedBox(width: 15),
+          const SizedBox(width: 15),
 
           // Text Info
           Expanded(
@@ -54,7 +54,10 @@ class DriverCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  () {
+                    final n = name.trim();
+                    return (n.isNotEmpty && n.toLowerCase() != 'null') ? n : 'Unknown Driver';
+                  }(),
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(
                     fontSize: 18,
@@ -64,7 +67,8 @@ class DriverCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "$role • $plate",
+                  "$role • ${plate.isNotEmpty ? plate : '-'}",
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(
                     fontSize: 16,
                     color: Colors.black.withValues(alpha: 0.7),

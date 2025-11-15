@@ -171,8 +171,16 @@ class TripsService {
               final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
               driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
               if (driverName.isEmpty) driverName = null;
+              if (driverName != null) {
+                driverName = driverName.trim();
+                if (driverName.toLowerCase() == 'null' || driverName.isEmpty) driverName = null;
+              }
             }
             driverName ??= dRes['operator_name'];
+            if (driverName != null) {
+              driverName = driverName.trim();
+              if (driverName.toLowerCase() == 'null' || driverName.isEmpty) driverName = null;
+            }
           } catch (_) {
             // ignore
           }
@@ -340,7 +348,10 @@ class TripsService {
           driverName ??= (dRes['name'] as String?)?.trim();
           driverName ??= (dRes['display_name'] as String?)?.trim();
           driverName ??= (dRes['operator_name'] as String?)?.trim();
-          if (driverName != null && driverName.isEmpty) driverName = null;
+          if (driverName != null) {
+            driverName = driverName.trim();
+            if (driverName.toLowerCase() == 'null' || driverName.isEmpty) driverName = null;
+          }
         } catch (_) {
           // ignore and leave driverName null
         }

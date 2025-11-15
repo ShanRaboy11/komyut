@@ -139,17 +139,20 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               ),
               const SizedBox(height: 6),
 
-              // Date and Status
+              // Date and Status (flexible to avoid overflow)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "${widget.date}, ${widget.time}",
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      color: const Color.fromRGBO(0, 0, 0, 0.7),
+                  Expanded(
+                    child: Text(
+                      "${widget.date}, ${widget.time}",
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: const Color.fromRGBO(0, 0, 0, 0.7),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -215,8 +218,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
 
               const SizedBox(height: 16),
 
-              // Dynamic Map
-              if (_details != null && _details!.routeStops != null && _details!.routeStops!.isNotEmpty)
+              // Dynamic Map (when routeStops exist) — show distance underneath
+              if (_details != null && _details!.routeStops != null && _details!.routeStops!.isNotEmpty) ...[
                 SizedBox(
                   height: 260,
                   child: MapWidget(
@@ -230,8 +233,45 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                     originStopId: _details!.originStopId,
                     destinationStopId: _details!.destinationStopId,
                   ),
-                )
-              else
+                ),
+                const SizedBox(height: 12),
+                // Distance + Route Code row under the map (flexible)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Distance', style: GoogleFonts.nunito(color: Colors.grey[700])),
+                            Text(
+                              _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} km' : '—',
+                              style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('Route Code', style: GoogleFonts.nunito(color: Colors.grey[700])),
+                            Text(
+                              (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
+                              style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF9C6BFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ] else
                 // Fallback to static image
                 TripDetailsCard(
                   mapImage: 'assets/images/map.png',
@@ -298,7 +338,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
-                  width: screenWidth,
+                  width: double.infinity,
                   height: 50,
                   isFilled: false,
                   outlinedFillColor: Colors.white,
@@ -310,7 +350,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   text: "Rate Your Trip",
                   onPressed: () {},
                   icon: Symbols.star_rounded,
-                  width: screenWidth,
+                  width: double.infinity,
                   height: 50,
                   textColor: Colors.white,
                   isFilled: true,
@@ -328,7 +368,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
-                  width: screenWidth,
+                  width: double.infinity,
                   height: 50,
                   isFilled: false,
                   outlinedFillColor: Colors.white,
@@ -347,7 +387,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                     );
                   },
                   icon: Symbols.brightness_alert_rounded,
-                  width: screenWidth,
+                  width: double.infinity,
                   height: 50,
                   textColor: Colors.white,
                   isFilled: true,
@@ -365,7 +405,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
-                  width: screenWidth,
+                  width: double.infinity,
                   height: 50,
                   isFilled: false,
                   outlinedFillColor: Colors.white,

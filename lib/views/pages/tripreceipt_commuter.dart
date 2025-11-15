@@ -4,14 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/receipttrip_card.dart';
 import '../widgets/button.dart';
-import '../pages/home_commuter.dart';
+import 'commuter_app.dart';
 
 class TripReceiptPage extends StatelessWidget {
   const TripReceiptPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    // Using full width buttons that respect parent padding
 
     return Scaffold(
       backgroundColor: Color(0xFFF7F4FF),
@@ -83,14 +83,12 @@ class TripReceiptPage extends StatelessWidget {
               CustomButton(
                 text: "Back to Home",
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CommuterDashboardNav(),
-                    ),
+                  CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                    '/',
+                    (route) => false,
                   );
                 },
-                width: screenWidth,
+                width: double.infinity,
                 height: 50,
                 textColor: Colors.white,
                 isFilled: true,
