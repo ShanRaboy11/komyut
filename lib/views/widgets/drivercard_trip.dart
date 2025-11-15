@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DriverCard extends StatelessWidget {
-  final String name;
+  final String? name;
   final String role;
-  final String plate;
+  final String? plate;
 
   const DriverCard({
     super.key,
-    required this.name,
+    this.name,
     required this.role,
-    required this.plate,
+    this.plate,
   });
 
   @override
@@ -55,7 +55,7 @@ class DriverCard extends StatelessWidget {
               children: [
                 Text(
                   () {
-                    final n = name.trim();
+                    final n = (name ?? '').trim();
                     return (n.isNotEmpty && n.toLowerCase() != 'null') ? n : 'Unknown Driver';
                   }(),
                   overflow: TextOverflow.ellipsis,
@@ -67,7 +67,7 @@ class DriverCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "$role • ${plate.isNotEmpty ? plate : '-'}",
+                  "$role • ${((plate ?? '').isNotEmpty ? plate : '-')}",
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(
                     fontSize: 16,

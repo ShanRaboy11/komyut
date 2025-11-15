@@ -3,10 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
-import '../widgets/map.dart';
+import '../widgets/map_trip.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-// geolocator Position not required here; MapWidget accepts null currentPosition
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
 import 'report_p1_commuter.dart';
@@ -83,9 +82,14 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // We'll render a dynamic map using the app's MapWidget when routeStops exist.
     final defaultLocation = LatLng(14.5995, 120.9842); // Manila fallback
+
+    // Determine if we have route data to show dynamic map
+    final hasRouteData = _details != null && 
+                         _details!.routeStops != null && 
+                         _details!.routeStops!.isNotEmpty &&
+                         _details!.originStopId != null &&
+                         _details!.destinationStopId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -100,15 +104,14 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Stack(
                 alignment: Alignment.center,
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       icon: const Icon(
                         Icons.chevron_left_rounded,
                         color: Colors.black87,
@@ -139,7 +142,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               ),
               const SizedBox(height: 6),
 
-              // Date and Status (flexible to avoid overflow)
+              // Date and Status
               Row(
                 children: [
                   Expanded(
@@ -176,57 +179,36 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
 
               const SizedBox(height: 16),
 
-              // Driver Card (show fetched driver when available)
-              _loading
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFF8E4CB6), width: 1.2),
-                        borderRadius: BorderRadius.circular(14),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromRGBO(0, 0, 0, 0.05),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(height: 50, width: 50, decoration: const BoxDecoration(color: Color(0xFFF2EAFF), shape: BoxShape.circle)),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(width: 140, height: 16, color: Colors.grey[300]),
-                                const SizedBox(height: 8),
-                                Container(width: 100, height: 14, color: Colors.grey[300]),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : DriverCard(
-                      name: _details?.driverName ?? 'Unknown Driver',
-                      role: 'Driver',
-                      plate: _details?.vehiclePlate ?? '-',
-                    ),
+              // Driver Card
+              if (_loading)
+                _buildLoadingDriverCard()
+              else if (_details != null)
+                DriverCard(
+                  name: _details!.driverName ?? 'Unknown Driver',
+                  role: 'Driver',
+                  plate: _details!.vehiclePlate ?? '-',
+                )
+              else
+                DriverCard(
+                  name: 'Unknown Driver',
+                  role: 'Driver',
+                  plate: 'N/A',
+                ),
 
               const SizedBox(height: 16),
 
-              // Dynamic Map (when routeStops exist) — show distance underneath
-              if (_details != null && _details!.routeStops != null && _details!.routeStops!.isNotEmpty) ...[
+              // Dynamic Map or Fallback
+              if (_loading)
+                _buildLoadingMap()
+              else if (hasRouteData) ...[
+                // Dynamic map with route visualization
                 SizedBox(
                   height: 260,
                   child: MapWidget(
                     mapController: _mapController,
                     currentPosition: null,
                     defaultLocation: defaultLocation,
-                    isLoading: _loading,
+                    isLoading: false,
                     boardingLocation: null,
                     arrivalLocation: null,
                     routeStops: _details!.routeStops,
@@ -235,7 +217,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Distance + Route Code row under the map (flexible)
+                // Distance + Route Code row under the map
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: Row(
@@ -244,10 +226,20 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Distance', style: GoogleFonts.nunito(color: Colors.grey[700])),
                             Text(
-                              _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} km' : '—',
-                              style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700),
+                              'Distance',
+                              style: GoogleFonts.nunito(
+                                color: Colors.grey[700],
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_details!.distanceKm.toStringAsFixed(1)} km',
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -258,10 +250,23 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('Route Code', style: GoogleFonts.nunito(color: Colors.grey[700])),
                             Text(
-                              (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
-                              style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF9C6BFF)),
+                              'Route Code',
+                              style: GoogleFonts.nunito(
+                                color: Colors.grey[700],
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _details!.tripCode.isNotEmpty 
+                                  ? _details!.tripCode 
+                                  : widget.tripCode,
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF9C6BFF),
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -272,23 +277,54 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                 ),
                 const SizedBox(height: 12),
               ] else
-                // Fallback to static image
+                // Fallback to static card
                 TripDetailsCard(
                   mapImage: 'assets/images/map.png',
-                  distance: _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' : '—',
-                  routeCode: (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
-                  from: (_details != null && _details!.from.isNotEmpty) ? _details!.from : widget.from,
-                  fromTime: _details != null ? _details!.time : widget.time,
-                  to: (_details != null && _details!.to.isNotEmpty) ? _details!.to : widget.to,
-                  toTime: _details != null ? _details!.time : widget.time,
+                  distance: _details != null 
+                      ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' 
+                      : '—',
+                  routeCode: _details != null && _details!.tripCode.isNotEmpty
+                      ? _details!.tripCode 
+                      : widget.tripCode,
+                  from: _details != null && _details!.from.isNotEmpty
+                      ? _details!.from 
+                      : widget.from,
+                  fromTime: _details?.time ?? widget.time,
+                  to: _details != null && _details!.to.isNotEmpty
+                      ? _details!.to 
+                      : widget.to,
+                  toTime: _details?.time ?? widget.time,
                 ),
 
               const SizedBox(height: 20),
 
-              if (_loading) const Center(child: CircularProgressIndicator()),
-              if (_error != null) Center(child: Text(_error!)),
+              // Error message
+              if (_error != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: GoogleFonts.nunito(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-              // Buttons (same behavior as before)
+              // Action Buttons
               if (widget.status.toLowerCase() == "cancelled") ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -416,6 +452,63 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Loading state for driver card
+  Widget _buildLoadingDriverCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF8E4CB6), width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromRGBO(0, 0, 0, 0.05),
+            blurRadius: 4,
+            spreadRadius: 1,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 50,
+            width: 50,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF2EAFF),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(width: 140, height: 16, color: Colors.grey[300]),
+                const SizedBox(height: 8),
+                Container(width: 100, height: 14, color: Colors.grey[300]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Loading state for map
+  Widget _buildLoadingMap() {
+    return Container(
+      height: 260,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
