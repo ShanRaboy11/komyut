@@ -504,7 +504,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6).withOpacity(0.3), width: 1.2),
+        border: Border.all(color: const Color(0xFF8E4CB6).withValues(alpha: 0.3), width: 1.2),
         borderRadius: BorderRadius.circular(14),
         color: Colors.white,
         boxShadow: [
@@ -660,12 +660,12 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),

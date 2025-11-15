@@ -14,20 +14,33 @@ class TripsPage extends StatefulWidget {
   State<TripsPage> createState() => _TripsPageState();
 }
 
-class _TripsPageState extends State<TripsPage> {
+class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMixin {
   final gradientColors = const [
     Color(0xFFB945AA),
     Color(0xFF8E4CB6),
     Color(0xFF5B53C2),
   ];
 
+  late AnimationController _shimmerController;
+
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    
     // Load data when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TripsProvider>().initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,11 +61,37 @@ class _TripsPageState extends State<TripsPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Error: ${provider.errorMessage}'),
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error: ${provider.errorMessage}',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => provider.refresh(),
-                      child: const Text('Retry'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8E4CB6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Retry',
+                        style: GoogleFonts.nunito(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -61,6 +100,7 @@ class _TripsPageState extends State<TripsPage> {
 
             return RefreshIndicator(
               onRefresh: () => provider.refresh(),
+              color: const Color(0xFF8E4CB6),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 30),
                 child: Column(
@@ -179,12 +219,23 @@ class _TripsPageState extends State<TripsPage> {
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(40.0),
-                          child: Text(
-                            'No recent trips',
-                            style: GoogleFonts.nunito(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.directions_bus,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No recent trips',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       )
@@ -223,10 +274,71 @@ class _TripsPageState extends State<TripsPage> {
     );
   }
 
-  // --- Skeleton builders ---
+  // Enhanced shimmer effect
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Shimmer for white backgrounds (on gradient)
+  Widget _buildShimmerOnGradient({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.3),
+                Colors.white.withValues(alpha: 0.6),
+                Colors.white.withValues(alpha: 0.3),
+              ],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Enhanced skeleton with shimmer animation
   Widget _buildActivitySkeleton(Size size) {
     return RefreshIndicator(
       onRefresh: () async {},
+      color: const Color(0xFF8E4CB6),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 30),
         child: Column(
@@ -236,13 +348,31 @@ class _TripsPageState extends State<TripsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(width: 180, height: 28, color: const Color.fromRGBO(255, 255, 255, 0.0)),
-                Container(width: 120, height: 36, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(30))),
+                _buildShimmer(
+                  child: Container(
+                    width: 140,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+                _buildShimmer(
+                  child: Container(
+                    width: 120,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Analytics skeleton
+            // Analytics skeleton with enhanced visual elements
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -257,21 +387,211 @@ class _TripsPageState extends State<TripsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 120, height: 20, color: const Color.fromRGBO(255, 255, 255, 0.2)),
-                  const SizedBox(height: 14),
+                  // Header with navigation
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(width: 60, height: 45, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8))),
+                      _buildShimmerOnGradient(
+                        child: Container(
+                          width: 100,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_left,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildShimmerOnGradient(
+                            child: Container(
+                              width: 80,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white24,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  
+                  // Chart area with animated loading
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Total Trips skeleton
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildShimmerOnGradient(
+                              child: Container(
+                                width: 80,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: Colors.white24,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: 60,
+                              height: 45,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: 20),
-                      Expanded(child: Container(height: size.height * 0.15, color: Colors.white24)),
+                      
+                      // Chart skeleton
+                      Expanded(
+                        flex: 2,
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: size.height * 0.15,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            // Animated chart line mockup
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: CustomPaint(
+                                  painter: _SkeletonChartPainter(
+                                    animation: _shimmerController,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Row(children: [
-                    Expanded(child: Container(height: 56, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)))),
-                    const SizedBox(width: 20),
-                    Expanded(child: Container(height: 56, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)))),
-                  ])
+                  
+                  // Stats cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildShimmerOnGradient(
+                          child: Container(
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white38,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  width: 80,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white38,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _buildShimmerOnGradient(
+                          child: Container(
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white38,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  width: 80,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white38,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -279,36 +599,125 @@ class _TripsPageState extends State<TripsPage> {
             const SizedBox(height: 30),
 
             // Recent trips header
-            Container(width: 140, height: 26, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(6))),
+            _buildShimmer(
+              child: Container(
+                width: 140,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
 
-            // Trip skeleton list
-            SizedBox(
-              height: 300,
-              child: ListView.builder(
-                itemCount: 4,
-                itemBuilder: (context, idx) => Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF8E4CB6))),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(width: 120, height: 12, color: Colors.grey[300]),
-                            const SizedBox(height: 6),
-                            Container(width: 80, height: 12, color: Colors.grey[300]),
-                            const SizedBox(height: 6),
-                            Container(width: 200, height: 12, color: Colors.grey[300]),
-                          ],
+            // Trip skeleton list with enhanced design
+            ...List.generate(
+              3,
+              (idx) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                    color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color.fromRGBO(0, 0, 0, 0.05),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildShimmer(
+                            child: Container(
+                              width: 120,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildShimmer(
+                            child: Container(
+                              width: 80,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _buildShimmer(
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.arrow_forward,
+                                size: 12,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(width: 6),
+                              _buildShimmer(
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildShimmer(
+                                child: Container(
+                                  width: 100,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildShimmer(
+                      child: Container(
+                        width: 70,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Container(width: 60, height: 30, color: Colors.grey[300]),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -352,17 +761,41 @@ class _TripsPageState extends State<TripsPage> {
                 children: [
                   IconButton(
                     onPressed: provider.isLoading ? null : () => provider.prevRange(),
-                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    icon: Icon(
+                      Icons.chevron_left, 
+                      color: provider.isLoading ? Colors.white38 : Colors.white,
+                    ),
                   ),
-                  Text(
-                    analytics.period.isNotEmpty ? analytics.period : 'Loading...',
-                    style: GoogleFonts.nunito(color: Colors.white, fontSize: 14),
+                  SizedBox(
+                    width: 100,
+                    child: Center(
+                      child: provider.isLoading
+                          ? SizedBox(
+                              width: 10,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              analytics.period.isNotEmpty ? analytics.period : '—',
+                              style: GoogleFonts.nunito(color: Colors.white, fontSize: 14),
+                            ),
+                    ),
                   ),
                   IconButton(
                     onPressed: (provider.isLoading || provider.currentIndex >= 0)
                         ? null
                         : () => provider.nextRange(),
-                    icon: const Icon(Icons.chevron_right, color: Colors.white),
+                    icon: Icon(
+                      Icons.chevron_right, 
+                      color: (provider.isLoading || provider.currentIndex >= 0) 
+                          ? Colors.white38 
+                          : Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -390,22 +823,34 @@ class _TripsPageState extends State<TripsPage> {
                           color: const Color(0xFFF0D7FF),
                         ),
                       ),
-                      provider.isLoading
-                          ? const SizedBox(
-                              height: 45,
-                              width: 45,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        height: 50,
+                        child: provider.isLoading
+                            ? Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white.withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  analytics.totalTrips.toString(),
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 45,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            )
-                          : Text(
-                              analytics.totalTrips.toString(),
-                              style: GoogleFonts.manrope(
-                                fontSize: 45,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
+                      ),
                     ],
                   ),
                 ),
@@ -417,14 +862,44 @@ class _TripsPageState extends State<TripsPage> {
                 flex: 2,
                 child: SizedBox(
                   height: size.height * 0.15,
-                  child: chartData.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No data',
-                            style: TextStyle(color: Colors.white),
+                  child: Stack(
+                    children: [
+                      if (provider.isLoading)
+                        Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                              child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
                           ),
                         )
-                      : LineChart(
+                      else if (chartData.isEmpty)
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.bar_chart,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No data',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        LineChart(
                           LineChartData(
                             gridData: const FlGridData(show: false),
                             titlesData: FlTitlesData(
@@ -479,6 +954,8 @@ class _TripsPageState extends State<TripsPage> {
                             ],
                           ),
                         ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -492,15 +969,15 @@ class _TripsPageState extends State<TripsPage> {
             children: [
               _analyticsCard(
                 "Distance",
-                provider.isLoading ? '...' : "${analytics.totalDistance.toStringAsFixed(1)} km",
-                onTap: () {
+                provider.isLoading,
+                provider.isLoading ? '—' : "${analytics.totalDistance.toStringAsFixed(1)} km",
+                onTap: provider.isLoading ? null : () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Distance Details'),
-                      content: Text(provider.isLoading
-                          ? '...'
-                          : 'Total distance: ${analytics.totalDistance.toStringAsFixed(2)} km\nTotal trips: ${analytics.totalTrips}'),
+                      content: Text(
+                          'Total distance: ${analytics.totalDistance.toStringAsFixed(2)} km\nTotal trips: ${analytics.totalTrips}'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
                       ],
@@ -511,15 +988,15 @@ class _TripsPageState extends State<TripsPage> {
               const SizedBox(width: 20),
               _analyticsCard(
                 "Expense",
-                provider.isLoading ? '...' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
-                onTap: () {
+                provider.isLoading,
+                provider.isLoading ? '—' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
+                onTap: provider.isLoading ? null : () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Expense Details'),
-                      content: Text(provider.isLoading
-                          ? '...'
-                          : 'Total spent: ₱${analytics.totalSpent.toStringAsFixed(2)}\nTotal trips: ${analytics.totalTrips}'),
+                      content: Text(
+                          'Total spent: ₱${analytics.totalSpent.toStringAsFixed(2)}\nTotal trips: ${analytics.totalTrips}'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
                       ],
@@ -548,7 +1025,7 @@ class _TripsPageState extends State<TripsPage> {
     );
   }
 
-  Widget _analyticsCard(String title, String value, {VoidCallback? onTap}) {
+  Widget _analyticsCard(String title, bool isLoading, String value, {VoidCallback? onTap}) {
     final card = Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(14),
@@ -568,13 +1045,32 @@ class _TripsPageState extends State<TripsPage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.manrope(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+          SizedBox(
+            height: 36,
+            child: isLoading
+                ? Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                  )
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: GoogleFonts.manrope(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -583,4 +1079,71 @@ class _TripsPageState extends State<TripsPage> {
     final tappable = onTap != null ? GestureDetector(onTap: onTap, child: card) : card;
     return Expanded(child: tappable);
   }
+}
+
+// Custom painter for skeleton chart animation
+class _SkeletonChartPainter extends CustomPainter {
+  final Animation<double> animation;
+
+  _SkeletonChartPainter({required this.animation}) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.3)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    
+    // Create a wavy line to simulate chart
+    final points = 7;
+    for (int i = 0; i < points; i++) {
+      final x = (size.width / (points - 1)) * i;
+      final y = size.height * 0.5 + 
+                (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) * 
+                (0.5 + 0.5 * (1 - animation.value).abs());
+      
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, paint);
+
+    // Draw dots on the line
+    final dotPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.4)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < points; i++) {
+      final x = (size.width / (points - 1)) * i;
+      final y = size.height * 0.5 + 
+                (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) * 
+                (0.5 + 0.5 * (1 - animation.value).abs());
+      canvas.drawCircle(Offset(x, y), 3, dotPaint);
+    }
+
+    // Draw axis labels skeleton
+    final labelPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.2)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < points; i++) {
+      final x = (size.width / (points - 1)) * i;
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: Offset(x, size.height + 8),
+          width: 20,
+          height: 8,
+        ),
+        labelPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SkeletonChartPainter oldDelegate) => true;
 }
