@@ -15,51 +15,79 @@ class TripsService {
     try {
       final now = DateTime.now().toUtc();
       DateTime start;
-      DateTime end = now;
+      DateTime end;
 
       switch (timeRange.toLowerCase()) {
         case 'weekly':
-          final base = now.subtract(Duration(days: rangeOffset * 7));
-          start = DateTime(base.year, base.month, base.day).subtract(Duration(days: 6));
+          // Calculate the start of the target week
+          // rangeOffset 0 = current week, -1 = last week, etc.
+          final targetDate = now.add(Duration(days: rangeOffset * 7));
+          // Get the Monday of that week (weekday 1 = Monday)
+          final daysFromMonday = (targetDate.weekday - 1) % 7;
+          start = DateTime(targetDate.year, targetDate.month, targetDate.day)
+              .subtract(Duration(days: daysFromMonday));
+          end = start.add(Duration(days: 7)).subtract(Duration(seconds: 1));
           break;
+          
         case 'monthly':
           final monthBase = DateTime(now.year, now.month - rangeOffset, 1);
           start = DateTime(monthBase.year, monthBase.month, 1);
           end = DateTime(monthBase.year, monthBase.month + 1, 1).subtract(Duration(seconds: 1));
           break;
+          
         case 'yearly':
           final yearBase = DateTime(now.year - rangeOffset, 1, 1);
           start = DateTime(yearBase.year, 1, 1);
           end = DateTime(yearBase.year + 1, 1, 1).subtract(Duration(seconds: 1));
           break;
-        default:
+          
+        default: // 'all trips'
           start = DateTime.fromMillisecondsSinceEpoch(0).toUtc();
+          end = now.add(Duration(days: 1));
       }
 
-      final res = await _withRetries(() => _supabase.from('trips').select('id,started_at,fare_amount,distance_meters').order('started_at', ascending: false).limit(1000));
+      developer.log('Fetching analytics from $start to $end', name: 'TripsService');
 
-      final rows = (res as List).where((r) {
-        if (start.isAtSameMomentAs(DateTime.fromMillisecondsSinceEpoch(0).toUtc())) return true;
-        final started = DateTime.parse(r['started_at']).toUtc();
-        return !started.isBefore(start) && !started.isAfter(end);
-      }).toList();
+      // Build and execute query inside the retry lambda to avoid assigning
+      // a transform builder back to a filter builder variable (type mismatch).
+      final res = await _withRetries(() {
+        var q = _supabase.from('trips').select('id,started_at,fare_amount,distance_meters');
+        if (timeRange.toLowerCase() != 'all trips') {
+          q = q.gte('started_at', start.toIso8601String()).lte('started_at', end.toIso8601String());
+        }
+        return q.order('started_at', ascending: false).limit(1000);
+      });
+
+      final rows = res as List;
 
       final totalTrips = rows.length;
-      final totalDistance = rows.fold<double>(0.0, (acc, r) => acc + ((r['distance_meters'] ?? 0) as num).toDouble() / 1000.0);
-      final totalSpent = rows.fold<double>(0.0, (acc, r) => acc + ((r['fare_amount'] ?? 0) as num).toDouble());
+      final totalDistance = rows.fold<double>(
+          0.0, 
+          (acc, r) => acc + ((r['distance_meters'] ?? 0) as num).toDouble() / 1000.0
+      );
+      final totalSpent = rows.fold<double>(
+          0.0, 
+          (acc, r) => acc + ((r['fare_amount'] ?? 0) as num).toDouble()
+      );
 
+      // Generate period label
       String periodLabel;
       if (timeRange.toLowerCase() == 'weekly') {
         final weekStart = start.toLocal();
         final weekEnd = end.toLocal();
         periodLabel = '${weekStart.month}/${weekStart.day} - ${weekEnd.month}/${weekEnd.day}';
       } else if (timeRange.toLowerCase() == 'monthly') {
-        periodLabel = '${start.month}/${start.year}';
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        periodLabel = '${months[start.month - 1]} ${start.year}';
       } else if (timeRange.toLowerCase() == 'yearly') {
         periodLabel = '${start.year}';
       } else {
-        periodLabel = 'All Trips';
+        periodLabel = 'All Time';
       }
+
+      developer.log('Analytics: $totalTrips trips, $totalDistance km, ₱$totalSpent', 
+          name: 'TripsService');
 
       return {
         'period': periodLabel,
@@ -79,41 +107,121 @@ class TripsService {
     required int rangeOffset,
   }) async {
     try {
-      final res = await _withRetries(() => _supabase.from('trips').select('id,started_at').order('started_at', ascending: true).limit(1000));
+      final now = DateTime.now();
+      DateTime start;
+      DateTime end;
 
-      final rows = (res as List).map((r) => DateTime.parse(r['started_at']).toLocal()).toList();
+      switch (timeRange.toLowerCase()) {
+        case 'weekly':
+          // Calculate the start of the target week
+          final targetDate = now.add(Duration(days: rangeOffset * 7));
+          final daysFromMonday = (targetDate.weekday - 1) % 7;
+          start = DateTime(targetDate.year, targetDate.month, targetDate.day)
+              .subtract(Duration(days: daysFromMonday));
+          end = start.add(Duration(days: 7)).subtract(Duration(seconds: 1));
+          break;
+          
+        case 'monthly':
+          final monthBase = DateTime(now.year, now.month - rangeOffset, 1);
+          start = DateTime(monthBase.year, monthBase.month, 1);
+          end = DateTime(monthBase.year, monthBase.month + 1, 1).subtract(Duration(seconds: 1));
+          break;
+          
+        case 'yearly':
+          final yearBase = DateTime(now.year - rangeOffset, 1, 1);
+          start = DateTime(yearBase.year, 1, 1);
+          end = DateTime(yearBase.year + 1, 1, 1).subtract(Duration(seconds: 1));
+          break;
+          
+        default:
+          start = DateTime.fromMillisecondsSinceEpoch(0);
+          end = now.add(Duration(days: 1));
+      }
+
+      // Query with date filters
+      final res = await _withRetries(() {
+        var q = _supabase.from('trips').select('id,started_at');
+        if (timeRange.toLowerCase() != 'all trips') {
+          q = q.gte('started_at', start.toUtc().toIso8601String()).lte('started_at', end.toUtc().toIso8601String());
+        }
+        return q.order('started_at', ascending: true).limit(1000);
+      });
+
+      final rows = (res as List)
+          .map((r) => DateTime.parse(r['started_at']).toLocal())
+          .toList();
 
       List<ChartDataPoint> points = [];
+
       if (timeRange.toLowerCase() == 'weekly') {
-        final now = DateTime.now();
-        for (int i = 6; i >= 0; i--) {
-          final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
-          final count = rows.where((d) => d.year == day.year && d.month == day.month && d.day == day.day).length;
-          points.add(ChartDataPoint(label: '${day.month}/${day.day}', count: count));
+        // Generate 7 days from start
+        for (int i = 0; i < 7; i++) {
+          final day = start.add(Duration(days: i));
+          final count = rows.where((d) => 
+              d.year == day.year && 
+              d.month == day.month && 
+              d.day == day.day
+          ).length;
+          
+          final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          points.add(ChartDataPoint(
+              label: weekdays[i], 
+              count: count
+          ));
         }
       } else if (timeRange.toLowerCase() == 'monthly') {
-        final now = DateTime.now();
-        for (int i = 29; i >= 0; i--) {
-          final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
-          final count = rows.where((d) => d.year == day.year && d.month == day.month && d.day == day.day).length;
-          points.add(ChartDataPoint(label: '${day.month}/${day.day}', count: count));
+        // Show last 30 days of the month or full month
+        final daysInRange = end.difference(start).inDays + 1;
+        final daysToShow = daysInRange > 30 ? 30 : daysInRange;
+        
+        for (int i = 0; i < daysToShow; i++) {
+          final day = end.subtract(Duration(days: daysToShow - 1 - i));
+          final count = rows.where((d) => 
+              d.year == day.year && 
+              d.month == day.month && 
+              d.day == day.day
+          ).length;
+          
+          points.add(ChartDataPoint(
+              label: '${day.day}', 
+              count: count
+          ));
         }
       } else if (timeRange.toLowerCase() == 'yearly') {
-        final now = DateTime.now();
-        for (int m = 11; m >= 0; m--) {
-          final month = DateTime(now.year, now.month - m, 1);
-          final count = rows.where((d) => d.year == month.year && d.month == month.month).length;
-          points.add(ChartDataPoint(label: '${month.month}/${month.year}', count: count));
+        // Show all 12 months
+        for (int m = 0; m < 12; m++) {
+          final month = DateTime(start.year, m + 1, 1);
+          final count = rows.where((d) => 
+              d.year == month.year && 
+              d.month == month.month
+          ).length;
+          
+          final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          points.add(ChartDataPoint(
+              label: months[m], 
+              count: count
+          ));
         }
       } else {
-        final now = DateTime.now();
+        // All trips - show last 12 months
         for (int m = 11; m >= 0; m--) {
           final month = DateTime(now.year, now.month - m, 1);
-          final count = rows.where((d) => d.year == month.year && d.month == month.month).length;
-          points.add(ChartDataPoint(label: '${month.month}/${month.year}', count: count));
+          final count = rows.where((d) => 
+              d.year == month.year && 
+              d.month == month.month
+          ).length;
+          
+          final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          points.add(ChartDataPoint(
+              label: months[month.month - 1], 
+              count: count
+          ));
         }
       }
 
+      developer.log('Chart data: ${points.length} points', name: 'TripsService');
       return points;
     } catch (e) {
       developer.log('Error fetching chart data: $e', name: 'TripsService');
@@ -128,7 +236,11 @@ class TripsService {
           .from('drivers')
           .select('profile_id,vehicle_plate,operator_name')
           .eq('id', driverId)
-          .single());
+          .maybeSingle());
+
+      if (dRes == null) {
+        return {'driverName': null, 'vehiclePlate': null};
+      }
 
       String? driverName;
       final vehiclePlate = dRes['vehicle_plate'] as String?;
@@ -140,13 +252,15 @@ class TripsService {
               .from('profiles')
               .select('first_name,last_name')
               .eq('id', profileId)
-              .single());
+              .maybeSingle());
           
-          final firstName = (pRes['first_name'] as String? ?? '').trim();
-          final lastName = (pRes['last_name'] as String? ?? '').trim();
-          
-          if (firstName.isNotEmpty || lastName.isNotEmpty) {
-            driverName = '$firstName $lastName'.trim();
+          if (pRes != null) {
+            final firstName = (pRes['first_name'] as String? ?? '').trim();
+            final lastName = (pRes['last_name'] as String? ?? '').trim();
+            
+            if (firstName.isNotEmpty || lastName.isNotEmpty) {
+              driverName = '$firstName $lastName'.trim();
+            }
           }
         } catch (e) {
           developer.log('Error fetching profile: $e', name: 'TripsService');
@@ -215,8 +329,10 @@ class TripsService {
                 .from('routes')
                 .select('code')
                 .eq('id', r['route_id'])
-                .single();
-            routeCode = routeRes['code'] ?? '';
+                .maybeSingle();
+            if (routeRes != null) {
+              routeCode = routeRes['code'] ?? '';
+            }
           } catch (_) {}
         }
 
@@ -227,8 +343,10 @@ class TripsService {
                 .from('route_stops')
                 .select('name')
                 .eq('id', r['origin_stop_id'])
-                .single();
-            originName = oRes['name'] ?? '';
+                .maybeSingle();
+            if (oRes != null) {
+              originName = oRes['name'] ?? '';
+            }
           } catch (_) {}
         }
         if (r['destination_stop_id'] != null) {
@@ -237,8 +355,10 @@ class TripsService {
                 .from('route_stops')
                 .select('name')
                 .eq('id', r['destination_stop_id'])
-                .single();
-            destName = dRes['name'] ?? '';
+                .maybeSingle();
+            if (dRes != null) {
+              destName = dRes['name'] ?? '';
+            }
           } catch (_) {}
         }
 
@@ -280,19 +400,23 @@ class TripsService {
     DateTime? dateTo,
   }) async {
     try {
-      final query = _supabase.from('trips').select('id,started_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id');
+      var query = _supabase
+          .from('trips')
+          .select('id,started_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id');
 
       if (statusFilter != null && statusFilter.isNotEmpty) {
-        query.eq('status', statusFilter);
+        query = query.eq('status', statusFilter);
       }
       if (dateFrom != null) {
-        query.gte('started_at', dateFrom.toIso8601String());
+        query = query.gte('started_at', dateFrom.toIso8601String());
       }
       if (dateTo != null) {
-        query.lte('started_at', dateTo.toIso8601String());
+        query = query.lte('started_at', dateTo.toIso8601String());
       }
 
-      final res = await _withRetries(() => query.order('started_at', ascending: false).limit(1000));
+      final res = await _withRetries(() => query
+          .order('started_at', ascending: false)
+          .limit(1000));
       final rows = res as List;
 
       List<TripItem> items = [];
@@ -307,20 +431,38 @@ class TripsService {
 
         if (r['route_id'] != null) {
           try {
-            final routeRes = await _supabase.from('routes').select('code').eq('id', r['route_id']).single();
-            routeCode = routeRes['code'] ?? '';
+            final routeRes = await _supabase
+                .from('routes')
+                .select('code')
+                .eq('id', r['route_id'])
+                .maybeSingle();
+            if (routeRes != null) {
+              routeCode = routeRes['code'] ?? '';
+            }
           } catch (_) {}
         }
         if (r['origin_stop_id'] != null) {
           try {
-            final oRes = await _supabase.from('route_stops').select('name').eq('id', r['origin_stop_id']).single();
-            originName = oRes['name'] ?? '';
+            final oRes = await _supabase
+                .from('route_stops')
+                .select('name')
+                .eq('id', r['origin_stop_id'])
+                .maybeSingle();
+            if (oRes != null) {
+              originName = oRes['name'] ?? '';
+            }
           } catch (_) {}
         }
         if (r['destination_stop_id'] != null) {
           try {
-            final dRes = await _supabase.from('route_stops').select('name').eq('id', r['destination_stop_id']).single();
-            destName = dRes['name'] ?? '';
+            final dRes = await _supabase
+                .from('route_stops')
+                .select('name')
+                .eq('id', r['destination_stop_id'])
+                .maybeSingle();
+            if (dRes != null) {
+              destName = dRes['name'] ?? '';
+            }
           } catch (_) {}
         }
 
@@ -391,21 +533,33 @@ class TripsService {
       
       if (res['route_id'] != null) {
         try {
-          final rRes = await _supabase.from('routes').select('code').eq('id', res['route_id']).maybeSingle();
+          final rRes = await _supabase
+              .from('routes')
+              .select('code')
+              .eq('id', res['route_id'])
+              .maybeSingle();
           if (rRes != null) routeCode = rRes['code'] ?? '';
         } catch (_) {}
       }
       
       if (res['origin_stop_id'] != null) {
         try {
-          final oRes = await _supabase.from('route_stops').select('name').eq('id', res['origin_stop_id']).maybeSingle();
+          final oRes = await _supabase
+              .from('route_stops')
+              .select('name')
+              .eq('id', res['origin_stop_id'])
+              .maybeSingle();
           if (oRes != null) originName = oRes['name'] ?? '';
         } catch (_) {}
       }
       
       if (res['destination_stop_id'] != null) {
         try {
-          final dRes = await _supabase.from('route_stops').select('name').eq('id', res['destination_stop_id']).maybeSingle();
+          final dRes = await _supabase
+              .from('route_stops')
+              .select('name')
+              .eq('id', res['destination_stop_id'])
+              .maybeSingle();
           if (dRes != null) destName = dRes['name'] ?? '';
         } catch (_) {}
       }

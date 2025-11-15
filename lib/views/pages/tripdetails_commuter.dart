@@ -36,17 +36,28 @@ class TripDetailsPage extends StatefulWidget {
   State<TripDetailsPage> createState() => _TripDetailsPageState();
 }
 
-class _TripDetailsPageState extends State<TripDetailsPage> {
+class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProviderStateMixin {
   final TripsService _service = TripsService();
   TripDetails? _details;
   bool _loading = false;
   String? _error;
   final MapController _mapController = MapController();
+  late AnimationController _shimmerController;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
     _loadDetails();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDetails() async {
@@ -325,7 +336,9 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                 ),
 
               // Action Buttons
-              if (widget.status.toLowerCase() == "cancelled") ...[
+              if (_loading)
+                _buildLoadingButtons(screenWidth)
+              else if (widget.status.toLowerCase() == "cancelled") ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -456,12 +469,42 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 
-  // Loading state for driver card
+  // Enhanced shimmer effect
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Enhanced loading state for driver card
   Widget _buildLoadingDriverCard() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6), width: 1.2),
+        border: Border.all(color: const Color(0xFF8E4CB6).withOpacity(0.3), width: 1.2),
         borderRadius: BorderRadius.circular(14),
         color: Colors.white,
         boxShadow: [
@@ -475,12 +518,14 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       ),
       child: Row(
         children: [
-          Container(
-            height: 50,
-            width: 50,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF2EAFF),
-              shape: BoxShape.circle,
+          _buildShimmer(
+            child: Container(
+              height: 50,
+              width: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                shape: BoxShape.circle,
+              ),
             ),
           ),
           const SizedBox(width: 15),
@@ -488,9 +533,27 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(width: 140, height: 16, color: Colors.grey[300]),
+                _buildShimmer(
+                  child: Container(
+                    width: 140,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Container(width: 100, height: 14, color: Colors.grey[300]),
+                _buildShimmer(
+                  child: Container(
+                    width: 100,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -499,17 +562,240 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 
-  // Loading state for map
+  // Enhanced loading state for map with animated elements
   Widget _buildLoadingMap() {
-    return Container(
-      height: 260,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+    return Column(
+      children: [
+        Container(
+          height: 260,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Stack(
+            children: [
+              // Base map background
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.grey[100]!,
+                      Colors.grey[200]!,
+                      Colors.grey[100]!,
+                    ],
+                  ),
+                ),
+              ),
+              // Animated road lines
+              Positioned(
+                left: 40,
+                top: 60,
+                child: _buildShimmer(
+                  child: Container(
+                    width: 120,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 50,
+                top: 100,
+                child: _buildShimmer(
+                  child: Container(
+                    width: 80,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 60,
+                bottom: 80,
+                child: _buildShimmer(
+                  child: Container(
+                    width: 100,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              // Pin markers
+              Positioned(
+                left: 40,
+                top: 40,
+                child: _buildShimmer(
+                  child: Icon(
+                    Icons.location_on,
+                    size: 32,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 40,
+                bottom: 60,
+                child: _buildShimmer(
+                  child: Icon(
+                    Icons.location_on,
+                    size: 32,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+              // Center loading indicator
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            const Color(0xFF8E4CB6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Loading map...',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Distance and Route Code skeleton
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmer(
+                      child: Container(
+                        width: 60,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildShimmer(
+                      child: Container(
+                        width: 80,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildShimmer(
+                      child: Container(
+                        width: 80,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildShimmer(
+                      child: Container(
+                        width: 60,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Loading state for action buttons
+  Widget _buildLoadingButtons(double screenWidth) {
+    return Column(
+      children: [
+        _buildShimmer(
+          child: Container(
+            width: double.infinity,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildShimmer(
+          child: Container(
+            width: double.infinity,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
