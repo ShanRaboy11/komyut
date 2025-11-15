@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
+import '../widgets/map.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+// geolocator Position not required here; MapWidget accepts null currentPosition
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
 import 'report_p1_commuter.dart';
@@ -38,6 +42,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   TripDetails? _details;
   bool _loading = false;
   String? _error;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -46,23 +51,32 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   }
 
   Future<void> _loadDetails() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+
     try {
       final d = await _service.getTripDetails(widget.tripId);
-      setState(() {
-        _details = d;
-      });
+      if (mounted) {
+        setState(() {
+          _details = d;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load trip details: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load trip details: $e';
+        });
+      }
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -70,14 +84,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    String mapUrl = 'assets/images/map.png';
-    if (_details != null && _details!.originLat != null && _details!.destLat != null) {
-      // Build a simple static OSM map image with origin & dest markers
-      final centerLat = (_details!.originLat! + _details!.destLat!) / 2.0;
-      final centerLng = (_details!.originLng! + _details!.destLng!) / 2.0;
-      final markers = 'markers=${_details!.originLat},${_details!.originLng},lightblue1|${_details!.destLat},${_details!.destLng},red1';
-      mapUrl = 'https://staticmap.openstreetmap.de/staticmap.php?center=$centerLat,$centerLng&zoom=13&size=800x400&$markers';
-    }
+    // We'll render a dynamic map using the app's MapWidget when routeStops exist.
+    final defaultLocation = LatLng(14.5995, 120.9842); // Manila fallback
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -207,16 +215,33 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
 
               const SizedBox(height: 16),
 
-              // Trip Details Card (mapUrl might be network or asset)
-              TripDetailsCard(
-                mapImage: mapUrl,
-                distance: _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' : '—',
-                routeCode: (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
-                from: (_details != null && _details!.from.isNotEmpty) ? _details!.from : widget.from,
-                fromTime: _details != null ? _details!.time : widget.time,
-                to: (_details != null && _details!.to.isNotEmpty) ? _details!.to : widget.to,
-                toTime: _details != null ? _details!.time : widget.time,
-              ),
+              // Dynamic Map
+              if (_details != null && _details!.routeStops != null && _details!.routeStops!.isNotEmpty)
+                SizedBox(
+                  height: 260,
+                  child: MapWidget(
+                    mapController: _mapController,
+                    currentPosition: null,
+                    defaultLocation: defaultLocation,
+                    isLoading: _loading,
+                    boardingLocation: null,
+                    arrivalLocation: null,
+                    routeStops: _details!.routeStops,
+                    originStopId: _details!.originStopId,
+                    destinationStopId: _details!.destinationStopId,
+                  ),
+                )
+              else
+                // Fallback to static image
+                TripDetailsCard(
+                  mapImage: 'assets/images/map.png',
+                  distance: _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' : '—',
+                  routeCode: (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
+                  from: (_details != null && _details!.from.isNotEmpty) ? _details!.from : widget.from,
+                  fromTime: _details != null ? _details!.time : widget.time,
+                  to: (_details != null && _details!.to.isNotEmpty) ? _details!.to : widget.to,
+                  toTime: _details != null ? _details!.time : widget.time,
+                ),
 
               const SizedBox(height: 20),
 

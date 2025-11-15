@@ -20,6 +20,7 @@ class TripItem {
   final double distanceKm;
   final String? driverName;
   final String? vehiclePlate;
+  final String? driverId;
 
   TripItem({
     required this.tripId,
@@ -33,6 +34,7 @@ class TripItem {
     required this.distanceKm,
     this.driverName,
     this.vehiclePlate,
+    this.driverId,
   });
 }
 
@@ -62,6 +64,7 @@ class TripDetails {
   final double distanceKm;
   final String? driverName;
   final String? vehiclePlate;
+  final String? driverId;
   final DateTime startedAt;
   final DateTime? endedAt;
   final int passengerCount;
@@ -85,6 +88,7 @@ class TripDetails {
     required this.distanceKm,
     this.driverName,
     this.vehiclePlate,
+    this.driverId,
     required this.startedAt,
     this.endedAt,
     required this.passengerCount,

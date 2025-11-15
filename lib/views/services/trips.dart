@@ -322,15 +322,25 @@ class TripsService {
       String? vehiclePlate;
       if (res['driver_id'] != null) {
         try {
-          final dRes = await _withRetries(() => _supabase.from('drivers').select('profile_id,vehicle_plate,operator_name').eq('id', res['driver_id']).single());
+          final dRes = await _withRetries(() => _supabase.from('drivers').select('profile_id,vehicle_plate,operator_name,name,display_name').eq('id', res['driver_id']).single());
           vehiclePlate = dRes['vehicle_plate'];
+          // prefer profile name if available
           final profileId = dRes['profile_id'];
           if (profileId != null) {
-            final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
-            driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
-            if (driverName.isEmpty) driverName = null;
+            try {
+              final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
+              driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
+              if (driverName.isEmpty) driverName = null;
+            } catch (_) {
+              // ignore
+            }
           }
-          driverName ??= dRes['operator_name'];
+
+          // Fallbacks: driver.name, driver.display_name, operator_name
+          driverName ??= (dRes['name'] as String?)?.trim();
+          driverName ??= (dRes['display_name'] as String?)?.trim();
+          driverName ??= (dRes['operator_name'] as String?)?.trim();
+          if (driverName != null && driverName.isEmpty) driverName = null;
         } catch (_) {
           // ignore and leave driverName null
         }

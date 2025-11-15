@@ -236,7 +236,7 @@ class _TripsPageState extends State<TripsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(width: 180, height: 28, color: Colors.white.withOpacity(0.0)),
+                Container(width: 180, height: 28, color: const Color.fromRGBO(255, 255, 255, 0.0)),
                 Container(width: 120, height: 36, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(30))),
               ],
             ),
@@ -257,7 +257,7 @@ class _TripsPageState extends State<TripsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 120, height: 20, color: Colors.white.withOpacity(0.2)),
+                  Container(width: 120, height: 20, color: const Color.fromRGBO(255, 255, 255, 0.2)),
                   const SizedBox(height: 14),
                   Row(
                     children: [

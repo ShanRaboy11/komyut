@@ -127,13 +127,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (confirm == true && mounted) {
       try {
-        // Show loading indicator
+        // Show loading indicator on the root navigator so it can be dismissed reliably
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => Center(
-            child: CircularProgressIndicator(
-              color: const Color(0xFF8E4CB6),
+          useRootNavigator: true,
+          builder: (context) => WillPopScope(
+            onWillPop: () async => false,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF8E4CB6),
+              ),
             ),
           ),
         );
@@ -142,9 +146,11 @@ class _ProfilePageState extends State<ProfilePage> {
         await _supabase.auth.signOut();
 
         if (mounted) {
-          // Close loading dialog
-          Navigator.pop(context);
-          
+          // Close loading dialog (use rootNavigator to match how it was shown)
+          try {
+            Navigator.of(context, rootNavigator: true).pop();
+          } catch (_) {}
+
           // Navigate to Landing Page and clear navigation stack
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
@@ -155,9 +161,11 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       } catch (e) {
         if (mounted) {
-          // Close loading dialog if still showing
-          Navigator.pop(context);
-          
+          // Close loading dialog if still showing (root navigator)
+          try {
+            Navigator.of(context, rootNavigator: true).pop();
+          } catch (_) {}
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Logout failed: ${e.toString()}'),
