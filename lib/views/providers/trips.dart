@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 
 import '../services/trips.dart';
@@ -75,8 +76,9 @@ class TripsProvider with ChangeNotifier {
         totalSpent: data['total_spent'] as double,
       );
     } catch (e) {
-      print('Error loading analytics: $e');
-      rethrow;
+      developer.log('Error loading analytics: $e', name: 'TripsProvider');
+      _errorMessage = 'Error loading analytics: $e';
+      // don't rethrow; let loadData handle final state
     }
   }
 
@@ -88,8 +90,8 @@ class TripsProvider with ChangeNotifier {
         rangeOffset: _currentIndex,
       );
     } catch (e) {
-      print('Error loading chart data: $e');
-      rethrow;
+      developer.log('Error loading chart data: $e', name: 'TripsProvider');
+      _errorMessage = 'Error loading chart data: $e';
     }
   }
 
@@ -98,8 +100,8 @@ class TripsProvider with ChangeNotifier {
     try {
       _recentTrips = await _tripsService.getRecentTrips(limit: 3);
     } catch (e) {
-      print('Error loading recent trips: $e');
-      rethrow;
+      developer.log('Error loading recent trips: $e', name: 'TripsProvider');
+      _errorMessage = 'Error loading recent trips: $e';
     }
   }
 

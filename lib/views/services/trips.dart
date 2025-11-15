@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/trips.dart';
@@ -38,7 +40,7 @@ class TripsService {
       }
 
       // Query trips within range
-      final res = await _supabase.from('trips').select('id,started_at,fare_amount,distance_meters').order('started_at', ascending: false).limit(1000);
+      final res = await _withRetries(() => _supabase.from('trips').select('id,started_at,fare_amount,distance_meters').order('started_at', ascending: false).limit(1000));
 
       final rows = (res as List).where((r) {
         if (start.isAtSameMomentAs(DateTime.fromMillisecondsSinceEpoch(0).toUtc())) return true;
@@ -70,7 +72,7 @@ class TripsService {
         'total_spent': totalSpent,
       };
     } catch (e) {
-      print('Error fetching analytics: $e');
+      developer.log('Error fetching analytics: $e', name: 'TripsService');
       rethrow;
     }
   }
@@ -82,7 +84,7 @@ class TripsService {
   }) async {
     try {
       // Fetch recent trips and aggregate on client side
-      final res = await _supabase.from('trips').select('id,started_at').order('started_at', ascending: true).limit(1000);
+      final res = await _withRetries(() => _supabase.from('trips').select('id,started_at').order('started_at', ascending: true).limit(1000));
 
       final rows = (res as List).map((r) => DateTime.parse(r['started_at']).toLocal()).toList();
 
@@ -121,7 +123,7 @@ class TripsService {
 
       return points;
     } catch (e) {
-      print('Error fetching chart data: $e');
+      developer.log('Error fetching chart data: $e', name: 'TripsService');
       rethrow;
     }
   }
@@ -129,11 +131,11 @@ class TripsService {
   // Get recent trips
   Future<List<TripItem>> getRecentTrips({int limit = 10}) async {
     try {
-        final res = await _supabase
+        final res = await _withRetries(() => _supabase
           .from('trips')
-          .select('id,started_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status')
+          .select('id,started_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id')
           .order('started_at', ascending: false)
-          .limit(limit);
+          .limit(limit));
 
         final rows = res as List;
       List<TripItem> items = [];
@@ -146,6 +148,8 @@ class TripsService {
         String routeCode = '';
         String originName = '';
         String destName = '';
+        String? driverName;
+        String? vehiclePlate;
         if (r['route_id'] != null) {
           final routeRes = await _supabase.from('routes').select('code,name').eq('id', r['route_id']).single();
           routeCode = routeRes['code'] ?? '';
@@ -158,6 +162,21 @@ class TripsService {
           final dRes = await _supabase.from('route_stops').select('name').eq('id', r['destination_stop_id']).single();
           destName = dRes['name'] ?? '';
         }
+        if (r['driver_id'] != null) {
+          try {
+            final dRes = await _withRetries(() => _supabase.from('drivers').select('profile_id,vehicle_plate,operator_name').eq('id', r['driver_id']).single());
+            vehiclePlate = dRes['vehicle_plate'];
+            final profileId = dRes['profile_id'];
+            if (profileId != null) {
+              final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
+              driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
+              if (driverName.isEmpty) driverName = null;
+            }
+            driverName ??= dRes['operator_name'];
+          } catch (_) {
+            // ignore
+          }
+        }
 
         items.add(TripItem(
           tripId: r['id'] ?? '',
@@ -169,12 +188,14 @@ class TripsService {
           status: (r['status'] ?? 'completed').toString(),
           fareAmount: ((r['fare_amount'] ?? 0) as num).toDouble(),
           distanceKm: (((r['distance_meters'] ?? 0) as num).toDouble() / 1000.0),
+          driverName: driverName,
+          vehiclePlate: vehiclePlate,
         ));
       }
 
       return items;
     } catch (e) {
-      print('Error fetching recent trips: $e');
+      developer.log('Error fetching recent trips: $e', name: 'TripsService');
       rethrow;
     }
   }
@@ -198,29 +219,76 @@ class TripsService {
         query.lte('started_at', dateTo.toIso8601String());
       }
 
-      final res = await query.order('started_at', ascending: false).limit(1000);
+      final res = await _withRetries(() => query.order('started_at', ascending: false).limit(1000));
       final rows = res as List;
 
-      return rows.map((r) {
+      List<TripItem> items = [];
+      for (var r in rows) {
         final started = DateTime.parse(r['started_at']).toLocal();
         final dateStr = '${started.month}/${started.day}/${started.year}';
         final timeStr = '${started.hour.toString().padLeft(2, '0')}:${started.minute.toString().padLeft(2, '0')}';
-        return TripItem(
+
+        String routeCode = '';
+        String originName = '';
+        String destName = '';
+        String? driverName;
+        String? vehiclePlate;
+
+        if (r['route_id'] != null) {
+          try {
+            final routeRes = await _supabase.from('routes').select('code').eq('id', r['route_id']).single();
+            routeCode = routeRes['code'] ?? '';
+          } catch (_) {}
+        }
+        if (r['origin_stop_id'] != null) {
+          try {
+            final oRes = await _supabase.from('route_stops').select('name').eq('id', r['origin_stop_id']).single();
+            originName = oRes['name'] ?? '';
+          } catch (_) {}
+        }
+        if (r['destination_stop_id'] != null) {
+          try {
+            final dRes = await _supabase.from('route_stops').select('name').eq('id', r['destination_stop_id']).single();
+            destName = dRes['name'] ?? '';
+          } catch (_) {}
+        }
+
+        if (r['driver_id'] != null) {
+          try {
+            final dRes = await _withRetries(() => _supabase.from('drivers').select('profile_id,vehicle_plate,operator_name').eq('id', r['driver_id']).single());
+            vehiclePlate = dRes['vehicle_plate'];
+            final profileId = dRes['profile_id'];
+            if (profileId != null) {
+              try {
+                final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
+                driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
+                if (driverName.isEmpty) driverName = null;
+              } catch (_) {}
+            }
+            driverName ??= dRes['operator_name'];
+          } catch (_) {
+            // ignore driver resolution errors
+          }
+        }
+
+        items.add(TripItem(
           tripId: r['id'] ?? '',
           date: dateStr,
           time: timeStr,
-          from: '',
-          to: '',
-          tripCode: '',
+          from: originName,
+          to: destName,
+          tripCode: routeCode,
           status: (r['status'] ?? 'completed').toString(),
           fareAmount: ((r['fare_amount'] ?? 0) as num).toDouble(),
           distanceKm: (((r['distance_meters'] ?? 0) as num).toDouble() / 1000.0),
-          driverName: null,
-          vehiclePlate: null,
-        );
-      }).toList();
+          driverName: driverName,
+          vehiclePlate: vehiclePlate,
+        ));
+      }
+
+      return items;
     } catch (e) {
-      print('Error fetching all trips: $e');
+      developer.log('Error fetching all trips: $e', name: 'TripsService');
       rethrow;
     }
   }
@@ -228,13 +296,11 @@ class TripsService {
   // Get detailed trip by id
   Future<TripDetails?> getTripDetails(String tripId) async {
     try {
-      final res = await _supabase
+        final res = await _withRetries(() => _supabase
           .from('trips')
-          .select('id,started_at,ended_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id,origin_lat,origin_lng,destination_lat,destination_lng,route_stops,passenger_count')
+          .select('id,started_at,ended_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id,route_stops,passenger_count')
           .eq('id', tripId)
-          .single();
-
-      if (res == null) return null;
+          .single());
 
       final started = DateTime.parse(res['started_at']).toLocal();
       DateTime? ended;
@@ -251,32 +317,90 @@ class TripsService {
         }
       }
 
+      // Resolve driver name if present
+      String? driverName;
+      String? vehiclePlate;
+      if (res['driver_id'] != null) {
+        try {
+          final dRes = await _withRetries(() => _supabase.from('drivers').select('profile_id,vehicle_plate,operator_name').eq('id', res['driver_id']).single());
+          vehiclePlate = dRes['vehicle_plate'];
+          final profileId = dRes['profile_id'];
+          if (profileId != null) {
+            final pRes = await _withRetries(() => _supabase.from('profiles').select('first_name,last_name').eq('id', profileId).single());
+            driverName = '${pRes['first_name'] ?? ''} ${pRes['last_name'] ?? ''}'.trim();
+            if (driverName.isEmpty) driverName = null;
+          }
+          driverName ??= dRes['operator_name'];
+        } catch (_) {
+          // ignore and leave driverName null
+        }
+      }
+
+      // Resolve route code and stop names
+      String routeCode = '';
+      String originName = '';
+      String destName = '';
+      try {
+        if (res['route_id'] != null) {
+          final rRes = await _supabase.from('routes').select('code').eq('id', res['route_id']).maybeSingle();
+          if (rRes != null) routeCode = rRes['code'] ?? '';
+        }
+      } catch (_) {}
+      try {
+        if (res['origin_stop_id'] != null) {
+          final oRes = await _supabase.from('route_stops').select('name').eq('id', res['origin_stop_id']).maybeSingle();
+          if (oRes != null) originName = oRes['name'] ?? '';
+        }
+      } catch (_) {}
+      try {
+        if (res['destination_stop_id'] != null) {
+          final dRes = await _supabase.from('route_stops').select('name').eq('id', res['destination_stop_id']).maybeSingle();
+          if (dRes != null) destName = dRes['name'] ?? '';
+        }
+      } catch (_) {}
+
       return TripDetails(
         tripId: res['id'] ?? '',
         date: '${started.month}/${started.day}/${started.year}',
         time: '${started.hour.toString().padLeft(2, '0')}:${started.minute.toString().padLeft(2, '0')}',
-        from: '',
-        to: '',
-        tripCode: '',
+        from: originName,
+        to: destName,
+        tripCode: routeCode,
         status: (res['status'] ?? 'completed').toString(),
         fareAmount: ((res['fare_amount'] ?? 0) as num).toDouble(),
         distanceKm: (((res['distance_meters'] ?? 0) as num).toDouble() / 1000.0),
-        driverName: null,
-        vehiclePlate: null,
+        driverName: driverName,
+        vehiclePlate: vehiclePlate,
         startedAt: started,
         endedAt: ended,
         passengerCount: (res['passenger_count'] ?? 0) as int,
         originStopId: res['origin_stop_id']?.toString(),
         destinationStopId: res['destination_stop_id']?.toString(),
         routeStops: routeStops,
-        originLat: res['origin_lat'] != null ? (res['origin_lat'] as num).toDouble() : null,
-        originLng: res['origin_lng'] != null ? (res['origin_lng'] as num).toDouble() : null,
-        destLat: res['destination_lat'] != null ? (res['destination_lat'] as num).toDouble() : null,
-        destLng: res['destination_lng'] != null ? (res['destination_lng'] as num).toDouble() : null,
+        originLat: null,
+        originLng: null,
+        destLat: null,
+        destLng: null,
       );
     } catch (e) {
-      print('Error fetching trip details: $e');
+      developer.log('Error fetching trip details: $e', name: 'TripsService');
       rethrow;
+    }
+  }
+
+  // helper to retry transient network errors
+  Future<T> _withRetries<T>(Future<T> Function() fn, {int maxAttempts = 3}) async {
+    int attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        return await fn();
+      } catch (e) {
+        final isSocket = e is SocketException || (e.toString().toLowerCase().contains('connection reset') || e.toString().toLowerCase().contains('socketexception'));
+        if (!isSocket || attempt >= maxAttempts) rethrow;
+        final waitMs = 200 * attempt;
+        await Future.delayed(Duration(milliseconds: waitMs));
+      }
     }
   }
 }

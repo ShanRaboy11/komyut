@@ -397,14 +397,14 @@ class _TripsPageState extends State<TripsPage> {
             children: [
               _analyticsCard(
                 "Distance",
-                provider.isLoading ? 'Loading...' : "${analytics.totalDistance.toStringAsFixed(1)} km",
+                provider.isLoading ? '...' : "${analytics.totalDistance.toStringAsFixed(1)} km",
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Distance Details'),
                       content: Text(provider.isLoading
-                          ? 'Loading...'
+                          ? '...'
                           : 'Total distance: ${analytics.totalDistance.toStringAsFixed(2)} km\nTotal trips: ${analytics.totalTrips}'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
@@ -416,14 +416,14 @@ class _TripsPageState extends State<TripsPage> {
               const SizedBox(width: 20),
               _analyticsCard(
                 "Expense",
-                provider.isLoading ? 'Loading...' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
+                provider.isLoading ? '...' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Expense Details'),
                       content: Text(provider.isLoading
-                          ? 'Loading...'
+                          ? '...'
                           : 'Total spent: ₱${analytics.totalSpent.toStringAsFixed(2)}\nTotal trips: ${analytics.totalTrips}'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
@@ -458,7 +458,7 @@ class _TripsPageState extends State<TripsPage> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFD999FF).withOpacity(0.4),
+        color: const Color.fromRGBO(217, 153, 255, 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

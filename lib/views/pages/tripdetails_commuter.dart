@@ -139,7 +139,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                     "${widget.date}, ${widget.time}",
                     style: GoogleFonts.nunito(
                       fontSize: 14,
-                      color: Colors.black.withOpacity(0.7),
+                      color: const Color.fromRGBO(0, 0, 0, 0.7),
                     ),
                   ),
                   Container(
@@ -165,11 +165,11 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
 
               const SizedBox(height: 16),
 
-              // Driver Card (kept static for now)
-              const DriverCard(
-                name: "Gio Christian D. Macatual",
-                role: "Driver",
-                plate: "735TUK",
+              // Driver Card (show fetched driver when available)
+              DriverCard(
+                name: _details?.driverName ?? 'Gio Christian D. Macatual',
+                role: 'Driver',
+                plate: _details?.vehiclePlate ?? '735TUK',
               ),
 
               const SizedBox(height: 16),
@@ -178,11 +178,11 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               TripDetailsCard(
                 mapImage: mapUrl,
                 distance: _details != null ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' : '—',
-                routeCode: widget.tripCode,
-                from: widget.from,
-                fromTime: widget.time,
-                to: widget.to,
-                toTime: widget.time,
+                routeCode: (_details != null && _details!.tripCode.isNotEmpty) ? _details!.tripCode : widget.tripCode,
+                from: (_details != null && _details!.from.isNotEmpty) ? _details!.from : widget.from,
+                fromTime: _details != null ? _details!.time : widget.time,
+                to: (_details != null && _details!.to.isNotEmpty) ? _details!.to : widget.to,
+                toTime: _details != null ? _details!.time : widget.time,
               ),
 
               const SizedBox(height: 20),

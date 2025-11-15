@@ -36,7 +36,7 @@ class TripDetailsCard extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: const Color.fromRGBO(0, 0, 0, 0.05),
             blurRadius: 4,
             spreadRadius: 1,
             offset: const Offset(0, 2),
@@ -221,7 +221,7 @@ class TripDetailsCard extends StatelessWidget {
               time,
               style: GoogleFonts.nunito(
                 fontSize: 16,
-                color: Colors.black.withOpacity(0.6),
+                color: const Color.fromRGBO(0, 0, 0, 0.6),
               ),
             ),
           ],
