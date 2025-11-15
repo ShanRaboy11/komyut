@@ -81,7 +81,49 @@ class _Trip1PageState extends State<Trip1Page> {
               const SizedBox(height: 20),
 
               if (_isLoading)
-                const Center(child: CircularProgressIndicator())
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: 6,
+                    itemBuilder: (context, idx) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF8E4CB6)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(0, 0, 0, 0.05),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(width: 120, height: 12, color: Colors.grey[300]),
+                                const SizedBox(height: 8),
+                                Container(width: 80, height: 12, color: Colors.grey[300]),
+                                const SizedBox(height: 8),
+                                Container(width: 200, height: 12, color: Colors.grey[300]),
+                              ],
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Container(width: 60, height: 30, color: Colors.grey[300]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
               else if (_error != null)
                 Center(child: Text(_error!))
               else if (_trips.isEmpty)

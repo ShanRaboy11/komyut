@@ -166,11 +166,44 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               const SizedBox(height: 16),
 
               // Driver Card (show fetched driver when available)
-              DriverCard(
-                name: _details?.driverName ?? 'Gio Christian D. Macatual',
-                role: 'Driver',
-                plate: _details?.vehiclePlate ?? '735TUK',
-              ),
+              _loading
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFF8E4CB6), width: 1.2),
+                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(0, 0, 0, 0.05),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(height: 50, width: 50, decoration: const BoxDecoration(color: Color(0xFFF2EAFF), shape: BoxShape.circle)),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(width: 140, height: 16, color: Colors.grey[300]),
+                                const SizedBox(height: 8),
+                                Container(width: 100, height: 14, color: Colors.grey[300]),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : DriverCard(
+                      name: _details?.driverName ?? 'Unknown Driver',
+                      role: 'Driver',
+                      plate: _details?.vehiclePlate ?? '-',
+                    ),
 
               const SizedBox(height: 16),
 
