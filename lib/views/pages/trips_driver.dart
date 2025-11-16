@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'driver_trip_model.dart';
-import 'driver_trip_service.dart';
+import '../models/driver_trip.dart';
+import '../services/driver_trip.dart';
 
 class DriverTripHistoryPage extends StatefulWidget {
   const DriverTripHistoryPage({super.key});

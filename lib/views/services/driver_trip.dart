@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'driver_trip.dart';
+import '../models/driver_trip.dart';
 
 class DriverTripService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -47,10 +47,6 @@ class DriverTripService {
           ''')
           .eq('driver_id', driverId)
           .order('started_at', ascending: false);
-
-      if (response == null) {
-        return [];
-      }
 
       final List<dynamic> data = response as List<dynamic>;
       
@@ -160,10 +156,6 @@ class DriverTripService {
           .eq('driver_id', driverId)
           .eq('status', status)
           .order('started_at', ascending: false);
-
-      if (response == null) {
-        return [];
-      }
 
       final List<dynamic> data = response as List<dynamic>;
       
