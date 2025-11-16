@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'driver_trip_model.dart';
-import 'driver_trip_service.dart';
+import 'driver_trip.dart';
+import 'driver_trip.dart';
 
 class DriverTripProvider extends ChangeNotifier {
   final DriverTripService _tripService = DriverTripService();
