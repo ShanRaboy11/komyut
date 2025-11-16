@@ -53,6 +53,8 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
         child: Consumer<TripsProvider>(
           builder: (context, provider, child) {
             if (provider.isLoading && provider.recentTrips.isEmpty) {
+              // Show the full skeleton only when doing a full load
+              // and there is no cached recent trips to display.
               return _buildActivitySkeleton(size);
             }
 
@@ -155,8 +157,10 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                     ),
                     const SizedBox(height: 20),
 
-                    // Analytics Card
-                    _buildAnalyticsCard(context, provider, size),
+                    // Analytics Card (show enhanced skeleton when analyticsLoading)
+                    provider.analyticsLoading
+                      ? _buildAnalyticsSkeleton(size)
+                      : _buildAnalyticsCard(context, provider, size),
 
                     const SizedBox(height: 30),
 
@@ -727,6 +731,127 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
     );
   }
 
+  // Skeleton specifically for the Analytics card (shimmer on gradient)
+  Widget _buildAnalyticsSkeleton(Size size) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShimmerOnGradient(
+                child: Container(
+                  width: 140,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildShimmerOnGradient(
+                    child: Container(width: 80, height: 14, color: Colors.white24),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerOnGradient(child: Container(width: 80, height: 18, color: Colors.white24)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 60,
+                      height: 45,
+                      child: Center(
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  height: size.height * 0.15,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildShimmerOnGradient(
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildShimmerOnGradient(
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalyticsCard(BuildContext context, TripsProvider provider, Size size) {
     final analytics = provider.analyticsData;
     final chartData = provider.chartData;
@@ -760,16 +885,16 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               Row(
                 children: [
                   IconButton(
-                    onPressed: provider.isLoading ? null : () => provider.prevRange(),
+                    onPressed: provider.analyticsLoading ? null : () => provider.prevRange(),
                     icon: Icon(
                       Icons.chevron_left, 
-                      color: provider.isLoading ? Colors.white38 : Colors.white,
+                      color: provider.analyticsLoading ? Colors.white38 : Colors.white,
                     ),
                   ),
                   SizedBox(
                     width: 100,
                     child: Center(
-                      child: provider.isLoading
+                      child: provider.analyticsLoading
                           ? SizedBox(
                               width: 10,
                               height: 14,
@@ -787,12 +912,12 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                     ),
                   ),
                   IconButton(
-                    onPressed: (provider.isLoading || provider.currentIndex >= 0)
+                    onPressed: (provider.analyticsLoading || provider.currentIndex >= 0)
                         ? null
                         : () => provider.nextRange(),
                     icon: Icon(
                       Icons.chevron_right, 
-                      color: (provider.isLoading || provider.currentIndex >= 0) 
+                      color: (provider.analyticsLoading || provider.currentIndex >= 0) 
                           ? Colors.white38 
                           : Colors.white,
                     ),
@@ -826,7 +951,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                       const SizedBox(height: 4),
                       SizedBox(
                         height: 50,
-                        child: provider.isLoading
+                        child: provider.analyticsLoading
                             ? Center(
                                 child: SizedBox(
                                   width: 24,
@@ -864,7 +989,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                   height: size.height * 0.15,
                   child: Stack(
                     children: [
-                      if (provider.isLoading)
+                      if (provider.analyticsLoading)
                         Center(
                           child: SizedBox(
                             width: 24,
@@ -969,9 +1094,9 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
             children: [
               _analyticsCard(
                 "Distance",
-                provider.isLoading,
-                provider.isLoading ? '—' : "${analytics.totalDistance.toStringAsFixed(1)} km",
-                onTap: provider.isLoading ? null : () {
+                provider.analyticsLoading,
+                provider.analyticsLoading ? '—' : "${analytics.totalDistance.toStringAsFixed(1)} km",
+                onTap: provider.analyticsLoading ? null : () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -988,9 +1113,9 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               const SizedBox(width: 20),
               _analyticsCard(
                 "Expense",
-                provider.isLoading,
-                provider.isLoading ? '—' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
-                onTap: provider.isLoading ? null : () {
+                provider.analyticsLoading,
+                provider.analyticsLoading ? '—' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
+                onTap: provider.analyticsLoading ? null : () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(

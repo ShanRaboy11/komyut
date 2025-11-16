@@ -11,6 +11,7 @@ class TripsProvider with ChangeNotifier {
   String _selectedRange = 'Weekly';
   int _currentIndex = 0;
   bool _isLoading = false;
+  bool _isAnalyticsLoading = false;
   String? _errorMessage;
 
   // Analytics data
@@ -31,6 +32,7 @@ class TripsProvider with ChangeNotifier {
   String get selectedRange => _selectedRange;
   int get currentIndex => _currentIndex;
   bool get isLoading => _isLoading;
+  bool get analyticsLoading => _isAnalyticsLoading;
   String? get errorMessage => _errorMessage;
   AnalyticsData get analyticsData => _analyticsData;
   List<ChartDataPoint> get chartData => _chartData;
@@ -44,6 +46,7 @@ class TripsProvider with ChangeNotifier {
   // Load all data
   Future<void> loadData() async {
     _isLoading = true;
+    _isAnalyticsLoading = true;
     _errorMessage = null;
     notifyListeners();
 
@@ -57,6 +60,7 @@ class TripsProvider with ChangeNotifier {
       _errorMessage = 'Error loading trips data: $e';
     } finally {
       _isLoading = false;
+      _isAnalyticsLoading = false;
       notifyListeners();
     }
   }
@@ -113,15 +117,31 @@ class TripsProvider with ChangeNotifier {
     _currentIndex = 0;
     notifyListeners();
 
-    await loadData();
+    // Only reload analytics and chart data; keep recent trips cached.
+    _isAnalyticsLoading = true;
+    notifyListeners();
+    try {
+      await _loadAnalytics();
+      await _loadChartData();
+    } finally {
+      _isAnalyticsLoading = false;
+      notifyListeners();
+    }
   }
 
   // Navigate to previous range
   Future<void> prevRange() async {
     _currentIndex = (_currentIndex - 1).clamp(-999, 0).toInt();
     notifyListeners();
-    await _loadAnalytics();
-    await _loadChartData();
+    _isAnalyticsLoading = true;
+    notifyListeners();
+    try {
+      await _loadAnalytics();
+      await _loadChartData();
+    } finally {
+      _isAnalyticsLoading = false;
+      notifyListeners();
+    }
   }
 
   // Navigate to next range
@@ -129,8 +149,15 @@ class TripsProvider with ChangeNotifier {
     if (_currentIndex >= 0) return; // Don't go into future
     _currentIndex = (_currentIndex + 1).clamp(-999, 0).toInt();
     notifyListeners();
-    await _loadAnalytics();
-    await _loadChartData();
+    _isAnalyticsLoading = true;
+    notifyListeners();
+    try {
+      await _loadAnalytics();
+      await _loadChartData();
+    } finally {
+      _isAnalyticsLoading = false;
+      notifyListeners();
+    }
   }
 
   // Refresh all data
