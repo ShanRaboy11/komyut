@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../models/driver_trip.dart';
 import '../services/driver_trip.dart';
+import 'tripdetails_driver.dart';
 
 class DriverTripHistoryPage extends StatefulWidget {
   const DriverTripHistoryPage({super.key});
@@ -228,7 +229,24 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
     final statusColor = _statusColor(trip.status);
     final statusBackgroundColor = _statusBackground(trip.status);
 
-    return Container(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DriverTripDetailsPage(
+              tripId: trip.id,
+              date: DateFormat('MMMM d, yyyy').format(trip.startedAt),
+              time: DateFormat('hh:mm a').format(trip.startedAt),
+              from: trip.originName,
+              to: trip.destinationName,
+              tripCode: trip.routeCode,
+              status: trip.status,
+            ),
+          ),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
