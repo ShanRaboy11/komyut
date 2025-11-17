@@ -150,23 +150,36 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
           padding: const EdgeInsets.only(
             left: 30,
             right: 30,
-                CustomButton(
-                  text: "View Receipt",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+            bottom: 30,
+            top: 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date and status row
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "${widget.date}, ${widget.time}",
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: const Color.fromRGBO(0, 0, 0, 0.7),
                       ),
-                    );
-                  },
-                  icon: Symbols.receipt_long_rounded,
-                  width: double.infinity,
-                  height: 50,
-                  textColor: Colors.white,
-                  isFilled: true,
-                ),
-                const SizedBox(height: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _statusBackground(widget.status),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
                       widget.status[0].toUpperCase() + widget.status.substring(1),
                       style: GoogleFonts.nunito(
                         color: _statusColor(widget.status),
@@ -180,6 +193,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
 
               const SizedBox(height: 16),
 
+              // Passenger / Driver card
               if (_loading)
                 _buildLoadingDriverCard()
               else if (_details != null)
@@ -197,6 +211,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
 
               const SizedBox(height: 16),
 
+              // Map or fallback card
               if (_loading)
                 _buildLoadingMap()
               else if (hasRouteData) ...[
@@ -330,8 +345,15 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                 ),
               ] else if (widget.status.toLowerCase() == "completed") ...[
                 CustomButton(
-                  text: "Trip Summary",
-                  onPressed: () {},
+                  text: "View Receipt",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
+                      ),
+                    );
+                  },
                   icon: Symbols.receipt_long_rounded,
                   width: double.infinity,
                   height: 50,
@@ -339,25 +361,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                   isFilled: true,
                 ),
                 const SizedBox(height: 12),
-                CustomButton(
-                  text: "Report",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ReportPage(),
-                      ),
-                    );
-                  },
-                  icon: Symbols.brightness_alert_rounded,
-                  iconColor: const Color(0xFF5B53C2),
-                  width: double.infinity,
-                  height: 50,
-                  isFilled: false,
-                  outlinedFillColor: Colors.white,
-                  textColor: const Color(0xFF5B53C2),
-                  hasShadow: false,
-                ),
               ],
             ],
           ),
