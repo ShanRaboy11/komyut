@@ -9,6 +9,7 @@ class DriverTrip {
   final double fareAmount;
   final int passengersCount;
   final int? distanceMeters;
+  final String? passengerName;
 
   DriverTrip({
     required this.id,
@@ -21,9 +22,26 @@ class DriverTrip {
     required this.fareAmount,
     required this.passengersCount,
     this.distanceMeters,
+    this.passengerName,
   });
 
   factory DriverTrip.fromJson(Map<String, dynamic> json) {
+    String? _passengerName;
+    try {
+      if (json['passenger_name'] != null) {
+        _passengerName = json['passenger_name'] as String?;
+      } else if (json['passenger'] != null && json['passenger'] is Map) {
+        _passengerName = (json['passenger'] as Map)['name'] as String?;
+      } else if (json['passengers'] != null && json['passengers'] is List && (json['passengers'] as List).isNotEmpty) {
+        final first = (json['passengers'] as List).first;
+        if (first != null && first is Map && first['name'] != null) {
+          _passengerName = first['name'] as String?;
+        }
+      }
+    } catch (_) {
+      _passengerName = null;
+    }
+
     return DriverTrip(
       id: json['id'] as String,
       routeCode: json['route_code'] as String? ?? 'N/A',
@@ -37,6 +55,7 @@ class DriverTrip {
       fareAmount: (json['fare_amount'] as num?)?.toDouble() ?? 0.0,
       passengersCount: json['passengers_count'] as int? ?? 0,
       distanceMeters: json['distance_meters'] as int?,
+      passengerName: _passengerName,
     );
   }
 
@@ -52,6 +71,7 @@ class DriverTrip {
       'fare_amount': fareAmount,
       'passengers_count': passengersCount,
       'distance_meters': distanceMeters,
+      'passenger_name': passengerName,
     };
   }
 }

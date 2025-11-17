@@ -52,6 +52,22 @@ class DriverTripService {
       
       return data.map((json) {
         // Transform the nested JSON structure
+        String? _passengerName;
+        try {
+          if (json['passenger_name'] != null) {
+            _passengerName = json['passenger_name'] as String?;
+          } else if (json['passenger'] != null && json['passenger'] is Map) {
+            _passengerName = (json['passenger'] as Map)['name'] as String?;
+          } else if (json['passengers'] != null && json['passengers'] is List && (json['passengers'] as List).isNotEmpty) {
+            final first = (json['passengers'] as List).first;
+            if (first != null && first is Map && first['name'] != null) {
+              _passengerName = first['name'] as String?;
+            }
+          }
+        } catch (_) {
+          _passengerName = null;
+        }
+
         final transformedJson = {
           'id': json['id'],
           'status': json['status'],
@@ -63,6 +79,7 @@ class DriverTripService {
           'route_code': json['routes']?['code'] ?? 'N/A',
           'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
           'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
+          'passenger_name': _passengerName,
         };
         
         return DriverTrip.fromJson(transformedJson);
@@ -105,6 +122,7 @@ class DriverTripService {
         'route_code': response['routes']?['code'] ?? 'N/A',
         'origin_name': response['origin_stop']?['name'] ?? 'Unknown',
         'destination_name': response['destination_stop']?['name'] ?? 'Unknown',
+        'passenger_name': response['passenger_name'] as String? ?? response['passenger']?['name'] as String?,
       };
 
       return DriverTrip.fromJson(transformedJson);
@@ -160,6 +178,22 @@ class DriverTripService {
       final List<dynamic> data = response as List<dynamic>;
       
       return data.map((json) {
+        String? _passengerName;
+        try {
+          if (json['passenger_name'] != null) {
+            _passengerName = json['passenger_name'] as String?;
+          } else if (json['passenger'] != null && json['passenger'] is Map) {
+            _passengerName = (json['passenger'] as Map)['name'] as String?;
+          } else if (json['passengers'] != null && json['passengers'] is List && (json['passengers'] as List).isNotEmpty) {
+            final first = (json['passengers'] as List).first;
+            if (first != null && first is Map && first['name'] != null) {
+              _passengerName = first['name'] as String?;
+            }
+          }
+        } catch (_) {
+          _passengerName = null;
+        }
+
         final transformedJson = {
           'id': json['id'],
           'status': json['status'],
@@ -171,6 +205,7 @@ class DriverTripService {
           'route_code': json['routes']?['code'] ?? 'N/A',
           'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
           'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
+          'passenger_name': _passengerName,
         };
         
         return DriverTrip.fromJson(transformedJson);

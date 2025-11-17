@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/button.dart';
 import 'report_p1_driver.dart';
+import '../pages/tripreceipt_commuter.dart';
 import '../services/driver_trip.dart';
 import '../models/driver_trip.dart';
 
@@ -118,7 +119,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final defaultLocation = LatLng(14.5995, 120.9842); // Manila fallback
+    final defaultLocation = LatLng(10.29556, 123.87972);
 
     final hasRouteData = _details != null &&
         _details!.distanceMeters != null &&
@@ -126,76 +127,46 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Trip Details',
+          style: GoogleFonts.manrope(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(
             left: 30,
             right: 30,
-            bottom: 30,
-            top: 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.chevron_left_rounded,
-                        color: Colors.black87,
+                CustomButton(
+                  text: "View Receipt",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
                       ),
-                    ),
-                  ),
-                  Text(
-                    "Trips",
-                    style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
-              Text(
-                "Trip Details",
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
+                    );
+                  },
+                  icon: Symbols.receipt_long_rounded,
+                  width: double.infinity,
+                  height: 50,
+                  textColor: Colors.white,
+                  isFilled: true,
                 ),
-              ),
-              const SizedBox(height: 6),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "${widget.date}, ${widget.time}",
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.nunito(
-                        fontSize: 14,
-                        color: const Color.fromRGBO(0, 0, 0, 0.7),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _statusBackground(widget.status),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
+                const SizedBox(height: 12),
                       widget.status[0].toUpperCase() + widget.status.substring(1),
                       style: GoogleFonts.nunito(
                         color: _statusColor(widget.status),
@@ -213,13 +184,13 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                 _buildLoadingDriverCard()
               else if (_details != null)
                 DriverCard(
-                  name: _details!.originName, // show route owner or placeholder
+                  name: _details!.passengerName ?? 'Passenger',
                   role: 'Driver',
                   plate: _details!.routeCode,
                 )
               else
                 DriverCard(
-                  name: 'Driver',
+                  name: 'Passenger',
                   role: 'Driver',
                   plate: '-',
                 ),
@@ -341,55 +312,21 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
               if (_loading)
                 _buildLoadingButtons(screenWidth)
               else if (widget.status.toLowerCase() == "cancelled") ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: "View Summary",
-                        onPressed: () {},
-                        icon: Symbols.info_rounded,
-                        width: (screenWidth - 70) / 2,
-                        height: 50,
-                        textColor: Colors.white,
-                        isFilled: true,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomButton(
-                        text: "Report",
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ReportPage(),
-                            ),
-                          );
-                        },
-                        icon: Symbols.brightness_alert_rounded,
-                        width: (screenWidth - 70) / 2,
-                        height: 50,
-                        textColor: Colors.white,
-                        isFilled: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt not available')));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TripReceiptPage(),
+                      ),
+                    );
                   },
                   icon: Symbols.receipt_long_rounded,
                   iconColor: const Color(0xFF5B53C2),
                   width: double.infinity,
                   height: 50,
-                  isFilled: false,
-                  outlinedFillColor: Colors.white,
-                  textColor: const Color(0xFF5B53C2),
-                  hasShadow: false,
+                  isFilled: true,
                 ),
               ] else if (widget.status.toLowerCase() == "completed") ...[
                 CustomButton(
