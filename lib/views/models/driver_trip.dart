@@ -9,7 +9,8 @@ class DriverTrip {
   final double fareAmount;
   final int passengersCount;
   final int? distanceMeters;
-  final String? passengerName;
+  final String? passengerFirstName;
+  final String? passengerLastName;
 
   DriverTrip({
     required this.id,
@@ -22,31 +23,67 @@ class DriverTrip {
     required this.fareAmount,
     required this.passengersCount,
     this.distanceMeters,
-    this.passengerName,
+    this.passengerFirstName,
+    this.passengerLastName,
   });
 
-  factory DriverTrip.fromJson(Map<String, dynamic> json) {
-    String? _passengerName;
-    try {
-      if (json['passenger_name'] != null) {
-        _passengerName = json['passenger_name'] as String?;
-      } else if (json['passenger'] != null && json['passenger'] is Map) {
-        _passengerName = (json['passenger'] as Map)['name'] as String?;
-      } else if (json['passengers'] != null && json['passengers'] is List && (json['passengers'] as List).isNotEmpty) {
-        final first = (json['passengers'] as List).first;
-        if (first != null && first is Map && first['name'] != null) {
-          _passengerName = first['name'] as String?;
-        }
-      }
-    } catch (_) {
-      _passengerName = null;
+  /// Get full passenger name
+  String get passengerName {
+    if (passengerFirstName != null && passengerLastName != null) {
+      return '$passengerFirstName $passengerLastName';
+    } else if (passengerFirstName != null) {
+      return passengerFirstName!;
+    } else if (passengerLastName != null) {
+      return passengerLastName!;
     }
+    return 'Passenger';
+  }
+
+  /// Get formatted distance
+  String get formattedDistance {
+    if (distanceMeters == null) return 'N/A';
+    final km = distanceMeters! / 1000.0;
+    return '${km.toStringAsFixed(2)} km';
+  }
+
+  /// Get formatted fare
+  String get formattedFare {
+    return '₱${fareAmount.toStringAsFixed(2)}';
+  }
+
+  factory DriverTrip.fromJson(Map<String, dynamic> json) {
+    // Parse passenger data from JOIN
+    String? firstName;
+    String? lastName;
+
+    // Try to get passenger data from the 'passenger' object (from JOIN)
+    if (json['passenger'] != null && json['passenger'] is Map) {
+      final passenger = json['passenger'] as Map<String, dynamic>;
+      firstName = passenger['first_name'] as String?;
+      lastName = passenger['last_name'] as String?;
+    }
+    
+    // Fallback to direct fields if they exist
+    firstName ??= json['passenger_first_name'] as String?;
+    lastName ??= json['passenger_last_name'] as String?;
 
     return DriverTrip(
       id: json['id'] as String,
-      routeCode: json['route_code'] as String? ?? 'N/A',
-      originName: json['origin_name'] as String? ?? 'Unknown',
-      destinationName: json['destination_name'] as String? ?? 'Unknown',
+      routeCode: json['route_code'] as String? ?? 
+                 (json['routes'] != null && json['routes'] is Map 
+                   ? (json['routes'] as Map)['code'] as String? 
+                   : null) ?? 
+                 'N/A',
+      originName: json['origin_name'] as String? ?? 
+                  (json['origin_stop'] != null && json['origin_stop'] is Map 
+                    ? (json['origin_stop'] as Map)['name'] as String? 
+                    : null) ?? 
+                  'Unknown',
+      destinationName: json['destination_name'] as String? ?? 
+                       (json['destination_stop'] != null && json['destination_stop'] is Map 
+                         ? (json['destination_stop'] as Map)['name'] as String? 
+                         : null) ?? 
+                       'Unknown',
       status: json['status'] as String,
       startedAt: DateTime.parse(json['started_at'] as String),
       endedAt: json['ended_at'] != null 
@@ -55,7 +92,8 @@ class DriverTrip {
       fareAmount: (json['fare_amount'] as num?)?.toDouble() ?? 0.0,
       passengersCount: json['passengers_count'] as int? ?? 0,
       distanceMeters: json['distance_meters'] as int?,
-      passengerName: _passengerName,
+      passengerFirstName: firstName,
+      passengerLastName: lastName,
     );
   }
 
@@ -71,7 +109,40 @@ class DriverTrip {
       'fare_amount': fareAmount,
       'passengers_count': passengersCount,
       'distance_meters': distanceMeters,
+      'passenger_first_name': passengerFirstName,
+      'passenger_last_name': passengerLastName,
       'passenger_name': passengerName,
     };
+  }
+
+  /// Create a copy with updated fields
+  DriverTrip copyWith({
+    String? id,
+    String? routeCode,
+    String? originName,
+    String? destinationName,
+    String? status,
+    DateTime? startedAt,
+    DateTime? endedAt,
+    double? fareAmount,
+    int? passengersCount,
+    int? distanceMeters,
+    String? passengerFirstName,
+    String? passengerLastName,
+  }) {
+    return DriverTrip(
+      id: id ?? this.id,
+      routeCode: routeCode ?? this.routeCode,
+      originName: originName ?? this.originName,
+      destinationName: destinationName ?? this.destinationName,
+      status: status ?? this.status,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      fareAmount: fareAmount ?? this.fareAmount,
+      passengersCount: passengersCount ?? this.passengersCount,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      passengerFirstName: passengerFirstName ?? this.passengerFirstName,
+      passengerLastName: passengerLastName ?? this.passengerLastName,
+    );
   }
 }
