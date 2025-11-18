@@ -203,14 +203,20 @@ class DriverDashboardService {
         throw Exception('No authenticated user');
       }
 
-      // Get profile_id
+      // Get profile_id (may not exist as driver)
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
-      // Get driver info with route details
+      if (profile == null) {
+        // No profile found (shouldn't normally happen), return empty map
+        debugPrint('ℹ️ No profile found for user when fetching driver vehicle info');
+        return {};
+      }
+
+      // Get driver info with route details (driver row may not exist for commuters)
       final driverData = await _supabase
           .from('drivers')
           .select('''
@@ -226,7 +232,12 @@ class DriverDashboardService {
             )
           ''')
           .eq('profile_id', profile['id'])
-          .single();
+          .maybeSingle();
+
+      if (driverData == null) {
+        debugPrint('ℹ️ No driver row found for profile ${profile['id']}; returning empty vehicle info');
+        return {};
+      }
 
       debugPrint('✅ Driver vehicle info fetched');
       return driverData;
@@ -240,6 +251,24 @@ class DriverDashboardService {
   Future<Map<String, dynamic>> getDashboardData() async {
     try {
       debugPrint('🔄 Fetching all dashboard data...');
+
+      // Defensive: ensure current user is a driver before running driver-only queries.
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('⚠️ No authenticated user for driver dashboard');
+        return {};
+      }
+
+      final profileRole = await _supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (profileRole == null || (profileRole['role'] as String?)?.toLowerCase() != 'driver') {
+        debugPrint('ℹ️ Current user is not a driver; skipping driver dashboard fetch');
+        return {};
+      }
 
       final profile = await getDriverProfile();
       final balance = await getWalletBalance();

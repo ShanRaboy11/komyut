@@ -41,16 +41,33 @@ class DriverDashboardProvider extends ChangeNotifier {
 
       final data = await _dashboardService.getDashboardData();
 
+      // If the service returned an empty map (user is not a driver), clear state and return.
+      if (data.isEmpty) {
+        debugPrint('ℹ️ Driver dashboard service returned empty data; user likely not a driver.');
+        _firstName = '';
+        _lastName = '';
+        _balance = 0.0;
+        _todayEarnings = 0.0;
+        _rating = 0.0;
+        _reportsCount = 0;
+        _vehiclePlate = '';
+        _routeCode = '';
+        _routeName = '';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       // Update state with fetched data
-      _firstName = data['profile']['first_name'] ?? '';
-      _lastName = data['profile']['last_name'] ?? '';
+      _firstName = data['profile']?['first_name'] ?? '';
+      _lastName = data['profile']?['last_name'] ?? '';
       _balance = data['balance'] ?? 0.0;
       _todayEarnings = data['todayEarnings'] ?? 0.0;
       _rating = data['rating'] ?? 0.0;
       _reportsCount = data['reportsCount'] ?? 0;
 
       // Vehicle and route info
-      final vehicleInfo = data['vehicleInfo'];
+      final vehicleInfo = data['vehicleInfo'] ?? {};
       _vehiclePlate = vehicleInfo['vehicle_plate'] ?? '';
       
       // Route info (nested)

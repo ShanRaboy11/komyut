@@ -144,6 +144,44 @@ class DriverTripService {
     }
   }
 
+  /// Fetch route/stops info for a trip (route_id, origin_stop_id, destination_stop_id, route stops list)
+  Future<Map<String, dynamic>?> getTripRouteInfo(String tripId) async {
+    try {
+      final tripRes = await _supabase
+          .from('trips')
+          .select('route_id, origin_stop_id, destination_stop_id')
+          .eq('id', tripId)
+          .single();
+
+      final routeId = tripRes['route_id'] as String?;
+      final originStopId = tripRes['origin_stop_id']?.toString();
+      final destinationStopId = tripRes['destination_stop_id']?.toString();
+
+      List<Map<String, dynamic>>? routeStops;
+      if (routeId != null) {
+        final stopsRes = await _supabase
+            .from('route_stops')
+            .select('id, name, latitude, longitude, sequence')
+            .eq('route_id', routeId)
+            .order('sequence', ascending: true);
+
+        routeStops = (stopsRes as List)
+          .map<Map<String, dynamic>>((r) => Map<String, dynamic>.from(r as Map))
+          .toList();
+      }
+
+      return {
+        'routeStops': routeStops,
+        'originStopId': originStopId,
+        'destinationStopId': destinationStopId,
+      };
+    } on PostgrestException catch (e) {
+      throw Exception('Database error: ${e.message}');
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Get trips filtered by status
   Future<List<DriverTrip>> getTripsByStatus(String status) async {
     try {
