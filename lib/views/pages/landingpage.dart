@@ -5,8 +5,27 @@ import '../widgets/logo.dart';
 import 'create_account.dart';
 import 'login.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage>
+    with SingleTickerProviderStateMixin {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay to allow fade-in
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _opacity = 1.0;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,45 +93,50 @@ class LandingPage extends StatelessWidget {
               child: Image.asset("assets/images/Ellipse 5.png"),
             ),
 
-            Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildWelcomeText(),
-                    const SizedBox(height: 80),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 2000),
+              curve: Curves.easeIn,
+              opacity: _opacity,
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildWelcomeText(),
+                      const SizedBox(height: 80),
 
-                    const Logo(),
+                      const Logo(),
 
-                    const SizedBox(height: 120),
-                    CustomButton(
-                      text: "Create Account",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateAccountPage(),
-                          ),
-                        );
-                      },
-                      isFilled: true,
-                      textColor: Colors.white,
-                    ),
+                      const SizedBox(height: 120),
+                      CustomButton(
+                        text: "Create Account",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateAccountPage(),
+                            ),
+                          );
+                        },
+                        isFilled: true,
+                        textColor: Colors.white,
+                      ),
 
-                    const SizedBox(height: 20),
-                    CustomButton(
-                      text: "Log In",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      },
-                      isFilled: false,
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      CustomButton(
+                        text: "Log In",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
+                          );
+                        },
+                        isFilled: false,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
