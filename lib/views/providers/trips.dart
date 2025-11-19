@@ -1,11 +1,13 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 import '../services/trips.dart';
 import '../models/trips.dart';
 
 class TripsProvider with ChangeNotifier {
   final TripsService _tripsService = TripsService();
+  final AuthService _authService = AuthService();
 
   // State variables
   String _selectedRange = 'Weekly';
@@ -41,6 +43,21 @@ class TripsProvider with ChangeNotifier {
   // Initialize data
   Future<void> initialize() async {
     await loadData();
+  }
+
+  TripsProvider() {
+    // Keep trips data in sync with auth changes: clear on sign-out, reload on sign-in
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        _analyticsData = AnalyticsData(period: '', totalTrips: 0, totalDistance: 0.0, totalSpent: 0.0);
+        _chartData = [];
+        _recentTrips = [];
+        notifyListeners();
+      } else {
+        loadData();
+      }
+    });
   }
 
   // Load all data

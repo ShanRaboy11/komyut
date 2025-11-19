@@ -98,84 +98,88 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Confirm Logout',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: GoogleFonts.nunito(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.manrope()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Logout',
-              style: GoogleFonts.manrope(color: Colors.red),
-            ),
-          ),
-        ],
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(
+        'Confirm Logout',
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
       ),
-    );
+      content: Text(
+        'Are you sure you want to log out?',
+        style: GoogleFonts.nunito(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel', style: GoogleFonts.manrope()),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(
+            'Logout',
+            style: GoogleFonts.manrope(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
 
-    if (confirm == true && mounted) {
-      try {
-        // Show loading indicator on the root navigator so it can be dismissed reliably
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          useRootNavigator: true,
-          builder: (context) => PopScope(
-            canPop: false,
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF8E4CB6),
-              ),
+  if (confirm == true && mounted) {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        useRootNavigator: true,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF8E4CB6),
             ),
+          ),
+        ),
+      );
+
+      // CRITICAL: Sign out and clear ALL state
+      await _supabase.auth.signOut();
+      
+      // Clear local state
+      setState(() {
+        _profileData = null;
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      if (mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+
+        // Use pushNamedAndRemoveUntil or pushAndRemoveUntil with clear intent
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const LandingPage(),
+          ),
+          (route) => false, // Remove ALL routes from stack
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
           ),
         );
-
-        // Sign out using Supabase directly
-        await _supabase.auth.signOut();
-
-        if (mounted) {
-          // Close loading dialog (use rootNavigator to match how it was shown)
-          try {
-            Navigator.of(context, rootNavigator: true).pop();
-          } catch (_) {}
-
-          // Navigate to Landing Page and clear navigation stack
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LandingPage(),
-            ),
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          // Close loading dialog if still showing (root navigator)
-          try {
-            Navigator.of(context, rootNavigator: true).pop();
-          } catch (_) {}
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout failed: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

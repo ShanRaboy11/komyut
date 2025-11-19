@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../services/driver_trip.dart';
 import '../models/driver_trip.dart';
+import '../services/auth_service.dart';
 
 class DriverTripProvider extends ChangeNotifier {
   final DriverTripService _tripService = DriverTripService();
+  final AuthService _authService = AuthService();
   
   List<DriverTrip> _trips = [];
   List<DriverTrip> _filteredTrips = [];
@@ -27,6 +29,19 @@ class DriverTripProvider extends ChangeNotifier {
       .fold(0.0, (sum, trip) => sum + trip.fareAmount);
 
   /// Load all trips for the driver
+  DriverTripProvider() {
+    // Clear or reload trips on auth changes
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        _trips = [];
+        _filteredTrips = [];
+        notifyListeners();
+      } else {
+        loadTrips();
+      }
+    });
+  }
   Future<void> loadTrips() async {
     _isLoading = true;
     _errorMessage = null;

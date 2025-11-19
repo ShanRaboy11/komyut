@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../services/driver_dashboard.dart';
+import '../services/auth_service.dart';
 
 class DriverDashboardProvider extends ChangeNotifier {
   final DriverDashboardService _dashboardService = DriverDashboardService();
+  final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -33,6 +35,17 @@ class DriverDashboardProvider extends ChangeNotifier {
   String get routeName => _routeName;
 
   /// Load all dashboard data
+  DriverDashboardProvider() {
+    // Clear or reload driver data on auth state changes
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearData();
+      } else {
+        loadDashboardData();
+      }
+    });
+  }
   Future<void> loadDashboardData() async {
     try {
       _isLoading = true;

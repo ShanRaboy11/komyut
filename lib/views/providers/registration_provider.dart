@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../services/registration_service.dart';
 import 'dart:io';
+import '../services/auth_service.dart';
 
 class RegistrationProvider extends ChangeNotifier {
   final RegistrationService _registrationService = RegistrationService();
+  final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -283,6 +285,16 @@ class RegistrationProvider extends ChangeNotifier {
     _availableRoutes = [];
     _errorMessage = null;
     notifyListeners();
+  }
+
+  RegistrationProvider() {
+    // Clear registration progress when user signs out
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearRegistration();
+      }
+    });
   }
 
   // Get specific field from registration data

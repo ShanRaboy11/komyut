@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../services/commuter_dashboard.dart';
+import '../services/auth_service.dart';
 
 class CommuterDashboardProvider extends ChangeNotifier {
   final CommuterDashboardService _dashboardService = CommuterDashboardService();
+  final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -57,6 +59,19 @@ class CommuterDashboardProvider extends ChangeNotifier {
       default:
         return 'Regular';
     }
+  }
+
+  CommuterDashboardProvider() {
+    // Listen to auth state changes so provider can clear or reload data
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearData();
+      } else {
+        // Reload dashboard data for the newly signed-in user
+        loadDashboardData();
+      }
+    });
   }
 
   // Financial getters

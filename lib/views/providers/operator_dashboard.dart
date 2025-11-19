@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../services/operator_dashboard.dart';
+import '../services/auth_service.dart';
 
 class OperatorDashboardProvider extends ChangeNotifier {
   final OperatorDashboardService _dashboardService = OperatorDashboardService();
+  final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -64,6 +66,17 @@ class OperatorDashboardProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get recentReports => _recentReports;
 
   /// Load all dashboard data
+  OperatorDashboardProvider() {
+    // Keep operator dashboard in sync with auth changes
+    _authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearData();
+      } else {
+        loadDashboardData();
+      }
+    });
+  }
   Future<void> loadDashboardData() async {
     try {
       _isLoading = true;

@@ -504,7 +504,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }).eq('id', walletId);
 
     // Create initial transaction for boarding
-    final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
+    final transactionNumber = 'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
     
     final transactionResponse = await supabase
         .from('transactions')
@@ -797,7 +797,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       }).eq('id', walletId);
 
       // Step 10: Create transaction with barcode
-      final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
+      final transactionNumber = 'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
 
       await supabase.from('transactions').insert({
         'transaction_number': transactionNumber,

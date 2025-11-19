@@ -42,7 +42,7 @@ BEGIN
     END IF;
 
     -- Generate transaction number
-    v_transaction_number := 'TXN-' || gen_random_uuid();
+    v_transaction_number := 'KOMYUT-' || gen_random_uuid();
 
     -- Deduct from wallet
     UPDATE wallets
@@ -215,7 +215,7 @@ BEGIN
         WHERE id = v_wallet_id;
 
         -- Generate transaction number
-        v_transaction_number := 'TXN-' || EXTRACT(EPOCH FROM now())::bigint || '-' || floor(random() * 1000)::int;
+        v_transaction_number := 'KOMYUT-' || EXTRACT(EPOCH FROM now())::bigint || '-' || floor(random() * 1000)::int;
 
         -- Create transaction for additional payment
         INSERT INTO transactions (
