@@ -381,7 +381,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -411,7 +411,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -448,7 +448,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },

@@ -564,6 +564,24 @@ class TripsService {
         } catch (_) {}
       }
 
+      // Resolve transaction number for this trip (if any)
+      String? transactionNumber;
+      try {
+        final tRes = await _withRetries(() => _supabase
+            .from('transactions')
+            .select('transaction_number')
+            .eq('related_trip_id', res['id'])
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle());
+
+        if (tRes != null) {
+          transactionNumber = tRes['transaction_number'] as String?;
+        }
+      } catch (_) {
+        transactionNumber = null;
+      }
+
       return TripDetails(
         tripId: res['id'] ?? '',
         date: '${started.month}/${started.day}/${started.year}',
@@ -586,6 +604,7 @@ class TripsService {
         originLng: null,
         destLat: null,
         destLng: null,
+        transactionNumber: transactionNumber,
       );
     } catch (e) {
       developer.log('Error fetching trip details: $e', name: 'TripsService');

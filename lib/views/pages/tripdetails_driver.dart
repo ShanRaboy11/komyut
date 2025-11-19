@@ -334,7 +334,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -351,7 +351,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TripReceiptPage(),
+                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },

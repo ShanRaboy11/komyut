@@ -154,9 +154,16 @@ class ReceiptCard extends StatelessWidget {
                     isBoldRight: true,
                     isBoldLeft: true,
                   ),
+                  // small gap then dashed tear/outline before barcode
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: _buildDashedDivider(color: const Color(0xFF8E4CB6)),
+                  ),
+                  const SizedBox(height: 12),
 
                   // 🧍 Barcode
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
                   Center(
                     child: Column(
                       children: [
@@ -185,6 +192,27 @@ class ReceiptCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDashedDivider({required Color color}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dashWidth = 8.0;
+        final gap = 6.0;
+        final count = (constraints.maxWidth / (dashWidth + gap)).floor();
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(count, (index) {
+            return Container(
+              width: dashWidth,
+              height: 1,
+              margin: EdgeInsets.only(right: index == count - 1 ? 0 : gap),
+              color: color.withOpacity(0.6),
+            );
+          }),
+        );
+      },
     );
   }
 
