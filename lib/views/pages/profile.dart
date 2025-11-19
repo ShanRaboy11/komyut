@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
+import '../providers/commuter_dashboard.dart';
+import '../providers/driver_dashboard.dart';
+import '../providers/operator_dashboard.dart';
+import '../providers/wallet_provider.dart';
+import '../providers/trips.dart';
+import '../providers/driver_trip.dart';
 import 'personalinfo_commuter.dart';
 import 'personalinfo_driver.dart';
 import 'personalinfo_operator.dart';
@@ -141,27 +150,44 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
 
-      // CRITICAL: Sign out and clear ALL state
-      await _supabase.auth.signOut();
-      
-      // Clear local state
+      // CRITICAL: Sign out via AuthProvider to ensure app state clears
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signOut();
+
+      // Clear local state immediately
       setState(() {
         _profileData = null;
         _isLoading = true;
         _errorMessage = null;
       });
 
+      // Proactively clear common providers to avoid stale dashboard state
+      try {
+        Provider.of<CommuterDashboardProvider>(context, listen: false).clearData();
+      } catch (_) {}
+      try {
+        Provider.of<DriverDashboardProvider>(context, listen: false).clearData();
+      } catch (_) {}
+      try {
+        Provider.of<OperatorDashboardProvider>(context, listen: false).clearData();
+      } catch (_) {}
+      try {
+        Provider.of<TripsProvider>(context, listen: false).refresh();
+      } catch (_) {}
+      try {
+        Provider.of<DriverTripProvider>(context, listen: false).refreshTrips();
+      } catch (_) {}
+
       if (mounted) {
         try {
           Navigator.of(context, rootNavigator: true).pop();
         } catch (_) {}
 
-        // Use pushNamedAndRemoveUntil or pushAndRemoveUntil with clear intent
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const LandingPage(),
           ),
-          (route) => false, // Remove ALL routes from stack
+          (route) => false,
         );
       }
     } catch (e) {
