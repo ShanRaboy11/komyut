@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/commuter_dashboard.dart';
@@ -89,7 +90,7 @@ class WalletProvider extends ChangeNotifier {
   // --- Methods ---
   WalletProvider() {
     // Keep wallet/profile state in sync with auth changes
-    _authService.authStateChanges.listen((event) {
+    _authSub = _authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _userProfile = null;
@@ -98,10 +99,48 @@ class WalletProvider extends ChangeNotifier {
         _recentTransactions = [];
         notifyListeners();
       } else {
-        // For a newly signed in user, refresh wallet data
-        fetchWalletData();
+        // Decide whether to load wallet data based on the user's role
+        _maybeLoadForUser(user.id);
       }
     });
+  }
+
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching role for user $userId: $e');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    debugPrint('WalletProvider: user $userId role=$role');
+    if (role == 'commuter') {
+      await fetchWalletData();
+    } else {
+      // Not a commuter; clear commuter wallet state
+      _userProfile = null;
+      _balance = 0.0;
+      _wheelTokens = 0;
+      _recentTransactions = [];
+      notifyListeners();
+    }
+  }
+
+  StreamSubscription? _authSub;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchWalletData() async {

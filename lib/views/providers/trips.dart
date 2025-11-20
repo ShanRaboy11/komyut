@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 
 import '../services/trips.dart';
@@ -47,7 +49,7 @@ class TripsProvider with ChangeNotifier {
 
   TripsProvider() {
     // Keep trips data in sync with auth changes: clear on sign-out, reload on sign-in
-    _authService.authStateChanges.listen((event) {
+    _authSub = _authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _analyticsData = AnalyticsData(period: '', totalTrips: 0, totalDistance: 0.0, totalSpent: 0.0);
@@ -55,9 +57,46 @@ class TripsProvider with ChangeNotifier {
         _recentTrips = [];
         notifyListeners();
       } else {
-        loadData();
+        _maybeLoadForUser(user.id);
       }
     });
+  }
+
+  StreamSubscription? _authSub;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      developer.log('Error fetching role for user $userId: $e', name: 'TripsProvider');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    developer.log('TripsProvider: user $userId role=$role', name: 'TripsProvider');
+    // Only load trips analytics for operators or drivers
+    if (role == 'operator' || role == 'driver') {
+      await loadData();
+    } else {
+      _analyticsData = AnalyticsData(period: '', totalTrips: 0, totalDistance: 0.0, totalSpent: 0.0);
+      _chartData = [];
+      _recentTrips = [];
+      notifyListeners();
+    }
   }
 
   // Load all data

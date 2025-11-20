@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/driver_trip.dart';
 import '../models/driver_trip.dart';
 import '../services/auth_service.dart';
@@ -30,17 +32,50 @@ class DriverTripProvider extends ChangeNotifier {
 
   /// Load all trips for the driver
   DriverTripProvider() {
-    // Clear or reload trips on auth changes
-    _authService.authStateChanges.listen((event) {
+    // Clear or reload trips on auth changes (only for drivers)
+    _authSub = _authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _trips = [];
         _filteredTrips = [];
         notifyListeners();
       } else {
-        loadTrips();
+        _maybeLoadForUser(user.id);
       }
     });
+  }
+  StreamSubscription? _authSub;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching role for user $userId: $e');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    debugPrint('DriverTripProvider: user $userId role=$role');
+    if (role == 'driver') {
+      await loadTrips();
+    } else {
+      _trips = [];
+      _filteredTrips = [];
+      notifyListeners();
+    }
   }
   Future<void> loadTrips() async {
     _isLoading = true;

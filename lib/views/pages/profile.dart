@@ -17,6 +17,7 @@ import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
 import 'landingpage.dart';
+import '../auth/auth_helper.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -107,106 +108,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(
-        'Confirm Logout',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-      ),
-      content: Text(
-        'Are you sure you want to log out?',
-        style: GoogleFonts.nunito(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text('Cancel', style: GoogleFonts.manrope()),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(
-            'Logout',
-            style: GoogleFonts.manrope(color: Colors.red),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm == true && mounted) {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        useRootNavigator: true,
-        builder: (context) => PopScope(
-          canPop: false,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF8E4CB6),
-            ),
-          ),
-        ),
-      );
-
-      // CRITICAL: Sign out via AuthProvider to ensure app state clears
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.signOut();
-
-      // Clear local state immediately
-      setState(() {
-        _profileData = null;
-        _isLoading = true;
-        _errorMessage = null;
-      });
-
-      // Proactively clear common providers to avoid stale dashboard state
-      try {
-        Provider.of<CommuterDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<DriverDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<OperatorDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<TripsProvider>(context, listen: false).refresh();
-      } catch (_) {}
-      try {
-        Provider.of<DriverTripProvider>(context, listen: false).refreshTrips();
-      } catch (_) {}
-
-      if (mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const LandingPage(),
-          ),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    // Delegate full logout flow to AuthHelper to keep behavior centralized
+    await AuthHelper.logout(context);
   }
-}
-
+ 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
