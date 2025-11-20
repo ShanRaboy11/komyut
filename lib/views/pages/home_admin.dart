@@ -60,9 +60,66 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header ---
-              Center(
-                child: SvgPicture.asset('assets/images/logo.svg', height: 60),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Center Logo
+                  Center(
+                    child: SvgPicture.asset(
+                      'assets/images/logo.svg',
+                      height: 60,
+                    ),
+                  ),
+
+                  // Right-side Icon Button
+                  Positioned(
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(
+                        Symbols.logout_rounded,
+                        color: Colors.red,
+                        weight: 800,
+                      ),
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text(
+                              'Confirm Logout',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            content: Text(
+                              'Are you sure you want to log out?',
+                              style: GoogleFonts.nunito(),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text(
+                                  'Cancel',
+                                  style: GoogleFonts.manrope(),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text(
+                                  'Logout',
+                                  style: GoogleFonts.manrope(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (result == true) {
+                          // TODO: add your logout logic here
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
