@@ -240,7 +240,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SizedBox(height: 20),
 
               // --- Recent Verifications ---
-              _buildSectionHeader("Recent verifications", "See all"),
+              _buildSectionHeader("Pending verifications", "See all"),
               const SizedBox(height: 10),
               _buildVerificationCard(
                 name: "Driver name",
@@ -281,10 +281,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         TextButton(
           onPressed: () {},
           style: TextButton.styleFrom(
-            foregroundColor: const Color.fromARGB(255, 236, 236, 236),
+            foregroundColor: const Color.fromARGB(255, 42, 42, 42),
             textStyle: GoogleFonts.nunito(
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize: 16,
             ),
           ),
           child: Text(actionText),
