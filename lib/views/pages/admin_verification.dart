@@ -21,12 +21,12 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   
   // Mock Data
   final List<VerificationItem> _allItems = [
-    VerificationItem(name: 'Driver name', role: 'Driver', time: '5m ago', status: Status.pending),
-    VerificationItem(name: 'Commuter name', role: 'Commuter', time: '10m ago', status: Status.approved),
-    VerificationItem(name: 'Driver name', role: 'Driver', time: '5m ago', status: Status.rejected),
-    VerificationItem(name: 'Driver name', role: 'Driver', time: '5m ago', status: Status.pending),
-    VerificationItem(name: 'Commuter name', role: 'Commuter', time: '15m ago', status: Status.approved),
-    VerificationItem(name: 'Driver name', role: 'Driver', time: '25m ago', status: Status.rejected),
+    VerificationItem(name: 'Driver name', role: 'Driver', day: 'Jan 10, 2025', status: Status.pending),
+    VerificationItem(name: 'Commuter name', role: 'Commuter', day: 'Jan 11, 2025', status: Status.approved),
+    VerificationItem(name: 'Driver name', role: 'Driver', day: 'Jan 12, 2025', status: Status.rejected),
+    VerificationItem(name: 'Driver name', role: 'Driver', day: 'Jan 13, 2025', status: Status.pending),
+    VerificationItem(name: 'Commuter name', role: 'Commuter', day: 'Jan 14, 2025', status: Status.approved),
+    VerificationItem(name: 'Driver name', role: 'Driver', day: 'Jan 15, 2025', status: Status.rejected),
   ];
 
   @override
@@ -263,13 +263,13 @@ enum Status { approved, pending, rejected }
 class VerificationItem {
   final String name;
   final String role;
-  final String time;
+  final String day;
   final Status status;
 
   VerificationItem({
     required this.name,
     required this.role,
-    required this.time,
+    required this.day,
     required this.status,
   });
 }
@@ -370,7 +370,7 @@ class VerificationCard extends StatelessWidget {
                     Icon(Icons.access_time, size: 12, color: Colors.grey.shade500),
                     const SizedBox(width: 4),
                     Text(
-                      item.time,
+                      item.day,
                       style: GoogleFonts.nunito(color: Colors.grey.shade600, fontSize: 11),
                     ),
                   ],
