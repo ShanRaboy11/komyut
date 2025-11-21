@@ -8,27 +8,26 @@ import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
-class DriverWalletPage extends StatelessWidget {
+class DriverWalletPage extends StatefulWidget {
   const DriverWalletPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DriverWalletProvider()..fetchWalletData(),
-      child: const _DriverWalletView(),
-    );
-  }
+  State<DriverWalletPage> createState() => _DriverWalletPageState();
 }
 
-class _DriverWalletView extends StatefulWidget {
-  const _DriverWalletView();
+class _DriverWalletPageState extends State<DriverWalletPage> {
+  int _selectedWeekOffset = 0;
 
   @override
-  State<_DriverWalletView> createState() => _DriverWalletViewState();
-}
-
-class _DriverWalletViewState extends State<_DriverWalletView> {
-  int _selectedWeekOffset = 0;
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DriverWalletProvider>(
+        context,
+        listen: false,
+      ).fetchWalletData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +59,8 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.errorMessage != null &&
-              provider.recentTransactions.isEmpty) {
+              provider.recentTransactions.isEmpty &&
+              provider.totalBalance == 0) {
             return Center(child: Text(provider.errorMessage!));
           }
           return RefreshIndicator(
@@ -496,16 +496,13 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     NumberFormat currencyFormat,
   ) {
     final String type = tx['type'] ?? 'fare_payment';
-    final double rawAmount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    final double amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
 
     final bool isEarning = type == 'fare_payment';
-
     final String title = isEarning ? 'Trip Earning' : 'Remittance';
-
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
-
     final String date = DateFormat(
       'MMM d, hh:mm a',
     ).format(DateTime.parse(tx['created_at']));
@@ -545,7 +542,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
             ),
             const SizedBox(width: 8),
             Text(
-              '${isEarning ? '+' : '-'}${currencyFormat.format(rawAmount.abs())}',
+              '${isEarning ? '+' : '-'}${currencyFormat.format(amount.abs())}',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,

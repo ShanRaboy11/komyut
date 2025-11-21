@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
 class RemitConfirmationPage extends StatefulWidget {
@@ -41,15 +43,30 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
     return 'K0MYUT-RMT$part1'.substring(0, 25);
   }
 
-  void _onConfirmPressed() {
+  Future<void> _onConfirmPressed() async {
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final double amountVal = double.tryParse(widget.amount) ?? 0.0;
+
+    final success = await provider.submitRemittance(amountVal);
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (success) {
       DriverApp.navigatorKey.currentState?.pushReplacementNamed(
         '/remit_success',
       );
-    });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Transaction failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

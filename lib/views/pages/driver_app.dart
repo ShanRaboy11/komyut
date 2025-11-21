@@ -23,10 +23,13 @@ class DriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      key: navigatorKey,
-      initialRoute: '/',
-      onGenerateRoute: _driverRouter,
+    return ChangeNotifierProvider(
+      create: (_) => DriverWalletProvider(),
+      child: Navigator(
+        key: navigatorKey,
+        initialRoute: '/',
+        onGenerateRoute: _driverRouter,
+      ),
     );
   }
 
@@ -45,16 +48,13 @@ class DriverApp extends StatelessWidget {
         break;
 
       case '/driver_history':
-        final provider = settings.arguments as DriverWalletProvider;
-        page = ChangeNotifierProvider.value(
-          value: provider,
-          child: const WalletHistoryDriverPage(),
-        );
+        page = const WalletHistoryDriverPage();
         break;
 
       case '/remit':
         page = const RemitPageDriver();
         break;
+
       case '/remit_confirmation':
         final args = settings.arguments as Map<String, dynamic>;
         page = RemitConfirmationPage(
@@ -62,6 +62,7 @@ class DriverApp extends StatelessWidget {
           operatorName: args['operatorName'] as String,
         );
         break;
+
       case '/remit_success':
         page = const RemittanceSuccessPage();
         break;

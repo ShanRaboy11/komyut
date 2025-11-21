@@ -15,12 +15,6 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
 
-  final gradientColors = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
-
   @override
   void initState() {
     super.initState();
