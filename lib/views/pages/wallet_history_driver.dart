@@ -74,13 +74,13 @@ class _WalletHistoryDriverPageState extends State<WalletHistoryDriverPage> {
                 if (provider.allTransactions.isEmpty) {
                   return const Center(child: Text('No history found.'));
                 }
-                return ListView.builder(
+                return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 100.0),
                   itemCount: provider.allTransactions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final item = provider.allTransactions[index];
-                    final isLast = index == provider.allTransactions.length - 1;
-                    return _TransactionItem(transaction: item, isLast: isLast);
+                    return _TransactionItem(transaction: item);
                   },
                 );
               },
@@ -94,9 +94,8 @@ class _WalletHistoryDriverPageState extends State<WalletHistoryDriverPage> {
 
 class _TransactionItem extends StatelessWidget {
   final Map<String, dynamic> transaction;
-  final bool isLast;
 
-  const _TransactionItem({required this.transaction, this.isLast = false});
+  const _TransactionItem({required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -110,19 +109,17 @@ class _TransactionItem extends StatelessWidget {
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['created_at']));
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -133,14 +130,17 @@ class _TransactionItem extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -170,7 +170,7 @@ class _TransactionItem extends StatelessWidget {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: 128),
       builder: (dialogContext) => _buildDetailModal(
         context: dialogContext,
         title: modalTitle,
@@ -215,7 +215,7 @@ class _TransactionItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: brandColor.withValues(alpha: 0.5)),
+          border: Border.all(color: brandColor.withValues(alpha: 128)),
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -230,25 +230,27 @@ class _TransactionItem extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 128), height: 24),
                 ...details,
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 128), height: 24),
                 totalRow,
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-                BarcodeWidget(
-                  barcode: Barcode.code128(),
-                  data: transactionCode,
-                  height: 40,
-                  drawText: false,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  transactionCode,
-                  style: GoogleFonts.sourceCodePro(
-                    fontSize: 12,
-                    color: Colors.black54,
+                if (transactionCode != 'N/A') ...[
+                  Divider(color: brandColor.withValues(alpha: 128), height: 24),
+                  BarcodeWidget(
+                    barcode: Barcode.code128(),
+                    data: transactionCode,
+                    height: 40,
+                    drawText: false,
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    transactionCode,
+                    style: GoogleFonts.sourceCodePro(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
               ],
             ),
             Positioned(

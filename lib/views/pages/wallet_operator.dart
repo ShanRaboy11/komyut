@@ -1,10 +1,8 @@
-// lib/screens/operator_wallet_page.dart
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../widgets/button.dart'; // Make sure this path is correct
+import '../widgets/button.dart';
 
 class OperatorWalletPage extends StatefulWidget {
   const OperatorWalletPage({super.key});
@@ -17,7 +15,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   int _selectedWeekOffset = 0;
   Map<String, double> _weeklyEarnings = {};
 
-  // Dummy data for the transaction list, expanded to 10 items
   final List<Map<String, dynamic>> _transactions = const [
     {
       'type': 'remittance',
@@ -88,18 +85,15 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   }
 
   void _fetchWeeklyEarnings() {
-    // Generates random dummy data for the chart based on the week offset
     final random = Random();
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final newEarnings = <String, double>{};
     for (var day in days) {
-      // Use offset to make data seem different for different weeks
       double earnings =
           (random.nextDouble() * 2000 + 800) -
           (_selectedWeekOffset.abs() * (random.nextDouble() * 500));
       newEarnings[day] = earnings > 0 ? earnings : 0;
     }
-    // Using setState to rebuild the widget with new chart data
     if (mounted) {
       setState(() {
         _weeklyEarnings = newEarnings;
@@ -150,11 +144,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 10),
-              // --- Balance Card ---
               _buildBalanceCard(),
               const SizedBox(height: 24),
 
-              // --- Cash Out Button ---
               CustomButton(
                 text: 'Cash Out',
                 onPressed: () {
@@ -169,11 +161,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               ),
               const SizedBox(height: 32),
 
-              // --- Weekly Earnings Bar Graph Card ---
               _buildWeeklyEarningsCard(),
               const SizedBox(height: 32),
 
-              // --- Recent Transactions ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -205,7 +195,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
-                itemCount: min(_transactions.length, 10), // Limit to 10
+                itemCount: min(_transactions.length, 10),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   return _buildTransactionTile(_transactions[index]);
@@ -231,7 +221,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5B53C2).withOpacity(0.3),
+            color: const Color(0xFF5B53C2).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -243,7 +233,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           Text(
             'Current Balance',
             style: GoogleFonts.nunito(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -279,7 +269,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -328,7 +318,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                           }
                         : null,
                     color: brandColor,
-                    disabledColor: brandColor.withOpacity(0.3),
+                    disabledColor: brandColor.withValues(alpha: 0.3),
                     splashRadius: 20,
                   ),
                 ],
@@ -357,7 +347,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     double maxVal,
   ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final effectiveMaxVal = maxVal * 1.20; // Add padding to the top of the bar
+    final effectiveMaxVal = maxVal * 1.20;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -385,7 +375,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               height: barHeight,
               width: 18,
               decoration: BoxDecoration(
-                color: const Color(0xFFFBC02D), // Green color for earnings
+                color: const Color(0xFFFBC02D),
                 borderRadius: BorderRadius.circular(5),
               ),
             ),

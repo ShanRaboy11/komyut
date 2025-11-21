@@ -78,7 +78,10 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                   const SizedBox(height: 32),
                   _buildEarningsChartCard(provider),
                   const SizedBox(height: 32),
-                  _buildHistorySection(currencyFormat, provider),
+                  _buildRecentTransactionsSection(
+                    currencyFormat,
+                    provider,
+                  ),
                 ],
               ),
             ),
@@ -375,18 +378,42 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     );
   }
 
-  Widget _buildHistorySection(
+  Widget _buildRecentTransactionsSection(
     NumberFormat currencyFormat,
     DriverWalletProvider provider,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'History',
-          style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent Transactions',
+              style: GoogleFonts.manrope(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                DriverApp.navigatorKey.currentState?.pushNamed(
+                  '/driver_history',
+                  arguments: provider,
+                );
+              },
+              child: Text(
+                'View All',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF5B53C2),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (provider.recentTransactions.isEmpty)
           const Center(
             child: Padding(
@@ -395,46 +422,26 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
             ),
           )
         else
-          Column(
-            children: [
-              ...provider.recentTransactions.asMap().entries.map((entry) {
-                return _buildTransactionItem(
-                  entry.value,
-                  currencyFormat,
-                  isLast: entry.key == provider.recentTransactions.length - 1,
-                );
-              }),
-              const SizedBox(height: 20),
-              _buildViewAllButton(),
-            ],
+          ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: min(provider.recentTransactions.length, 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildTransactionItem(
+                provider.recentTransactions[index],
+                currencyFormat,
+              );
+            },
           ),
       ],
     );
   }
 
-  Widget _buildViewAllButton() {
-    return OutlinedButton(
-      onPressed: () {
-        DriverApp.navigatorKey.currentState?.pushNamed('/driver_history');
-      },
-      style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF8E4CB6),
-        side: const BorderSide(color: Color(0xFF8E4CB6)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-      ),
-      child: Text(
-        'View All',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
   Widget _buildTransactionItem(
     Map<String, dynamic> tx,
-    NumberFormat currencyFormat, {
-    bool isLast = false,
-  }) {
+    NumberFormat currencyFormat,
+  ) {
     final String type = tx['type'] ?? 'fare_payment';
     final double amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
 
@@ -444,40 +451,43 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(tx['created_at']));
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, tx),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    date,
+                    style: GoogleFonts.nunito(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               '${amount >= 0 ? '+' : ''}${currencyFormat.format(amount)}',
               style: GoogleFonts.manrope(
@@ -492,6 +502,8 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     );
   }
 
+  // --- END OF MODIFIED SECTION ---
+
   void _showTransactionDetailModal(
     BuildContext context,
     Map<String, dynamic> transaction,
@@ -505,7 +517,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: 128),
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,
@@ -552,7 +564,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: brandColor.withValues(alpha: 0.5)),
+          border: Border.all(color: brandColor.withValues(alpha: 128)),
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -567,25 +579,27 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 128), height: 24),
                 ...details,
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+                Divider(color: brandColor.withValues(alpha: 128), height: 24),
                 totalRow,
-                Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-                BarcodeWidget(
-                  barcode: Barcode.code128(),
-                  data: transactionCode,
-                  height: 40,
-                  drawText: false,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  transactionCode,
-                  style: GoogleFonts.sourceCodePro(
-                    fontSize: 12,
-                    color: Colors.black54,
+                if (transactionCode != 'N/A') ...[
+                  Divider(color: brandColor.withValues(alpha: 128), height: 24),
+                  BarcodeWidget(
+                    barcode: Barcode.code128(),
+                    data: transactionCode,
+                    height: 40,
+                    drawText: false,
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    transactionCode,
+                    style: GoogleFonts.sourceCodePro(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
               ],
             ),
             Positioned(

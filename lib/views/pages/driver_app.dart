@@ -7,6 +7,9 @@ import 'profile.dart';
 import 'notification_commuter.dart';
 import 'feedback_driver.dart';
 
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
+
 import 'wallet_history_driver.dart';
 import 'remit_driver.dart';
 import 'remit_confirm.dart';
@@ -42,9 +45,13 @@ class DriverApp extends StatelessWidget {
         break;
 
       case '/driver_history':
-        page = const WalletHistoryDriverPage();
+        final provider = settings.arguments as DriverWalletProvider;
+        page = ChangeNotifierProvider.value(
+          value: provider,
+          child: const WalletHistoryDriverPage(),
+        );
         break;
-        
+
       case '/remit':
         page = const RemitPageDriver();
         break;
