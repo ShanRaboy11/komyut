@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import 'admin_verification.dart';
 
 class AdminDashboardNav extends StatefulWidget {
   const AdminDashboardNav({super.key});
@@ -240,14 +241,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SizedBox(height: 20),
 
               // --- Recent Verifications ---
-              _buildSectionHeader("Recent verifications", "See all"),
+              _buildSectionHeader(context, "Pending verifications", "See all"),
               const SizedBox(height: 10),
               _buildVerificationCard(
                 name: "Driver name",
                 role: "Driver",
                 status: "Pending",
                 color: Colors.orange,
-                time: "5m ago",
+                date: "Jan. 10, 2025",
               ),
               const SizedBox(height: 10),
               _buildVerificationCard(
@@ -255,7 +256,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 role: "Commuter",
                 status: "Approved",
                 color: Colors.green,
-                time: "5m ago",
+                date: "Jan. 9, 2025",
               ),
               const SizedBox(height: 20),
             ],
@@ -266,26 +267,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   // --- Widgets ---
-  Widget _buildSectionHeader(String title, String actionText) {
+  Widget _buildSectionHeader(BuildContext context, String title, String actionText) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: const TextStyle(
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
           ),
         ),
         TextButton(
-          onPressed: () {},
-          style: TextButton.styleFrom(
-            foregroundColor: const Color.fromARGB(255, 236, 236, 236),
-            textStyle: GoogleFonts.nunito(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminVerifiedPage(),
+              ),
+            );
+          },
+          style: ButtonStyle(
+            foregroundColor: WidgetStateProperty.all(Colors.black),
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            textStyle: WidgetStateProperty.resolveWith<TextStyle>((states) {
+              if (states.contains(WidgetState.pressed) || states.contains(WidgetState.hovered)) {
+                return const TextStyle(
+                  decoration: TextDecoration.underline,
+                  fontWeight: FontWeight.w500,
+                );
+              }
+              return const TextStyle(
+                decoration: TextDecoration.none,
+                fontWeight: FontWeight.w500,
+              );
+            }),
           ),
           child: Text(actionText),
         ),
@@ -298,7 +314,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     required String role,
     required String status,
     required Color color,
-    required String time,
+    required String date,
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -321,7 +337,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
               Text(
-                '$status  •  $time',
+                '$status  •  $date',
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ],

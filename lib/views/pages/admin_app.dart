@@ -4,6 +4,7 @@ import './home_admin.dart';
 import './placeholders.dart';
 import './admin_routes.dart';
 import 'admin_verification.dart';
+import 'admin_report.dart';
 
 class AdminApp extends StatelessWidget {
   const AdminApp({super.key});
