@@ -2,21 +2,85 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
-import '../providers/commuter_dashboard.dart';
-import '../providers/driver_dashboard.dart';
-import '../providers/operator_dashboard.dart';
-import '../providers/wallet_provider.dart';
-import '../providers/trips.dart';
-import '../providers/driver_trip.dart';
 import 'personalinfo_commuter.dart';
 import 'personalinfo_driver.dart';
 import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
-import 'landingpage.dart';
+
+/// Helper class for authentication operations
+class AuthHelper {
+  /// Logout the current user and navigate to landing page
+  static Future<void> logout(BuildContext context) async {
+    try {
+      debugPrint('🔄 Logging out user...');
+      
+      // Sign out from Supabase
+      await Supabase.instance.client.auth.signOut();
+      
+      debugPrint('✅ User logged out successfully');
+      
+      // Navigate to landing page and remove all previous routes
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/landing',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Logout error: $e');
+      
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get current user role
+  static Future<String?> getCurrentUserRole() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      
+      if (user == null) {
+        return null;
+      }
+
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+      return response['role'] as String?;
+    } catch (e) {
+      debugPrint('❌ Error fetching user role: $e');
+      return null;
+    }
+  }
+
+  /// Check if current user has a specific role
+  static Future<bool> hasRole(String role) async {
+    final currentRole = await getCurrentUserRole();
+    return currentRole?.toLowerCase() == role.toLowerCase();
+  }
+
+  /// Get current user ID
+  static String? getCurrentUserId() {
+    return Supabase.instance.client.auth.currentUser?.id;
+  }
+
+  /// Check if user is logged in
+  static bool isLoggedIn() {
+    return Supabase.instance.client.auth.currentUser != null;
+  }
+}
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -80,7 +144,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _getUserId() {
     if (_profileData == null) return '';
-    // You can customize this based on which ID you want to show
     return _profileData!['id']?.toString().substring(0, 8) ?? '';
   }
 
@@ -107,105 +170,64 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(
-        'Confirm Logout',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-      ),
-      content: Text(
-        'Are you sure you want to log out?',
-        style: GoogleFonts.nunito(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text('Cancel', style: GoogleFonts.manrope()),
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Confirm Logout',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(
-            'Logout',
-            style: GoogleFonts.manrope(color: Colors.red),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: GoogleFonts.nunito(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.manrope()),
           ),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm == true && mounted) {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        useRootNavigator: true,
-        builder: (context) => PopScope(
-          canPop: false,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF8E4CB6),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Logout',
+              style: GoogleFonts.manrope(color: Colors.red),
             ),
           ),
+        ],
+      ),
+    );
+
+    // Exit if user cancels
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => PopScope(
+        canPop: false,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF8E4CB6),
+          ),
         ),
-      );
+      ),
+    );
 
-      // CRITICAL: Sign out via AuthProvider to ensure app state clears
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.signOut();
+    // Wait a bit to ensure dialog is shown
+    await Future.delayed(const Duration(milliseconds: 100));
 
-      // Clear local state immediately
-      setState(() {
-        _profileData = null;
-        _isLoading = true;
-        _errorMessage = null;
-      });
-
-      // Proactively clear common providers to avoid stale dashboard state
-      try {
-        Provider.of<CommuterDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<DriverDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<OperatorDashboardProvider>(context, listen: false).clearData();
-      } catch (_) {}
-      try {
-        Provider.of<TripsProvider>(context, listen: false).refresh();
-      } catch (_) {}
-      try {
-        Provider.of<DriverTripProvider>(context, listen: false).refreshTrips();
-      } catch (_) {}
-
-      if (mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const LandingPage(),
-          ),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    // Use AuthHelper to logout
+    if (mounted) {
+      // Close loading dialog first
+      Navigator.of(context).pop();
+      
+      // Then logout (this will navigate to landing page)
+      await AuthHelper.logout(context);
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
