@@ -1,15 +1,23 @@
 // lib/screens/operator_wallet_page.dart
 
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import '../widgets/button.dart'; // Make sure this path is correct
 
-class OperatorWalletPage extends StatelessWidget {
+class OperatorWalletPage extends StatefulWidget {
   const OperatorWalletPage({super.key});
 
-  // Dummy data for the transaction list
+  @override
+  State<OperatorWalletPage> createState() => _OperatorWalletPageState();
+}
+
+class _OperatorWalletPageState extends State<OperatorWalletPage> {
+  int _selectedWeekOffset = 0;
+  Map<String, double> _weeklyEarnings = {};
+
+  // Dummy data for the transaction list, expanded to 10 items
   final List<Map<String, dynamic>> _transactions = const [
     {
       'type': 'remittance',
@@ -41,7 +49,77 @@ class OperatorWalletPage extends StatelessWidget {
       'amount': 680.00,
       'date': '2023-10-25T08:45:00Z',
     },
+    {
+      'type': 'remittance',
+      'description': 'Remittance from Sarah Connor',
+      'amount': 1250.00,
+      'date': '2023-10-24T14:20:00Z',
+    },
+    {
+      'type': 'cash-out',
+      'description': 'Cash Out to GCash',
+      'amount': -2500.00,
+      'date': '2023-10-24T11:05:00Z',
+    },
+    {
+      'type': 'remittance',
+      'description': 'Remittance from Kyle Reese',
+      'amount': 880.75,
+      'date': '2023-10-23T18:00:00Z',
+    },
+    {
+      'type': 'remittance',
+      'description': 'Remittance from Peter Pan',
+      'amount': 500.00,
+      'date': '2023-10-23T10:30:00Z',
+    },
+    {
+      'type': 'cash-in',
+      'description': 'Manual Top-up',
+      'amount': 5000.00,
+      'date': '2023-10-22T09:00:00Z',
+    },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWeeklyEarnings();
+  }
+
+  void _fetchWeeklyEarnings() {
+    // Generates random dummy data for the chart based on the week offset
+    final random = Random();
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final newEarnings = <String, double>{};
+    for (var day in days) {
+      // Use offset to make data seem different for different weeks
+      double earnings =
+          (random.nextDouble() * 2000 + 800) -
+          (_selectedWeekOffset.abs() * (random.nextDouble() * 500));
+      newEarnings[day] = earnings > 0 ? earnings : 0;
+    }
+    // Using setState to rebuild the widget with new chart data
+    if (mounted) {
+      setState(() {
+        _weeklyEarnings = newEarnings;
+      });
+    }
+  }
+
+  String _getMonthAndYear(int offset) {
+    final now = DateTime.now();
+    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
+    return DateFormat('MMM yyyy').format(dayInSelectedWeek);
+  }
+
+  List<DateTime> _getWeekDates(int offset) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(
+      Duration(days: now.weekday - 1 + (-offset * 7)),
+    );
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,20 +169,43 @@ class OperatorWalletPage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
+              // --- Weekly Earnings Bar Graph Card ---
+              _buildWeeklyEarningsCard(),
+              const SizedBox(height: 32),
+
               // --- Recent Transactions ---
-              Text(
-                'Recent Transactions',
-                style: GoogleFonts.manrope(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Recent Transactions',
+                    style: GoogleFonts.manrope(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      // TODO: Implement navigation to full history page
+                    },
+                    child: Text(
+                      'View All',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF5B53C2),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
-                itemCount: _transactions.length,
+                itemCount: min(_transactions.length, 10), // Limit to 10
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   return _buildTransactionTile(_transactions[index]);
@@ -123,7 +224,7 @@ class OperatorWalletPage extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+          colors: [Color(0xFFB945AA), Color(0xFF5B53C2)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -148,7 +249,7 @@ class OperatorWalletPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '₱ 15,450.75', // Dummy balance
+            '₱15,450.75', // Dummy balance
             style: GoogleFonts.manrope(
               color: Colors.white,
               fontSize: 40,
@@ -160,25 +261,181 @@ class OperatorWalletPage extends StatelessWidget {
     );
   }
 
+  Widget _buildWeeklyEarningsCard() {
+    final brandColor = const Color(0xFF8E4CB6);
+    const double chartHeight = 130;
+
+    final double maxWeeklyExpense = _weeklyEarnings.values.isEmpty
+        ? 0.0
+        : _weeklyEarnings.values.reduce(max);
+    final double dynamicMaxValue = maxWeeklyExpense > 0
+        ? maxWeeklyExpense
+        : 100.0;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Weekly Earnings',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      _selectedWeekOffset--;
+                      _fetchWeeklyEarnings();
+                    },
+                    color: brandColor,
+                    splashRadius: 20,
+                  ),
+                  Text(
+                    _getMonthAndYear(_selectedWeekOffset),
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: brandColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _selectedWeekOffset < 0
+                        ? () {
+                            _selectedWeekOffset++;
+                            _fetchWeeklyEarnings();
+                          }
+                        : null,
+                    color: brandColor,
+                    disabledColor: brandColor.withOpacity(0.3),
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: chartHeight,
+            child: _buildBarChart(
+              chartHeight,
+              _weeklyEarnings,
+              dynamicMaxValue,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildXAxisLabels(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarChart(
+    double chartHeight,
+    Map<String, double> weeklyData,
+    double maxVal,
+  ) {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final effectiveMaxVal = maxVal * 1.20; // Add padding to the top of the bar
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: List.generate(days.length, (index) {
+        final day = days[index];
+        final value = weeklyData[day] ?? 0.0;
+        final barHeight = effectiveMaxVal > 0
+            ? (value / effectiveMaxVal) * chartHeight
+            : 0.0;
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              value > 0 ? value.toInt().toString() : '',
+              style: GoogleFonts.nunito(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Container(
+              height: barHeight,
+              width: 18,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBC02D), // Green color for earnings
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildXAxisLabels() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDates = _getWeekDates(_selectedWeekOffset);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(days.length, (index) {
+        return SizedBox(
+          width: 28,
+          child: Column(
+            children: [
+              Text(
+                days[index],
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                DateFormat('dd').format(weekDates[index]),
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
   Widget _buildTransactionTile(Map<String, dynamic> transaction) {
     final bool isCredit = transaction['amount'] > 0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱ ');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final amount = currencyFormat.format(transaction['amount'].abs());
     final date = DateFormat(
       'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['date']));
-
-    IconData getIcon() {
-      switch (transaction['type']) {
-        case 'remittance':
-        case 'cash-in':
-          return Symbols.arrow_downward_alt_rounded;
-        case 'cash-out':
-          return Symbols.arrow_upward_alt_rounded;
-        default:
-          return Icons.receipt_long_rounded;
-      }
-    }
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -189,17 +446,6 @@ class OperatorWalletPage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: isCredit
-                ? Colors.green.shade50
-                : Colors.red.shade50,
-            child: Icon(
-              getIcon(),
-              color: isCredit ? Colors.green.shade600 : Colors.red.shade600,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +470,7 @@ class OperatorWalletPage extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${isCredit ? '+' : '-'} $amount',
+            '${isCredit ? '+' : '-'}$amount',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.bold,
               fontSize: 16,
