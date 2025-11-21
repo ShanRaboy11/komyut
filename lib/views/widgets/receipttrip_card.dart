@@ -38,7 +38,6 @@ class ReceiptCard extends StatelessWidget {
       children: [
         // 🔹 Border layer
         ClipPath(
-          clipper: ZigzagClipper(),
           child: Container(
             width: double.infinity,
             color: const Color(0xFF8E4CB6),
@@ -50,16 +49,12 @@ class ReceiptCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(2), // border thickness
           child: ClipPath(
-            clipper: ZigzagClipper(),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF8E4CB6)),
                 boxShadow: [
                   BoxShadow(

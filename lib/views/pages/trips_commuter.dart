@@ -33,7 +33,10 @@ class Trip1PageState extends State<Trip1Page>
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
 

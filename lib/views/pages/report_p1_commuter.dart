@@ -12,19 +12,24 @@ class ReportPage extends StatefulWidget {
 class _ReportPageState extends State<ReportPage> {
   bool showFirst = true;
   bool show = false;
+  double _logoOpacity = 0.0;
 
   @override
   void initState() {
     super.initState();
 
-    // Trigger bottom slide after build
+    // Fade in logo AFTER first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() => show = true);
+      setState(() {
+        _logoOpacity = 1.0;
+      });
     });
 
     // Swap image after delay
     Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) setState(() => showFirst = false);
+      if (mounted) {
+        setState(() => showFirst = false);
+      }
     });
   }
 
@@ -38,47 +43,57 @@ class _ReportPageState extends State<ReportPage> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 30,
-                      right: 30,
-                      top: 30,
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.chevron_left_rounded,
+                  AnimatedOpacity(
+                    opacity: _logoOpacity,
+                    duration: const Duration(milliseconds: 2000),
+                    curve: Curves.easeOut,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 30,
+                        right: 30,
+                        top: 30,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "Reports",
+                            style: GoogleFonts.nunito(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                        ),
-                        Text(
-                          "Reports",
-                          style: GoogleFonts.nunito(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 30),
 
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 1200),
-                    transitionBuilder: (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                    child: Image.asset(
-                      "assets/images/komyut small logo.png",
-                      key: const ValueKey("pngImage2"),
-                      height: 80,
+                  AnimatedOpacity(
+                    opacity: _logoOpacity,
+                    duration: const Duration(milliseconds: 2000),
+                    curve: Curves.easeOut,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 1200),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: Image.asset(
+                        "assets/images/komyut small logo.png",
+                        key: const ValueKey("pngImage2"),
+                        height: 80,
+                      ),
                     ),
                   ),
 
