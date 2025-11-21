@@ -33,7 +33,12 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
     
     // Load data when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TripsProvider>().initialize();
+      try {
+        context.read<TripsProvider>().initialize();
+      } catch (e) {
+        // Provider might not be available (e.g. after logout navigation); ignore.
+        debugPrint('TripsProvider not available on init: $e');
+      }
     });
   }
 

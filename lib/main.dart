@@ -49,12 +49,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TripsProvider()),
         ChangeNotifierProvider(create: (_) => DriverTripProvider()),
         
-        // Dashboard providers - keep them here for now
-        // They will only fetch data when the user's role matches
-        ChangeNotifierProvider(create: (_) => CommuterDashboardProvider()),
-        ChangeNotifierProvider(create: (_) => DriverDashboardProvider()),
-        ChangeNotifierProvider(create: (_) => OperatorDashboardProvider()),
-        
         // Stream provider for auth state
         StreamProvider<User?>(
           create: (_) => Supabase.instance.client.auth.onAuthStateChange.map(
@@ -82,6 +76,7 @@ class MyApp extends StatelessWidget {
 }
 
 /// Handles authentication state and routes to appropriate page
+/// This widget conditionally wraps the appropriate dashboard with role-specific providers
 class AuthStateHandler extends StatefulWidget {
   const AuthStateHandler({Key? key}) : super(key: key);
 
@@ -166,14 +161,24 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
       return const LandingPage();
     }
 
-    // Logged in - show appropriate dashboard
+    // Logged in - show appropriate dashboard with its provider
+    // Each provider is created only for its specific role
     switch (_userRole!.toLowerCase()) {
       case 'commuter':
-        return const CommuterApp();
+        return ChangeNotifierProvider(
+          create: (_) => CommuterDashboardProvider(),
+          child: const CommuterApp(),
+        );
       case 'driver':
-        return const DriverApp();
+        return ChangeNotifierProvider(
+          create: (_) => DriverDashboardProvider(),
+          child: const DriverApp(),
+        );
       case 'operator':
-        return const OperatorApp();
+        return ChangeNotifierProvider(
+          create: (_) => OperatorDashboardProvider(),
+          child: const OperatorApp(),
+        );
       case 'admin':
         return const AdminApp();
       default:
