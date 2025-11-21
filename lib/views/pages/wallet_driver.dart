@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -74,14 +73,11 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                 children: [
                   _buildBalanceCards(currencyFormat, provider),
                   const SizedBox(height: 24),
-                  _buildRemitButton(),
+                  _buildActionButtons(),
                   const SizedBox(height: 32),
                   _buildEarningsChartCard(provider),
                   const SizedBox(height: 32),
-                  _buildRecentTransactionsSection(
-                    currencyFormat,
-                    provider,
-                  ),
+                  _buildRecentTransactionsSection(currencyFormat, provider),
                 ],
               ),
             ),
@@ -95,13 +91,26 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     NumberFormat currencyFormat,
     DriverWalletProvider provider,
   ) {
+    const earningsGradient = LinearGradient(
+      colors: [Color(0xFFFFD54F), Color(0xFFFBC02D)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    const balanceGradient = LinearGradient(
+      colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     return Row(
       children: [
         Expanded(
           child: _buildBalanceItem(
             title: "Today's Earnings",
             amount: currencyFormat.format(provider.todayEarnings),
-            color: const Color(0xFF388E3C),
+            gradient: earningsGradient,
+            shadowColor: const Color(0xFFFBC02D),
+            textColor: Colors.black87,
           ),
         ),
         const SizedBox(width: 16),
@@ -109,7 +118,9 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
           child: _buildBalanceItem(
             title: 'Total Balance',
             amount: currencyFormat.format(provider.totalBalance),
-            color: const Color(0xFF5B53C2),
+            gradient: balanceGradient,
+            shadowColor: const Color(0xFF5B53C2),
+            textColor: Colors.white,
           ),
         ),
       ],
@@ -119,18 +130,19 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
   Widget _buildBalanceItem({
     required String title,
     required String amount,
-    required Color color,
+    required Gradient gradient,
+    required Color shadowColor,
+    required Color textColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 10,
+            color: shadowColor.withValues(alpha: 0.2),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -142,19 +154,20 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
             title,
             style: GoogleFonts.nunito(
               fontSize: 14,
-              color: Colors.black54,
+              color: textColor,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           FittedBox(
             fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
             child: Text(
               amount,
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: textColor,
               ),
               maxLines: 1,
             ),
@@ -164,22 +177,62 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
     );
   }
 
-  Widget _buildRemitButton() {
-    return ElevatedButton.icon(
-      onPressed: () {
-        DriverApp.navigatorKey.currentState?.pushNamed('/remit');
-      },
-      icon: const Icon(Symbols.upload_rounded, size: 20),
-      label: Text(
-        'Remit to Operator',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: const Color(0xFF8E4CB6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-      ),
+  Widget _buildActionButtons() {
+    const remitColor = Color(0xFFDAB02A);
+    const cashOutColor = Color(0xFF5B53C2);
+
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              DriverApp.navigatorKey.currentState?.pushNamed('/remit');
+            },
+            style: ElevatedButton.styleFrom(
+              foregroundColor: remitColor,
+              backgroundColor: const Color(0xFFFFF9E6),
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: const BorderSide(color: remitColor),
+              elevation: 0,
+            ),
+            child: Text(
+              'Remit',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              // TODO: Implement cash out logic
+            },
+            style: ElevatedButton.styleFrom(
+              foregroundColor: cashOutColor,
+              backgroundColor: const Color(0xFFECEBFA),
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: const BorderSide(color: cashOutColor),
+              elevation: 0,
+            ),
+            child: Text(
+              'Cash Out',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -250,7 +303,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                           }
                         : null,
                     color: brandColor,
-                    disabledColor: brandColor.withValues(alpha: .3),
+                    disabledColor: brandColor.withValues(alpha: 0.3),
                     splashRadius: 20,
                   ),
                 ],
@@ -501,8 +554,6 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
       ),
     );
   }
-
-  // --- END OF MODIFIED SECTION ---
 
   void _showTransactionDetailModal(
     BuildContext context,
