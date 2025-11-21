@@ -377,10 +377,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   itemCount: provider.fullHistory.length,
                   itemBuilder: (context, index) {
                     final item = provider.fullHistory[index];
-                    final isLast = index == provider.fullHistory.length - 1;
-                    return isTransactions
-                        ? _buildTransactionItem(context, item, isLast: isLast)
-                        : _buildTokenItem(context, item, isLast: isLast);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: isTransactions
+                          ? _buildTransactionItem(context, item)
+                          : _buildTokenItem(context, item),
+                    );
                   },
                 );
               },
@@ -393,35 +395,35 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
   Widget _buildTransactionItem(
     BuildContext context,
-    Map<String, dynamic> transaction, {
-    bool isLast = false,
-  }) {
-    final bool isCredit = (transaction['amount'] as num) > 0;
+    Map<String, dynamic> transaction,
+  ) {
     final String type = transaction['type'] as String;
+    final double rawAmount = (transaction['amount'] as num).toDouble();
+
+    final bool isExpense = type == 'fare_payment' || rawAmount < 0;
 
     final String title = type
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
-    final String amount = NumberFormat.currency(
+    final String amountText = NumberFormat.currency(
       locale: 'en_PH',
       symbol: '₱',
-    ).format(transaction['amount']);
+    ).format(rawAmount.abs());
+
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['created_at']));
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -432,25 +434,28 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
             Text(
-              (isCredit ? '+' : '') + amount,
+              '${isExpense ? '-' : '+'}$amountText',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: isCredit
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFFC62828),
+                color: isExpense
+                    ? const Color(0xFFC62828)
+                    : const Color(0xFF2E7D32),
               ),
             ),
           ],
@@ -459,30 +464,24 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     );
   }
 
-  Widget _buildTokenItem(
-    BuildContext context,
-    Map<String, dynamic> tokenData, {
-    bool isLast = false,
-  }) {
+  Widget _buildTokenItem(BuildContext context, Map<String, dynamic> tokenData) {
     final bool isCredit = (tokenData['amount'] as num) > 0;
     final String title = (tokenData['type'] as String) == 'redemption'
         ? 'Token Redemption'
         : 'Token Reward';
     final double amount = (tokenData['amount'] as num).toDouble();
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(tokenData['created_at']));
 
     return InkWell(
       onTap: () => _showTokenDetailModal(context, tokenData),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -493,14 +492,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
