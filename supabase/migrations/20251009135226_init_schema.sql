@@ -516,3 +516,88 @@ BEGIN
     ORDER BY wd.day;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'remittance';
+
+CREATE OR REPLACE FUNCTION process_driver_remittance(amount_to_remit numeric)
+RETURNS void AS $$
+DECLARE
+  v_driver_user_id uuid;
+  v_driver_profile_id uuid;
+  v_driver_wallet_id uuid;
+  v_operator_id uuid;
+  v_operator_profile_id uuid;
+  v_operator_wallet_id uuid;
+  v_current_balance numeric;
+  v_txn_number text;
+BEGIN
+  v_driver_user_id := auth.uid();
+
+  SELECT p.id, w.id, d.operator_id
+  INTO v_driver_profile_id, v_driver_wallet_id, v_operator_id
+  FROM profiles p
+  JOIN drivers d ON p.id = d.profile_id
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_driver_user_id;
+
+  IF v_driver_wallet_id IS NULL THEN 
+    RAISE EXCEPTION 'Driver wallet not found'; 
+  END IF;
+  
+  IF v_operator_id IS NULL THEN 
+    RAISE EXCEPTION 'You are not linked to an operator to remit to.'; 
+  END IF;
+
+  SELECT p.id, w.id
+  INTO v_operator_profile_id, v_operator_wallet_id
+  FROM operators o
+  JOIN profiles p ON o.profile_id = p.id
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE o.id = v_operator_id;
+
+  IF v_operator_wallet_id IS NULL THEN 
+    RAISE EXCEPTION 'Operator wallet configuration error.'; 
+  END IF;
+
+  SELECT balance INTO v_current_balance FROM wallets WHERE id = v_driver_wallet_id FOR UPDATE;
+  
+  IF v_current_balance < amount_to_remit THEN 
+    RAISE EXCEPTION 'Insufficient wallet balance.'; 
+  END IF;
+
+  v_txn_number := 'REM-' || floor(extract(epoch from now()));
+
+  UPDATE wallets 
+  SET balance = balance - amount_to_remit, updated_at = now()
+  WHERE id = v_driver_wallet_id;
+
+  UPDATE wallets 
+  SET balance = balance + amount_to_remit, updated_at = now()
+  WHERE id = v_operator_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, metadata
+  ) VALUES (
+    v_driver_wallet_id, 
+    v_driver_profile_id, 
+    'remittance', 
+    -amount_to_remit,
+    'completed', 
+    v_txn_number || '-DRV', 
+    jsonb_build_object('recipient_operator_id', v_operator_id)
+  );
+
+  INSERT INTO transactions (
+    wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, metadata
+  ) VALUES (
+    v_operator_wallet_id, 
+    v_driver_profile_id, 
+    'remittance', 
+    amount_to_remit, 
+    'completed', 
+    v_txn_number || '-OPR', 
+    jsonb_build_object('sender_driver_id', v_driver_profile_id)
+  );
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -52,8 +52,8 @@ class DriverDashboardProvider extends ChangeNotifier {
       // Vehicle and route info
       final vehicleInfo = data['vehicleInfo'];
       _vehiclePlate = vehicleInfo['vehicle_plate'] ?? '';
-      
-      // Route info (nested)
+
+      // Route info
       final routeData = vehicleInfo['routes'];
       if (routeData != null) {
         _routeCode = routeData['code'] ?? '';
@@ -101,7 +101,7 @@ class DriverDashboardProvider extends ChangeNotifier {
     }
   }
 
-  /// Clear all data (for logout)
+  /// Clear all data
   void clearData() {
     _firstName = '';
     _lastName = '';

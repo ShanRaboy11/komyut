@@ -8,18 +8,14 @@ class DriverDashboardService {
   Future<Map<String, dynamic>> getDriverProfile() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('No authenticated user');
-      }
+      if (userId == null) throw Exception('No authenticated user');
 
-      // Get profile with driver info
       final profileData = await _supabase
           .from('profiles')
           .select('id, first_name, last_name, role')
           .eq('user_id', userId)
           .single();
 
-      debugPrint('✅ Profile fetched: ${profileData['first_name']}');
       return profileData;
     } catch (e) {
       debugPrint('❌ Error fetching profile: $e');
@@ -27,190 +23,18 @@ class DriverDashboardService {
     }
   }
 
-  /// Get driver's wallet balance
-  Future<double> getWalletBalance() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0.0;
-
-      // Get profile_id first
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-      // Get wallet balance
-      final walletData = await _supabase
-          .from('wallets')
-          .select('balance')
-          .eq('owner_profile_id', profile['id'])
-          .maybeSingle();
-
-      if (walletData == null) return 0.0;
-
-      final balance = (walletData['balance'] as num?)?.toDouble() ?? 0.0;
-      debugPrint('✅ Wallet balance fetched: $balance');
-      return balance;
-    } catch (e) {
-      debugPrint('❌ Error fetching wallet balance: $e');
-      return 0.0;
-    }
-  }
-
-  /// Get today's earnings from completed trips
-  Future<double> getTodayEarnings() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0.0;
-
-      // Get profile_id and driver_id
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (profile == null) return 0.0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-
-      if (driver == null) return 0.0;
-
-      // Get today's date range
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-
-      // Simplified: Get today's completed trips for this driver
-      final trips = await _supabase
-          .from('trips')
-          .select('id, fare_amount')
-          .eq('driver_id', driver['id'])
-          .eq('status', 'completed')
-          .gte('started_at', startOfDay.toIso8601String());
-
-      // Sum up fare amounts from today's trips
-      double totalEarnings = 0.0;
-      for (var trip in trips) {
-        totalEarnings += (trip['fare_amount'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      debugPrint(
-        '✅ Today\'s earnings fetched: $totalEarnings (${trips.length} trips)',
-      );
-      return totalEarnings;
-    } catch (e) {
-      debugPrint('❌ Error fetching today\'s earnings: $e');
-      return 0.0;
-    }
-  }
-
-  /// Get driver's average rating
-  Future<double> getAverageRating() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0.0;
-
-      // Get driver_id
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (profile == null) return 0.0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-
-      if (driver == null) return 0.0;
-
-      // Get all ratings for this driver
-      final ratings = await _supabase
-          .from('ratings')
-          .select('overall')
-          .eq('driver_id', driver['id']);
-
-      if (ratings.isEmpty) return 0.0;
-
-      // Calculate average
-      double sum = 0.0;
-      for (var rating in ratings) {
-        sum += (rating['overall'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      final average = sum / ratings.length;
-      debugPrint(
-        '✅ Average rating fetched: $average (${ratings.length} ratings)',
-      );
-      return average;
-    } catch (e) {
-      debugPrint('❌ Error fetching average rating: $e');
-      return 0.0;
-    }
-  }
-
-  /// Get count of reports filed against this driver
-  Future<int> getReportsCount() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0;
-
-      // Get driver_id
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (profile == null) return 0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-
-      if (driver == null) return 0;
-
-      // Count reports where this driver is the reported entity
-      final reports = await _supabase
-          .from('reports')
-          .select('id')
-          .eq('reported_entity_type', 'driver')
-          .eq('reported_entity_id', driver['id']);
-
-      debugPrint('✅ Reports count fetched: ${reports.length}');
-      return reports.length;
-    } catch (e) {
-      debugPrint('❌ Error fetching reports count: $e');
-      return 0;
-    }
-  }
-
   /// Get driver's vehicle and route information
   Future<Map<String, dynamic>> getDriverVehicleInfo() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('No authenticated user');
-      }
+      if (userId == null) throw Exception('No authenticated user');
 
-      // Get profile_id
       final profile = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
           .single();
 
-      // Get driver info with route details
       final driverData = await _supabase
           .from('drivers')
           .select('''
@@ -228,7 +52,6 @@ class DriverDashboardService {
           .eq('profile_id', profile['id'])
           .single();
 
-      debugPrint('✅ Driver vehicle info fetched');
       return driverData;
     } catch (e) {
       debugPrint('❌ Error fetching driver vehicle info: $e');
@@ -236,31 +59,143 @@ class DriverDashboardService {
     }
   }
 
-  /// Get all dashboard data at once
-  Future<Map<String, dynamic>> getDashboardData() async {
+  /// Get driver's average rating
+  Future<double> getAverageRating() async {
     try {
-      debugPrint('🔄 Fetching all dashboard data...');
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0.0;
 
-      final profile = await getDriverProfile();
-      final balance = await getWalletBalance();
-      final todayEarnings = await getTodayEarnings();
-      final rating = await getAverageRating();
-      final reportsCount = await getReportsCount();
-      final vehicleInfo = await getDriverVehicleInfo();
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profile == null) return 0.0;
 
-      debugPrint('✅ All dashboard data fetched successfully');
+      final driver = await _supabase
+          .from('drivers')
+          .select('id')
+          .eq('profile_id', profile['id'])
+          .maybeSingle();
+      if (driver == null) return 0.0;
 
-      return {
-        'profile': profile,
-        'balance': balance,
-        'todayEarnings': todayEarnings,
-        'rating': rating,
-        'reportsCount': reportsCount,
-        'vehicleInfo': vehicleInfo,
-      };
+      final ratings = await _supabase
+          .from('ratings')
+          .select('overall')
+          .eq('driver_id', driver['id']);
+
+      if (ratings.isEmpty) return 0.0;
+
+      double sum = 0.0;
+      for (var rating in ratings) {
+        sum += (rating['overall'] as num?)?.toDouble() ?? 0.0;
+      }
+
+      return sum / ratings.length;
     } catch (e) {
-      debugPrint('❌ Error fetching dashboard data: $e');
-      rethrow;
+      debugPrint('❌ Error fetching average rating: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get count of reports filed against this driver
+  Future<int> getReportsCount() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profile == null) return 0;
+
+      final driver = await _supabase
+          .from('drivers')
+          .select('id')
+          .eq('profile_id', profile['id'])
+          .maybeSingle();
+      if (driver == null) return 0;
+
+      final reports = await _supabase
+          .from('reports')
+          .select('id')
+          .eq('reported_entity_type', 'driver')
+          .eq('reported_entity_id', driver['id']);
+
+      return reports.length;
+    } catch (e) {
+      debugPrint('❌ Error fetching reports count: $e');
+      return 0;
+    }
+  }
+
+  /// Get driver's wallet balance
+  Future<double> getWalletBalance() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0.0;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final walletData = await _supabase
+          .from('wallets')
+          .select('balance')
+          .eq('owner_profile_id', profile['id'])
+          .maybeSingle();
+
+      if (walletData == null) return 0.0;
+
+      return (walletData['balance'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      debugPrint('❌ Error fetching wallet balance: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get today's earnings
+  Future<double> getTodayEarnings() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0.0;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profile == null) return 0.0;
+
+      final driver = await _supabase
+          .from('drivers')
+          .select('id')
+          .eq('profile_id', profile['id'])
+          .maybeSingle();
+      if (driver == null) return 0.0;
+
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+
+      final trips = await _supabase
+          .from('trips')
+          .select('fare_amount')
+          .eq('driver_id', driver['id'])
+          .eq('status', 'completed')
+          .gte('started_at', startOfDay.toIso8601String());
+
+      double totalEarnings = 0.0;
+      for (var trip in trips) {
+        totalEarnings += (trip['fare_amount'] as num?)?.toDouble() ?? 0.0;
+      }
+      return totalEarnings;
+    } catch (e) {
+      debugPrint('❌ Error fetching today\'s earnings: $e');
+      return 0.0;
     }
   }
 
@@ -272,28 +207,68 @@ class DriverDashboardService {
       );
 
       if (response is List) {
-        final earningsMap = {
+        return {
           for (var item in response)
             (item['day_name'] as String): (item['total'] as num).toDouble(),
         };
-        debugPrint(
-          '✅ Weekly earnings for offset $weekOffset fetched: $earningsMap',
-        );
-        return earningsMap;
       }
       return {};
     } catch (e) {
-      debugPrint('❌ Error fetching weekly earnings for offset $weekOffset: $e');
+      debugPrint('❌ Error fetching weekly earnings: $e');
+      return {};
+    }
+  }
+
+  /// Get all dashboard data at once
+  Future<Map<String, dynamic>> getDashboardData() async {
+    try {
+      debugPrint('🔄 Fetching all dashboard data...');
+
+      final results = await Future.wait([
+        getDriverProfile(),
+        getWalletBalance(),
+        getTodayEarnings(),
+        getAverageRating(),
+        getReportsCount(),
+        getDriverVehicleInfo(),
+      ]);
+
+      return {
+        'profile': results[0],
+        'balance': results[1],
+        'todayEarnings': results[2],
+        'rating': results[3],
+        'reportsCount': results[4],
+        'vehicleInfo': results[5],
+      };
+    } catch (e) {
+      debugPrint('❌ Error fetching dashboard data: $e');
       rethrow;
     }
   }
 
-  /// Get recent transactions for the driver's wallet
+  /// Process a remittance to the operator
+  Future<void> remitEarnings(double amount) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated.');
+      await _supabase.rpc(
+        'process_driver_remittance',
+        params: {'amount_to_remit': amount},
+      );
+      debugPrint('✅ Remittance of ₱$amount successful');
+    } catch (e) {
+      debugPrint('❌ Error processing remittance: $e');
+      rethrow;
+    }
+  }
+
+  /// Get recent transactions for the driver's wallet (Public wrapper)
   Future<List<Map<String, dynamic>>> getRecentTransactions() async {
     return _getTransactions(limit: 10);
   }
 
-  /// Get all transactions for the driver's wallet
+  /// Get all transactions for the driver's wallet (Public wrapper)
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     return _getTransactions();
   }
@@ -322,6 +297,7 @@ class DriverDashboardService {
             'fare_payment',
             'operator_payout',
             'driver_payout',
+            'remittance',
           ])
           .order('created_at', ascending: false);
 
@@ -330,7 +306,6 @@ class DriverDashboardService {
       }
 
       final transactions = await query;
-      debugPrint('✅ Fetched ${transactions.length} driver transactions');
       return transactions;
     } catch (e) {
       debugPrint('❌ Error fetching driver transactions: $e');

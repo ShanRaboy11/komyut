@@ -424,4 +424,38 @@ class DriverWalletProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Process Remittance
+  Future<bool> submitRemittance(double amount) async {
+    if (amount <= 0) {
+      _errorMessage = 'Amount must be greater than 0';
+      notifyListeners();
+      return false;
+    }
+
+    if (amount > _totalBalance) {
+      _errorMessage = 'Insufficient balance';
+      notifyListeners();
+      return false;
+    }
+
+    _isPageLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _dashboardService.remitEarnings(amount);
+
+      await fetchWalletData();
+
+      _isPageLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Remittance failed: ${e.toString()}';
+      _isPageLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }
