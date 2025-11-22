@@ -3,10 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shimmer/shimmer.dart';
-import '../widgets/receipttrip_card.dart';
+import '../widgets/receipt_driver.dart';
 import '../widgets/button.dart';
 import 'commuter_app.dart';
 import '../services/trips.dart';
+
 import '../models/trips.dart';
 
 class TripReceiptPage extends StatefulWidget {
@@ -20,11 +21,10 @@ class TripReceiptPage extends StatefulWidget {
 
 class _TripReceiptPageState extends State<TripReceiptPage> {
   final TripsService _tripsService = TripsService();
-
   bool _loading = true;
   String? _error;
   TripDetails? _details;
-  String _driverName = 'Unknown Driver';
+  String _passengerName = 'Unknown Passenger';
 
   @override
   void initState() {
@@ -41,14 +41,12 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
 
       final details = await _tripsService.getTripDetails(widget.tripId);
 
-      // Prefer a real driver name; ignore placeholder 'Unknown Driver'.
-      final rawDriver = details?.driverName?.trim();
-      final hasRealDriver = rawDriver != null && rawDriver.isNotEmpty && rawDriver.toLowerCase() != 'unknown driver';
-      final driverName = hasRealDriver ? rawDriver : (details?.passengerName ?? 'Unknown Driver');
+      // Extract passenger name for driver receipts
+      final passengerName = details?.passengerName?.trim() ?? 'Unknown Passenger';
 
       setState(() {
         _details = details;
-        _driverName = driverName;
+        _passengerName = passengerName;
         _loading = false;
       });
     } catch (e) {
@@ -358,7 +356,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                         to: _details!.to,
                         fromTime: _details!.formattedStartTime,
                         toTime: _details!.formattedEndTime,
-                        driver: _driverName,
+                        passenger: _passengerName,
                         date: _details!.date,
                         time: _details!.time,
                         passengers: _details!.passengerCount,

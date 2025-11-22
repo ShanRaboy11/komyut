@@ -503,28 +503,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       'balance': balance - initialPayment,
     }).eq('id', walletId);
 
-    // Create initial transaction for boarding
-    final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
-    
-    final transactionResponse = await supabase
-        .from('transactions')
-        .insert({
-          'transaction_number': transactionNumber,
-          'wallet_id': walletId,
-          'initiated_by_profile_id': profileId,
-          'type': 'fare_payment',
-          'amount': initialPayment,
-          'status': 'pending',
-          'metadata': {
-            'payment_type': 'initial_boarding',
-            'puv_type': puvType,
-            'initial_payment_per_person': initialPaymentPerPerson,
-          },
-        })
-        .select()
-        .single();
-
-    final transactionId = transactionResponse['id'] as String;
+    // Create initial transaction for boarding AFTER trip is created
+    // (transaction will be created and linked to the trip immediately after trip insert)
 
     // ==========================================
     // FETCH DRIVER INFO WITH PROFILE
@@ -626,10 +606,34 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
     final tripId = result['id'] as String;
 
-    // Link transaction to trip
-    await supabase.from('transactions').update({
-      'related_trip_id': tripId,
-    }).eq('id', transactionId);
+    // Create initial transaction for boarding and link to the created trip
+    final transactionNumber = 'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
+
+    final transactionResponse = await supabase
+        .from('transactions')
+        .insert({
+          'transaction_number': transactionNumber,
+          'wallet_id': walletId,
+          'initiated_by_profile_id': profileId,
+          'type': 'fare_payment',
+          'amount': initialPayment,
+          'status': 'pending',
+          'related_trip_id': tripId,
+          'processed_at': DateTime.now().toIso8601String(),
+          'metadata': {
+            'payment_type': 'initial_boarding',
+            'puv_type': puvType,
+            'initial_payment_per_person': initialPaymentPerPerson,
+          },
+        })
+        .select()
+        .single();
+
+    // transaction created and linked to trip; id available in `transactionResponse`
+    try {
+      final txnId = transactionResponse['id'] as String?;
+      debugPrint('💳 Initial transaction created and linked: $txnId');
+    } catch (_) {}
 
     debugPrint('✅ Trip created successfully: $tripId');
     debugPrint('💰 Initial payment: ₱$initialPayment');
@@ -797,7 +801,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       }).eq('id', walletId);
 
       // Step 10: Create transaction with barcode
-      final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
+      final transactionNumber = 'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
 
       await supabase.from('transactions').insert({
         'transaction_number': transactionNumber,
