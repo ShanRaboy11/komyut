@@ -56,16 +56,47 @@ class DriverTrip {
     String? firstName;
     String? lastName;
 
-    // Try to get passenger data from the 'passenger' object (from JOIN)
-    if (json['passenger'] != null && json['passenger'] is Map) {
-      final passenger = json['passenger'] as Map<String, dynamic>;
-      firstName = passenger['first_name'] as String?;
-      lastName = passenger['last_name'] as String?;
+    // PRIORITY 1: Check if service passed combined 'passenger_name'
+    if (json['passenger_name'] != null && json['passenger_name'] is String) {
+      final fullName = (json['passenger_name'] as String).trim();
+      if (fullName.isNotEmpty && fullName != 'Passenger') {
+        // Split the full name into first and last name
+        final nameParts = fullName.split(' ');
+        if (nameParts.length >= 2) {
+          firstName = nameParts.first;
+          lastName = nameParts.sublist(1).join(' ');
+        } else if (nameParts.length == 1) {
+          firstName = nameParts.first;
+        }
+      }
+    }
+
+    // PRIORITY 2: Try to get passenger data from the 'creator_profile' object (from JOIN)
+    if (firstName == null && lastName == null) {
+      if (json['creator_profile'] != null && json['creator_profile'] is Map) {
+        final profile = json['creator_profile'] as Map<String, dynamic>;
+        firstName = profile['first_name'] as String?;
+        lastName = profile['last_name'] as String?;
+      }
+    }
+
+    // PRIORITY 3: Try to get passenger data from the 'passenger' object (from JOIN)
+    if (firstName == null && lastName == null) {
+      if (json['passenger'] != null && json['passenger'] is Map) {
+        final passenger = json['passenger'] as Map<String, dynamic>;
+        firstName = passenger['first_name'] as String?;
+        lastName = passenger['last_name'] as String?;
+      }
     }
     
-    // Fallback to direct fields if they exist
+    // PRIORITY 4: Fallback to direct fields if they exist
     firstName ??= json['passenger_first_name'] as String?;
     lastName ??= json['passenger_last_name'] as String?;
+
+    // Debug logging
+    if (firstName != null || lastName != null) {
+      print('🔍 DriverTrip.fromJson - Passenger: $firstName $lastName');
+    }
 
     return DriverTrip(
       id: json['id'] as String,

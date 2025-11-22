@@ -501,7 +501,20 @@ class TripsService {
     try {
       final res = await _withRetries(() => _supabase
           .from('trips')
-          .select('id,started_at,ended_at,fare_amount,distance_meters,route_id,origin_stop_id,destination_stop_id,status,driver_id,passengers_count')
+          .select('''
+            id,
+            started_at,
+            ended_at,
+            fare_amount,
+            distance_meters,
+            route_id,
+            origin_stop_id,
+            destination_stop_id,
+            status,
+            driver_id,
+            passengers_count,
+            creator_profile:profiles!trips_created_by_profile_id_fkey(first_name,last_name)
+          ''')
           .eq('id', tripId)
           .single());
 
@@ -582,6 +595,20 @@ class TripsService {
         transactionNumber = null;
       }
 
+      // Extract passenger name from joined creator_profile (if present)
+      String? passengerName;
+      try {
+        if (res['creator_profile'] != null && res['creator_profile'] is Map) {
+          final cp = res['creator_profile'] as Map;
+          final fn = (cp['first_name'] as String?)?.trim() ?? '';
+          final ln = (cp['last_name'] as String?)?.trim() ?? '';
+          final combined = ('$fn $ln').trim();
+          if (combined.isNotEmpty) passengerName = combined;
+        }
+      } catch (_) {
+        passengerName = null;
+      }
+
       return TripDetails(
         tripId: res['id'] ?? '',
         date: '${started.month}/${started.day}/${started.year}',
@@ -605,6 +632,7 @@ class TripsService {
         destLat: null,
         destLng: null,
         transactionNumber: transactionNumber,
+        passengerName: passengerName,
       );
     } catch (e) {
       developer.log('Error fetching trip details: $e', name: 'TripsService');

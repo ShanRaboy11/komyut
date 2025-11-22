@@ -76,6 +76,7 @@ class TripDetails {
   final double? destLat;
   final double? destLng;
   final String? transactionNumber;
+  final String? passengerName;
 
   TripDetails({
     required this.tripId,
@@ -101,6 +102,7 @@ class TripDetails {
     this.destLat,
     this.destLng,
     this.transactionNumber,
+    this.passengerName,
   });
 
   Duration? get duration {

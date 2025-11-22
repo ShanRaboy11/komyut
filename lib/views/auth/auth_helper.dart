@@ -17,10 +17,13 @@ class AuthHelper {
       // The AuthWrapper will automatically detect the auth state change
       // and show the LandingPage
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/landing',
-          (route) => false,
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/landing',
+            (route) => false,
+          );
+        });
       }
     } catch (e) {
       debugPrint('❌ Logout error: $e');

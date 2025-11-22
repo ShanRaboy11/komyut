@@ -378,8 +378,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
@@ -408,8 +407,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
@@ -445,8 +443,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),

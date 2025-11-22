@@ -29,196 +29,191 @@ class ReceiptCard extends StatelessWidget {
     required this.baseFare,
     required this.discount,
     required this.totalFare,
-    required this.barcodeText,
+    this.barcodeText = '',
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // 🔹 Border layer
-        ClipPath(
-          clipper: ZigzagClipper(),
-          child: Container(
-            width: double.infinity,
-            color: const Color(0xFF8E4CB6),
-            margin: const EdgeInsets.all(0),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF8E4CB6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
-        ),
-
-        // 🔹 Main content (your existing card)
-        Padding(
-          padding: const EdgeInsets.all(2), // border thickness
-          child: ClipPath(
-            clipper: ZigzagClipper(),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                border: Border.all(color: const Color(0xFF8E4CB6)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🗺️ Route - FIXED ALIGNMENT
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon column with fixed width
+              Column(
                 children: [
-                  // 🗺️ Route
-                  Row(
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFCCF8),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.map_outlined,
-                              color: Color(0xFFB945AA),
-                              size: 30,
-                            ),
-                          ),
-                          Container(
-                            height: 35,
-                            width: 2,
-                            color: const Color(
-                              0xFFB945AA,
-                            ).withValues(alpha: 0.4),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE9C5FF),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.location_on_rounded,
-                              color: Color(0xFF8E4CB6),
-                              size: 30,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLocationRow(
-                              from,
-                              fromTime,
-                              const Color(0xFFB945AA),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildLocationRow(
-                              to,
-                              toTime,
-                              const Color(0xFF5B53C2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFCCF8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.map_outlined,
+                      color: Color(0xFFB945AA),
+                      size: 30,
+                    ),
                   ),
-                  const Divider(height: 28, thickness: 1),
-
-                  // 🧾 Fare details
-                  _buildFareRow("Passenger", passenger, isBoldRight: true),
-                  _buildFareRow("Date", "$date   $time", isBoldRight: true),
-                  _buildFareRow("No. of Passenger/s", passengers.toString()),
-                  const SizedBox(height: 8),
-                  const Divider(thickness: 1),
-                  const SizedBox(height: 8),
-                  _buildFareRow("Base Fare", "₱${baseFare.toStringAsFixed(2)}"),
-                  _buildFareRow(
-                    "Discount (if applicable)",
-                    "₱${discount.toStringAsFixed(2)}",
+                  Container(
+                    height: 35,
+                    width: 2,
+                    color: const Color(0xFFB945AA).withOpacity(0.4),
                   ),
-                  const SizedBox(height: 12),
-                  const Divider(thickness: 1),
-                  const SizedBox(height: 8),
-                  _buildFareRow(
-                    "Total Fare",
-                    "₱${totalFare.toStringAsFixed(2)}",
-                    isBoldRight: true,
-                    isBoldLeft: true,
-                  ),
-                  // small gap then dashed tear/outline before barcode
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: _buildDashedDivider(color: const Color(0xFF8E4CB6)),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 🧍 Barcode
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Column(
-                      children: [
-                        BarcodeWidget(
-                          barcode: Barcode.code128(),
-                          data: barcodeText,
-                          height: 60,
-                          width: 200,
-                          drawText: false,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          barcodeText,
-                          style: GoogleFonts.nunito(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: Colors.black.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE9C5FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: Color(0xFF8E4CB6),
+                      size: 30,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(width: 16),
+              // Text column - expands to fill space
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Boarding location
+                    _buildLocationRow(
+                      from,
+                      fromTime,
+                      const Color(0xFFB945AA),
+                    ),
+                    const SizedBox(height: 43), // Match icon separator height
+                    // Departure location
+                    _buildLocationRow(
+                      to,
+                      toTime,
+                      const Color(0xFF5B53C2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 28, thickness: 1),
+
+          // 🧾 Fare details
+          _buildFareRow("Passenger", passenger, isBoldRight: true),
+          _buildFareRow("Date", "$date   $time", isBoldRight: true),
+          _buildFareRow("No. of Passenger/s", passengers.toString()),
+          const SizedBox(height: 8),
+          const Divider(thickness: 1),
+          const SizedBox(height: 8),
+          _buildFareRow("Base Fare", "₱${baseFare.toStringAsFixed(2)}"),
+          _buildFareRow(
+            "Discount (if applicable)",
+            "₱${discount.toStringAsFixed(2)}",
+          ),
+          const SizedBox(height: 12),
+          const Divider(thickness: 1),
+          const SizedBox(height: 8),
+          _buildFareRow(
+            "Total Fare",
+            "₱${totalFare.toStringAsFixed(2)}",
+            isBoldRight: true,
+            isBoldLeft: true,
+          ),
+
+          const SizedBox(height: 20),
+          
+          // 🧍 Barcode Section - Always show with placeholder if no transaction
+          Center(
+            child: Column(
+              children: [
+                if (barcodeText.isNotEmpty)
+                  // Show actual barcode when transaction number exists
+                  Column(
+                    children: [
+                      BarcodeWidget(
+                        barcode: Barcode.code128(),
+                        data: barcodeText,
+                        height: 60,
+                        width: 200,
+                        drawText: false,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        barcodeText,
+                        style: GoogleFonts.nunito(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: Colors.black.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  // Show placeholder when no transaction number
+                  Column(
+                    children: [
+                      Container(
+                        height: 60,
+                        width: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey.withOpacity(0.3),
+                            style: BorderStyle.solid,
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.qr_code_2,
+                            size: 40,
+                            color: Colors.grey.withOpacity(0.4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No Transaction Number',
+                        style: GoogleFonts.nunito(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: Colors.grey.withOpacity(0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDashedDivider({required Color color}) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final dashWidth = 8.0;
-        final gap = 6.0;
-        final count = (constraints.maxWidth / (dashWidth + gap)).floor();
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(count, (index) {
-            return Container(
-              width: dashWidth,
-              height: 1,
-              margin: EdgeInsets.only(right: index == count - 1 ? 0 : gap),
-              color: color.withOpacity(0.6),
-            );
-          }),
-        );
-      },
+        ],
+      ),
     );
   }
 
   Widget _buildLocationRow(String title, String time, Color color) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start, // Align to start (left)
       children: [
         Text(
           title,
@@ -227,7 +222,10 @@ class ReceiptCard extends StatelessWidget {
             fontSize: 16,
             color: Colors.black,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
+        const SizedBox(height: 2),
         Text(
           time,
           style: GoogleFonts.nunito(
@@ -250,14 +248,17 @@ class ReceiptCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontWeight: isBoldLeft ? FontWeight.w800 : FontWeight.w600,
-              fontSize: isBoldLeft ? 20 : 16,
-              color: Colors.black87,
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontWeight: isBoldLeft ? FontWeight.w800 : FontWeight.w600,
+                fontSize: isBoldLeft ? 20 : 16,
+                color: Colors.black87,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: GoogleFonts.manrope(
@@ -265,42 +266,10 @@ class ReceiptCard extends StatelessWidget {
               fontSize: 16,
               color: Colors.black87,
             ),
+            textAlign: TextAlign.right,
           ),
         ],
       ),
     );
   }
-}
-
-// 🟣 Zigzag Clipper (WORKING)
-class ZigzagClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    const double zigzagHeight = 8;
-    const double zigzagWidth = 12;
-
-    final path = Path()..moveTo(0, 0);
-
-    // top edge
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width, size.height - zigzagHeight);
-
-    // bottom zigzag
-    bool reverse = false;
-    for (double x = size.width; x > 0; x -= zigzagWidth) {
-      path.lineTo(
-        x - zigzagWidth / 2,
-        reverse ? size.height - zigzagHeight : size.height,
-      );
-      reverse = !reverse;
-    }
-
-    // close left edge
-    path.lineTo(0, size.height - zigzagHeight);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

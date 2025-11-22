@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
 import '../models/driver_trip.dart';
 
 class DriverTripService {
@@ -52,38 +53,12 @@ class DriverTripService {
 
       final List<dynamic> data = response as List<dynamic>;
       
-      return data.map((json) {
-        // Extract passenger name from the creator_profile
-        String? passengerName;
-        if (json['creator_profile'] != null && json['creator_profile'] is Map) {
-          final profile = json['creator_profile'] as Map;
-          final firstName = profile['first_name'] as String?;
-          final lastName = profile['last_name'] as String?;
-          
-          if (firstName != null || lastName != null) {
-            passengerName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
-          }
-        }
-
-        final transformedJson = {
-          'id': json['id'],
-          'status': json['status'],
-          'started_at': json['started_at'],
-          'ended_at': json['ended_at'],
-          'fare_amount': json['fare_amount'],
-          'passengers_count': json['passengers_count'],
-          'distance_meters': json['distance_meters'],
-          'route_code': json['routes']?['code'] ?? 'N/A',
-          'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
-          'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
-          'passenger_name': passengerName ?? 'Passenger',
-        };
-        
-        return DriverTrip.fromJson(transformedJson);
-      }).toList();
+      return data.map((json) => _mapToDriverTrip(json)).toList();
     } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getDriverTripHistory: ${e.message}');
       throw Exception('Database error: ${e.message}');
     } catch (e) {
+      debugPrint('❌ Error in getDriverTripHistory: $e');
       throw Exception('Failed to load trip history: $e');
     }
   }
@@ -110,36 +85,12 @@ class DriverTripService {
           .eq('id', tripId)
           .single();
 
-      // Extract passenger name from the creator_profile
-      String? passengerName;
-      if (response['creator_profile'] != null && response['creator_profile'] is Map) {
-        final profile = response['creator_profile'] as Map;
-        final firstName = profile['first_name'] as String?;
-        final lastName = profile['last_name'] as String?;
-        
-        if (firstName != null || lastName != null) {
-          passengerName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
-        }
-      }
-
-      final transformedJson = {
-        'id': response['id'],
-        'status': response['status'],
-        'started_at': response['started_at'],
-        'ended_at': response['ended_at'],
-        'fare_amount': response['fare_amount'],
-        'passengers_count': response['passengers_count'],
-        'distance_meters': response['distance_meters'],
-        'route_code': response['routes']?['code'] ?? 'N/A',
-        'origin_name': response['origin_stop']?['name'] ?? 'Unknown',
-        'destination_name': response['destination_stop']?['name'] ?? 'Unknown',
-        'passenger_name': passengerName ?? 'Passenger',
-      };
-
-      return DriverTrip.fromJson(transformedJson);
+      return _mapToDriverTrip(response);
     } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripById: ${e.message}');
       throw Exception('Database error: ${e.message}');
     } catch (e) {
+      debugPrint('❌ Error in getTripById: $e');
       return null;
     }
   }
@@ -166,8 +117,8 @@ class DriverTripService {
             .order('sequence', ascending: true);
 
         routeStops = (stopsRes as List)
-          .map<Map<String, dynamic>>((r) => Map<String, dynamic>.from(r as Map))
-          .toList();
+            .map<Map<String, dynamic>>((r) => Map<String, dynamic>.from(r as Map))
+            .toList();
       }
 
       return {
@@ -176,8 +127,10 @@ class DriverTripService {
         'destinationStopId': destinationStopId,
       };
     } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripRouteInfo: ${e.message}');
       throw Exception('Database error: ${e.message}');
     } catch (e) {
+      debugPrint('❌ Error in getTripRouteInfo: $e');
       return null;
     }
   }
@@ -228,39 +181,52 @@ class DriverTripService {
 
       final List<dynamic> data = response as List<dynamic>;
       
-      return data.map((json) {
-        // Extract passenger name from the creator_profile
-        String? passengerName;
-        if (json['creator_profile'] != null && json['creator_profile'] is Map) {
-          final profile = json['creator_profile'] as Map;
-          final firstName = profile['first_name'] as String?;
-          final lastName = profile['last_name'] as String?;
-          
-          if (firstName != null || lastName != null) {
-            passengerName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
-          }
-        }
-
-        final transformedJson = {
-          'id': json['id'],
-          'status': json['status'],
-          'started_at': json['started_at'],
-          'ended_at': json['ended_at'],
-          'fare_amount': json['fare_amount'],
-          'passengers_count': json['passengers_count'],
-          'distance_meters': json['distance_meters'],
-          'route_code': json['routes']?['code'] ?? 'N/A',
-          'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
-          'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
-          'passenger_name': passengerName ?? 'Passenger',
-        };
-        
-        return DriverTrip.fromJson(transformedJson);
-      }).toList();
+      return data.map((json) => _mapToDriverTrip(json)).toList();
     } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripsByStatus: ${e.message}');
       throw Exception('Database error: ${e.message}');
     } catch (e) {
+      debugPrint('❌ Error in getTripsByStatus: $e');
       throw Exception('Failed to load trips: $e');
     }
+  }
+
+  /// Helper method to map JSON response to DriverTrip object
+  DriverTrip _mapToDriverTrip(Map<String, dynamic> json) {
+    // Extract passenger name from the creator_profile
+    String passengerName = 'Passenger';
+    
+    if (json['creator_profile'] != null && json['creator_profile'] is Map) {
+      final profile = json['creator_profile'] as Map;
+      final firstName = profile['first_name'] as String?;
+      final lastName = profile['last_name'] as String?;
+      
+      if (firstName != null || lastName != null) {
+        passengerName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+        
+        // If after trimming it's empty, use default
+        if (passengerName.isEmpty) {
+          passengerName = 'Passenger';
+        }
+      }
+    }
+
+    debugPrint('📋 Mapping trip ${json['id']} with passenger: $passengerName');
+
+    final transformedJson = {
+      'id': json['id'],
+      'status': json['status'],
+      'started_at': json['started_at'],
+      'ended_at': json['ended_at'],
+      'fare_amount': json['fare_amount'],
+      'passengers_count': json['passengers_count'],
+      'distance_meters': json['distance_meters'],
+      'route_code': json['routes']?['code'] ?? 'N/A',
+      'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
+      'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
+      'passenger_name': passengerName,
+    };
+    
+    return DriverTrip.fromJson(transformedJson);
   }
 }

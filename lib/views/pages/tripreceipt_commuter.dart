@@ -365,9 +365,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                         baseFare: _details!.fareAmount,
                         discount: 0.0,
                         totalFare: _details!.fareAmount,
-                          barcodeText: _details!.transactionNumber != null && _details!.transactionNumber!.isNotEmpty
-                            ? _details!.transactionNumber!
-                            : 'RCPT-${_details!.tripId.substring(0, 8).toUpperCase()}',
+                        barcodeText: _details!.transactionNumber ?? '',
                       )
                     else
                       const Padding(

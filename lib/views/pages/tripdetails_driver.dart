@@ -331,8 +331,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
@@ -348,8 +347,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                 CustomButton(
                   text: "View Receipt",
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (context) => TripReceiptPage(tripId: widget.tripId),
                       ),
@@ -402,6 +400,21 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
 
   // Passenger name card (only displays name)
   Widget _buildPassengerNameCard(String name) {
+    // Compute initials from the provided name
+    String initials = 'P';
+    try {
+      final parts = name.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+      if (parts.isEmpty) {
+        initials = 'P';
+      } else if (parts.length == 1) {
+        initials = parts[0][0].toUpperCase();
+      } else {
+        initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      }
+    } catch (_) {
+      initials = 'P';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
@@ -419,13 +432,21 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
       ),
       child: Row(
         children: [
-          _buildShimmer(
-            child: Container(
-              height: 50,
-              width: 50,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                shape: BoxShape.circle,
+          // Initials avatar
+          Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFF9C6BFF),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -752,11 +773,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
         : '—';
     final passengersText = _details != null ? '${_details!.passengersCount}' : '—';
 
-    final gradientColors = const [
-      Color(0xFFB945AA),
-      Color(0xFF8E4CB6),
-      Color(0xFF5B53C2),
-    ];
+    // (no local gradient needed here)
 
     return Container(
       decoration: BoxDecoration(

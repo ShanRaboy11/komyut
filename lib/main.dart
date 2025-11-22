@@ -135,6 +135,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
           _userRole = response['role'] as String?;
           _isLoading = false;
         });
+        debugPrint('AuthStateHandler: _checkAuthState -> user=${user.id} role=${_userRole}');
       }
     } catch (e) {
       debugPrint('❌ Error checking auth state: $e');
@@ -142,6 +143,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
         setState(() {
           _isLoading = false;
         });
+        debugPrint('AuthStateHandler: _checkAuthState caught, set _isLoading=false');
       }
     }
   }
@@ -155,6 +157,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
         ),
       );
     }
+    debugPrint('AuthStateHandler.build -> _isLoading=$_isLoading userRole=$_userRole');
 
     // Not logged in - show landing page
     if (_userRole == null) {
