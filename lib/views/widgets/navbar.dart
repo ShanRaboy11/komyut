@@ -178,7 +178,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar>
                                   color: isSelected
                                       ? Colors.white
                                       : Colors.white.withValues(alpha: 0.0),
-                                  fontSize: isSmall ? 20 : 14,
+                                  fontSize: 14,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.w500,

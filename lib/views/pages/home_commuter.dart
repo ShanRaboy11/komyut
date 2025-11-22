@@ -141,7 +141,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
+          padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,8 +151,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 children: [
                   SvgPicture.asset(
                     'assets/images/logo.svg',
-                    height: 80,
-                    width: 80,
+                    height: 50,
+                    width: 50,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -161,21 +161,21 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                         'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 16,
                         ),
                       ),
                       Text(
                         'Welcome back!',
                         style: GoogleFonts.manrope(
                           color: const Color(0xFF8E4CB6),
-                          fontSize: 18,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 30),
 
               Row(
                 children: [
@@ -276,7 +276,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               style: GoogleFonts.manrope(
                 color: isSelected ? Colors.white : Colors.black54,
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 16,
               ),
             ),
           ),
@@ -308,7 +308,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -338,7 +338,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               height: 45,
               borderRadius: 30,
               hasShadow: false,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ],
@@ -364,15 +364,15 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               children: [
                 Image.asset(
                   'assets/images/wheel token.png',
-                  height: 32,
-                  width: 32,
+                  height: 28,
+                  width: 28,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _isTokensVisible ? provider.wheelTokens.toString() : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -401,7 +401,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               height: 45,
               borderRadius: 30,
               hasShadow: false,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               imagePath: 'assets/images/redeem.svg',
             ),
@@ -435,7 +435,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     'Commute Analytics',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 16,
                     ),
                   ),
                   Text(
@@ -502,11 +502,20 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           children: [
             Text(
               title,
-              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
-            Text(value, style: GoogleFonts.nunito(color: Colors.black87)),
+            Text(
+              value,
+              style: GoogleFonts.nunito(color: Colors.black87, fontSize: 12),
+            ),
             if (subtitle != null)
-              Text(subtitle, style: GoogleFonts.nunito(color: Colors.black54)),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(color: Colors.black54, fontSize: 11),
+              ),
           ],
         ),
       ],
@@ -531,7 +540,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           Expanded(
             child: Text(
               'Get 50% off your next ride!\nUse Code: KOMYUTIE50',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.w500),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
             ),
           ),
           CustomButton(
@@ -579,7 +591,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
       child: ListTile(
         title: Text(
           title,
-          style: GoogleFonts.manrope(color: Colors.white, fontSize: 18),
+          style: GoogleFonts.manrope(color: Colors.white, fontSize: 14),
         ),
         trailing: const Icon(
           Icons.arrow_forward_ios,

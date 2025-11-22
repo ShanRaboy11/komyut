@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../widgets/logo.dart';
 import '../widgets/button.dart';
 import '../widgets/big_card.dart';
-import '../widgets/social_button.dart';
 import 'login.dart';
 import 'registration_role.dart';
 

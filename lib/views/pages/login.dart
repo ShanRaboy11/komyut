@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/button.dart';
-import '../widgets/social_button.dart';
 import '../widgets/shake_widget.dart';
 
 import '../providers/auth_provider.dart';
