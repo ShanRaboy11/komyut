@@ -13,16 +13,27 @@ class DriverTripHistoryPage extends StatefulWidget {
   State<DriverTripHistoryPage> createState() => _DriverTripHistoryPageState();
 }
 
-class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
+class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> with SingleTickerProviderStateMixin {
   final DriverTripService _tripService = DriverTripService();
   List<DriverTrip> _trips = [];
   bool _isLoading = true;
   String? _errorMessage;
+  late AnimationController _shimmerController;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
     _loadTrips();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTrips() async {
@@ -93,8 +104,8 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
         ),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+        body: _isLoading
+          ? _buildLoadingList()
           : _errorMessage != null
               ? Center(
                   child: Column(
@@ -206,6 +217,166 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
                         ),
                       ),
                     ),
+    );
+  }
+
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildLoadingList() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 40.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Trips',
+            style: GoogleFonts.manrope(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildStatusDot(_statusColor("ongoing"), "Ongoing"),
+              const SizedBox(width: 20),
+              _buildStatusDot(_statusColor("completed"), "Completed"),
+              const SizedBox(width: 20),
+              _buildStatusDot(_statusColor("cancelled"), "Cancelled"),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            children: List.generate(6, (index) => Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: _buildTripSkeletonCard(),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripSkeletonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShimmer(
+                child: Container(
+                  width: 160,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+              _buildShimmer(
+                child: Container(
+                  width: 80,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildShimmer(
+            child: Container(
+              width: 100,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Container(width: 24, height: 24, color: Colors.transparent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmer(
+                      child: Container(
+                        width: double.infinity,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildShimmer(
+                      child: Container(
+                        width: 120,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

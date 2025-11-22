@@ -417,12 +417,12 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6).withValues(alpha: 0.3), width: 1.2),
+        border: Border.all(color: const Color(0xFF8E4CB6), width: 1.2),
         borderRadius: BorderRadius.circular(14),
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: const Color.fromRGBO(0, 0, 0, 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             spreadRadius: 1,
             offset: const Offset(0, 2),
@@ -431,19 +431,19 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
       ),
       child: Row(
         children: [
-          // Initials avatar
+          // Initials avatar (light background, purple initials)
           Container(
             height: 50,
             width: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFF9C6BFF),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF2EAFF),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
             child: Text(
               initials,
               style: GoogleFonts.manrope(
-                color: Colors.white,
+                color: const Color(0xFF9C6BFF),
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),

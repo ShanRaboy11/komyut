@@ -32,7 +32,7 @@ class DriverCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar
+          // Avatar: show initials when name is available, otherwise icon
           Container(
             height: 50,
             width: 50,
@@ -40,11 +40,37 @@ class DriverCard extends StatelessWidget {
               color: Color(0xFFF2EAFF),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              color: Color(0xFF9C6BFF),
-              size: 28,
-            ),
+            alignment: Alignment.center,
+            child: Builder(builder: (context) {
+              final n = (name ?? '').trim();
+              if (n.isEmpty || n.toLowerCase() == 'null') {
+                return const Icon(
+                  Icons.person_outline_rounded,
+                  color: Color(0xFF9C6BFF),
+                  size: 28,
+                );
+              }
+
+              // Compute initials (first letter of first two words)
+              String initials = '';
+              final parts = n.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+              if (parts.isEmpty) {
+                initials = n[0].toUpperCase();
+              } else if (parts.length == 1) {
+                initials = parts[0][0].toUpperCase();
+              } else {
+                initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+              }
+
+              return Text(
+                initials,
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF9C6BFF),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              );
+            }),
           ),
           const SizedBox(width: 15),
 
