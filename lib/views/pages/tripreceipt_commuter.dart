@@ -42,7 +42,7 @@ class TripReceiptPage extends StatelessWidget {
                   Text(
                     "Payment Receipt",
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),

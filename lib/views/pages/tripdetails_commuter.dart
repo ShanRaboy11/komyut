@@ -5,7 +5,7 @@ import '../widgets/drivercard_trip.dart';
 import '../widgets/tripdetails_card.dart';
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
-import 'report_p1_commuter copy.dart';
+import 'report_p1_commuter.dart';
 
 class TripDetailsPage extends StatelessWidget {
   final String date;
@@ -63,7 +63,7 @@ class TripDetailsPage extends StatelessWidget {
                   Text(
                     "Trips",
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -71,13 +71,13 @@ class TripDetailsPage extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               // Title
               Text(
                 "Trip Details",
                 style: GoogleFonts.manrope(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Colors.black87,
                 ),
@@ -91,7 +91,7 @@ class TripDetailsPage extends StatelessWidget {
                   Text(
                     "$date, $time",
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 11,
                       color: Colors.black.withValues(alpha: 0.7),
                     ),
                   ),

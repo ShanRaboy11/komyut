@@ -176,7 +176,7 @@ class _SuccessPageState extends State<SuccessPage>
                       Text(
                         widget.title,
                         style: GoogleFonts.manrope(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
@@ -191,7 +191,7 @@ class _SuccessPageState extends State<SuccessPage>
                         child: Text(
                           widget.subtitle,
                           style: GoogleFonts.nunito(
-                            fontSize: 16,
+                            fontSize: 12,
                             color: Colors.grey[600],
                             height: 1.5,
                           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
 
 class ReceiptCard extends StatelessWidget {
   final String from;
@@ -31,6 +32,16 @@ class ReceiptCard extends StatelessWidget {
     required this.totalFare,
     required this.barcodeText,
   });
+  String get formattedDate {
+    try {
+      // Try parsing the human-readable format
+      final parsed = DateFormat('MMMM d, yyyy').parse(date);
+      return DateFormat('MMM d, yyyy').format(parsed); // Jan 15, 2025
+    } catch (_) {
+      // Fallback if parsing fails
+      return date;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +126,7 @@ class ReceiptCard extends StatelessWidget {
                               fromTime,
                               const Color(0xFFB945AA),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 17),
                             _buildLocationRow(
                               to,
                               toTime,
@@ -130,7 +141,7 @@ class ReceiptCard extends StatelessWidget {
 
                   // 🧾 Fare details
                   _buildFareRow("Passenger", passenger, isBoldRight: true),
-                  _buildFareRow("Date", "$date   $time", isBoldRight: true),
+                  _buildFareRow("Date", "$formattedDate, $time"),
                   _buildFareRow("No. of Passenger/s", passengers.toString()),
                   const SizedBox(height: 8),
                   const Divider(thickness: 1),
@@ -165,7 +176,7 @@ class ReceiptCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           barcodeText,
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.sourceCodePro(
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                             color: Colors.black.withValues(alpha: 0.7),
@@ -191,14 +202,14 @@ class ReceiptCard extends StatelessWidget {
           title,
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
-            fontSize: 16,
+            fontSize: 14,
             color: Colors.black,
           ),
         ),
         Text(
           time,
           style: GoogleFonts.nunito(
-            fontSize: 14,
+            fontSize: 12,
             color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
@@ -221,7 +232,7 @@ class ReceiptCard extends StatelessWidget {
             label,
             style: GoogleFonts.manrope(
               fontWeight: isBoldLeft ? FontWeight.w800 : FontWeight.w600,
-              fontSize: isBoldLeft ? 20 : 16,
+              fontSize: isBoldLeft ? 16 : 14,
               color: Colors.black87,
             ),
           ),
@@ -229,7 +240,7 @@ class ReceiptCard extends StatelessWidget {
             value,
             style: GoogleFonts.manrope(
               fontWeight: isBoldRight ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 16,
+              fontSize: 13,
               color: Colors.black87,
             ),
           ),

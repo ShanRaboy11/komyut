@@ -19,7 +19,7 @@ class Trip1PageState extends State<Trip1Page>
       backgroundColor: const Color(0xFFF7F4FF),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,7 +44,7 @@ class Trip1PageState extends State<Trip1Page>
                   Text(
                     "Activity",
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -52,12 +52,12 @@ class Trip1PageState extends State<Trip1Page>
                 ],
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               // Header
               Text(
                 'All Trips',
                 style: GoogleFonts.manrope(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -72,7 +72,7 @@ class Trip1PageState extends State<Trip1Page>
                     style: GoogleFonts.nunito(
                       color: const Color.fromARGB(255, 0, 0, 0),
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize: 11,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -197,7 +197,7 @@ class Trip1PageState extends State<Trip1Page>
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.nunito(fontSize: 14)),
+        Text(label, style: GoogleFonts.nunito(fontSize: 10)),
       ],
     );
   }

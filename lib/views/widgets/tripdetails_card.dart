@@ -65,14 +65,14 @@ class TripDetailsCard extends StatelessWidget {
                 Text(
                   "Distance",
                   style: GoogleFonts.nunito(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.grey[700],
                   ),
                 ),
                 Text(
                   "Route Code",
                   style: GoogleFonts.nunito(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.grey[700],
                   ),
                 ),
@@ -88,14 +88,14 @@ class TripDetailsCard extends StatelessWidget {
                 Text(
                   distance,
                   style: GoogleFonts.manrope(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   routeCode,
                   style: GoogleFonts.manrope(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF9C6BFF),
                   ),
@@ -206,14 +206,14 @@ class TripDetailsCard extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.manrope(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
               time,
               style: GoogleFonts.nunito(
-                fontSize: 16,
+                fontSize: 14,
                 color: Colors.black.withValues(alpha: 0.6),
               ),
             ),

@@ -68,13 +68,13 @@ class TripsCard extends StatelessWidget {
                       const Icon(
                         Symbols.today_rounded,
                         color: Color(0xFF8E4CB6),
-                        size: 18,
+                        size: 14,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         date,
                         style: GoogleFonts.manrope(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
                         ),
@@ -87,13 +87,13 @@ class TripsCard extends StatelessWidget {
                       const Icon(
                         Symbols.schedule_rounded,
                         color: Color(0xFF8E4CB6),
-                        size: 18,
+                        size: 14,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         time,
                         style: GoogleFonts.manrope(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
                         ),
@@ -105,8 +105,8 @@ class TripsCard extends StatelessWidget {
                     children: [
                       const SizedBox(width: 2),
                       Container(
-                        height: 15,
-                        width: 15,
+                        height: 12,
+                        width: 11,
                         decoration: BoxDecoration(
                           color: getStatusColor(),
                           shape: BoxShape.circle,
@@ -120,7 +120,7 @@ class TripsCard extends StatelessWidget {
                               child: Text(
                                 from,
                                 style: GoogleFonts.manrope(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black87,
                                 ),
@@ -138,7 +138,7 @@ class TripsCard extends StatelessWidget {
                               child: Text(
                                 to,
                                 style: GoogleFonts.manrope(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black87,
                                 ),
@@ -160,7 +160,7 @@ class TripsCard extends StatelessWidget {
               child: Text(
                 tripCode,
                 style: GoogleFonts.manrope(
-                  fontSize: 45,
+                  fontSize: 35,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF9C6BFF),
                   letterSpacing: -1,
