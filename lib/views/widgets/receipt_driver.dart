@@ -7,7 +7,7 @@ class ReceiptCard extends StatelessWidget {
   final String to;
   final String fromTime;
   final String toTime;
-  final String driver;
+  final String passenger;
   final String date;
   final String time;
   final int passengers;
@@ -22,7 +22,7 @@ class ReceiptCard extends StatelessWidget {
     required this.to,
     required this.fromTime,
     required this.toTime,
-    required this.driver,
+    required this.passenger,
     required this.date,
     required this.time,
     required this.passengers,
@@ -118,7 +118,7 @@ class ReceiptCard extends StatelessWidget {
           const Divider(height: 28, thickness: 1),
 
           // 🧾 Fare details
-          _buildFareRow("Driver", driver, isBoldRight: true),
+          _buildFareRow("Passenger", passenger, isBoldRight: true),
           _buildFareRow("Date", "$date   $time", isBoldRight: true),
           _buildFareRow("No. of Passenger/s", passengers.toString()),
           const SizedBox(height: 8),

@@ -26,7 +26,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
   bool _loading = true;
   String? _error;
   TripDetails? _details;
-  String _passengerName = 'Passenger';
+  String _driverName = 'Unknown Driver';
 
   @override
   void initState() {
@@ -42,13 +42,15 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
       });
 
       final details = await _tripsService.getTripDetails(widget.tripId);
-      final profile = await _commuterService.getCommuterProfile();
 
-      final passenger = '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'.trim();
+      // Prefer a real driver name; ignore placeholder 'Unknown Driver'.
+      final rawDriver = details?.driverName?.trim();
+      final hasRealDriver = rawDriver != null && rawDriver.isNotEmpty && rawDriver.toLowerCase() != 'unknown driver';
+      final driverName = hasRealDriver ? rawDriver! : (details?.passengerName ?? 'Unknown Driver');
 
       setState(() {
         _details = details;
-        _passengerName = passenger.isEmpty ? 'Passenger' : passenger;
+        _driverName = driverName;
         _loading = false;
       });
     } catch (e) {
@@ -358,7 +360,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                         to: _details!.to,
                         fromTime: _details!.formattedStartTime,
                         toTime: _details!.formattedEndTime,
-                        passenger: _passengerName,
+                        driver: _driverName,
                         date: _details!.date,
                         time: _details!.time,
                         passengers: _details!.passengerCount,
