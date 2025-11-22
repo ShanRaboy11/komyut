@@ -78,7 +78,7 @@ class MyApp extends StatelessWidget {
 /// Handles authentication state and routes to appropriate page
 /// This widget conditionally wraps the appropriate dashboard with role-specific providers
 class AuthStateHandler extends StatefulWidget {
-  const AuthStateHandler({Key? key}) : super(key: key);
+  const AuthStateHandler({super.key});
 
   @override
   State<AuthStateHandler> createState() => _AuthStateHandlerState();
@@ -135,7 +135,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
           _userRole = response['role'] as String?;
           _isLoading = false;
         });
-        debugPrint('AuthStateHandler: _checkAuthState -> user=${user.id} role=${_userRole}');
+        debugPrint('AuthStateHandler: _checkAuthState -> user=${user.id} role=$_userRole');
       }
     } catch (e) {
       debugPrint('❌ Error checking auth state: $e');

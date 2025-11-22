@@ -9,7 +9,7 @@ import '../models/trips.dart';
 
 class TripsProvider with ChangeNotifier {
   final TripsService _tripsService = TripsService();
-  final AuthService _authService = AuthService();
+  final AuthService authService = AuthService();
 
   // State variables
   String _selectedRange = 'Weekly';
@@ -49,7 +49,7 @@ class TripsProvider with ChangeNotifier {
 
   TripsProvider() {
     // Keep trips data in sync with auth changes: clear on sign-out, reload on sign-in
-    _authSub = _authService.authStateChanges.listen((event) {
+    _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _analyticsData = AnalyticsData(period: '', totalTrips: 0, totalDistance: 0.0, totalSpent: 0.0);

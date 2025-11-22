@@ -39,8 +39,8 @@ class DriverDashboardProvider extends ChangeNotifier {
   StreamSubscription? _authSub;
 
   DriverDashboardProvider() {
-    final AuthService _authService = AuthService();
-    _authSub = _authService.authStateChanges.listen((event) {
+    final AuthService authService = AuthService();
+    _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         clearData();

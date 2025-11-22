@@ -7,7 +7,7 @@ import '../services/auth_service.dart';
 
 class DriverTripProvider extends ChangeNotifier {
   final DriverTripService _tripService = DriverTripService();
-  final AuthService _authService = AuthService();
+  final AuthService authService = AuthService();
   
   List<DriverTrip> _trips = [];
   List<DriverTrip> _filteredTrips = [];
@@ -33,7 +33,7 @@ class DriverTripProvider extends ChangeNotifier {
   /// Load all trips for the driver
   DriverTripProvider() {
     // Clear or reload trips on auth changes (only for drivers)
-    _authSub = _authService.authStateChanges.listen((event) {
+    _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _trips = [];

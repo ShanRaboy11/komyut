@@ -7,7 +7,6 @@ import '../widgets/receipttrip_card.dart';
 import '../widgets/button.dart';
 import 'commuter_app.dart';
 import '../services/trips.dart';
-import '../services/commuter_dashboard.dart';
 import '../models/trips.dart';
 
 class TripReceiptPage extends StatefulWidget {
@@ -21,7 +20,6 @@ class TripReceiptPage extends StatefulWidget {
 
 class _TripReceiptPageState extends State<TripReceiptPage> {
   final TripsService _tripsService = TripsService();
-  final CommuterDashboardService _commuterService = CommuterDashboardService();
 
   bool _loading = true;
   String? _error;
@@ -69,7 +67,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

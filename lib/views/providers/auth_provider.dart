@@ -3,7 +3,7 @@ import '../services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService authService = AuthService();
   User? _user;
   bool _isLoading = false;
   String? _errorMessage;
@@ -20,14 +20,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _init() {
-    _user = _authService.currentUser;
+    _user = authService.currentUser;
     
     // Load initial role if user exists
     if (_user != null) {
       _loadUserRole();
     }
     
-    _authService.authStateChanges.listen((data) {
+    authService.authStateChanges.listen((data) {
       final newUser = data.session?.user;
       
       // Only update if user actually changed
@@ -75,7 +75,7 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _authService.signUp(
+      final response = await authService.signUp(
         email: email,
         password: password,
         metadata: metadata,
@@ -105,7 +105,7 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _authService.signIn(
+      final response = await authService.signIn(
         email: email,
         password: password,
       );
@@ -130,7 +130,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await _authService.signOut();
+      await authService.signOut();
       
       // CRITICAL: Clear all user-related state
       _user = null;

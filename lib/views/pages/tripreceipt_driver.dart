@@ -7,7 +7,7 @@ import '../widgets/receipt_driver.dart';
 import '../widgets/button.dart';
 import 'commuter_app.dart';
 import '../services/trips.dart';
-import '../services/commuter_dashboard.dart';
+
 import '../models/trips.dart';
 
 class TripReceiptPage extends StatefulWidget {
@@ -21,12 +21,9 @@ class TripReceiptPage extends StatefulWidget {
 
 class _TripReceiptPageState extends State<TripReceiptPage> {
   final TripsService _tripsService = TripsService();
-  final CommuterDashboardService _commuterService = CommuterDashboardService();
-
   bool _loading = true;
   String? _error;
   TripDetails? _details;
-  String _driverName = 'Unknown Driver';
   String _passengerName = 'Unknown Passenger';
 
   @override
@@ -44,17 +41,11 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
 
       final details = await _tripsService.getTripDetails(widget.tripId);
 
-      // Prefer a real driver name; ignore placeholder 'Unknown Driver'.
-      final rawDriver = details?.driverName?.trim();
-      final hasRealDriver = rawDriver != null && rawDriver.isNotEmpty && rawDriver.toLowerCase() != 'unknown driver';
-      final driverName = hasRealDriver ? rawDriver : (details?.passengerName ?? 'Unknown Driver');
-
       // Extract passenger name for driver receipts
       final passengerName = details?.passengerName?.trim() ?? 'Unknown Passenger';
 
       setState(() {
         _details = details;
-        _driverName = driverName;
         _passengerName = passengerName;
         _loading = false;
       });
@@ -74,7 +65,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

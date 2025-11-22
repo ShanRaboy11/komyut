@@ -14,7 +14,7 @@ import '../pages/operator_app.dart';
 
 /// AuthWrapper handles authentication state and creates role-specific providers
 class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();

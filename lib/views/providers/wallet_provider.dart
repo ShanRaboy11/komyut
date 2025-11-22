@@ -13,7 +13,7 @@ import 'package:http/http.dart' as http;
 
 class WalletProvider extends ChangeNotifier {
   final CommuterDashboardService _dashboardService = CommuterDashboardService();
-  final AuthService _authService = AuthService();
+  final AuthService authService = AuthService();
 
   final String _baseUrl = Platform.isAndroid
       ? 'http://10.0.2.2:3000'
@@ -90,7 +90,7 @@ class WalletProvider extends ChangeNotifier {
   // --- Methods ---
   WalletProvider() {
     // Keep wallet/profile state in sync with auth changes
-    _authSub = _authService.authStateChanges.listen((event) {
+    _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         _userProfile = null;

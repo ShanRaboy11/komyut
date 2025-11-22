@@ -79,8 +79,8 @@ class CommuterDashboardProvider extends ChangeNotifier {
 
   CommuterDashboardProvider() {
     // Listen to auth changes and load only for commuter role
-    final AuthService _authService = AuthService();
-    _authSub = _authService.authStateChanges.listen((event) {
+    final AuthService authService = AuthService();
+    _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
         clearData();

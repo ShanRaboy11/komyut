@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 class DriverTrip {
   final String id;
   final String routeCode;
@@ -95,7 +97,7 @@ class DriverTrip {
 
     // Debug logging
     if (firstName != null || lastName != null) {
-      print('🔍 DriverTrip.fromJson - Passenger: $firstName $lastName');
+      developer.log('🔍 DriverTrip.fromJson - Passenger: $firstName $lastName');
     }
 
     return DriverTrip(

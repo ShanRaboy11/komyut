@@ -45,7 +45,7 @@ class ReceiptCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFF8E4CB6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -76,7 +76,7 @@ class ReceiptCard extends StatelessWidget {
                   Container(
                     height: 35,
                     width: 2,
-                    color: const Color(0xFFB945AA).withOpacity(0.4),
+                    color: const Color(0xFFB945AA).withValues(alpha: 0.4),
                   ),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -166,7 +166,7 @@ class ReceiptCard extends StatelessWidget {
                               style: GoogleFonts.nunito(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -177,10 +177,10 @@ class ReceiptCard extends StatelessWidget {
                               height: 60,
                               width: 200,
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
+                                  color: Colors.grey.withValues(alpha: 0.3),
                                   style: BorderStyle.solid,
                                   width: 1,
                                 ),
@@ -189,7 +189,7 @@ class ReceiptCard extends StatelessWidget {
                                 child: Icon(
                                   Icons.qr_code_2,
                                   size: 40,
-                                  color: Colors.grey.withOpacity(0.4),
+                                  color: Colors.grey.withValues(alpha: 0.4),
                                 ),
                               ),
                             ),
@@ -199,7 +199,7 @@ class ReceiptCard extends StatelessWidget {
                               style: GoogleFonts.nunito(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 12,
-                                color: Colors.grey.withOpacity(0.6),
+                                color: Colors.grey.withValues(alpha: 0.6),
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
