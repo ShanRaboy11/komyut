@@ -258,11 +258,14 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 20),
 
-                      const Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           '*All fields required unless noted.',
-                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                          style: GoogleFonts.nunito(
+                            color: Colors.grey,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 15),

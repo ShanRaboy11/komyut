@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import '../widgets/text_field.dart';
 import '../widgets/dropdown.dart';
@@ -316,29 +317,27 @@ class RegistrationDriverPersonalInfoState
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 30),
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
 
-                      const Text(
+                      Text(
                         'Tell Us About You',
-                        style: TextStyle(
+                        style: GoogleFonts.manrope(
                           color: Color.fromRGBO(18, 18, 18, 1),
-                          fontFamily: 'Manrope',
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         'Provide some basic details so we can set up your account',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.nunito(
                           color: Color.fromRGBO(127, 127, 127, 1),
-                          fontFamily: 'Nunito',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -351,7 +350,7 @@ class RegistrationDriverPersonalInfoState
                             CustomTextField(
                               labelText: 'First Name',
                               controller: _firstNameController,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -377,7 +376,7 @@ class RegistrationDriverPersonalInfoState
                             CustomTextField(
                               labelText: 'Last Name',
                               controller: _lastNameController,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -407,7 +406,7 @@ class RegistrationDriverPersonalInfoState
                                     labelText: 'Age',
                                     controller: _ageController,
                                     keyboardType: TextInputType.number,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -440,7 +439,7 @@ class RegistrationDriverPersonalInfoState
                                   child: CustomDropdownField<String>(
                                     labelText: 'Sex',
                                     initialValue: _selectedSex,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -492,7 +491,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Full Address',
                               controller: _addressController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -518,7 +517,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Assigned Operator (optional)',
                               controller: _assignedOperatorController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -532,16 +531,15 @@ class RegistrationDriverPersonalInfoState
                                 1,
                               ),
                             ),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 30),
 
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'Driver\'s License',
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: Color.fromRGBO(18, 18, 18, 1),
-                                  fontFamily: 'Manrope',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -552,7 +550,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Driver\'s License Number *',
                               controller: _licenseNumberController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -572,7 +570,7 @@ class RegistrationDriverPersonalInfoState
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 15),
 
                             Align(
                               alignment: Alignment.centerLeft,
@@ -600,9 +598,9 @@ class RegistrationDriverPersonalInfoState
                                     child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
-                                      children: const [
+                                      children: [
                                         Icon(
-                                          Icons.image,
+                                          Icons.image_rounded,
                                           color: Color.fromRGBO(
                                             185,
                                             69,
@@ -613,14 +611,13 @@ class RegistrationDriverPersonalInfoState
                                         SizedBox(width: 6),
                                         Text(
                                           'Attach Image',
-                                          style: TextStyle(
+                                          style: GoogleFonts.nunito(
                                             color: Color.fromRGBO(
                                               185,
                                               69,
                                               170,
                                               1,
                                             ),
-                                            fontFamily: 'Manrope',
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -659,14 +656,13 @@ class RegistrationDriverPersonalInfoState
                             const SizedBox(height: 30),
 
                             // 🚘 Vehicle Information Section
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'Vehicle Information',
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: Color.fromRGBO(18, 18, 18, 1),
-                                  fontFamily: 'Manrope',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -677,7 +673,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Plate Number *',
                               hintText: 'Enter plate number',
                               controller: _vehiclePlateController,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -708,7 +704,7 @@ class RegistrationDriverPersonalInfoState
                                   child: CustomDropdownField<String>(
                                     labelText: 'PUV Type *',
                                     initialValue: _selectedPuvType,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -756,7 +752,7 @@ class RegistrationDriverPersonalInfoState
                                   child: CustomDropdownField<String>(
                                     labelText: 'Route',
                                     initialValue: _selectedRouteCode,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -837,7 +833,6 @@ class RegistrationDriverPersonalInfoState
                                   onPressed: _onBackPressed,
                                   isFilled: false,
                                   width: buttonWidth,
-                                  height: 60,
                                   borderRadius: 15,
                                   strokeColor: const Color.fromRGBO(
                                     176,
@@ -864,7 +859,6 @@ class RegistrationDriverPersonalInfoState
                                       : _onNextPressed,
                                   isFilled: true,
                                   width: buttonWidth,
-                                  height: 60,
                                   borderRadius: 15,
                                   textColor: Colors.white,
                                   hasShadow: true,
