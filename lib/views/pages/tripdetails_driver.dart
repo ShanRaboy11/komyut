@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-// trip details card is not used here; driver-specific fallback is inline
 import '../widgets/map_trip.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/button.dart';
-import '../pages/tripreceipt_commuter.dart';
+import '../pages/tripreceipt_driver.dart';
 import '../services/driver_trip.dart';
 import '../models/driver_trip.dart';
 

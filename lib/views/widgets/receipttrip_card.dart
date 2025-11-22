@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:developer' as developer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 
@@ -145,64 +146,67 @@ class ReceiptCard extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                if (barcodeText.isNotEmpty)
-                  // Show actual barcode when transaction number exists
-                  Column(
-                    children: [
-                      BarcodeWidget(
-                        barcode: Barcode.code128(),
-                        data: barcodeText,
-                        height: 60,
-                        width: 200,
-                        drawText: false,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        barcodeText,
-                        style: GoogleFonts.nunito(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: Colors.black.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  // Show placeholder when no transaction number
-                  Column(
-                    children: [
-                      Container(
-                        height: 60,
-                        width: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.grey.withOpacity(0.3),
-                            style: BorderStyle.solid,
-                            width: 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.qr_code_2,
-                            size: 40,
-                            color: Colors.grey.withOpacity(0.4),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No Transaction Number',
-                        style: GoogleFonts.nunito(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                          color: Colors.grey.withOpacity(0.6),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
+                // Trim whitespace to avoid hidden characters preventing rendering
+                Builder(builder: (context) {
+                  final tx = barcodeText.trim();
+                  developer.log('receipttrip_card: barcodeText="$tx"', name: 'ReceiptCard');
+                  return tx.isNotEmpty
+                      ? Column(
+                          children: [
+                            BarcodeWidget(
+                              barcode: Barcode.code128(),
+                              data: tx,
+                              height: 60,
+                              width: 200,
+                              drawText: false,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              tx,
+                              style: GoogleFonts.nunito(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: Colors.black.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            Container(
+                              height: 60,
+                              width: 200,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.3),
+                                  style: BorderStyle.solid,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.qr_code_2,
+                                  size: 40,
+                                  color: Colors.grey.withOpacity(0.4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No Transaction Number',
+                              style: GoogleFonts.nunito(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                                color: Colors.grey.withOpacity(0.6),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        );
+                }),
+                
               ],
             ),
           ),
