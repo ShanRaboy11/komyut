@@ -120,6 +120,9 @@ class _LandingPageState extends State<LandingPage>
                         },
                         isFilled: true,
                         textColor: Colors.white,
+                        hasShadow: false,
+                        height: 45,
+                        fontSize: 16,
                       ),
 
                       const SizedBox(height: 20),
@@ -134,6 +137,9 @@ class _LandingPageState extends State<LandingPage>
                           );
                         },
                         isFilled: false,
+                        hasShadow: false,
+                        height: 45,
+                        fontSize: 16,
                       ),
                     ],
                   ),
@@ -161,7 +167,7 @@ class _LandingPageState extends State<LandingPage>
       child: Text(
         "Welcome",
         style: GoogleFonts.manrope(
-          fontSize: 50,
+          fontSize: 40,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

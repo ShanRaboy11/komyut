@@ -25,7 +25,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenSize = MediaQuery.of(context).size; // ✅ FIXED
       setState(() {
-        _sheetHeight = screenSize.height * 0.57;
+        _sheetHeight = screenSize.height * 0.49;
         _sheetOpacity = 1.0; // ✅ Now valid
       });
     });
@@ -70,7 +70,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           opacity: _logoOpacity,
           duration: const Duration(milliseconds: 2000),
           curve: Curves.easeOut,
-          child: Text('Back', style: GoogleFonts.nunito(color: Colors.black)),
+          child: Text(
+            'Back',
+            style: GoogleFonts.nunito(color: Colors.black, fontSize: 16),
+          ),
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -107,7 +110,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               child: Image.asset("assets/images/Ellipse 3.png"),
             ),
             Positioned(
-              top: screenSize.height * 0.13,
+              top: screenSize.height * 0.20,
               left: 0,
               right: 0,
               child: Center(
@@ -167,139 +170,93 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         horizontal: 20.0,
                         vertical: 65.0,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Create your Account",
-                            style: GoogleFonts.manrope(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Create your Account",
+                              style: GoogleFonts.manrope(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: GoogleFonts.nunito(
-                                fontSize: 14,
-                                color: Colors.white.withAlpha(204),
-                                height: 1.5,
-                              ),
-                              children: const <TextSpan>[
-                                TextSpan(
-                                  text:
-                                      "We're here to help you reach the peaks\nof every ride. ",
-                                ),
-                                TextSpan(
-                                  text: 'Are you ready?',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          CustomButton(
-                            text: "Get Started",
-                            isFilled: true,
-                            fillColor: Colors.white,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const RegistrationRolePage(),
-                                ),
-                              );
-                            },
-                            width: screenSize.width * 0.8,
-                            height: 60,
-                          ),
-
-                          const SizedBox(height: 65),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withAlpha(100),
-                                  thickness: 1,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10.0,
-                                ),
-                                child: Text(
-                                  "Sign up with",
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withAlpha(100),
-                                  thickness: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 15),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SocialButton(
-                                imagePath: 'assets/images/facebook.png',
-                                onPressed: () {
-                                  // Handle Facebook login
-                                },
-                              ),
-                              const SizedBox(width: 20),
-                              SocialButton(
-                                imagePath: 'assets/images/google.png',
-                                onPressed: () {
-                                  // Handle Google login
-                                },
-                              ),
-                            ],
-                          ),
-
-                          const Spacer(),
-
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginPage(),
-                                ),
-                              );
-                            },
-                            child: RichText(
+                            const SizedBox(height: 10),
+                            RichText(
+                              textAlign: TextAlign.center,
                               text: TextSpan(
-                                text: "Already have an account? ",
                                 style: GoogleFonts.nunito(
                                   fontSize: 14,
                                   color: Colors.white.withAlpha(204),
+                                  height: 1.5,
                                 ),
-                                children: const [
+                                children: const <TextSpan>[
                                   TextSpan(
-                                    text: "Log In",
+                                    text:
+                                        "We're here to help you reach the peaks\nof every ride. ",
+                                  ),
+                                  TextSpan(
+                                    text: 'Are you ready?',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 30),
+
+                            CustomButton(
+                              text: "Get Started",
+                              isFilled: true,
+                              fillColor: Colors.white,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegistrationRolePage(),
+                                  ),
+                                );
+                              },
+                              width: screenSize.width * 0.8,
+                              height: 45,
+                              fontSize: 16,
+                            ),
+
+                            const SizedBox(height: 40),
+
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginPage(),
+                                  ),
+                                );
+                              },
+                              child: RichText(
+                                text: TextSpan(
+                                  text: "Already have an account? ",
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 14,
+                                    color: Colors.white.withAlpha(204),
+                                  ),
+                                  children: const [
+                                    TextSpan(
+                                      text: "Log In",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

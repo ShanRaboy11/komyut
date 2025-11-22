@@ -1,5 +1,6 @@
 // lib/widgets/custom_dropdown_field.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomDropdownField<T> extends StatelessWidget {
   final String labelText;
@@ -35,10 +36,10 @@ class CustomDropdownField<T> extends StatelessWidget {
     this.textColor,
     this.labelColor,
     this.hintColor,
-    this.borderRadius = 15.0,
+    this.borderRadius = 10.0,
     this.contentPadding = const EdgeInsets.symmetric(
-      horizontal: 10,
-      vertical: 15,
+      horizontal: 5,
+      vertical: 10,
     ),
     this.hintText,
     this.icon,
@@ -48,17 +49,17 @@ class CustomDropdownField<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       // Use SizedBox to add whitespace and apply width/height
-      width: width,
+      width: width == 0 ? null : width,
       height: height,
       child: DropdownButtonFormField<T>(
+        isExpanded: true,
         initialValue: initialValue,
         items: items,
         onChanged: onChanged,
         validator: validator,
-        style: TextStyle(
+        style: GoogleFonts.manrope(
           color: textColor ?? Colors.black,
-          fontSize: 16,
-          fontFamily: 'Manrope',
+          fontSize: 12,
         ),
         icon:
             icon ??
@@ -69,15 +70,13 @@ class CustomDropdownField<T> extends StatelessWidget {
         decoration: InputDecoration(
           labelText: labelText,
           hintText: hintText,
-          hintStyle: TextStyle(
+          hintStyle: GoogleFonts.manrope(
             color: hintColor ?? Colors.grey[400],
-            fontSize: 16,
-            fontFamily: 'Manrope',
+            fontSize: 12,
           ),
-          labelStyle: TextStyle(
+          labelStyle: GoogleFonts.manrope(
             color: labelColor ?? Colors.grey[600],
-            fontSize: 16,
-            fontFamily: 'Manrope',
+            fontSize: 13,
           ),
           filled: fillColor != null,
           fillColor: fillColor,

@@ -1,5 +1,6 @@
 // lib/widgets/custom_text_field.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomTextField extends StatelessWidget {
   final String labelText;
@@ -44,9 +45,12 @@ class CustomTextField extends StatelessWidget {
     this.textColor,
     this.labelColor,
     this.hintColor,
-    this.borderRadius = 15.0,
-    this.contentPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-    this.textCapitalization = TextCapitalization.none, 
+    this.borderRadius = 10.0,
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 20,
+      vertical: 15,
+    ),
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -66,30 +70,30 @@ class CustomTextField extends StatelessWidget {
             validator: validator,
             onChanged: onChanged,
             enabled: enabled,
-            style: TextStyle(
+            style: GoogleFonts.manrope(
               color: textColor ?? Colors.black,
-              fontSize: 16,
-              fontFamily: 'Manrope',
+              fontSize: 12,
             ),
             decoration: InputDecoration(
               labelText: labelText,
               hintText: hintText,
-              hintStyle: TextStyle(
+              hintStyle: GoogleFonts.manrope(
                 color: hintColor ?? Colors.grey[400],
-                fontSize: 16,
-                fontFamily: 'Manrope',
+                fontSize: 12,
               ),
-              labelStyle: TextStyle(
+              labelStyle: GoogleFonts.manrope(
                 color: labelColor ?? Colors.grey[600],
-                fontSize: 16,
-                fontFamily: 'Manrope',
+                fontSize: 13,
               ),
               filled: fillColor != null,
               fillColor: fillColor,
               suffixIcon: suffixIcon,
               prefixIcon: prefixIcon,
               contentPadding: contentPadding,
-              errorStyle: const TextStyle(height: 0, fontSize: 0), // Hide default error
+              errorStyle: const TextStyle(
+                height: 0,
+                fontSize: 0,
+              ), // Hide default error
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
                 borderSide: BorderSide(
@@ -107,23 +111,19 @@ class CustomTextField extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
                 borderSide: BorderSide(
-                  color: focusedBorderColor ?? const Color.fromRGBO(185, 69, 170, 1),
+                  color:
+                      focusedBorderColor ??
+                      const Color.fromRGBO(185, 69, 170, 1),
                   width: 2,
                 ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
-                borderSide: const BorderSide(
-                  color: Colors.red,
-                  width: 1,
-                ),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
-                borderSide: const BorderSide(
-                  color: Colors.red,
-                  width: 2,
-                ),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
               ),
             ),
           ),

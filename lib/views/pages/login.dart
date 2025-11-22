@@ -49,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenSize = MediaQuery.of(context).size; // ✅ FIXED
       setState(() {
-        _sheetHeight = screenSize.height * 0.78;
+        _sheetHeight = screenSize.height * 0.75;
         _sheetOpacity = 1.0; // ✅ Now valid
       });
     });
@@ -255,7 +255,10 @@ class _LoginPageState extends State<LoginPage> {
           opacity: _logoOpacity,
           duration: const Duration(milliseconds: 2000),
           curve: Curves.easeOut,
-          child: Text('Back', style: GoogleFonts.nunito(color: Colors.black)),
+          child: Text(
+            'Back',
+            style: GoogleFonts.nunito(color: Colors.black, fontSize: 16),
+          ),
         ),
       ),
 
@@ -285,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Image.asset("assets/images/Ellipse 3.png"),
               ),
               Positioned(
-                top: screenSize.height * 0.10,
+                top: screenSize.height * 0.12,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -357,7 +360,7 @@ class _LoginPageState extends State<LoginPage> {
                               Text(
                                 "Welcome Back",
                                 style: GoogleFonts.manrope(
-                                  fontSize: 32,
+                                  fontSize: 25,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -395,6 +398,7 @@ class _LoginPageState extends State<LoginPage> {
                                   focusNode: _emailFocusNode,
                                   style: GoogleFonts.nunito(
                                     color: Colors.white,
+                                    fontSize: 16,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Email Address',
@@ -407,7 +411,7 @@ class _LoginPageState extends State<LoginPage> {
                                         : Colors.transparent,
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
-                                      vertical: 20,
+                                      vertical: 15,
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -435,6 +439,7 @@ class _LoginPageState extends State<LoginPage> {
                                   obscureText: !_isPasswordVisible,
                                   style: GoogleFonts.nunito(
                                     color: Colors.white,
+                                    fontSize: 16,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Password',
@@ -447,7 +452,7 @@ class _LoginPageState extends State<LoginPage> {
                                         : Colors.transparent,
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
-                                      vertical: 20,
+                                      vertical: 15,
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -556,53 +561,8 @@ class _LoginPageState extends State<LoginPage> {
                                     ? () {}
                                     : _handleLogin,
                                 width: screenSize.width * 0.87,
-                                height: 60,
-                              ),
-                              const SizedBox(height: 65),
-
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white.withAlpha(100),
-                                      thickness: 1,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10.0,
-                                    ),
-                                    child: Text(
-                                      "Sign in with",
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white.withAlpha(100),
-                                      thickness: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SocialButton(
-                                    imagePath: 'assets/images/facebook.png',
-                                    onPressed: () {},
-                                  ),
-                                  const SizedBox(width: 20),
-                                  SocialButton(
-                                    imagePath: 'assets/images/google.png',
-                                    onPressed: () {},
-                                  ),
-                                ],
+                                height: 45,
+                                fontSize: 16,
                               ),
 
                               const SizedBox(height: 40),
