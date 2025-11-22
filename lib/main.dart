@@ -66,9 +66,6 @@ class MyApp extends StatelessWidget {
         routes: {
           '/landing': (context) => const LandingPage(),
           '/home_admin': (context) => const AdminApp(),
-          '/home_commuter': (context) => const CommuterApp(),
-          '/home_driver': (context) => const DriverApp(),
-          '/home_operator': (context) => const OperatorApp(),
         },
       ),
     );
