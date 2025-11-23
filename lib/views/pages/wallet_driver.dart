@@ -48,7 +48,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
         title: Text(
           'Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -96,7 +96,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
       children: [
         Expanded(
           child: _buildBalanceItem(
-            title: "Today's Earnings",
+            title: "Today's Income",
             amount: currencyFormat.format(provider.todayEarnings),
             color: const Color(0xFF388E3C),
           ),
@@ -138,7 +138,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
           Text(
             title,
             style: GoogleFonts.nunito(
-              fontSize: 14,
+              fontSize: 12,
               color: Colors.black54,
               fontWeight: FontWeight.w600,
             ),
@@ -149,7 +149,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
             child: Text(
               amount,
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -169,13 +169,13 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
       icon: const Icon(Symbols.upload_rounded, size: 20),
       label: Text(
         'Remit to Operator',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
       ),
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,
         backgroundColor: const Color(0xFF8E4CB6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
       ),
     );
   }
@@ -211,7 +211,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
               Text(
                 'Weekly Earnings',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -233,7 +233,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                       ),
                     ),
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: brandColor,
                     ),
@@ -357,7 +357,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
               Text(
@@ -365,7 +365,7 @@ class _DriverWalletViewState extends State<_DriverWalletView> {
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],

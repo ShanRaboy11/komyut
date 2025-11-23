@@ -49,7 +49,7 @@ class _ReportPageState extends State<ReportPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenSize = MediaQuery.of(context).size; // ✅ FIXED
       setState(() {
-        _sheetHeight = screenSize.height * 0.78;
+        _sheetHeight = screenSize.height * 0.74;
         _sheetOpacity = 1.0; // ✅ Now valid
       });
     });
@@ -107,7 +107,7 @@ class _ReportPageState extends State<ReportPage> {
           child: Text(
             'Reports',
             style: GoogleFonts.nunito(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -122,7 +122,7 @@ class _ReportPageState extends State<ReportPage> {
         child: Stack(
           children: [
             Positioned(
-              top: screenSize.height * 0.10,
+              top: screenSize.height * 0.13,
               left: 0,
               right: 0,
               child: Center(
@@ -189,7 +189,7 @@ class _ReportPageState extends State<ReportPage> {
                             Text(
                               "Report an Issue",
                               style: GoogleFonts.nunito(
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -199,7 +199,7 @@ class _ReportPageState extends State<ReportPage> {
                               "Thank you for using komyut. Please report any issues you experienced during your ride. Your report helps us improve safety and service.",
                               textAlign: TextAlign.center,
                               style: GoogleFonts.nunito(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: Colors.white70,
                               ),
                             ),
@@ -268,7 +268,7 @@ class _ReportPageState extends State<ReportPage> {
                                           category,
                                           textAlign: TextAlign.center,
                                           style: GoogleFonts.nunito(
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             fontWeight: selected
                                                 ? FontWeight.bold
                                                 : FontWeight.w500,
@@ -365,7 +365,7 @@ class _ReportPageState extends State<ReportPage> {
                                     "Continue",
                                     style: GoogleFonts.nunito(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
@@ -431,7 +431,7 @@ class _ReportPageState extends State<ReportPage> {
                             Text(
                               "Report an Issue",
                               style: GoogleFonts.manrope(
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -556,7 +556,7 @@ class _ReportPageState extends State<ReportPage> {
                                     "Submit Report",
                                     style: GoogleFonts.nunito(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                      fontSize: 16,
                                     ),
                                   ),
                                 ),

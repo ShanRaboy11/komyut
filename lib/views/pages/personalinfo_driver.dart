@@ -267,7 +267,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
                         child: Text(
                           "Personal Info",
                           style: GoogleFonts.manrope(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -521,7 +521,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
         label,
         style: GoogleFonts.manrope(
           fontWeight: FontWeight.w600,
-          fontSize: 14.5,
+          fontSize: 14,
           color: Colors.black87,
         ),
       ),
@@ -558,7 +558,7 @@ class _PersonalInfoDriverPageState extends State<PersonalInfoDriverPage> {
           horizontal: 12,
         ),
       ),
-      style: GoogleFonts.nunito(fontSize: 15, color: Colors.black87),
+      style: GoogleFonts.nunito(fontSize: 12, color: Colors.black87),
     );
   }
 }

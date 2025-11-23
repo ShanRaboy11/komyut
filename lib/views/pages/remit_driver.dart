@@ -93,7 +93,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
         ),
         title: Text(
           'Remittance',
-          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -174,7 +174,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                 title,
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
               ),
               const SizedBox(height: 2),
@@ -182,7 +182,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                 subtitle,
                 style: GoogleFonts.manrope(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -241,7 +241,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                           ? "0"
                           : _amountController.text,
                       style: GoogleFonts.manrope(
-                        fontSize: 72,
+                        fontSize: 60,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -291,11 +291,11 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
         child: Text(
           'Next',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 12),
         ),
       ),
     );

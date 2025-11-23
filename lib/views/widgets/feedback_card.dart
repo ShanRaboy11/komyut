@@ -59,7 +59,7 @@ class ReportCard extends StatelessWidget {
                         ? "$name • $priority"
                         : "$name • ${role ?? ''}",
                     style: GoogleFonts.manrope(
-                      fontSize: isSmall ? 14 : 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -69,7 +69,7 @@ class ReportCard extends StatelessWidget {
                 Text(
                   date,
                   style: GoogleFonts.nunito(
-                    fontSize: isSmall ? 12 : 14,
+                    fontSize: 12,
                     color: const Color.fromARGB(157, 0, 0, 0),
                   ),
                 ),
@@ -81,10 +81,7 @@ class ReportCard extends StatelessWidget {
             // --- Description Text ---
             Text(
               "“$description”",
-              style: GoogleFonts.nunito(
-                fontSize: isSmall ? 13 : 14,
-                color: Colors.black87,
-              ),
+              style: GoogleFonts.nunito(fontSize: 13, color: Colors.black87),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -108,7 +105,7 @@ class ReportCard extends StatelessWidget {
                   child: Text(
                     tag,
                     style: GoogleFonts.nunito(
-                      fontSize: isSmall ? 12 : 13,
+                      fontSize: 10,
                       color: const Color(0xFF6B2CBF),
                       fontWeight: FontWeight.w600,
                     ),

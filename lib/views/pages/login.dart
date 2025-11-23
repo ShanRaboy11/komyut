@@ -5,9 +5,7 @@ import '../widgets/button.dart';
 import '../widgets/shake_widget.dart';
 
 import '../providers/auth_provider.dart';
-import '../widgets/social_button.dart';
 import '../pages/create_account.dart';
-import '../widgets/shake_widget.dart';
 import '../../utils/toast_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
