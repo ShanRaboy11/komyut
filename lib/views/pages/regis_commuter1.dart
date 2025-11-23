@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
-import '../widgets/text_field.dart';
-import '../widgets/dropdown.dart';
-import '../widgets/background_circles.dart';
-import '../widgets/progress_bar.dart';
-import '../widgets/option_card.dart';
-import '../widgets/button.dart';
+import '../widgets/text_field.dart'; 
+import '../widgets/dropdown.dart'; 
+import '../widgets/background_circles.dart'; 
+import '../widgets/progress_bar.dart'; 
+import '../widgets/option_card.dart'; 
+import '../widgets/button.dart'; 
 import '../pages/regis_set_login.dart';
 import '../providers/registration_provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -22,21 +21,21 @@ class RegistrationCommuterPersonalInfo extends StatefulWidget {
 
 class RegistrationCommuterPersonalInfoState
     extends State<RegistrationCommuterPersonalInfo> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); 
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
-  String? _selectedSex;
+  String? _selectedSex; 
   String? _selectedCategory;
   String? _uploadedFileName;
   File? _idProofFile;
 
   final List<ProgressBarStep> _registrationSteps = [
-    ProgressBarStep(title: 'Choose Role', isCompleted: true),
-    ProgressBarStep(title: 'Personal Info', isActive: true),
+    ProgressBarStep(title: 'Choose Role', isCompleted: true), 
+    ProgressBarStep(title: 'Personal Info', isActive: true), 
     ProgressBarStep(title: 'Set Login'),
     ProgressBarStep(title: 'Verify Email'),
   ];
@@ -45,12 +44,9 @@ class RegistrationCommuterPersonalInfoState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final registrationProvider = Provider.of<RegistrationProvider>(
-        context,
-        listen: false,
-      );
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
       final data = registrationProvider.registrationData;
-
+      
       if (data['first_name'] != null) {
         _firstNameController.text = data['first_name'];
       }
@@ -95,7 +91,7 @@ class RegistrationCommuterPersonalInfoState
 
   void _onNextPressed() {
     bool isFormValid = _formKey.currentState!.validate();
-
+    
     if (isFormValid && _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -127,43 +123,33 @@ class RegistrationCommuterPersonalInfoState
     }
 
     if (isFormValid && _selectedCategory != null) {
-      final registrationProvider = Provider.of<RegistrationProvider>(
-        context,
-        listen: false,
-      );
-
+      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      
       // Save synchronously (the provider method handles async internally)
-      registrationProvider
-          .savePersonalInfo(
-            firstName: _firstNameController.text.trim(),
-            lastName: _lastNameController.text.trim(),
-            age: int.parse(_ageController.text.trim()),
-            sex: _selectedSex!,
-            address: _addressController.text.trim(),
-            category: _selectedCategory!,
-            idProofFile: _idProofFile,
-          )
-          .then((success) {
-            if (success && mounted) {
-              debugPrint(
-                'Personal info saved: ${registrationProvider.registrationData}',
-              );
-
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
-              );
-            } else if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    registrationProvider.errorMessage ??
-                        'Failed to save information',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          });
+      registrationProvider.savePersonalInfo(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        age: int.parse(_ageController.text.trim()),
+        sex: _selectedSex!,
+        address: _addressController.text.trim(),
+        category: _selectedCategory!,
+        idProofFile: _idProofFile,
+      ).then((success) {
+        if (success && mounted) {
+          debugPrint('Personal info saved: ${registrationProvider.registrationData}');
+          
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(registrationProvider.errorMessage ?? 'Failed to save information'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
     }
   }
 
@@ -182,7 +168,7 @@ class RegistrationCommuterPersonalInfoState
 
       if (result != null && result.files.isNotEmpty) {
         final PlatformFile file = result.files.first;
-
+        
         setState(() {
           _uploadedFileName = file.name;
           _idProofFile = File(file.path!);
@@ -233,22 +219,24 @@ class RegistrationCommuterPersonalInfoState
                       const SizedBox(height: 50),
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
-                      Text(
+                      const Text(
                         'Tell Us About You',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
+                        style: TextStyle(
                           color: Color.fromRGBO(18, 18, 18, 1),
-                          fontSize: 24,
+                          fontFamily: 'Manrope',
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
+                      const Text(
                         'Provide some basic details so we \ncan set up your account.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
+                        style: TextStyle(
                           color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                          fontFamily: 'Nunito',
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
                           height: 1.5,
@@ -256,14 +244,11 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 20),
 
-                      Align(
+                      const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           '*All fields required unless noted.',
-                          style: GoogleFonts.nunito(
-                            color: Colors.grey,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ),
                       const SizedBox(height: 15),
@@ -272,14 +257,9 @@ class RegistrationCommuterPersonalInfoState
                         labelText: 'First Name',
                         controller: _firstNameController,
                         width: fieldWidth,
-                        height: 50,
+                        height: 60, 
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your first name';
@@ -293,14 +273,9 @@ class RegistrationCommuterPersonalInfoState
                         labelText: 'Last Name',
                         controller: _lastNameController,
                         width: fieldWidth,
-                        height: 50,
+                        height: 60,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
@@ -317,19 +292,9 @@ class RegistrationCommuterPersonalInfoState
                               labelText: 'Age',
                               controller: _ageController,
                               keyboardType: TextInputType.number,
-                              height: 50,
-                              borderColor: const Color.fromRGBO(
-                                200,
-                                200,
-                                200,
-                                1,
-                              ),
-                              focusedBorderColor: const Color.fromRGBO(
-                                185,
-                                69,
-                                170,
-                                1,
-                              ),
+                              height: 60,
+                              borderColor: const Color.fromRGBO(200, 200, 200, 1),
+                              focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Enter age';
@@ -346,23 +311,13 @@ class RegistrationCommuterPersonalInfoState
                             ),
                           ),
                           const SizedBox(width: 15),
-                          Flexible(
+                          Expanded(
                             child: CustomDropdownField<String>(
                               labelText: 'Sex',
                               initialValue: _selectedSex,
-                              height: 50,
-                              borderColor: const Color.fromRGBO(
-                                200,
-                                200,
-                                200,
-                                1,
-                              ),
-                              focusedBorderColor: const Color.fromRGBO(
-                                185,
-                                69,
-                                170,
-                                1,
-                              ),
+                              height: 60,
+                              borderColor: const Color.fromRGBO(200, 200, 200, 1),
+                              focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                               items: const [
                                 DropdownMenuItem(
                                   value: 'Male',
@@ -402,14 +357,9 @@ class RegistrationCommuterPersonalInfoState
                         labelText: 'Full Address',
                         controller: _addressController,
                         width: fieldWidth,
-                        height: 50,
+                        height: 60,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your address';
@@ -417,15 +367,16 @@ class RegistrationCommuterPersonalInfoState
                           return null;
                         },
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 25),
 
-                      Align(
+                      const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Category *',
-                          style: GoogleFonts.manrope(
+                          style: TextStyle(
                             color: Color.fromRGBO(18, 18, 18, 1),
-                            fontSize: 15,
+                            fontFamily: 'Manrope',
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -433,6 +384,7 @@ class RegistrationCommuterPersonalInfoState
                       const SizedBox(height: 10),
 
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           OptionCard(
                             title: 'Regular',
@@ -477,9 +429,10 @@ class RegistrationCommuterPersonalInfoState
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'Upload Proof of ID *',
-                            style: GoogleFonts.manrope(
+                            style: TextStyle(
                               color: Color.fromRGBO(18, 18, 18, 1),
-                              fontSize: 15,
+                              fontFamily: 'Manrope',
+                              fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -494,11 +447,10 @@ class RegistrationCommuterPersonalInfoState
                               onPressed: _handleFileUpload,
                               isFilled: true,
                               width: 150,
-                              height: 45,
+                              height: 50,
                               borderRadius: 15,
                               textColor: Colors.white,
                               hasShadow: true,
-                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -516,9 +468,10 @@ class RegistrationCommuterPersonalInfoState
                                 const SizedBox(width: 5),
                                 Text(
                                   'ID uploaded successfully',
-                                  style: GoogleFonts.nunito(
+                                  style: const TextStyle(
                                     color: Colors.green,
                                     fontSize: 12,
+                                    fontFamily: 'Nunito',
                                   ),
                                 ),
                               ],
@@ -527,7 +480,7 @@ class RegistrationCommuterPersonalInfoState
                         ],
                         const SizedBox(height: 50),
                       ],
-
+                      
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -536,6 +489,7 @@ class RegistrationCommuterPersonalInfoState
                             onPressed: _onBackPressed,
                             isFilled: false,
                             width: buttonWidth,
+                            height: 60,
                             borderRadius: 15,
                             strokeColor: const Color.fromRGBO(176, 185, 198, 1),
                             outlinedFillColor: Colors.white,
@@ -544,14 +498,11 @@ class RegistrationCommuterPersonalInfoState
                           ),
                           const SizedBox(width: 20),
                           CustomButton(
-                            text: registrationProvider.isLoading
-                                ? 'Saving...'
-                                : 'Next',
-                            onPressed: registrationProvider.isLoading
-                                ? () {}
-                                : _onNextPressed,
+                            text: registrationProvider.isLoading ? 'Saving...' : 'Next',
+                            onPressed: registrationProvider.isLoading ? () {} : _onNextPressed,
                             isFilled: true,
                             width: buttonWidth,
+                            height: 60,
                             borderRadius: 15,
                             textColor: Colors.white,
                             hasShadow: true,

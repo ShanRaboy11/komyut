@@ -85,20 +85,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         contentPadding: const EdgeInsets.all(24),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.logout,
-                size: 48,
-                color: Color(0xFFEF5350),
-              ),
-            ),
-            const SizedBox(height: 20),
+          children: [            
             Text(
               'Logout',
               style: GoogleFonts.manrope(
