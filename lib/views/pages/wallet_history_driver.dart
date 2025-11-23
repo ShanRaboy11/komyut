@@ -104,6 +104,7 @@ class _TransactionItem extends StatelessWidget {
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
 
     final bool isEarning = type == 'fare_payment';
+
     final String title = isEarning ? 'Trip Earning' : 'Remittance';
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
@@ -145,7 +146,7 @@ class _TransactionItem extends StatelessWidget {
               ],
             ),
             Text(
-              '${amount >= 0 ? '+' : ''}${currencyFormat.format(amount)}',
+              '${isEarning ? '+' : '-'}${currencyFormat.format(amount.abs())}',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -162,7 +163,7 @@ class _TransactionItem extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String type = transaction['type'] ?? 'fare_payment';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final bool isEarning = type == 'fare_payment';
@@ -170,7 +171,7 @@ class _TransactionItem extends StatelessWidget {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 128),
+      barrierColor: Colors.black54,
       builder: (dialogContext) => _buildDetailModal(
         context: dialogContext,
         title: modalTitle,
