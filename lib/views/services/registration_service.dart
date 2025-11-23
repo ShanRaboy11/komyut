@@ -93,17 +93,71 @@ class RegistrationService {
             ),
           );
 
-      // Get public URL
-      final String publicUrl = _supabase.storage
-          .from('attachments')
-          .getPublicUrl(filePath);
+        // Get public URL
+        final String publicUrl = _supabase.storage.from('attachments').getPublicUrl(filePath);
 
-      debugPrint('✅ License uploaded successfully: $publicUrl');
-      return publicUrl;
+        debugPrint('✅ License uploaded successfully: $publicUrl');
+        return publicUrl;
       
     } catch (e) {
       debugPrint('❌ Error uploading license: $e');
       rethrow;
+    }
+  }
+
+  /// Uploads a file to the `attachments` storage bucket and inserts a row
+  /// into the `attachments` table. Returns a map with `id` and `url`.
+  Future<Map<String, dynamic>?> uploadAndSaveAttachment(
+    File file, {
+    required String folder,
+    String? ownerProfileId,
+    String? filenamePrefix,
+  }) async {
+    try {
+      debugPrint('📤 Starting attachment upload...');
+
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String prefix = filenamePrefix != null ? '${filenamePrefix}_' : '';
+      final String fileName = '${prefix}$timestamp.jpg';
+      final String filePath = '$folder/$fileName';
+
+      debugPrint('📁 Upload path: $filePath');
+
+      await _supabase.storage.from('attachments').upload(
+            filePath,
+            file,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+            ),
+          );
+
+      final String publicUrl = _supabase.storage.from('attachments').getPublicUrl(filePath);
+
+      // insert into attachments table
+      final int size = await file.length();
+      final insertData = <String, dynamic>{
+        'owner_profile_id': ownerProfileId,
+        'bucket': 'attachments',
+        'path': filePath,
+        'url': publicUrl,
+        'content_type': null,
+        'size_bytes': size,
+      };
+
+      debugPrint('🗄️ Inserting attachment record: $insertData');
+      final inserted = await _supabase.from('attachments').insert(insertData).select('id').maybeSingle();
+
+      if (inserted == null) {
+        debugPrint('⚠️ Attachment row insert returned null');
+        return {'id': null, 'url': publicUrl};
+      }
+
+      debugPrint('✅ Attachment record created: ${inserted['id']}');
+      return {'id': inserted['id'], 'url': publicUrl};
+    } catch (e) {
+      debugPrint('❌ Error uploading & saving attachment: $e');
+      return null;
     }
   }
 
@@ -329,10 +383,35 @@ Future<Map<String, dynamic>> completeRegistration() async {
           .maybeSingle();
 
       if (existingCommuter == null) {
+        // If the user provided an ID proof file earlier in the flow, upload
+        // it into the attachments table and store the attachment_id on the
+        // commuter record.
+        String? commuterAttachmentId;
+        final String? localIdProofPath = _registrationData['id_proof_path'];
+        if (localIdProofPath != null) {
+          try {
+            debugPrint('📤 Uploading commuter ID proof...');
+            final res = await uploadAndSaveAttachment(
+              File(localIdProofPath),
+              folder: 'commuter_id_proofs',
+              ownerProfileId: profileId,
+              filenamePrefix: 'idproof',
+            );
+            if (res != null) {
+              commuterAttachmentId = res['id'] as String?;
+              debugPrint('✅ Commuter ID proof saved: $commuterAttachmentId');
+            }
+          } catch (e) {
+            debugPrint('⚠️ Failed to upload commuter ID proof: $e');
+          }
+        }
+
         await _supabase.from('commuters').insert({
           'profile_id': profileId,
           'category': _registrationData['category'] ?? 'regular',
+          'attachment_id': commuterAttachmentId,
         });
+
         debugPrint('✅ Commuter created!');
       } else {
         debugPrint('✅ Commuter already exists');
@@ -348,17 +427,24 @@ Future<Map<String, dynamic>> completeRegistration() async {
       if (existingDriver == null) {
         // 🔥 UPLOAD LICENSE IMAGE NOW (user is authenticated)
         String? licenseImageUrl;
+        String? licenseAttachmentId;
         final String? localFilePath = _registrationData['driver_license_path'];
-        
+
         if (localFilePath != null) {
           try {
             debugPrint('📤 Uploading driver license image...');
             final file = File(localFilePath);
-            licenseImageUrl = await uploadDriverLicense(
+            final res = await uploadAndSaveAttachment(
               file,
-              _registrationData['license_number'],
+              folder: 'driver_licenses',
+              ownerProfileId: profileId,
+              filenamePrefix: _registrationData['license_number']?.toString(),
             );
-            debugPrint('✅ License uploaded: $licenseImageUrl');
+            if (res != null) {
+              licenseImageUrl = res['url'] as String?;
+              licenseAttachmentId = res['id'] as String?;
+              debugPrint('✅ License uploaded: $licenseImageUrl (id: $licenseAttachmentId)');
+            }
           } catch (uploadError) {
             debugPrint('⚠️ Failed to upload license: $uploadError');
             // Continue anyway - you can handle this manually later
@@ -384,7 +470,7 @@ Future<Map<String, dynamic>> completeRegistration() async {
         }
 
         // 🔥 Create driver record - ONLY route_id, NO route_code
-        await _supabase.from('drivers').insert({
+        final driverInsert = <String, dynamic>{
           'profile_id': profileId,
           'license_number': _registrationData['license_number'] ?? '',
           'license_image_url': licenseImageUrl,
@@ -394,8 +480,33 @@ Future<Map<String, dynamic>> completeRegistration() async {
           'puv_type': _registrationData['puv_type'],
           'status': false,
           'active': true,
-        });
+        };
+
+        // If we have an attachment id for the license, store it in metadata
+        // so it can be referenced later (drivers table doesn't currently
+        // have a dedicated attachment_id column).
+        if (licenseAttachmentId != null) {
+          driverInsert['metadata'] = {'license_attachment_id': licenseAttachmentId};
+        }
+
+        await _supabase.from('drivers').insert(driverInsert);
         debugPrint('✅ Driver created with route_id: $routeId');
+
+        // Create a verification row linking the uploaded license attachment
+        // with this profile so admin can review it.
+        if (licenseAttachmentId != null) {
+          try {
+            await _supabase.from('verifications').insert({
+              'profile_id': profileId,
+              'verification_type': 'ID Verification',
+              'attachment_id': licenseAttachmentId,
+              'status': 'pending',
+            });
+            debugPrint('✅ Verification row created for driver license');
+          } catch (e) {
+            debugPrint('⚠️ Failed to create verification row: $e');
+          }
+        }
       } else {
         debugPrint('✅ Driver already exists');
       }

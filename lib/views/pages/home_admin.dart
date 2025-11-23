@@ -278,12 +278,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        TextButton(
+          TextButton(
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const AdminVerifiedPage(),
+                builder: (context) => const AdminVerifiedPage(onlyVerified: false),
               ),
             );
           },

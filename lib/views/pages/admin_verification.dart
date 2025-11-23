@@ -1,292 +1,329 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:developer' as devtools; 
-
-// --- FIX: Import the file where you saved the AdminPending class ---
-// Make sure the file name matches what you saved it as.
-import 'admin_pending.dart'; 
+import 'package:provider/provider.dart';
+import '../providers/admin_verification.dart';
+import 'admin_pending.dart';
 
 class AdminVerifiedPage extends StatefulWidget {
-  const AdminVerifiedPage({super.key});
+  final bool onlyVerified;
+
+  const AdminVerifiedPage({super.key, this.onlyVerified = true});
 
   @override
   State<AdminVerifiedPage> createState() => _AdminVerifiedPageState();
 }
 
 class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
-  // --- Constants ---
   static const LinearGradient _kGradient = LinearGradient(
     colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
-  // --- State Variables ---
-  String _statusFilter = ''; // '' = All statuses
-  String _roleFilter = 'All'; // 'All', 'Driver', or 'Commuter'
-  String _searchQuery = ''; // Added state for search
+  String _statusFilter = '';
+  String _roleFilter = 'All';
+  String _searchQuery = '';
 
-  final List<VerificationItem> _allItems = [
-    VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.pending),
-    VerificationItem(name: 'Commuter name', role: 'Commuter', timeAgo: '10m ago', status: Status.approved),
-    VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.rejected),
-    VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.pending),
-    VerificationItem(name: 'Commuter name', role: 'Commuter', timeAgo: '10m ago', status: Status.approved),
-    VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.rejected),
-    VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.pending),
-    VerificationItem(name: 'Commuter name', role: 'Commuter', timeAgo: '10m ago', status: Status.approved),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Load verifications when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminVerificationProvider>().loadVerifications();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // --- Filter Logic ---
-    final displayItems = _allItems.where((item) {
-      // 1. Filter by Role
-      if (_roleFilter != 'All' && item.role != _roleFilter) {
-        return false;
-      }
-
-      // 2. Filter by Status
-      if (_statusFilter.isNotEmpty) {
-        final statusString = item.status.toString().split('.').last;
-        final statusCapitalized = statusString[0].toUpperCase() + statusString.substring(1);
-        if (statusCapitalized != _statusFilter) {
-          return false;
-        }
-      }
-
-      // 3. Filter by Search Query
-      if (_searchQuery.isNotEmpty) {
-        if (!item.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
-          return false;
-        }
-      }
-      
-      return true;
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
-        child: Column(
-          children: [
-            // --- Header ---
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Shield Icon
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F4FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.verified_user_outlined,
-                      color: Color(0xFF5B53C2),
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+        child: Consumer<AdminVerificationProvider>(
+          builder: (context, provider, child) {
+            // Apply filters
+            var displayItems = provider.applyFilters(
+              status: _statusFilter,
+              role: _roleFilter,
+              searchQuery: _searchQuery,
+            );
 
-                  // Title & Subtitle
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Verification',
-                          style: GoogleFonts.manrope(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF222222),
-                          ),
-                        ),
-                        Text(
-                          'Manage requests',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            // Exclude admin users and filter by verification state (is_verified)
+            displayItems = displayItems
+                .where((v) => v.role.toLowerCase() != 'admin')
+                .where((v) => v.isVerified == widget.onlyVerified)
+                .toList();
 
-                  // Items Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: _kGradient,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${displayItems.length} Items',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+            return Column(
+              children: [
+                // --- Header ---
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- Search Bar ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search users...',
-                    hintStyle: GoogleFonts.nunito(color: Colors.grey.shade500),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF5B53C2)),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- Controls Row ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  // 1. Status Chips
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildStatusChip('Approved'),
-                          const SizedBox(width: 10),
-                          _buildStatusChip('Pending'),
-                          const SizedBox(width: 10),
-                          _buildStatusChip('Rejected'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(width: 12),
-
-                  // 2. Role Filter Button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: PopupMenuButton<String>(
-                      tooltip: "Filter by Role",
-                      onSelected: (value) {
-                        setState(() {
-                          _roleFilter = value;
-                        });
-                        devtools.log('Role filter changed to: $value', name: 'AdminVerify');
-                      },
-                      offset: const Offset(0, 45),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'Driver', child: Text('Drivers Only')),
-                        const PopupMenuItem(value: 'Commuter', child: Text('Commuters Only')),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _roleFilter == 'All' ? Colors.white : const Color(0xFF5B53C2),
+                          color: const Color(0xFFF7F4FF),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          Icons.tune_rounded,
-                          size: 20,
-                          color: _roleFilter == 'All' ? Colors.grey.shade700 : Colors.white,
+                        child: const Icon(
+                          Icons.verified_user_outlined,
+                          color: Color(0xFF5B53C2),
+                          size: 22,
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Verification',
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF222222),
+                              ),
+                            ),
+                            Text(
+                              'Manage requests',
+                              style: GoogleFonts.nunito(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: _kGradient,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${displayItems.length} Items',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // --- Search Bar ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color.fromRGBO(0, 0, 0, 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search users...',
+                        hintStyle:
+                            GoogleFonts.nunito(color: Colors.grey.shade500),
+                        prefixIcon: const Icon(Icons.search,
+                            color: Color(0xFF5B53C2)),
+                        border: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 15),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            if (_roleFilter != 'All')
-              Padding(
-                padding: const EdgeInsets.only(top: 8, right: 16),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    "Showing: $_roleFilter",
-                    style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey.shade600),
+                const SizedBox(height: 20),
+
+                // --- Controls Row ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildStatusChip('Approved'),
+                              const SizedBox(width: 10),
+                              _buildStatusChip('Pending'),
+                              const SizedBox(width: 10),
+                              _buildStatusChip('Rejected'),
+                              const SizedBox(width: 10),
+                              _buildStatusChip('Lacking'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: PopupMenuButton<String>(
+                          tooltip: "Filter by Role",
+                          onSelected: (value) {
+                            setState(() {
+                              _roleFilter = value;
+                            });
+                          },
+                          offset: const Offset(0, 45),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                                value: 'All', child: Text('All Users')),
+                            const PopupMenuItem(
+                                value: 'Driver', child: Text('Drivers Only')),
+                            const PopupMenuItem(
+                                value: 'Commuter',
+                                child: Text('Commuters Only')),
+                            const PopupMenuItem(
+                                value: 'Operator',
+                                child: Text('Operators Only')),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: _roleFilter == 'All'
+                                  ? Colors.white
+                                  : const Color(0xFF5B53C2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              size: 20,
+                              color: _roleFilter == 'All'
+                                  ? Colors.grey.shade700
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-            const SizedBox(height: 12),
+                if (_roleFilter != 'All')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, right: 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        "Showing: $_roleFilter",
+                        style: GoogleFonts.nunito(
+                            fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ),
+                  ),
 
-            // --- List Items ---
-            Expanded(
-              child: displayItems.isEmpty 
-              ? Center(child: Text("No items found", style: GoogleFonts.manrope(color: Colors.grey)))
-              : ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: displayItems.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return VerificationCard(
-                    item: displayItems[index],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          // Navigate to the AdminPending page (Ensure it's imported)
-                          builder: (context) => const AdminPending(),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+                const SizedBox(height: 12),
+
+                // --- Loading / Error / List ---
+                Expanded(
+                  child: provider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : provider.errorMessage != null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error_outline,
+                                      size: 48, color: Colors.red),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    provider.errorMessage!,
+                                    style: GoogleFonts.manrope(
+                                        color: Colors.red),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        provider.loadVerifications(),
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : displayItems.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    "No items found",
+                                    style: GoogleFonts.manrope(
+                                        color: Colors.grey),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  onRefresh: () =>
+                                      provider.loadVerifications(),
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    itemCount: displayItems.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      return VerificationCard(
+                                        item: displayItems[index],
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  AdminPending(
+                                                verificationId:
+                                                    displayItems[index].id,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -298,9 +335,9 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
       onTap: () {
         setState(() {
           if (isSelected) {
-            _statusFilter = ''; 
+            _statusFilter = '';
           } else {
-            _statusFilter = label; 
+            _statusFilter = label;
           }
         });
       },
@@ -331,47 +368,29 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   }
 }
 
-// --- Data Models ---
-enum Status { approved, pending, rejected }
-
-class VerificationItem {
-  final String name;
-  final String role;
-  final String timeAgo;
-  final Status status;
-
-  VerificationItem({
-    required this.name,
-    required this.role,
-    required this.timeAgo,
-    required this.status,
-  });
-}
-
 // --- Verification Card Widget ---
 class VerificationCard extends StatelessWidget {
-  final VerificationItem item;
+  final VerificationListItem item;
   final VoidCallback onTap;
 
   const VerificationCard({
-    super.key, 
-    required this.item, 
-    required this.onTap
+    super.key,
+    required this.item,
+    required this.onTap,
   });
 
   Color getStatusColor() {
-    switch (item.status) {
-      case Status.approved: return const Color(0xFF2ECC71);
-      case Status.pending: return const Color(0xFFFFC107);
-      case Status.rejected: return const Color(0xFFE74C3C);
-    }
-  }
-
-  String getStatusText() {
-    switch (item.status) {
-      case Status.approved: return 'Approved';
-      case Status.pending: return 'Pending';
-      case Status.rejected: return 'Rejected';
+    switch (item.status.toLowerCase()) {
+      case 'approved':
+        return const Color(0xFF2ECC71);
+      case 'pending':
+        return const Color(0xFFFFC107);
+      case 'rejected':
+        return const Color(0xFFE74C3C);
+      case 'lacking':
+        return Colors.orange;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -380,23 +399,26 @@ class VerificationCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap, // This triggers the navigation
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.5), width: 1),
+            border: Border.all(
+              color: Color.fromRGBO(156, 39, 176, 0.5), width: 1),
           ),
           child: Row(
             children: [
-              Container(
-                width: 45, height: 45,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE0E0E0),
-                  shape: BoxShape.circle,
-                ),
+              CircleAvatar(
+                radius: 22.5,
+                backgroundColor: const Color(0xFFE0E0E0),
+                backgroundImage:
+                    item.imageUrl != null ? NetworkImage(item.imageUrl!) : null,
+                child: item.imageUrl == null
+                    ? const Icon(Icons.person, color: Colors.grey)
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -404,7 +426,7 @@ class VerificationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.name,
+                      item.userName,
                       style: GoogleFonts.manrope(
                         color: Colors.black87,
                         fontSize: 15,
@@ -415,16 +437,17 @@ class VerificationCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          item.role,
+                          item.roleCapitalized,
                           style: GoogleFonts.manrope(
-                            color: Colors.black54, 
+                            color: Colors.black54,
                             fontSize: 12,
                           ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           child: Container(
-                            width: 4, height: 4,
+                            width: 4,
+                            height: 4,
                             decoration: const BoxDecoration(
                               color: Colors.black87,
                               shape: BoxShape.circle,
@@ -434,9 +457,7 @@ class VerificationCard extends StatelessWidget {
                         Text(
                           item.timeAgo,
                           style: GoogleFonts.manrope(
-                            color: Colors.black87, 
-                            fontSize: 12
-                          ),
+                              color: Colors.black87, fontSize: 12),
                         ),
                       ],
                     )
@@ -444,13 +465,14 @@ class VerificationCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   color: getStatusColor(),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  getStatusText(),
+                  item.statusCapitalized,
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 11,
