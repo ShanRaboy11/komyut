@@ -241,12 +241,14 @@ class _LoginPageState extends State<LoginPage> {
           curve: Curves.easeOut,
           child: IconButton(
             icon: const Icon(Icons.chevron_left_rounded, color: Colors.black),
-            onPressed: () {
+            onPressed: () async {
               _collapseSheet();
-              // wait for the animation to finish before popping
-              Future.delayed(const Duration(milliseconds: 200), () {
-                Navigator.pop(context);
-              });
+
+              await Future.delayed(const Duration(milliseconds: 200));
+
+              if (!context.mounted) return;
+
+              Navigator.of(context).pop();
             },
           ),
         ),
