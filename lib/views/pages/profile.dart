@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/admin_verification.dart';
 
 import 'personalinfo_commuter.dart';
 import 'personalinfo_driver.dart';
@@ -170,62 +173,120 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-    // Show confirmation dialog
-    final confirm = await showDialog<bool>(
+    final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Confirm Logout',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: GoogleFonts.nunito(),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Logout',
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2D3436),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Are you sure you want to logout?',
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                color: const Color(0xFF636E72),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.manrope()),
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF636E72),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF5350),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
             child: Text(
               'Logout',
-              style: GoogleFonts.manrope(color: Colors.red),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
           ),
         ],
       ),
     );
 
-    // Exit if user cancels
-    if (confirm != true) return;
-    if (!mounted) return;
+    if (shouldLogout != true || !mounted) return;
 
-    // Show loading indicator
-    showDialog(
+    // Show blocking progress dialog (use root navigator)
+    showDialog<void>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) => PopScope(
-        canPop: false,
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF8E4CB6),
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: const CircularProgressIndicator(),
         ),
       ),
     );
 
-    // Wait a bit to ensure dialog is shown
-    await Future.delayed(const Duration(milliseconds: 100));
+    var signOutSuccess = false;
+    try {
+      await context.read<AuthProvider>().signOut();
+      signOutSuccess = true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      // Dismiss the progress dialog before navigation
+      if (mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+      }
+    }
 
-    // Use AuthHelper to logout
-    if (mounted) {
-      // Close loading dialog first
-      Navigator.of(context).pop();
-      
-      // Then logout (this will navigate to landing page)
-      await AuthHelper.logout(context);
+    if (signOutSuccess && mounted) {
+      try {
+        context.read<AdminVerificationProvider>().clearCurrentDetail();
+      } catch (_) {}
+
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/landing', (r) => false);
     }
   }
 

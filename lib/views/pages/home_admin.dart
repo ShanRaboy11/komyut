@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_verification.dart';
 import '../providers/admin_dashboard.dart';
+import '../providers/auth_provider.dart';
 import '../services/admin_dashboard.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -74,6 +75,132 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     super.dispose();
   }
 
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Logout',
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2D3436),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Are you sure you want to logout?',
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                color: const Color(0xFF636E72),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF636E72),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF5350),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Logout',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && mounted) {
+      // Show a blocking progress dialog while signing out
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const CircularProgressIndicator(),
+          ),
+        ),
+      );
+
+      var signOutSuccess = false;
+      try {
+        // Use the AuthProvider to sign out and clear auth state
+        await context.read<AuthProvider>().signOut();
+        signOutSuccess = true;
+      } catch (e) {
+        // Show error message while keeping the dialog so user sees the result
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Logout failed: $e',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+      } finally {
+        // Ensure the progress dialog is dismissed before any navigation
+        if (mounted) {
+          try {
+            Navigator.of(context, rootNavigator: true).pop();
+          } catch (_) {}
+        }
+      }
+
+      if (signOutSuccess && mounted) {
+        // Clear any loaded verification detail to avoid stale state
+        try {
+          context.read<AdminVerificationProvider>().clearCurrentDetail();
+        } catch (_) {}
+
+        // Navigate to landing page and remove previous routes (use root navigator)
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/landing', (r) => false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -93,11 +220,64 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Header ---
-                Center(
-                  child: SvgPicture.asset('assets/images/logo.svg', height: 50),
+                // --- Enhanced Header with Logo and Logout ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Logo
+                    SvgPicture.asset(
+                      'assets/images/logo.svg',
+                      height: 45,
+                    ),
+                    // Logout Button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _handleLogout,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFEF5350).withOpacity(0.2),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFEF5350).withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.logout,
+                                size: 20,
+                                color: Color(0xFFEF5350),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Logout',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFEF5350),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // --- Stats Cards ---
                 Consumer<AdminDashboardProvider>(
@@ -974,9 +1154,6 @@ class _VerificationCard extends StatelessWidget {
     );
   }
 }
-
-// Add this widget class at the bottom of your home_admin.dart file
-// (after the _VerificationCard widget)
 
 class _PeriodButton extends StatelessWidget {
   final String label;
