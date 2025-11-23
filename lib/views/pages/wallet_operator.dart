@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -30,24 +30,12 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     });
   }
 
-  String _getMonthAndYear(int offset) {
-    final now = DateTime.now();
-    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
-    return DateFormat('MMM yyyy').format(dayInSelectedWeek);
-  }
-
-  List<DateTime> _getWeekDates(int offset) {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(
-      Duration(days: now.weekday - 1 + (-offset * 7)),
-    );
-    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
-  }
-
   @override
   Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
@@ -85,85 +73,83 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             color: const Color(0xFF5B53C2),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 40.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildBalanceCard(provider.currentBalance),
-                    const SizedBox(height: 24),
-
-                    CustomButton(
-                      text: 'Cash Out',
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/cash_out');
-                      },
-                      isFilled: true,
-                      fillColor: const Color(0xFF5B53C2),
-                      textColor: Colors.white,
-                      height: 50,
-                      fontSize: 16,
-                      hasShadow: true,
-                    ),
-                    const SizedBox(height: 32),
-
-                    _buildWeeklyEarningsCard(provider),
-                    const SizedBox(height: 32),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Recent Transactions',
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildBalanceCard(provider.currentBalance, currencyFormat),
+                  const SizedBox(height: 24),
+                  CustomButton(
+                    text: 'Cash Out',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/cash_out');
+                    },
+                    isFilled: true,
+                    fillColor: const Color(0xFF5B53C2),
+                    textColor: Colors.white,
+                    height: 50,
+                    fontSize: 14,
+                    hasShadow: true,
+                  ),
+                  const SizedBox(height: 32),
+                  _buildWeeklyEarningsCard(provider),
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Recent Transactions',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamed('/wallet_history');
-                          },
-                          child: Text(
-                            'View All',
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF5B53C2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (provider.recentTransactions.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Text(
-                            'No recent transactions',
-                            style: GoogleFonts.nunito(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: min(provider.recentTransactions.length, 5),
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          return _buildTransactionTile(
-                            context,
-                            provider.recentTransactions[index],
-                          );
-                        },
                       ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/wallet_history');
+                        },
+                        child: Text(
+                          'View All',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF5B53C2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (provider.recentTransactions.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'No recent transactions',
+                          style: GoogleFonts.nunito(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.separated(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: math.min(
+                        provider.recentTransactions.length,
+                        5,
+                      ),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return _buildTransactionTile(
+                          context,
+                          provider.recentTransactions[index],
+                          currencyFormat,
+                        );
+                      },
+                    ),
+                ],
               ),
             ),
           );
@@ -172,10 +158,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     );
   }
 
-  Widget _buildBalanceCard(double balance) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+  Widget _buildBalanceCard(double balance, NumberFormat currencyFormat) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFB945AA), Color(0xFF5B53C2)],
@@ -202,7 +187,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             currencyFormat.format(balance),
             style: GoogleFonts.manrope(
@@ -221,12 +206,10 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     const double chartHeight = 130;
     final weeklyEarnings = provider.weeklyEarnings;
 
-    final double maxWeeklyExpense = weeklyEarnings.values.isEmpty
+    final double maxWeeklyValue = weeklyEarnings.values.isEmpty
         ? 0.0
-        : weeklyEarnings.values.reduce(max);
-    final double dynamicMaxValue = maxWeeklyExpense > 0
-        ? maxWeeklyExpense
-        : 100.0;
+        : weeklyEarnings.values.reduce(math.max);
+    final double dynamicMaxValue = maxWeeklyValue > 0 ? maxWeeklyValue : 1000.0;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -246,14 +229,12 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Weekly Earnings',
                 style: GoogleFonts.manrope(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
               ),
               Row(
@@ -268,9 +249,13 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     splashRadius: 20,
                   ),
                   Text(
-                    _getMonthAndYear(_selectedWeekOffset),
+                    DateFormat('MMM yyyy').format(
+                      DateTime.now().subtract(
+                        Duration(days: -_selectedWeekOffset * 7),
+                      ),
+                    ),
                     style: GoogleFonts.nunito(
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: brandColor,
                     ),
@@ -294,20 +279,24 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           const SizedBox(height: 20),
           if (provider.isChartLoading)
             SizedBox(
-              height: chartHeight,
+              height: chartHeight + 48,
               child: const Center(child: CircularProgressIndicator()),
             )
           else
-            SizedBox(
-              height: chartHeight,
-              child: _buildBarChart(
-                chartHeight,
-                weeklyEarnings,
-                dynamicMaxValue,
-              ),
+            Column(
+              children: [
+                SizedBox(
+                  height: chartHeight,
+                  child: _buildBarChart(
+                    chartHeight,
+                    weeklyEarnings,
+                    dynamicMaxValue,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildXAxisLabels(),
+              ],
             ),
-          const SizedBox(height: 8),
-          _buildXAxisLabels(),
         ],
       ),
     );
@@ -338,9 +327,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       children: List.generate(days.length, (index) {
         final day = days[index];
         final value = weeklyData[day] ?? 0.0;
-        final barHeight = effectiveMaxVal > 0
-            ? (value / effectiveMaxVal) * chartHeight
-            : 0.0;
+        final barHeight = effectiveMaxVal == 0
+            ? 0.0
+            : (value / effectiveMaxVal) * chartHeight;
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -370,7 +359,14 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
   Widget _buildXAxisLabels() {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final weekDates = _getWeekDates(_selectedWeekOffset);
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(
+      Duration(days: now.weekday - 1 + (-_selectedWeekOffset * 7)),
+    );
+    final weekDates = List.generate(
+      7,
+      (index) => startOfWeek.add(Duration(days: index)),
+    );
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -405,9 +401,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   Widget _buildTransactionTile(
     BuildContext context,
     Map<String, dynamic> transaction,
+    NumberFormat currencyFormat,
   ) {
     final bool isCredit = (transaction['amount'] as num) > 0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final amount = currencyFormat.format((transaction['amount'] as num).abs());
     final String type = transaction['type'] ?? 'remittance';
 
@@ -430,7 +426,8 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     final date = DateFormat('MMM d, hh:mm a').format(txDate);
 
     return InkWell(
-      onTap: () => _showTransactionDetailModal(context, transaction),
+      onTap: () =>
+          _showTransactionDetailModal(context, transaction, currencyFormat),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
@@ -481,14 +478,14 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   void _showTransactionDetailModal(
     BuildContext context,
     Map<String, dynamic> transaction,
+    NumberFormat currencyFormat,
   ) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String type = transaction['type'] ?? 'remittance';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
 
     String modalTitle;
     if (type == 'remittance') {
-      modalTitle = 'Remittance Received';
+      modalTitle = 'Remittance Transaction';
     } else if (type == 'cash_out') {
       modalTitle = 'Cash Out Transaction';
     } else {
@@ -497,7 +494,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
     final String transactionCode =
         transaction['transaction_number'] ??
-        'TX-${Random().nextInt(999999) + 100000}';
+        'TX-${(100000 + (DateTime.now().millisecondsSinceEpoch % 900000))}';
 
     DateTime txDate;
     try {
@@ -564,7 +561,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -584,7 +581,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                   Text(
                     transactionCode,
                     style: GoogleFonts.sourceCodePro(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: Colors.black54,
                     ),
                   ),
