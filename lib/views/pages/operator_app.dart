@@ -1,22 +1,63 @@
 import 'package:flutter/material.dart';
 import '../widgets/role_navbar_wrapper.dart';
-import './home_operator.dart';
-import './report_operator.dart';
-import './placeholders.dart';
-import './profile.dart';
+
+import 'home_operator.dart';
+import 'report_operator.dart';
+import 'placeholders.dart';
+import 'profile.dart';
 import 'driver_operator.dart';
 
+import 'wallet_history_operator.dart';
+
 class OperatorApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   const OperatorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return OperatorNavBarWrapper(
-      homePage: OperatorDashboardNav(),
-      driversPage: OperatorDriversPage(),
-      transactionsPage: OperatorTransactionsPage(),
-      reportsPage: OperatorReportsPage(),
-      profilePage: ProfilePage(),
+    return Navigator(
+      key: navigatorKey,
+      initialRoute: '/',
+      onGenerateRoute: _operatorRouter,
+    );
+  }
+
+  Route<dynamic> _operatorRouter(RouteSettings settings) {
+    late Widget page;
+
+    switch (settings.name) {
+      case '/':
+        page = const OperatorNavBarWrapper(
+          homePage: OperatorDashboardNav(),
+          driversPage: OperatorDriversPage(),
+          transactionsPage: OperatorTransactionsPage(),
+          reportsPage: OperatorReportsPage(),
+          profilePage: ProfilePage(),
+        );
+        break;
+
+      case '/wallet_history':
+        page = const WalletHistoryOperatorPage();
+        break;
+
+      // Add other operator routes here (e.g., /driver_details, /cash_out)
+
+      default:
+        page = const OperatorNavBarWrapper(
+          homePage: OperatorDashboardNav(),
+          driversPage: OperatorDriversPage(),
+          transactionsPage: OperatorTransactionsPage(),
+          reportsPage: OperatorReportsPage(),
+          profilePage: ProfilePage(),
+        );
+        break;
+    }
+
+    return MaterialPageRoute<dynamic>(
+      builder: (context) => page,
+      settings: settings,
     );
   }
 }
