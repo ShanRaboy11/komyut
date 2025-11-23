@@ -8,17 +8,13 @@ class AdminVerificationService {
   /// Fetch all verification requests with user details
   Future<List<Map<String, dynamic>>> fetchVerifications() async {
     try {
+      debugPrint('🔍 Fetching verifications...');
+      
       final response = await _supabase
           .from('verifications')
           .select('''
-            id,
-            verification_type,
-            status,
-            reviewer_notes,
-            created_at,
-            reviewed_at,
-            profile_id,
-            profiles!verifications_profile_id_fkey (
+            *,
+            profiles!verifications_profile_id_fkey(
               id,
               first_name,
               last_name,
@@ -28,8 +24,7 @@ class AdminVerificationService {
               address,
               is_verified
             ),
-            attachment_id,
-            attachments!verifications_attachment_id_fkey (
+            attachments(
               id,
               url,
               path,
@@ -38,10 +33,13 @@ class AdminVerificationService {
           ''')
           .order('created_at', ascending: false);
 
-      debugPrint('✅ Fetched ${(response as List).length} verifications');
+      debugPrint('✅ Raw response: ${response.length} records');
+      debugPrint('📦 First record: ${response.isNotEmpty ? response[0] : "none"}');
+      
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error fetching verifications: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -49,18 +47,14 @@ class AdminVerificationService {
   /// Fetch detailed information for a specific verification
   Future<Map<String, dynamic>> fetchVerificationDetail(String verificationId) async {
     try {
+      debugPrint('🔍 Fetching verification detail for: $verificationId');
+      
       // Fetch base verification data
       final verification = await _supabase
           .from('verifications')
           .select('''
-            id,
-            verification_type,
-            status,
-            reviewer_notes,
-            created_at,
-            reviewed_at,
-            profile_id,
-            profiles!verifications_profile_id_fkey (
+            *,
+            profiles!verifications_profile_id_fkey(
               id,
               user_id,
               first_name,
@@ -71,8 +65,7 @@ class AdminVerificationService {
               address,
               is_verified
             ),
-            attachment_id,
-            attachments!verifications_attachment_id_fkey (
+            attachments(
               id,
               url,
               path,
@@ -81,6 +74,8 @@ class AdminVerificationService {
           ''')
           .eq('id', verificationId)
           .single();
+
+      debugPrint('✅ Fetched verification detail');
 
       final profileId = verification['profile_id'] as String;
       final role = (verification['profiles'] as Map<String, dynamic>)['role'] as String;
@@ -101,8 +96,9 @@ class AdminVerificationService {
         ...verification,
         'role_specific_data': roleData,
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error fetching verification detail: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -181,7 +177,7 @@ class AdminVerificationService {
   /// Fetch operator-specific data
   Future<Map<String, dynamic>?> _fetchOperatorData(String profileId) async {
     try {
-        final operator = await _supabase
+      final operator = await _supabase
           .from('operators')
           .select('id, company_name, company_address, contact_email')
           .eq('profile_id', profileId)
@@ -198,14 +194,20 @@ class AdminVerificationService {
   Future<String?> getAdminProfileId() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return null;
+      if (userId == null) {
+        debugPrint('❌ No authenticated user');
+        return null;
+      }
+
+      debugPrint('🔍 Getting admin profile for user: $userId');
 
       final response = await _supabase
           .from('profiles')
-          .select('id')
+          .select('id, role')
           .eq('user_id', userId)
           .single();
 
+      debugPrint('✅ Admin profile: ${response['id']}, role: ${response['role']}');
       return response['id'] as String;
     } catch (e) {
       debugPrint('❌ Error getting admin profile ID: $e');
@@ -216,6 +218,8 @@ class AdminVerificationService {
   /// Approve a verification request
   Future<void> approveVerification(String verificationId, String profileId, String? notes) async {
     try {
+      debugPrint('🔍 Approving verification: $verificationId');
+      
       final adminProfileId = await getAdminProfileId();
       
       if (adminProfileId == null) {
@@ -266,6 +270,8 @@ class AdminVerificationService {
   /// Reject a verification request
   Future<void> rejectVerification(String verificationId, String notes) async {
     try {
+      debugPrint('🔍 Rejecting verification: $verificationId');
+      
       final adminProfileId = await getAdminProfileId();
       
       if (adminProfileId == null) {
@@ -292,6 +298,8 @@ class AdminVerificationService {
   /// Mark verification as lacking documents
   Future<void> markAsLacking(String verificationId, String notes) async {
     try {
+      debugPrint('🔍 Marking verification as lacking: $verificationId');
+      
       final adminProfileId = await getAdminProfileId();
       
       if (adminProfileId == null) {

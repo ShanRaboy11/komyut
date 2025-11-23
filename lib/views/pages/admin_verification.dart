@@ -5,9 +5,18 @@ import '../providers/admin_verification.dart';
 import 'admin_pending.dart';
 
 class AdminVerifiedPage extends StatefulWidget {
-  final bool onlyVerified;
+  final String defaultStatus;
 
-  const AdminVerifiedPage({super.key, this.onlyVerified = true});
+  /// `onlyVerified` is kept for backward compatibility with older call sites.
+  /// If `onlyVerified` is provided it will determine the `defaultStatus`:
+  /// - `true` => 'approved'
+  /// - `false` => 'pending'
+  /// If `defaultStatus` is provided it takes precedence.
+  const AdminVerifiedPage({
+    super.key,
+    bool? onlyVerified,
+    String? defaultStatus,
+  }) : defaultStatus = defaultStatus ?? (onlyVerified == null ? 'approved' : (onlyVerified ? 'approved' : 'pending'));
 
   @override
   State<AdminVerifiedPage> createState() => _AdminVerifiedPageState();
@@ -27,6 +36,9 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   @override
   void initState() {
     super.initState();
+    // Set default filter
+    _statusFilter = widget.defaultStatus;
+    
     // Load verifications when page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AdminVerificationProvider>().loadVerifications();
@@ -47,10 +59,9 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
               searchQuery: _searchQuery,
             );
 
-            // Exclude admin users and filter by verification state (is_verified)
+            // Exclude admin users
             displayItems = displayItems
                 .where((v) => v.role.toLowerCase() != 'admin')
-                .where((v) => v.isVerified == widget.onlyVerified)
                 .toList();
 
             return Column(
@@ -286,10 +297,29 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
                             )
                           : displayItems.isEmpty
                               ? Center(
-                                  child: Text(
-                                    "No items found",
-                                    style: GoogleFonts.manrope(
-                                        color: Colors.grey),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.inbox_outlined, 
+                                          size: 64, 
+                                          color: Colors.grey.shade400),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        "No items found",
+                                        style: GoogleFonts.manrope(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _statusFilter.isNotEmpty 
+                                            ? "Try selecting a different status filter"
+                                            : "No verification records available",
+                                        style: GoogleFonts.nunito(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade500),
+                                      ),
+                                    ],
                                   ),
                                 )
                               : RefreshIndicator(
@@ -330,7 +360,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   }
 
   Widget _buildStatusChip(String label) {
-    final isSelected = _statusFilter == label;
+    final isSelected = _statusFilter.toLowerCase() == label.toLowerCase();
     return GestureDetector(
       onTap: () {
         setState(() {
