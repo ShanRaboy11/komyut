@@ -286,24 +286,26 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
             // Get the appropriate home route based on role
             final homeRoute = _getHomeRouteForRole(userRole);
-            debugPrint('🏠 Navigating to: $homeRoute');
+            debugPrint('🏠 Will navigate to: $homeRoute after showing success');
 
-            // Navigate to the SuccessPage with role-specific onClose callback
-            Navigator.pushReplacement(
-              context,
+            // Show the success page and await its auto-close, then navigate
+            // using THIS page's context (safer than using the SuccessPage context).
+            await Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => SuccessPage(
+                builder: (_) => const SuccessPage(
                   title: 'Registration Complete!',
                   subtitle: 'Welcome to komyut',
-                  onClose: () {
-                    // Clear registration data after successful navigation
-                    registrationProvider.clearRegistration();
-                    // Navigate to role-specific dashboard
-                    Navigator.pushReplacementNamed(context, homeRoute);
-                  },
                 ),
               ),
             );
+
+            // After SuccessPage is popped (auto-closed), clear registration
+            registrationProvider.clearRegistration();
+
+            if (!mounted) return;
+
+            // Replace current route with role-specific dashboard
+            Navigator.pushReplacementNamed(context, homeRoute);
           } else {
             // Registration failed
             ScaffoldMessenger.of(context).showSnackBar(

@@ -256,13 +256,38 @@ class RegistrationService {
     try {
       debugPrint('🔍 Fetching available routes...');
 
-      final routes = await _supabase
+      final dynamic routesResp = await _supabase
           .from('routes')
-          .select('code, name, description')
-          .order('code');
+          .select('id, code, name, description')
+          .order('code', ascending: true);
 
-      debugPrint('✅ Fetched ${routes.length} routes');
-      return List<Map<String, dynamic>>.from(routes);
+      if (routesResp == null) {
+        debugPrint('⚠️ routesResp is null');
+        return [];
+      }
+
+      // If Supabase returns an error structure
+      if (routesResp is Map && routesResp.containsKey('error')) {
+        debugPrint('❌ Supabase returned error fetching routes: ${routesResp['error']}');
+        return [];
+      }
+
+      // If a single row is returned as a Map, convert to single-element list
+      if (routesResp is Map) {
+        final single = Map<String, dynamic>.from(routesResp);
+        debugPrint('✅ Fetched 1 route');
+        return [single];
+      }
+
+      // Expect a List of rows
+      if (routesResp is List) {
+        final list = routesResp.cast<Map<String, dynamic>>();
+        debugPrint('✅ Fetched ${list.length} routes');
+        return List<Map<String, dynamic>>.from(list);
+      }
+
+      debugPrint('⚠️ Unexpected routes response type: ${routesResp.runtimeType}');
+      return [];
     } catch (e) {
       debugPrint('❌ Error fetching routes: $e');
       return [];

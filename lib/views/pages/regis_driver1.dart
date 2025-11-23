@@ -769,10 +769,7 @@ class RegistrationDriverPersonalInfoState
                                       170,
                                       1,
                                     ),
-                                    items:
-                                        registrationProvider
-                                            .availableRoutes
-                                            .isEmpty
+                                    items: registrationProvider.isLoading
                                         ? [
                                             const DropdownMenuItem(
                                               value: null,
@@ -780,32 +777,33 @@ class RegistrationDriverPersonalInfoState
                                               child: Text('Loading...'),
                                             ),
                                           ]
-                                        : registrationProvider.availableRoutes
-                                              .map((route) {
-                                                final code =
-                                                    route['code'] as String;
+                                        : (registrationProvider.availableRoutes.isEmpty
+                                            ? [
+                                                const DropdownMenuItem(
+                                                  value: null,
+                                                  enabled: false,
+                                                  child: Text('No routes available'),
+                                                ),
+                                              ]
+                                            : registrationProvider.availableRoutes.map((route) {
+                                                final code = route['code'] as String;
                                                 return DropdownMenuItem<String>(
                                                   value: code,
                                                   child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       Text(
                                                         code,
                                                         style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w400,
+                                                          fontWeight: FontWeight.w400,
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),
                                                     ],
                                                   ),
                                                 );
-                                              })
-                                              .toList(),
+                                              }).toList()),
                                     onChanged: (String? newValue) {
                                       setState(() {
                                         _selectedRouteCode = newValue;
