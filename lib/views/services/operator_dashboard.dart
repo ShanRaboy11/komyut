@@ -62,53 +62,14 @@ class OperatorDashboardService {
   /// Get today's revenue for the operator
   Future<double> getTodaysRevenue() async {
     try {
-      final operatorId = await _getOperatorId();
-      if (operatorId == null) return 0.0;
+      final response = await _supabase.rpc('get_operator_todays_revenue');
 
-      // Get today's start and end timestamps
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      final todayEnd = todayStart.add(const Duration(days: 1));
+      final revenue = (response as num?)?.toDouble() ?? 0.0;
 
-      // Get all drivers for this operator
-      final drivers = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('operator_id', operatorId);
-
-      if (drivers.isEmpty) return 0.0;
-
-      final driverIds = drivers.map((d) => d['id']).toList();
-
-      // Get trips for these drivers today
-      final trips = await _supabase
-          .from('trips')
-          .select('id')
-          .inFilter('driver_id', driverIds)
-          .gte('started_at', todayStart.toIso8601String())
-          .lt('started_at', todayEnd.toIso8601String());
-
-      if (trips.isEmpty) return 0.0;
-
-      final tripIds = trips.map((t) => t['id']).toList();
-
-      // Sum up fare payments for these trips
-      final transactions = await _supabase
-          .from('transactions')
-          .select('amount')
-          .inFilter('related_trip_id', tripIds)
-          .eq('type', 'fare_payment')
-          .eq('status', 'completed');
-
-      double totalRevenue = 0.0;
-      for (var transaction in transactions) {
-        totalRevenue += (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      debugPrint('✅ Today\'s revenue fetched: ₱$totalRevenue');
-      return totalRevenue;
+      debugPrint('✅ Today\'s Remittance Revenue: ₱$revenue');
+      return revenue;
     } catch (e) {
-      debugPrint('❌ Error fetching today\'s revenue: $e');
+      debugPrint('❌ Error fetching today revenue: $e');
       return 0.0;
     }
   }

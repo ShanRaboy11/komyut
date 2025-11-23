@@ -770,3 +770,33 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_todays_revenue()
+RETURNS numeric AS $$
+DECLARE
+  v_op_wallet_id uuid;
+  v_total numeric;
+  v_start_date timestamptz;
+  v_end_date timestamptz;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  IF v_op_wallet_id IS NULL THEN RETURN 0; END IF;
+
+  v_start_date := date_trunc('day', now() AT TIME ZONE 'Asia/Manila');
+  v_end_date := v_start_date + interval '1 day';
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_total
+  FROM transactions
+  WHERE status = 'completed'
+  AND created_at >= v_start_date
+  AND created_at < v_end_date
+  AND type = 'remittance'
+  AND (metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id;
+
+  RETURN v_total;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
