@@ -91,7 +91,7 @@ class NotificationCard extends StatelessWidget {
                   Text(
                     description,
                     style: GoogleFonts.nunito(
-                      fontSize: 15,
+                      fontSize: 12,
                       fontWeight: isRead ? FontWeight.w400 : FontWeight.w700,
                       color: Colors.black87,
                     ),
@@ -100,7 +100,7 @@ class NotificationCard extends StatelessWidget {
                   Text(
                     timeOrDate,
                     style: GoogleFonts.nunito(
-                      fontSize: 12,
+                      fontSize: 10,
                       color: Colors.grey[600],
                     ),
                   ),

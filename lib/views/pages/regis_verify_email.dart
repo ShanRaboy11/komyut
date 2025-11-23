@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
@@ -194,7 +195,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
       debugPrint('⚠️ User role is null or empty, defaulting to commuter');
       return '/home_commuter';
     }
-    
+
     switch (userRole.toLowerCase()) {
       case 'admin':
         return '/home_admin';
@@ -335,7 +336,6 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
     }
   }
 
-
   void _onBackPressed() {
     Navigator.of(context).pop();
   }
@@ -387,13 +387,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                     const SizedBox(height: 50),
                     ProgressBar(steps: _registrationSteps),
                     const SizedBox(height: 30),
-                    const Text(
+                    Text(
                       'We sent you a code',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: GoogleFonts.manrope(
                         color: Color.fromRGBO(18, 18, 18, 1),
-                        fontFamily: 'Manrope',
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         height: 1.5,
                       ),
@@ -402,9 +401,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                     Text(
                       'Please enter the code we just sent\nto ${widget.email}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: GoogleFonts.nunito(
                         color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
-                        fontFamily: 'Nunito',
                         fontSize: 14,
                         fontWeight: FontWeight.normal,
                         height: 1.5,
@@ -439,7 +437,8 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                             child: TextField(
                               controller: _otpControllers[index],
                               focusNode: _otpFocusNodes[index],
-                              textAlign: TextAlign.center,
+                              textAlign: TextAlign.center, // horizontal center
+                              textAlignVertical: TextAlignVertical.center,
                               keyboardType: TextInputType.number,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
@@ -464,7 +463,7 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                                 filled: true,
                               ),
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Color.fromRGBO(185, 69, 170, 1),
                               ),
@@ -530,13 +529,12 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                         onPressed: _isVerifying ? () {} : _onVerifyCode,
                         isFilled: true,
                         width: buttonWidth,
-                        height: 60,
                         borderRadius: 15,
                         textColor: Colors.white,
                         hasShadow: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 15),
 
                     // Back Button
                     CustomButton(
@@ -544,7 +542,6 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
                       onPressed: _onBackPressed,
                       isFilled: false,
                       width: buttonWidth,
-                      height: 60,
                       borderRadius: 15,
                       strokeColor: const Color.fromRGBO(176, 185, 198, 1),
                       outlinedFillColor: Colors.white,

@@ -474,12 +474,13 @@ class _WalletPageState extends State<WalletPage>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Center(
+                      Align(
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           'Deposit to komyut',
                           style: GoogleFonts.manrope(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -567,7 +568,7 @@ class _WalletPageState extends State<WalletPage>
             Text(
               text,
               style: GoogleFonts.manrope(
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: gradientColors[1],
               ),
@@ -587,13 +588,13 @@ class _WalletPageState extends State<WalletPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -649,6 +650,7 @@ class _WalletPageState extends State<WalletPage>
             Tab(text: 'Tokens'),
           ],
         ),
+        const SizedBox(height: 20),
         if (_tabController.index == 0)
           _buildTransactionsList(provider.recentTransactions)
         else
@@ -728,7 +730,7 @@ class _WalletPageState extends State<WalletPage>
                 '₱${currencyFormat.format(provider.balance)}',
                 style: GoogleFonts.manrope(
                   color: Colors.white,
-                  fontSize: 34,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -797,7 +799,7 @@ class _WalletPageState extends State<WalletPage>
               Text(
                 'Fare Expenses',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -816,7 +818,7 @@ class _WalletPageState extends State<WalletPage>
                   Text(
                     _getMonthAndYear(_selectedWeekOffset),
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: brandColor,
                     ),
@@ -927,7 +929,7 @@ class _WalletPageState extends State<WalletPage>
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
               Text(
@@ -935,7 +937,7 @@ class _WalletPageState extends State<WalletPage>
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -957,14 +959,14 @@ class _WalletPageState extends State<WalletPage>
         );
       },
       style: OutlinedButton.styleFrom(
-        foregroundColor: gradientColors[1],
-        side: BorderSide(color: gradientColors[1]),
+        foregroundColor: const Color(0xFF5B53C2),
+        side: const BorderSide(color: Color(0xFF5B53C2)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
       ),
       child: Text(
         'View All',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
@@ -977,12 +979,10 @@ class _WalletPageState extends State<WalletPage>
       );
     }
     return Column(
-      children: transactions.asMap().entries.map((entry) {
-        int idx = entry.key;
-        Map<String, dynamic> transaction = entry.value;
-        return _buildTransactionItem(
-          transaction,
-          isLast: idx == transactions.length - 1,
+      children: transactions.map((transaction) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: _buildTransactionItem(transaction),
         );
       }).toList(),
     );
@@ -996,47 +996,43 @@ class _WalletPageState extends State<WalletPage>
       );
     }
     return Column(
-      children: tokenHistory.asMap().entries.map((entry) {
-        int idx = entry.key;
-        Map<String, dynamic> tokenData = entry.value;
-        return _buildTokenItem(
-          tokenData,
-          isLast: idx == tokenHistory.length - 1,
+      children: tokenHistory.map((tokenData) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: _buildTokenItem(tokenData),
         );
       }).toList(),
     );
   }
 
-  Widget _buildTransactionItem(
-    Map<String, dynamic> transaction, {
-    bool isLast = false,
-  }) {
-    final bool isCredit = (transaction['amount'] as num) > 0;
+  Widget _buildTransactionItem(Map<String, dynamic> transaction) {
     final String type = transaction['type'] as String;
+    final double rawAmount = (transaction['amount'] as num).toDouble();
+
+    final bool isExpense = type == 'fare_payment' || rawAmount < 0;
 
     final String title = type
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
-    final String amount = NumberFormat.currency(
+    final String amountText = NumberFormat.currency(
       locale: 'en_PH',
       symbol: '₱',
-    ).format(transaction['amount']);
+    ).format(rawAmount.abs());
+
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['created_at']));
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1047,25 +1043,29 @@ class _WalletPageState extends State<WalletPage>
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
             Text(
-              (isCredit ? '+' : '') + amount,
+              // Show sign based on isExpense
+              '${isExpense ? '-' : '+'}$amountText',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isCredit
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFFC62828),
+                fontSize: 14,
+                color: isExpense
+                    ? const Color(0xFFC62828) // Red for expenses
+                    : const Color(0xFF2E7D32), // Green for income
               ),
             ),
           ],
@@ -1074,29 +1074,24 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildTokenItem(
-    Map<String, dynamic> tokenData, {
-    bool isLast = false,
-  }) {
+  Widget _buildTokenItem(Map<String, dynamic> tokenData) {
     final bool isCredit = (tokenData['amount'] as num) > 0;
     final String title = (tokenData['type'] as String) == 'redemption'
         ? 'Token Redemption'
         : 'Token Reward';
     final double amount = (tokenData['amount'] as num).toDouble();
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(tokenData['created_at']));
 
     return InkWell(
       onTap: () => _showTokenActivityModal(context, tokenData),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1107,14 +1102,17 @@ class _WalletPageState extends State<WalletPage>
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -1124,7 +1122,7 @@ class _WalletPageState extends State<WalletPage>
                   '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                     color: isCredit
                         ? const Color(0xFF2E7D32)
                         : const Color(0xFFC62828),

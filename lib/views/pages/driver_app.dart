@@ -7,10 +7,18 @@ import 'profile.dart';
 import 'notification_commuter.dart';
 import 'feedback_driver.dart';
 
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
+
 import 'wallet_history_driver.dart';
 import 'remit_driver.dart';
 import 'remit_confirm.dart';
 import 'remit_success.dart';
+
+import 'co_driver.dart';
+import 'co_driver_confirm.dart';
+import 'co_driver_instructions.dart';
+import 'co_driver_success.dart';
 
 class DriverApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -20,10 +28,13 @@ class DriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      key: navigatorKey,
-      initialRoute: '/',
-      onGenerateRoute: _driverRouter,
+    return ChangeNotifierProvider(
+      create: (_) => DriverWalletProvider(),
+      child: Navigator(
+        key: navigatorKey,
+        initialRoute: '/',
+        onGenerateRoute: _driverRouter,
+      ),
     );
   }
 
@@ -44,10 +55,11 @@ class DriverApp extends StatelessWidget {
       case '/driver_history':
         page = const WalletHistoryDriverPage();
         break;
-        
+
       case '/remit':
         page = const RemitPageDriver();
         break;
+
       case '/remit_confirmation':
         final args = settings.arguments as Map<String, dynamic>;
         page = RemitConfirmationPage(
@@ -55,8 +67,27 @@ class DriverApp extends StatelessWidget {
           operatorName: args['operatorName'] as String,
         );
         break;
+
       case '/remit_success':
         page = const RemittanceSuccessPage();
+        break;
+
+      case '/cash_out':
+        page = const DriverCashOutPage();
+        break;
+
+      case '/cash_out_confirmation':
+        final args = settings.arguments as String;
+        page = DriverCashOutConfirmPage(amount: args);
+        break;
+
+      case '/cash_out_instructions':
+        final args = settings.arguments as Map<String, dynamic>;
+        page = DriverCashOutInstructionsPage(transaction: args);
+        break;
+
+      case '/cash_out_success':
+        page = const DriverCashOutSuccessPage();
         break;
 
       default:

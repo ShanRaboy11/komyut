@@ -1,49 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../providers/wallet_provider.dart';
-import 'commuter_app.dart';
 
-class OtcInstructionsPage extends StatefulWidget {
+import '../providers/wallet_provider.dart';
+import 'driver_app.dart';
+
+class DriverCashOutInstructionsPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
 
-  const OtcInstructionsPage({super.key, required this.transaction});
+  const DriverCashOutInstructionsPage({super.key, required this.transaction});
 
   @override
-  State<OtcInstructionsPage> createState() => _OtcInstructionsPageState();
+  State<DriverCashOutInstructionsPage> createState() =>
+      _DriverCashOutInstructionsPageState();
 }
 
-class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
+class _DriverCashOutInstructionsPageState
+    extends State<DriverCashOutInstructionsPage> {
   Future<void> _onDonePressed() async {
-    final provider = Provider.of<WalletProvider>(context, listen: false);
-    final transactionId = widget.transaction['id'];
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final code = widget.transaction['transaction_number'];
 
-    if (transactionId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Missing transaction ID.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (code != null) {
+      await provider.completeCashOut(code);
 
-    final success = await provider.completeOtcCashIn(
-      transactionId: transactionId,
-    );
-
-    if (success && mounted) {
-      CommuterApp.navigatorKey.currentState?.pushNamed('/payment_success');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.completionErrorMessage ??
-                'Failed to complete transaction.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        DriverApp.navigatorKey.currentState?.pushReplacementNamed(
+          '/cash_out_success',
+        );
+      }
     }
   }
 
@@ -62,7 +47,7 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Cash In',
+          'Cash Out',
           style: GoogleFonts.manrope(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -77,7 +62,7 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Over-the-Counter',
+              'Withdraw Cash',
               style: GoogleFonts.manrope(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -91,37 +76,35 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
               iconPath: 'assets/images/step2.png',
               title: 'Step 2',
               description:
-                  'Go to the nearest official partner outlet and inform the cashier that you would like to cash in to your komyut wallet.',
+                  'Go to the nearest official partner outlet and inform the cashier that you would like to cash out from your komyut wallet.',
             ),
             const SizedBox(height: 32),
             _buildStep(
               iconPath: 'assets/images/step3.png',
               title: 'Step 3',
               description:
-                  'Give the cashier your username, along with the cash-in amount you entered in the komyut app.',
+                  'Present the transaction code generated and your Driver ID to the cashier for verification.',
             ),
             const SizedBox(height: 32),
             _buildStep(
               iconPath: 'assets/images/step4.png',
               title: 'Step 4',
               description:
-                  'Hand over the total payment to the cashier. This includes your cash-in amount plus the transaction fee.',
+                  'The cashier will verify the transaction details. Please wait while they process your request.',
             ),
             const SizedBox(height: 32),
             _buildStep(
               iconPath: 'assets/images/step5.png',
               title: 'Step 5',
               description:
-                  'The cashier will process the transaction and load the funds to your wallet. Wait for confirmation before leaving the store.',
+                  'Receive your cash. Note that the service fee has already been deducted from your wallet balance.',
             ),
             const SizedBox(height: 50),
-            Consumer<WalletProvider>(
+            Consumer<DriverWalletProvider>(
               builder: (context, provider, child) {
                 return Center(
                   child: OutlinedButton(
-                    onPressed: provider.isCompletionLoading
-                        ? null
-                        : _onDonePressed,
+                    onPressed: provider.isPageLoading ? null : _onDonePressed,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: brandColor,
                       backgroundColor: brandColor.withValues(alpha: 0.1),
@@ -134,7 +117,7 @@ class _OtcInstructionsPageState extends State<OtcInstructionsPage> {
                         vertical: 10,
                       ),
                     ),
-                    child: provider.isCompletionLoading
+                    child: provider.isPageLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,

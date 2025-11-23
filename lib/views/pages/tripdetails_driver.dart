@@ -33,7 +33,8 @@ class DriverTripDetailsPage extends StatefulWidget {
   State<DriverTripDetailsPage> createState() => _DriverTripDetailsPageState();
 }
 
-class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with SingleTickerProviderStateMixin {
+class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
+    with SingleTickerProviderStateMixin {
   final DriverTripService _service = DriverTripService();
   DriverTrip? _details;
   bool _loading = false;
@@ -136,10 +137,11 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     final screenWidth = MediaQuery.of(context).size.width;
     final defaultLocation = LatLng(10.29556, 123.87972);
 
-    final hasRouteData = _routeStops != null &&
-      _routeStops!.isNotEmpty &&
-      _originStopId != null &&
-      _destinationStopId != null;
+    final hasRouteData =
+        _routeStops != null &&
+        _routeStops!.isNotEmpty &&
+        _originStopId != null &&
+        _destinationStopId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -154,7 +156,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
         title: Text(
           'Trip Details',
           style: GoogleFonts.manrope(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -180,7 +182,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                       "${widget.date}, ${widget.time}",
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.nunito(
-                        fontSize: 14,
+                        fontSize: 11,
                         color: const Color.fromRGBO(0, 0, 0, 0.7),
                       ),
                     ),
@@ -196,7 +198,8 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      widget.status[0].toUpperCase() + widget.status.substring(1),
+                      widget.status[0].toUpperCase() +
+                          widget.status.substring(1),
                       style: GoogleFonts.nunito(
                         color: _statusColor(widget.status),
                         fontWeight: FontWeight.w700,
@@ -255,7 +258,9 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _details != null ? '${((_details!.distanceMeters ?? 0)/1000.0).toStringAsFixed(1)} km' : '—',
+                              _details != null
+                                  ? '${((_details!.distanceMeters ?? 0) / 1000.0).toStringAsFixed(1)} km'
+                                  : '—',
                               style: GoogleFonts.manrope(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -279,7 +284,9 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _details != null ? '${_details!.passengersCount}' : '—',
+                              _details != null
+                                  ? '${_details!.passengersCount}'
+                                  : '—',
                               style: GoogleFonts.manrope(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -309,7 +316,11 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -332,7 +343,8 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
-                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
+                        builder: (context) =>
+                            TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -348,7 +360,8 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
-                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
+                        builder: (context) =>
+                            TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -378,11 +391,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[300]!,
-                Colors.grey[100]!,
-                Colors.grey[300]!,
-              ],
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
               stops: [
                 _shimmerController.value - 0.3,
                 _shimmerController.value,
@@ -402,7 +411,10 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     // Compute initials from the provided name
     String initials = 'P';
     try {
-      final parts = name.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+      final parts = name
+          .split(RegExp(r'\s+'))
+          .where((s) => s.isNotEmpty)
+          .toList();
       if (parts.isEmpty) {
         initials = 'P';
       } else if (parts.length == 1) {
@@ -454,7 +466,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
             child: Text(
               name,
               style: GoogleFonts.manrope(
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
               overflow: TextOverflow.ellipsis,
@@ -470,7 +482,10 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6).withValues(alpha: 0.3), width: 1.2),
+        border: Border.all(
+          color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
+          width: 1.2,
+        ),
         borderRadius: BorderRadius.circular(14),
         color: Colors.white,
         boxShadow: [
@@ -626,7 +641,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -770,7 +785,9 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     final distanceText = _details != null
         ? '${((_details!.distanceMeters ?? 0) / 1000.0).toStringAsFixed(1)} kilometers'
         : '—';
-    final passengersText = _details != null ? '${_details!.passengersCount}' : '—';
+    final passengersText = _details != null
+        ? '${_details!.passengersCount}'
+        : '—';
 
     // (no local gradient needed here)
 
@@ -871,12 +888,17 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildStop(
-                  label: _details != null && _details!.originName.isNotEmpty ? _details!.originName : widget.from,
+                  label: _details != null && _details!.originName.isNotEmpty
+                      ? _details!.originName
+                      : widget.from,
                   time: _details?.startedAt.toIso8601String() ?? widget.time,
                   isLast: false,
                 ),
                 _buildStop(
-                  label: _details != null && _details!.destinationName.isNotEmpty ? _details!.destinationName : widget.to,
+                  label:
+                      _details != null && _details!.destinationName.isNotEmpty
+                      ? _details!.destinationName
+                      : widget.to,
                   time: _details?.startedAt.toIso8601String() ?? widget.time,
                   isLast: true,
                 ),
@@ -888,7 +910,11 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage> with Sing
     );
   }
 
-  Widget _buildStop({required String label, required String time, required bool isLast}) {
+  Widget _buildStop({
+    required String label,
+    required String time,
+    required bool isLast,
+  }) {
     final gradientColors = const [
       Color(0xFFB945AA),
       Color(0xFF8E4CB6),

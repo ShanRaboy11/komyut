@@ -18,22 +18,21 @@ class AuthHelper {
   static Future<void> logout(BuildContext context) async {
     try {
       debugPrint('🔄 Logging out user...');
-      
+
       // Sign out from Supabase
       await Supabase.instance.client.auth.signOut();
-      
+
       debugPrint('✅ User logged out successfully');
-      
+
       // Navigate to landing page and remove all previous routes
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/landing',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/landing', (route) => false);
       }
     } catch (e) {
       debugPrint('❌ Logout error: $e');
-      
+
       // Show error message to user
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -50,7 +49,7 @@ class AuthHelper {
   static Future<String?> getCurrentUserRole() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      
+
       if (user == null) {
         return null;
       }
@@ -87,7 +86,7 @@ class AuthHelper {
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
-  
+
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
@@ -158,7 +157,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _getPersonalInfoPage() {
     if (_profileData == null) return const SizedBox();
-    
+
     final role = _profileData!['role'];
     switch (role) {
       case 'commuter':
@@ -298,9 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         backgroundColor: const Color(0xFFF7F4FF),
         body: Center(
-          child: CircularProgressIndicator(
-            color: const Color(0xFF8E4CB6),
-          ),
+          child: CircularProgressIndicator(color: const Color(0xFF8E4CB6)),
         ),
       );
     }
@@ -331,10 +328,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadProfileData,
-                child: Text('Retry'),
-              ),
+              ElevatedButton(onPressed: _loadProfileData, child: Text('Retry')),
             ],
           ),
         ),
@@ -346,10 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: width * 0.07,
-              vertical: 20,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -358,7 +349,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   "Profile",
                   style: GoogleFonts.manrope(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -392,7 +383,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             _getUserDisplayName(),
                             style: GoogleFonts.manrope(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -400,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             _getUserRole(),
                             style: GoogleFonts.manrope(
-                              fontSize: 16,
+                              fontSize: 12,
                               color: const Color(0xFF8E4CB6),
                               fontWeight: FontWeight.w600,
                             ),
@@ -408,7 +399,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             "ID: ${_getUserId()}",
                             style: GoogleFonts.nunito(
-                              fontSize: 14,
+                              fontSize: 10,
                               color: Colors.black38,
                             ),
                           ),
@@ -484,7 +475,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   elevation: 3,
                   shadowColor: Colors.redAccent.withValues(alpha: 0.2),
                 ),
@@ -492,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   "Log out",
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -525,10 +516,10 @@ class _ProfileCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.only(
-          left: 30,
-          right: 30,
-          top: 20,
-          bottom: 20,
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12,
         ),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFF8E4CB6), width: 1),
@@ -558,13 +549,13 @@ class _ProfileCard extends StatelessWidget {
                     title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
-                      fontSize: 20,
+                      fontSize: 16,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.nunito(
-                      fontSize: 16,
+                      fontSize: 12,
                       color: const Color.fromARGB(212, 0, 0, 0),
                     ),
                   ),

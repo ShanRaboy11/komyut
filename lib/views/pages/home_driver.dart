@@ -219,8 +219,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 children: [
                                   SvgPicture.asset(
                                     'assets/images/logo_white.svg',
-                                    height: 80,
-                                    width: 80,
+                                    height: 60,
+                                    width: 60,
                                   ),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -229,14 +229,14 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                         'Hi, ${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}',
                                         style: GoogleFonts.manrope(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 24,
+                                          fontSize: 16,
                                           color: Colors.white,
                                         ),
                                       ),
                                       const Text(
                                         'Welcome back!',
                                         style: TextStyle(
-                                          fontSize: 20,
+                                          fontSize: 14,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -253,7 +253,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 children: [
                                   Expanded(
                                     child: _buildHeaderCard(
-                                      title: "Today's Earnings",
+                                      title: "Today's Income",
                                       amount: dashboardProvider.todayEarnings
                                           .toStringAsFixed(2),
                                       isBalanceVisible: _isEarningsVisible,
@@ -407,7 +407,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                               Text(
                                                 'No QR Code Generated',
                                                 style: GoogleFonts.manrope(
-                                                  fontSize: 16,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.w600,
                                                   color: Colors.grey[600],
                                                 ),
@@ -462,7 +462,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                               child: Text(
                                                 'Active QR Code',
                                                 style: GoogleFonts.manrope(
-                                                  fontSize: 14,
+                                                  fontSize: 12,
                                                   fontWeight: FontWeight.w600,
                                                   color: const Color(
                                                     0xFFB945AA,
@@ -485,8 +485,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                       isFilled: true,
                                       textColor: Colors.white,
                                       width: double.infinity,
-                                      height: 50,
+                                      height: 45,
                                       borderRadius: 30,
+                                      fontSize: 14,
                                     ),
                                   ],
                                 ),
@@ -543,7 +544,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   title,
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -567,7 +568,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                 '₱ ',
                 style: GoogleFonts.manrope(
                   color: Colors.white,
-                  fontSize: 32,
+                  fontSize: 20,
                   fontWeight: FontWeight.normal,
                 ),
               ),
@@ -577,7 +578,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   isBalanceVisible ? amount : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -635,11 +636,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   'Ratings',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.left,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
                 Container(
                   alignment: Alignment.center,
                   child: Text(
@@ -702,7 +703,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   'Reports',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.left,
                 ),
@@ -730,7 +731,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
             width: double.infinity,
             height: 45,
             borderRadius: 30,
-            fontSize: 14,
+            fontSize: 12,
           ),
         ],
       ),

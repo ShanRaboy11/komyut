@@ -8,7 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/button.dart';
 import '../pages/tripreceipt_commuter.dart';
-import 'report_p1_commuter.dart';
+import 'report_commuter.dart';
 import '../services/trips.dart';
 import '../models/trips.dart';
 
@@ -36,7 +36,8 @@ class TripDetailsPage extends StatefulWidget {
   State<TripDetailsPage> createState() => _TripDetailsPageState();
 }
 
-class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProviderStateMixin {
+class _TripDetailsPageState extends State<TripDetailsPage>
+    with SingleTickerProviderStateMixin {
   final TripsService _service = TripsService();
   TripDetails? _details;
   bool _loading = false;
@@ -96,11 +97,12 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
     final defaultLocation = LatLng(14.5995, 120.9842); // Manila fallback
 
     // Determine if we have route data to show dynamic map
-    final hasRouteData = _details != null && 
-                         _details!.routeStops != null && 
-                         _details!.routeStops!.isNotEmpty &&
-                         _details!.originStopId != null &&
-                         _details!.destinationStopId != null;
+    final hasRouteData =
+        _details != null &&
+        _details!.routeStops != null &&
+        _details!.routeStops!.isNotEmpty &&
+        _details!.originStopId != null &&
+        _details!.destinationStopId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -132,7 +134,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                   Text(
                     "Trips",
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -140,13 +142,13 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                 ],
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               // Title
               Text(
                 "Trip Details",
                 style: GoogleFonts.manrope(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Colors.black87,
                 ),
@@ -161,7 +163,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                       "${widget.date}, ${widget.time}",
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.nunito(
-                        fontSize: 14,
+                        fontSize: 11,
                         color: const Color.fromRGBO(0, 0, 0, 0.7),
                       ),
                     ),
@@ -177,7 +179,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      widget.status[0].toUpperCase() + widget.status.substring(1),
+                      widget.status[0].toUpperCase() +
+                          widget.status.substring(1),
                       style: GoogleFonts.nunito(
                         color: _statusColor(widget.status),
                         fontWeight: FontWeight.w700,
@@ -270,8 +273,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _details!.tripCode.isNotEmpty 
-                                  ? _details!.tripCode 
+                              _details!.tripCode.isNotEmpty
+                                  ? _details!.tripCode
                                   : widget.tripCode,
                               style: GoogleFonts.manrope(
                                 fontSize: 18,
@@ -291,18 +294,18 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                 // Fallback to static card
                 TripDetailsCard(
                   mapImage: 'assets/images/map.png',
-                  distance: _details != null 
-                      ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers' 
+                  distance: _details != null
+                      ? '${_details!.distanceKm.toStringAsFixed(1)} kilometers'
                       : '—',
                   routeCode: _details != null && _details!.tripCode.isNotEmpty
-                      ? _details!.tripCode 
+                      ? _details!.tripCode
                       : widget.tripCode,
                   from: _details != null && _details!.from.isNotEmpty
-                      ? _details!.from 
+                      ? _details!.from
                       : widget.from,
                   fromTime: _details?.time ?? widget.time,
                   to: _details != null && _details!.to.isNotEmpty
-                      ? _details!.to 
+                      ? _details!.to
                       : widget.to,
                   toTime: _details?.time ?? widget.time,
                 ),
@@ -320,7 +323,11 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -380,7 +387,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
-                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
+                        builder: (context) =>
+                            TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -409,7 +417,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
-                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
+                        builder: (context) =>
+                            TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -445,7 +454,8 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
-                        builder: (context) => TripReceiptPage(tripId: widget.tripId),
+                        builder: (context) =>
+                            TripReceiptPage(tripId: widget.tripId),
                       ),
                     );
                   },
@@ -477,11 +487,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[300]!,
-                Colors.grey[100]!,
-                Colors.grey[300]!,
-              ],
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
               stops: [
                 _shimmerController.value - 0.3,
                 _shimmerController.value,
@@ -501,7 +507,10 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF8E4CB6).withValues(alpha: 0.3), width: 1.2),
+        border: Border.all(
+          color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
+          width: 1.2,
+        ),
         borderRadius: BorderRadius.circular(14),
         color: Colors.white,
         boxShadow: [
@@ -657,7 +666,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> with SingleTickerProv
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [

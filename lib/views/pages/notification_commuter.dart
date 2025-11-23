@@ -147,6 +147,7 @@ class NotificationPageState extends State<NotificationPage>
                       style: GoogleFonts.nunito(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -164,7 +165,7 @@ class NotificationPageState extends State<NotificationPage>
               Text(
                 'Notification',
                 style: GoogleFonts.manrope(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -267,7 +268,7 @@ class NotificationPageState extends State<NotificationPage>
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 14,
               color: active ? primary1 : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),
@@ -283,7 +284,7 @@ class NotificationPageState extends State<NotificationPage>
       text,
       style: GoogleFonts.nunito(
         color: primary1,
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.3,
       ),

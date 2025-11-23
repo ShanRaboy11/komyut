@@ -222,14 +222,14 @@ class TripDetailsCard extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.manrope(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
               time,
               style: GoogleFonts.nunito(
-                fontSize: 16,
+                fontSize: 14,
                 color: const Color.fromRGBO(0, 0, 0, 0.6),
               ),
             ),

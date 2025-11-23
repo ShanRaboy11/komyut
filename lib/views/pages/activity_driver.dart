@@ -42,8 +42,6 @@ class _ActivityHubState extends State<_ActivityHub> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +143,7 @@ class _ActivityHubState extends State<_ActivityHub> {
                   Text(
                     title,
                     style: GoogleFonts.manrope(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -153,7 +151,7 @@ class _ActivityHubState extends State<_ActivityHub> {
                   Text(
                     subtitle,
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 12,
                       color: Colors.grey[600],
                     ),
                   ),
@@ -167,8 +165,8 @@ class _ActivityHubState extends State<_ActivityHub> {
       ),
     );
   }
-
 }
+
 class DriverActivityPage extends StatelessWidget {
   const DriverActivityPage({super.key});
 

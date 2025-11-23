@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/wallet_provider.dart';
-import 'commuter_app.dart';
 
-class OverTheCounterPage extends StatefulWidget {
-  const OverTheCounterPage({super.key});
+import '../providers/wallet_provider.dart';
+import 'driver_app.dart';
+
+class DriverCashOutPage extends StatefulWidget {
+  const DriverCashOutPage({super.key});
 
   @override
-  State<OverTheCounterPage> createState() => _OverTheCounterPageState();
+  State<DriverCashOutPage> createState() => _DriverCashOutPageState();
 }
 
-class _OverTheCounterPageState extends State<OverTheCounterPage> {
+class _DriverCashOutPageState extends State<DriverCashOutPage> {
   final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
+  String? _errorText;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
 
@@ -24,7 +27,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
     super.dispose();
   }
 
-  void _onAmountChanged(String value) {
+  void _onAmountChanged(String value, double currentBalance) {
     if (value.length > 1 && value.startsWith('0')) {
       _amountController.text = value.substring(1);
       _amountController.selection = TextSelection.fromPosition(
@@ -32,22 +35,37 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
       );
     }
 
+    final amount = int.tryParse(_amountController.text) ?? 0;
+    final fee = 15.00;
+    final totalDeduction = amount + fee;
+
     setState(() {
-      final amount = int.tryParse(_amountController.text) ?? 0;
-      _isButtonEnabled = amount > 0;
+      if (amount <= 0) {
+        _isButtonEnabled = false;
+        _errorText = null;
+      } else if (totalDeduction > currentBalance) {
+        _isButtonEnabled = false;
+        _errorText = 'Insufficient balance to cover amount and fee.';
+      } else {
+        _isButtonEnabled = true;
+        _errorText = null;
+      }
     });
   }
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    CommuterApp.navigatorKey.currentState?.pushNamed(
-      '/otc_confirmation',
+
+    DriverApp.navigatorKey.currentState?.pushNamed(
+      '/cash_out_confirmation',
       arguments: _amountController.text,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
@@ -57,11 +75,11 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         leading: IconButton(
           icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () {
-            CommuterApp.navigatorKey.currentState?.pop();
+            DriverApp.navigatorKey.currentState?.pop();
           },
         ),
         title: Text(
-          'Cash In',
+          'Cash Out',
           style: GoogleFonts.manrope(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -70,39 +88,67 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 40),
-            _buildStepIndicator(),
-            const SizedBox(height: 40),
-            _buildAmountCard(),
-            const SizedBox(height: 40),
-            _buildNextButton(),
-          ],
-        ),
-      ),
-    );
-  }
+      body: Consumer<DriverWalletProvider>(
+        builder: (context, provider, child) {
+          final currentBalance = provider.totalBalance;
+          final amountValue = double.tryParse(_amountController.text) ?? 0;
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Over-the-Counter',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Divider(color: _brandColor.withValues(alpha: 0.5), thickness: 1),
-      ],
+          final fee = 15.00;
+          final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
+          final remainingBalance = currentBalance - totalDeduction;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 40.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Withdraw Cash',
+                  style: GoogleFonts.manrope(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Divider(
+                  color: _brandColor.withValues(alpha: 0.5),
+                  thickness: 1,
+                ),
+                const SizedBox(height: 40),
+
+                _buildStepIndicator(),
+                const SizedBox(height: 48),
+
+                _buildAmountCard(currentBalance),
+                const SizedBox(height: 16),
+
+                Center(
+                  child: _errorText != null
+                      ? Text(
+                          _errorText!,
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : Text(
+                          'Remaining Balance: ${currencyFormat.format(remainingBalance < 0 ? 0 : remainingBalance)}',
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 32),
+
+                _buildNextButton(provider),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -125,7 +171,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Input the amount you want to load into your komyut wallet below.',
+                'Input the amount you want to withdraw from your komyut wallet below.',
                 style: GoogleFonts.nunito(fontSize: 15, color: Colors.black54),
               ),
             ],
@@ -135,7 +181,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
     );
   }
 
-  Widget _buildAmountCard() {
+  Widget _buildAmountCard(double currentBalance) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
@@ -169,7 +215,6 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       '₱',
@@ -194,7 +239,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                 ),
                 TextField(
                   controller: _amountController,
-                  onChanged: _onAmountChanged,
+                  onChanged: (val) => _onAmountChanged(val, currentBalance),
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   autofocus: true,
@@ -215,7 +260,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
           ),
           const SizedBox(height: 32),
           Text(
-            'A PHP 5.00 fee will be charged per transaction.',
+            'A PHP 15.00 fee will be charged per transaction.',
             style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
           ),
         ],
@@ -223,45 +268,41 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
     );
   }
 
-  Widget _buildNextButton() {
-    return Consumer<WalletProvider>(
-      builder: (context, provider, child) {
-        return Center(
-          child: OutlinedButton(
-            onPressed: (provider.isCashInLoading || !_isButtonEnabled)
-                ? null
-                : _onNextPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
-              backgroundColor: _isButtonEnabled
-                  ? _brandColor.withValues(alpha: 0.1)
-                  : Colors.grey.withValues(alpha: 0.1),
-              side: BorderSide(
-                color: _isButtonEnabled
-                    ? _brandColor
-                    : Colors.grey.withValues(alpha: 0.5),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
-            ),
-            child: provider.isCashInLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Next',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
+  Widget _buildNextButton(DriverWalletProvider provider) {
+    return Center(
+      child: OutlinedButton(
+        onPressed: (provider.isPageLoading || !_isButtonEnabled)
+            ? null
+            : _onNextPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
+          backgroundColor: _isButtonEnabled
+              ? _brandColor.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.1),
+          side: BorderSide(
+            color: _isButtonEnabled
+                ? _brandColor
+                : Colors.grey.withValues(alpha: 0.5),
           ),
-        );
-      },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
+        ),
+        child: provider.isPageLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                'Next',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+      ),
     );
   }
 }

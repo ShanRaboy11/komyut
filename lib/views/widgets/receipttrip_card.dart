@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
 
 class ReceiptCard extends StatelessWidget {
   final String from;
@@ -32,6 +33,16 @@ class ReceiptCard extends StatelessWidget {
     required this.totalFare,
     this.barcodeText = '',
   });
+  String get formattedDate {
+    try {
+      // Try parsing the human-readable format
+      final parsed = DateFormat('MMMM d, yyyy').parse(date);
+      return DateFormat('MMM d, yyyy').format(parsed); // Jan 15, 2025
+    } catch (_) {
+      // Fallback if parsing fails
+      return date;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,18 +110,10 @@ class ReceiptCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Boarding location
-                    _buildLocationRow(
-                      from,
-                      fromTime,
-                      const Color(0xFFB945AA),
-                    ),
+                    _buildLocationRow(from, fromTime, const Color(0xFFB945AA)),
                     const SizedBox(height: 43), // Match icon separator height
                     // Departure location
-                    _buildLocationRow(
-                      to,
-                      toTime,
-                      const Color(0xFF5B53C2),
-                    ),
+                    _buildLocationRow(to, toTime, const Color(0xFF5B53C2)),
                   ],
                 ),
               ),
@@ -141,72 +144,76 @@ class ReceiptCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
-          
+
           // 🧍 Barcode Section - Always show with placeholder if no transaction
           Center(
             child: Column(
               children: [
                 // Trim whitespace to avoid hidden characters preventing rendering
-                Builder(builder: (context) {
-                  final tx = barcodeText.trim();
-                  developer.log('receipttrip_card: barcodeText="$tx"', name: 'ReceiptCard');
-                  return tx.isNotEmpty
-                      ? Column(
-                          children: [
-                            BarcodeWidget(
-                              barcode: Barcode.code128(),
-                              data: tx,
-                              height: 60,
-                              width: 200,
-                              drawText: false,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              tx,
-                              style: GoogleFonts.nunito(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Colors.black.withValues(alpha: 0.7),
+                Builder(
+                  builder: (context) {
+                    final tx = barcodeText.trim();
+                    developer.log(
+                      'receipttrip_card: barcodeText="$tx"',
+                      name: 'ReceiptCard',
+                    );
+                    return tx.isNotEmpty
+                        ? Column(
+                            children: [
+                              BarcodeWidget(
+                                barcode: Barcode.code128(),
+                                data: tx,
+                                height: 60,
+                                width: 200,
+                                drawText: false,
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            Container(
-                              height: 60,
-                              width: 200,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.grey.withValues(alpha: 0.3),
-                                  style: BorderStyle.solid,
-                                  width: 1,
+                              const SizedBox(height: 8),
+                              Text(
+                                tx,
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.black.withValues(alpha: 0.7),
                                 ),
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.qr_code_2,
-                                  size: 40,
-                                  color: Colors.grey.withValues(alpha: 0.4),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              Container(
+                                height: 60,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.grey.withValues(alpha: 0.3),
+                                    style: BorderStyle.solid,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.qr_code_2,
+                                    size: 40,
+                                    color: Colors.grey.withValues(alpha: 0.4),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No Transaction Number',
-                              style: GoogleFonts.nunito(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                                color: Colors.grey.withValues(alpha: 0.6),
-                                fontStyle: FontStyle.italic,
+                              const SizedBox(height: 8),
+                              Text(
+                                'No Transaction Number',
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  color: Colors.grey.withValues(alpha: 0.6),
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
-                            ),
-                          ],
-                        );
-                }),
-                
+                            ],
+                          );
+                  },
+                ),
               ],
             ),
           ),
@@ -223,7 +230,7 @@ class ReceiptCard extends StatelessWidget {
           title,
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
-            fontSize: 16,
+            fontSize: 14,
             color: Colors.black,
           ),
           maxLines: 2,
@@ -233,7 +240,7 @@ class ReceiptCard extends StatelessWidget {
         Text(
           time,
           style: GoogleFonts.nunito(
-            fontSize: 14,
+            fontSize: 12,
             color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
@@ -257,7 +264,7 @@ class ReceiptCard extends StatelessWidget {
               label,
               style: GoogleFonts.manrope(
                 fontWeight: isBoldLeft ? FontWeight.w800 : FontWeight.w600,
-                fontSize: isBoldLeft ? 20 : 16,
+                fontSize: isBoldLeft ? 16 : 14,
                 color: Colors.black87,
               ),
             ),
@@ -267,7 +274,7 @@ class ReceiptCard extends StatelessWidget {
             value,
             style: GoogleFonts.manrope(
               fontWeight: isBoldRight ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 16,
+              fontSize: 13,
               color: Colors.black87,
             ),
             textAlign: TextAlign.right,

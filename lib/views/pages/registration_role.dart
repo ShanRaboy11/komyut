@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/option_card.dart';
@@ -25,6 +26,7 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
     ProgressBarStep(title: 'Set Login'),
     ProgressBarStep(title: 'Verify Email'),
   ];
+  double _opacity = 0.0;
 
   @override
   void initState() {
@@ -42,6 +44,9 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
               savedRole.substring(0, 1).toUpperCase() + savedRole.substring(1);
         });
       }
+      setState(() {
+        _opacity = 1.0;
+      });
     });
   }
 
@@ -95,137 +100,138 @@ class _RegistrationRolePageState extends State<RegistrationRolePage> {
     final double buttonWidth = (screenSize.width - (25 * 2) - 20) / 2;
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Stack(
-          children: [
-            const BackgroundCircles(),
-
-            Positioned.fill(
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                      child: ProgressBar(steps: _registrationSteps),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    'Choose Role',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color.fromRGBO(18, 18, 18, 1),
-                      fontFamily: 'Manrope',
-                      fontSize: 28,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.bold,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Select how you’ll be using komyut. \nThis helps us tailor the experience for you.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
-                      fontFamily: 'Nunito',
-                      fontSize: 14,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.normal,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  OptionCard(
-                    title: 'Commuter',
-                    isSelected: _selectedRole == 'commuter',
-                    height: 60,
-                    onTap: () {
-                      setState(() {
-                        _selectedRole = 'commuter';
-                      });
-                    },
-                    type: OptionCardType.radio,
-                  ),
-                  OptionCard(
-                    title: 'Driver',
-                    isSelected: _selectedRole == 'driver',
-                    height: 60,
-                    onTap: () {
-                      setState(() {
-                        _selectedRole = 'driver';
-                      });
-                    },
-                    type: OptionCardType.radio,
-                  ),
-                  OptionCard(
-                    title: 'Operator',
-                    isSelected: _selectedRole == 'operator',
-                    height: 60,
-                    onTap: () {
-                      setState(() {
-                        _selectedRole = 'operator';
-                      });
-                    },
-                    type: OptionCardType.radio,
-                  ),
-
-                  const Spacer(),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 25.0,
-                      vertical: 60.0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        CustomButton(
-                          text: 'Back',
-                          onPressed: onBackPressed,
-                          isFilled: false,
-                          width: buttonWidth,
-                          height: 50,
-                          borderRadius: 15,
-                          strokeColor: const Color.fromRGBO(176, 185, 198, 1),
-                          outlinedFillColor: Colors.white,
-                          textColor: const Color.fromRGBO(176, 185, 198, 1),
-                          hasShadow: true,
-                        ),
-                        const SizedBox(width: 20),
-                        CustomButton(
-                          text: registrationProvider.isLoading
-                              ? 'Loading...'
-                              : 'Next',
-                          onPressed: registrationProvider.isLoading
-                              ? () {}
-                              : onNextPressed,
-                          isFilled: true,
-                          width: buttonWidth,
-                          height: 50,
-                          borderRadius: 15,
-                          textColor: Colors.white,
-                          hasShadow: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+      body: AnimatedOpacity(
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeIn,
+        opacity: _opacity,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-          ],
+          ),
+          child: Stack(
+            children: [
+              const BackgroundCircles(),
+
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    Align(
+                      alignment: Alignment.center,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                        child: ProgressBar(steps: _registrationSteps),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    Text(
+                      'Choose Role',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        color: Color.fromRGBO(18, 18, 18, 1),
+                        fontSize: 24,
+                        letterSpacing: 0,
+                        fontWeight: FontWeight.bold,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Select how you’ll be using komyut. \nThis helps us tailor the experience for you.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                        fontSize: 14,
+                        letterSpacing: 0,
+                        fontWeight: FontWeight.normal,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    OptionCard(
+                      title: 'Commuter',
+                      isSelected: _selectedRole == 'commuter',
+                      height: 50,
+                      onTap: () {
+                        setState(() {
+                          _selectedRole = 'commuter';
+                        });
+                      },
+                      type: OptionCardType.radio,
+                    ),
+                    OptionCard(
+                      title: 'Driver',
+                      isSelected: _selectedRole == 'driver',
+                      height: 50,
+                      onTap: () {
+                        setState(() {
+                          _selectedRole = 'driver';
+                        });
+                      },
+                      type: OptionCardType.radio,
+                    ),
+                    OptionCard(
+                      title: 'Operator',
+                      isSelected: _selectedRole == 'operator',
+                      height: 50,
+                      onTap: () {
+                        setState(() {
+                          _selectedRole = 'operator';
+                        });
+                      },
+                      type: OptionCardType.radio,
+                    ),
+
+                    const Spacer(),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 25.0,
+                        vertical: 60.0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CustomButton(
+                            text: 'Back',
+                            onPressed: onBackPressed,
+                            isFilled: false,
+                            width: buttonWidth,
+                            borderRadius: 15,
+                            strokeColor: const Color.fromRGBO(176, 185, 198, 1),
+                            outlinedFillColor: Colors.white,
+                            textColor: const Color.fromRGBO(176, 185, 198, 1),
+                            hasShadow: true,
+                          ),
+                          const SizedBox(width: 20),
+                          CustomButton(
+                            text: registrationProvider.isLoading
+                                ? 'Loading...'
+                                : 'Next',
+                            onPressed: registrationProvider.isLoading
+                                ? () {}
+                                : onNextPressed,
+                            isFilled: true,
+                            width: buttonWidth,
+                            borderRadius: 15,
+                            textColor: Colors.white,
+                            hasShadow: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

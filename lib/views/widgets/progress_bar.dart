@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProgressBarStep {
   final String title;
@@ -26,11 +27,7 @@ class ProgressBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Row for circles and lines
-          IntrinsicHeight(
-            child: Row(
-              children: _buildStepIndicators(),
-            ),
-          ),
+          IntrinsicHeight(child: Row(children: _buildStepIndicators())),
           const SizedBox(height: 6),
           // Row for labels
           Row(
@@ -48,20 +45,16 @@ class ProgressBar extends StatelessWidget {
       final step = steps[i];
       final bool isLastStep = i == steps.length - 1;
 
-      indicators.add(
-        Expanded(
-          child: Center(
-            child: _buildStepCircle(step),
-          ),
-        ),
-      );
+      indicators.add(Expanded(child: Center(child: _buildStepCircle(step))));
 
       if (!isLastStep) {
         indicators.add(
           Expanded(
             flex: 1,
             child: _buildStepDivider(
-              steps[i].isCompleted || steps[i + 1].isActive || steps[i + 1].isCompleted,
+              steps[i].isCompleted ||
+                  steps[i + 1].isActive ||
+                  steps[i + 1].isCompleted,
             ),
           ),
         );
@@ -84,13 +77,18 @@ class ProgressBar extends StatelessWidget {
   Widget _buildStepCircle(ProgressBarStep step) {
     Color activeColor = const Color.fromRGBO(185, 69, 170, 1);
     Color inactiveColor = const Color.fromRGBO(198, 198, 198, 1);
-    Color completedColor = const Color.fromRGBO(185, 69, 170, 1); // Changed to purple
+    Color completedColor = const Color.fromRGBO(
+      185,
+      69,
+      170,
+      1,
+    ); // Changed to purple
 
     Color circleBorderColor = step.isCompleted
         ? completedColor
         : step.isActive
-            ? activeColor
-            : inactiveColor;
+        ? activeColor
+        : inactiveColor;
 
     Widget? innerWidget;
     Color circleFillColor = Colors.transparent;
@@ -106,10 +104,7 @@ class ProgressBar extends StatelessWidget {
       innerWidget = Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: activeColor,
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: activeColor),
       );
     }
 
@@ -119,10 +114,7 @@ class ProgressBar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: circleFillColor,
-        border: Border.all(
-          color: circleBorderColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: circleBorderColor, width: 1.5),
       ),
       child: Center(child: innerWidget),
     );
@@ -148,12 +140,11 @@ class ProgressBar extends StatelessWidget {
         textAlign: alignment,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
+        style: GoogleFonts.nunito(
           color: step.isActive || step.isCompleted
               ? activeColor
               : inactiveColor,
-          fontFamily: 'Nunito',
-          fontSize: 12,
+          fontSize: 11,
           letterSpacing: 0.5,
           fontWeight: FontWeight.normal,
           height: 1.6,

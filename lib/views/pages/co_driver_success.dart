@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
-import 'commuter_app.dart';
+import 'driver_app.dart';
 
-class TokenSuccessPage extends StatefulWidget {
-  const TokenSuccessPage({super.key});
+class DriverCashOutSuccessPage extends StatefulWidget {
+  const DriverCashOutSuccessPage({super.key});
 
   @override
-  State<TokenSuccessPage> createState() => _TokenSuccessPageState();
+  State<DriverCashOutSuccessPage> createState() =>
+      _DriverCashOutSuccessPageState();
 }
 
-class _TokenSuccessPageState extends State<TokenSuccessPage>
+class _DriverCashOutSuccessPageState extends State<DriverCashOutSuccessPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
@@ -56,7 +57,7 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
             _buildSuccessIcon(),
             const SizedBox(height: 32),
             Text(
-              'Redemption Complete!',
+              'Withdrawal Successful!',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 18,
@@ -109,7 +110,7 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        DriverApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
           '/',
           (route) => false,
         );
@@ -123,9 +124,7 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        CommuterApp.navigatorKey.currentState?.popUntil(
-          ModalRoute.withName('/'),
-        );
+        DriverApp.navigatorKey.currentState?.popUntil(ModalRoute.withName('/'));
       },
       isFilled: false,
     );

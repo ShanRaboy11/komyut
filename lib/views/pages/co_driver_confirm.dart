@@ -4,25 +4,28 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/wallet_provider.dart';
-import 'commuter_app.dart';
+import 'driver_app.dart';
 
-class TokenConfirmationPage extends StatefulWidget {
-  final String tokenAmount;
+class DriverCashOutConfirmPage extends StatefulWidget {
+  final String amount;
 
-  const TokenConfirmationPage({super.key, required this.tokenAmount});
+  const DriverCashOutConfirmPage({super.key, required this.amount});
 
   @override
-  State<TokenConfirmationPage> createState() => _TokenConfirmationPageState();
+  State<DriverCashOutConfirmPage> createState() =>
+      _DriverCashOutConfirmPageState();
 }
 
-class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
-  late final String transactionCode;
+class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
+  late String _transactionCode;
+  final double _fee = 15.00;
 
   @override
   void initState() {
     super.initState();
-    transactionCode = _generateTransactionCode();
+    _transactionCode = _generateTransactionCode();
   }
 
   String _generateTransactionCode() {
@@ -34,38 +37,37 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
         (_) => chars.codeUnitAt(random.nextInt(chars.length)),
       ),
     );
-    return 'K0MYUT-XHS$part1'.substring(0, 25);
+    return 'K0MYUT-DCO$part1'.substring(0, 25);
   }
 
-  Future<void> _onConfirmPressed(BuildContext context) async {
-    final provider = Provider.of<WalletProvider>(context, listen: false);
-    final amountValue = double.tryParse(widget.tokenAmount);
+  Future<void> _onConfirmPressed() async {
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final amountValue = double.tryParse(widget.amount);
 
-    if (amountValue == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid token amount.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (amountValue == null) return;
 
-    final success = await provider.redeemWheelTokens(
+    final success = await provider.requestCashOut(
       amount: amountValue,
-      transactionCode: transactionCode,
+      transactionCode: _transactionCode,
     );
 
-    if (success && context.mounted) {
-      CommuterApp.navigatorKey.currentState?.pushReplacementNamed(
-        '/token_success',
+    if (success && mounted) {
+      final transactionData = {
+        'id': 'temp_id_${DateTime.now().millisecondsSinceEpoch}',
+        'transaction_number': _transactionCode,
+        'amount': amountValue,
+        'type': 'cash_out',
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      DriverApp.navigatorKey.currentState?.pushNamed(
+        '/cash_out_instructions',
+        arguments: transactionData,
       );
-    } else if (context.mounted) {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            provider.completionErrorMessage ?? 'Failed to redeem tokens.',
-          ),
+          content: Text(provider.errorMessage ?? 'Transaction Failed'),
           backgroundColor: Colors.red,
         ),
       );
@@ -74,12 +76,16 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double amountValue = double.tryParse(widget.amount) ?? 0.0;
+    final double totalValue = amountValue + _fee;
     final now = DateTime.now();
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
-    final double tokenValue = double.tryParse(widget.tokenAmount) ?? 0.0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
-    final String equivalentValue = currencyFormat.format(tokenValue);
+
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final String formattedAmount = currencyFormat.format(amountValue);
+    final String formattedTotal = currencyFormat.format(totalValue);
+
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -93,7 +99,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Redeem Tokens',
+          'Cash Out',
           style: GoogleFonts.manrope(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -108,7 +114,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Wheel Tokens',
+              'Withdraw Cash',
               style: GoogleFonts.manrope(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -118,13 +124,14 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             const SizedBox(height: 8),
             Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
             const SizedBox(height: 40),
+
             _buildTransactionCard(
               context: context,
               date: date,
               time: time,
-              tokenAmount: widget.tokenAmount,
-              equivalentValue: equivalentValue,
-              transactionCode: transactionCode,
+              amount: formattedAmount,
+              total: formattedTotal,
+              transactionCode: _transactionCode,
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -135,48 +142,45 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Center(
-              child: Consumer<WalletProvider>(
-                builder: (context, provider, child) {
-                  return OutlinedButton(
-                    onPressed: provider.isCompletionLoading
-                        ? null
-                        : () => _onConfirmPressed(context),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: brandColor,
-                      backgroundColor: brandColor.withValues(alpha: 0.1),
-                      side: BorderSide(color: brandColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 10,
-                      ),
-                    ),
-                    child: provider.isCompletionLoading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: brandColor,
-                            ),
-                          )
-                        : Text(
-                            'Confirm',
-                            style: GoogleFonts.manrope(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                  );
-                },
-              ),
-            ),
+            _buildConfirmButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildConfirmButton() {
+    final Color brandColor = const Color(0xFF8E4CB6);
+    return Consumer<DriverWalletProvider>(
+      builder: (context, provider, child) {
+        return Center(
+          child: OutlinedButton(
+            onPressed: provider.isPageLoading ? null : _onConfirmPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: brandColor,
+              backgroundColor: brandColor.withValues(alpha: 0.1),
+              side: BorderSide(color: brandColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+            ),
+            child: provider.isPageLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Confirm',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 
@@ -184,8 +188,8 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
     required BuildContext context,
     required String date,
     required String time,
-    required String tokenAmount,
-    required String equivalentValue,
+    required String amount,
+    required String total,
     required String transactionCode,
     required Color brandColor,
   }) {
@@ -207,52 +211,34 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
         clipBehavior: Clip.none,
         children: [
           Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Token Redemption',
+                'Cash Out Transaction',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
-              _buildDetailRow(
-                'Amount:',
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset('assets/images/wheel token.png', height: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      double.parse(tokenAmount).toStringAsFixed(1),
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildDetailRow('Amount:', amount),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-              _buildDetailRow('Equivalent:', equivalentValue, isTotal: true),
+              _buildDetailRow('Total:', total, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
-                height: 40,
+                height: 50,
                 drawText: false,
               ),
               const SizedBox(height: 8),
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.black54,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
@@ -262,7 +248,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                CommuterApp.navigatorKey.currentState?.popUntil(
+                DriverApp.navigatorKey.currentState?.popUntil(
                   ModalRoute.withName('/'),
                 );
               },
@@ -272,7 +258,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.close, color: brandColor, size: 20),
+                child: Icon(Icons.close, color: brandColor),
               ),
             ),
           ),
@@ -281,8 +267,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
     );
   }
 
-  Widget _buildDetailRow(String label, dynamic value, {bool isTotal = false}) {
-    final isValueWidget = value is Widget;
+  Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -296,17 +281,14 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          if (isValueWidget)
-            value
-          else
-            Text(
-              value.toString(),
-              style: GoogleFonts.manrope(
-                fontSize: 15,
-                color: Colors.black87,
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              ),
+          Text(
+            value,
+            style: GoogleFonts.manrope(
+              fontSize: 15,
+              color: Colors.black87,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
             ),
+          ),
         ],
       ),
     );
