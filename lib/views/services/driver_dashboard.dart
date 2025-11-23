@@ -117,9 +117,8 @@ class DriverDashboardService {
           .maybeSingle();
 
       if (profile == null) {
-        // No profile found (shouldn't normally happen), return empty map
-        debugPrint('ℹ️ No profile found for user when fetching driver vehicle info');
-        return {};
+        debugPrint('ℹ️ No profile found for user when fetching wallet balance');
+        return 0.0;
       }
 
       final walletData = await _supabase

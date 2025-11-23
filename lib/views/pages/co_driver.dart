@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
@@ -21,11 +20,6 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
   String? _errorText;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
-  final List<Color> _gradientColors = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
 
   @override
   void dispose() {
@@ -42,7 +36,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
     }
 
     final amount = int.tryParse(_amountController.text) ?? 0;
-    final fee = 15.00; // Fixed cash out fee
+    final fee = 15.00;
     final totalDeduction = amount + fee;
 
     setState(() {
@@ -61,8 +55,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    // TODO: Navigate to Confirmation Page
-    // DriverApp.navigatorKey.currentState?.pushNamed('/cash_out_confirmation', arguments: ...);
+    // TODO: Navigate to confirmation
   }
 
   @override
@@ -95,7 +88,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
         builder: (context, provider, child) {
           final currentBalance = provider.totalBalance;
           final amountValue = double.tryParse(_amountController.text) ?? 0;
-          // Calculation logic for display: Balance - (Amount + Fee)
+
           final fee = 15.00;
           final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
           final remainingBalance = currentBalance - totalDeduction;
@@ -105,23 +98,12 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Current Balance Card (Matches Remit Style)
-                _buildInfoCard(
-                  'Current Balance',
-                  currencyFormat.format(currentBalance),
-                  Symbols.account_balance_wallet_rounded,
-                ),
-                const SizedBox(height: 32),
-
-                // 2. Step Indicator (Matches OTC Style)
                 _buildStepIndicator(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 48),
 
-                // 3. Amount Input Card (Matches Remit Style)
                 _buildAmountCard(currentBalance),
                 const SizedBox(height: 16),
 
-                // 4. Dynamic Note (Matches Remit Style)
                 Center(
                   child: _errorText != null
                       ? Text(
@@ -140,72 +122,13 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                           ),
                         ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
 
-                // 5. Next Button
                 _buildNextButton(provider),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(String title, String subtitle, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _brandColor.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: _brandColor.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.nunito(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -273,7 +196,6 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       '₱',
