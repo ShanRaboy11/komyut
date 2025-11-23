@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -367,7 +368,7 @@ class _EnhancedStatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6A1B9A).withOpacity(0.3),
+            color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -383,7 +384,7 @@ class _EnhancedStatusCard extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha((0.1 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -420,7 +421,7 @@ class _EnhancedStatusCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withAlpha((0.2 * 255).round()),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -433,12 +434,12 @@ class _EnhancedStatusCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.access_time, size: 12, color: Colors.white.withOpacity(0.8)),
+                    Icon(Icons.access_time, size: 12, color: Colors.white.withAlpha((0.8 * 255).round())),
                     const SizedBox(width: 4),
                     Text(
                       verification.timeAgo,
                       style: GoogleFonts.manrope(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withAlpha((0.9 * 255).round()),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -455,7 +456,7 @@ class _EnhancedStatusCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: _getStatusColor().withOpacity(0.3),
+                  color: _getStatusColor().withAlpha((0.3 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -511,7 +512,7 @@ class _EnhancedUserInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -711,7 +712,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -802,7 +803,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6A1B9A).withOpacity(0.3),
+                      color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -840,7 +841,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                           Text(
                             'Tap to view full image',
                             style: GoogleFonts.manrope(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withAlpha((0.9 * 255).round()),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -851,7 +852,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withAlpha((0.2 * 255).round()),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -941,23 +942,30 @@ class _EnhancedActionButtons extends StatelessWidget {
     required this.notesController,
   });
 
+  // We capture navigators/providers before awaiting; suppress the lint here.
   Future<void> _handleAction(BuildContext context, String action) async {
+    // Capture provider, navigators, and messenger before any async gaps
+    final provider = context.read<AdminVerificationProvider>();
+    final navigator = Navigator.of(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+
     if (action == 'reject' || action == 'lacking') {
-      final notes = await _showNotesDialog(context, action);
+      // Use a captured context (navigator.context) so we don't hold onto
+      // the original BuildContext across an async gap.
+      final notes = await _showNotesDialog(navigator.context, action);
       if (notes == null) return;
       notesController.text = notes;
     }
 
-    final provider = context.read<AdminVerificationProvider>();
     bool success = false;
 
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
+    // Show progress dialog on root navigator so it can be popped reliably
     showDialog(
-      context: context,
+      context: rootNavigator.context,
+      useRootNavigator: true,
       barrierDismissible: false,
-      builder: (context) => Center(
+      builder: (dialogCtx) => Center(
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -992,10 +1000,11 @@ class _EnhancedActionButtons extends StatelessWidget {
           break;
       }
 
-      navigator.pop();
+      // Close the progress dialog shown on the root navigator
+      rootNavigator.pop();
 
       if (success) {
-        if (action == 'approve') {
+          if (action == 'approve') {
           await showDialog<void>(
             context: navigator.context,
             barrierDismissible: false,
@@ -1100,7 +1109,8 @@ class _EnhancedActionButtons extends StatelessWidget {
       }
     } catch (e) {
       try {
-        navigator.pop();
+        // Ensure we attempt to pop the root progress dialog first
+        rootNavigator.pop();
       } catch (_) {}
 
       messenger.showSnackBar(
@@ -1312,7 +1322,7 @@ class _EnhancedActionButtons extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1403,17 +1413,17 @@ class _ActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isPrimary
                 ? LinearGradient(
-                    colors: [color, color.withOpacity(0.8)],
+                    colors: [color, color.withAlpha((0.8 * 255).round())],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
                 : null,
             color: isPrimary ? null : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: isPrimary ? null : Border.all(color: color.withOpacity(0.3), width: 2),
+            border: isPrimary ? null : Border.all(color: color.withAlpha((0.3 * 255).round()), width: 2),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(isPrimary ? 0.3 : 0.1),
+                color: color.withAlpha(((isPrimary ? 0.3 : 0.1) * 255).round()),
                 blurRadius: isPrimary ? 12 : 8,
                 offset: Offset(0, isPrimary ? 4 : 2),
               ),

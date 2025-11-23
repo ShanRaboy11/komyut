@@ -86,6 +86,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.logout,
+                size: 48,
+                color: Color(0xFFEF5350),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               'Logout',
               style: GoogleFonts.manrope(
@@ -115,10 +128,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-            ),
+            child: Text('Cancel', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -126,78 +136,68 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               backgroundColor: const Color(0xFFEF5350),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
-            child: Text(
-              'Logout',
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-            ),
+            child: Text('Logout', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true && mounted) {
-      // Show a blocking progress dialog while signing out
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const CircularProgressIndicator(),
+    if (shouldLogout != true || !mounted) return;
+
+    // Capture navigator and providers before async gaps
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    final authProvider = context.read<AuthProvider>();
+    final adminVerificationProvider = context.read<AdminVerificationProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Show blocking progress dialog on root navigator
+    showDialog<void>(
+      context: rootNav.context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: const CircularProgressIndicator(),
         ),
-      );
+      ),
+    );
 
-      var signOutSuccess = false;
+    var signOutSuccess = false;
+    try {
+      await authProvider.signOut();
+      signOutSuccess = true;
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
       try {
-        // Use the AuthProvider to sign out and clear auth state
-        await context.read<AuthProvider>().signOut();
-        signOutSuccess = true;
-      } catch (e) {
-        // Show error message while keeping the dialog so user sees the result
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Logout failed: $e',
-                style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-              ),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
-        }
-      } finally {
-        // Ensure the progress dialog is dismissed before any navigation
-        if (mounted) {
-          try {
-            Navigator.of(context, rootNavigator: true).pop();
-          } catch (_) {}
-        }
-      }
+        rootNav.pop();
+      } catch (_) {}
+    }
 
-      if (signOutSuccess && mounted) {
-        // Clear any loaded verification detail to avoid stale state
-        try {
-          context.read<AdminVerificationProvider>().clearCurrentDetail();
-        } catch (_) {}
+    if (signOutSuccess && mounted) {
+      try {
+        adminVerificationProvider.clearCurrentDetail();
+      } catch (_) {}
 
-        // Navigate to landing page and remove previous routes (use root navigator)
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/landing', (r) => false);
-      }
+      rootNav.pushNamedAndRemoveUntil('/landing', (r) => false);
     }
   }
 
@@ -210,8 +210,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       backgroundColor: const Color(0xFFF7F4FF),
       body: RefreshIndicator(
         onRefresh: () async {
-          await context.read<AdminDashboardProvider>().refresh();
-          await context.read<AdminVerificationProvider>().loadVerifications();
+          final dash = context.read<AdminDashboardProvider>();
+          final verif = context.read<AdminVerificationProvider>();
+          await dash.refresh();
+          await verif.loadVerifications();
         },
         child: SafeArea(
           child: SingleChildScrollView(
@@ -242,12 +244,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFFEF5350).withOpacity(0.2),
+                              color: Color(0xFFEF5350).withAlpha((0.2 * 255).round()),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFEF5350).withOpacity(0.1),
+                                color: Color(0xFFEF5350).withAlpha((0.1 * 255).round()),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -431,7 +433,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         border: Border.all(color: Colors.purple.shade100),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withOpacity(0.05),
+                            color: Colors.purple.withAlpha((0.05 * 255).round()),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -551,7 +553,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                       show: true,
                                       gradient: LinearGradient(
                                         colors: gradientColors
-                                            .map((c) => c.withOpacity(0.15))
+                                            .map((c) => c.withAlpha((0.15 * 255).round()))
                                             .toList(),
                                       ),
                                     ),
@@ -616,7 +618,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withOpacity(0.05),
+                            color: Colors.purple.withAlpha((0.05 * 255).round()),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -940,10 +942,10 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withAlpha((0.2 * 255).round())),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withAlpha((0.1 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -955,7 +957,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha((0.1 * 255).round()),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -1086,7 +1088,7 @@ class _VerificationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

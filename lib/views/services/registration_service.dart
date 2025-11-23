@@ -118,7 +118,7 @@ class RegistrationService {
 
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final String prefix = filenamePrefix != null ? '${filenamePrefix}_' : '';
-      final String fileName = '${prefix}$timestamp.jpg';
+      final String fileName = '$prefix$timestamp.jpg';
       final String filePath = '$folder/$fileName';
 
       debugPrint('📁 Upload path: $filePath');
