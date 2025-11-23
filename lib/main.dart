@@ -9,6 +9,7 @@ import 'views/providers/wallet_provider.dart';
 import 'views/providers/commuter_dashboard.dart';
 import 'views/providers/driver_dashboard.dart';
 import 'views/providers/operator_dashboard.dart';
+import 'views/providers/admin_dashboard.dart';
 import 'views/providers/trips.dart';
 import 'views/providers/driver_trip.dart';
 import 'views/providers/admin_verification.dart';
@@ -50,6 +51,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TripsProvider()),
         ChangeNotifierProvider(create: (_) => DriverTripProvider()),
         ChangeNotifierProvider(create: (_) => AdminVerificationProvider()),
+        ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
         
         // Stream provider for auth state
         StreamProvider<User?>(
