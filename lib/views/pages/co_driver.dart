@@ -55,7 +55,11 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    // TODO: Navigate to confirmation
+
+    DriverApp.navigatorKey.currentState?.pushNamed(
+      '/cash_out_confirmation',
+      arguments: _amountController.text,
+    );
   }
 
   @override
