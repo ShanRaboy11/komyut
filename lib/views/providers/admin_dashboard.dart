@@ -10,9 +10,10 @@ class AdminDashboardProvider extends ChangeNotifier {
   String? _breakdownError;
 
   // Weekly fare analytics
-  List<DailyFareData> _weeklyFareData = [];
+  List<DailyFareData> _fareData = [];
   bool _isLoadingFareData = false;
   String? _fareDataError;
+  AnalyticsPeriod _currentPeriod = AnalyticsPeriod.weekly;
 
   // Overall stats
   OverallStats? _overallStats;
@@ -24,9 +25,10 @@ class AdminDashboardProvider extends ChangeNotifier {
   bool get isLoadingBreakdown => _isLoadingBreakdown;
   String? get breakdownError => _breakdownError;
 
-  List<DailyFareData> get weeklyFareData => _weeklyFareData;
+  List<DailyFareData> get fareData => _fareData;
   bool get isLoadingFareData => _isLoadingFareData;
   String? get fareDataError => _fareDataError;
+  AnalyticsPeriod get currentPeriod => _currentPeriod;
 
   OverallStats? get overallStats => _overallStats;
   bool get isLoadingStats => _isLoadingStats;
@@ -37,7 +39,7 @@ class AdminDashboardProvider extends ChangeNotifier {
   /// Load all dashboard data
   Future<void> loadDashboardData() async {
     await loadUserTypeBreakdown();
-    await loadWeeklyFareData();
+    await loadFareData(_currentPeriod);
     await loadOverallStats();
   }
 
@@ -59,21 +61,29 @@ class AdminDashboardProvider extends ChangeNotifier {
     }
   }
 
-  /// Load weekly fare data
-  Future<void> loadWeeklyFareData() async {
+  /// Load fare data with selected period
+  Future<void> loadFareData(AnalyticsPeriod period) async {
     _isLoadingFareData = true;
     _fareDataError = null;
+    _currentPeriod = period;
     notifyListeners();
 
     try {
-      _weeklyFareData = await _service.fetchWeeklyFareAnalytics();
-      debugPrint('✅ Loaded weekly fare data: ${_weeklyFareData.length} days');
+      _fareData = await _service.fetchFareAnalytics(period);
+      debugPrint('✅ Loaded fare data: ${_fareData.length} data points for $period');
     } catch (e) {
       _fareDataError = 'Failed to load fare data: $e';
-      debugPrint('❌ Error in loadWeeklyFareData: $e');
+      debugPrint('❌ Error in loadFareData: $e');
     } finally {
       _isLoadingFareData = false;
       notifyListeners();
+    }
+  }
+
+  /// Change analytics period
+  Future<void> changePeriod(AnalyticsPeriod period) async {
+    if (_currentPeriod != period) {
+      await loadFareData(period);
     }
   }
 
