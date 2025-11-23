@@ -3,14 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
 import 'driver_app.dart';
 
-class RemittanceSuccessPage extends StatefulWidget {
-  const RemittanceSuccessPage({super.key});
+class DriverCashOutSuccessPage extends StatefulWidget {
+  const DriverCashOutSuccessPage({super.key});
 
   @override
-  State<RemittanceSuccessPage> createState() => _RemittanceSuccessPageState();
+  State<DriverCashOutSuccessPage> createState() =>
+      _DriverCashOutSuccessPageState();
 }
 
-class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
+class _DriverCashOutSuccessPageState extends State<DriverCashOutSuccessPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
@@ -56,7 +57,7 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
             _buildSuccessIcon(),
             const SizedBox(height: 32),
             Text(
-              'Remittance Successful!',
+              'Withdrawal Successful!',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 24,

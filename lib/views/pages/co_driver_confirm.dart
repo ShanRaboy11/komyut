@@ -8,23 +8,19 @@ import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
-class RemitConfirmationPage extends StatefulWidget {
+class DriverCashOutConfirmPage extends StatefulWidget {
   final String amount;
-  final String operatorName;
 
-  const RemitConfirmationPage({
-    super.key,
-    required this.amount,
-    required this.operatorName,
-  });
+  const DriverCashOutConfirmPage({super.key, required this.amount});
 
   @override
-  State<RemitConfirmationPage> createState() => _RemitConfirmationPageState();
+  State<DriverCashOutConfirmPage> createState() =>
+      _DriverCashOutConfirmPageState();
 }
 
-class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
-  late final String _transactionCode;
-  bool _isLoading = false;
+class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
+  late String _transactionCode;
+  final double _fee = 15.00;
 
   @override
   void initState() {
@@ -41,32 +37,37 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
         (_) => chars.codeUnitAt(random.nextInt(chars.length)),
       ),
     );
-    return 'K0MYUT-RMT$part1'.substring(0, 25);
+    return 'K0MYUT-DCO$part1'.substring(0, 25);
   }
 
   Future<void> _onConfirmPressed() async {
-    setState(() => _isLoading = true);
-
     final provider = Provider.of<DriverWalletProvider>(context, listen: false);
-    final double amountVal = double.tryParse(widget.amount) ?? 0.0;
+    final amountValue = double.tryParse(widget.amount);
 
-    final success = await provider.submitRemittance(
-      amountVal,
-      _transactionCode,
+    if (amountValue == null) return;
+
+    final success = await provider.requestCashOut(
+      amount: amountValue,
+      transactionCode: _transactionCode,
     );
 
-    if (!mounted) return;
+    if (success && mounted) {
+      final transactionData = {
+        'id': 'temp_id_${DateTime.now().millisecondsSinceEpoch}',
+        'transaction_number': _transactionCode,
+        'amount': amountValue,
+        'type': 'cash_out',
+        'created_at': DateTime.now().toIso8601String(),
+      };
 
-    setState(() => _isLoading = false);
-
-    if (success) {
-      DriverApp.navigatorKey.currentState?.pushReplacementNamed(
-        '/remit_success',
+      DriverApp.navigatorKey.currentState?.pushNamed(
+        '/cash_out_instructions',
+        arguments: transactionData,
       );
-    } else {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(provider.errorMessage ?? 'Transaction failed'),
+          content: Text(provider.errorMessage ?? 'Transaction Failed'),
           backgroundColor: Colors.red,
         ),
       );
@@ -76,7 +77,15 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
+    final double totalValue = amountValue + _fee;
+    final now = DateTime.now();
+    final date = DateFormat('MM/dd/yyyy').format(now);
+    final time = DateFormat('hh:mm a').format(now);
+
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final String formattedAmount = currencyFormat.format(amountValue);
+    final String formattedTotal = currencyFormat.format(totalValue);
+
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -90,65 +99,97 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Remittance',
-          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold),
+          'Cash Out',
+          style: GoogleFonts.manrope(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(30.0, 16.0, 30.0, 40.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Withdraw Cash',
+              style: GoogleFonts.manrope(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
+            const SizedBox(height: 40),
+
             _buildTransactionCard(
-              amount: currencyFormat.format(amountValue),
+              context: context,
+              date: date,
+              time: time,
+              amount: formattedAmount,
+              total: formattedTotal,
               transactionCode: _transactionCode,
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
-            Text(
-              'Ensure details are correct before confirming.',
-              style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
+            Center(
+              child: Text(
+                'Ensure the details are correct before confirming.',
+                style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
+              ),
             ),
             const SizedBox(height: 16),
-            _buildConfirmButton(brandColor),
+            _buildConfirmButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConfirmButton(Color brandColor) {
-    return Center(
-      child: OutlinedButton(
-        onPressed: _isLoading ? null : _onConfirmPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: brandColor,
-          backgroundColor: brandColor.withValues(alpha: 0.1),
-          side: BorderSide(color: brandColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                'Confirm',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+  Widget _buildConfirmButton() {
+    final Color brandColor = const Color(0xFF8E4CB6);
+    return Consumer<DriverWalletProvider>(
+      builder: (context, provider, child) {
+        return Center(
+          child: OutlinedButton(
+            onPressed: provider.isPageLoading ? null : _onConfirmPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: brandColor,
+              backgroundColor: brandColor.withValues(alpha: 0.1),
+              side: BorderSide(color: brandColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-      ),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+            ),
+            child: provider.isPageLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Confirm',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildTransactionCard({
+    required BuildContext context,
+    required String date,
+    required String time,
     required String amount,
+    required String total,
     required String transactionCode,
     required Color brandColor,
   }) {
@@ -172,24 +213,18 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
           Column(
             children: [
               Text(
-                'Remittance Transaction',
+                'Cash Out Transaction',
                 style: GoogleFonts.manrope(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-              _buildDetailRow(
-                'Date:',
-                DateFormat('MM/dd/yyyy').format(DateTime.now()),
-              ),
-              _buildDetailRow(
-                'Time:',
-                DateFormat('hh:mm a').format(DateTime.now()),
-              ),
-              _buildDetailRow('Recipient:', widget.operatorName),
+              _buildDetailRow('Date:', date),
+              _buildDetailRow('Time:', time),
+              _buildDetailRow('Amount:', amount),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
-              _buildDetailRow('Amount:', amount, isTotal: true),
+              _buildDetailRow('Total:', total, isTotal: true),
               Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
