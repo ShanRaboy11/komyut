@@ -1,0 +1,367 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/wallet_provider.dart';
+import 'driver_app.dart';
+
+class DriverCashOutPage extends StatefulWidget {
+  const DriverCashOutPage({super.key});
+
+  @override
+  State<DriverCashOutPage> createState() => _DriverCashOutPageState();
+}
+
+class _DriverCashOutPageState extends State<DriverCashOutPage> {
+  final TextEditingController _amountController = TextEditingController();
+  bool _isButtonEnabled = false;
+  String? _errorText;
+
+  final Color _brandColor = const Color(0xFF8E4CB6);
+  final List<Color> _gradientColors = const [
+    Color(0xFFB945AA),
+    Color(0xFF8E4CB6),
+    Color(0xFF5B53C2),
+  ];
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _onAmountChanged(String value, double currentBalance) {
+    if (value.length > 1 && value.startsWith('0')) {
+      _amountController.text = value.substring(1);
+      _amountController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _amountController.text.length),
+      );
+    }
+
+    final amount = int.tryParse(_amountController.text) ?? 0;
+    final fee = 15.00; // Fixed cash out fee
+    final totalDeduction = amount + fee;
+
+    setState(() {
+      if (amount <= 0) {
+        _isButtonEnabled = false;
+        _errorText = null;
+      } else if (totalDeduction > currentBalance) {
+        _isButtonEnabled = false;
+        _errorText = 'Insufficient balance to cover amount and fee.';
+      } else {
+        _isButtonEnabled = true;
+        _errorText = null;
+      }
+    });
+  }
+
+  void _onNextPressed() {
+    if (!_isButtonEnabled) return;
+    // TODO: Navigate to Confirmation Page
+    // DriverApp.navigatorKey.currentState?.pushNamed('/cash_out_confirmation', arguments: ...);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F1FF),
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          onPressed: () {
+            DriverApp.navigatorKey.currentState?.pop();
+          },
+        ),
+        title: Text(
+          'Cash Out',
+          style: GoogleFonts.manrope(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Consumer<DriverWalletProvider>(
+        builder: (context, provider, child) {
+          final currentBalance = provider.totalBalance;
+          final amountValue = double.tryParse(_amountController.text) ?? 0;
+          // Calculation logic for display: Balance - (Amount + Fee)
+          final fee = 15.00;
+          final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
+          final remainingBalance = currentBalance - totalDeduction;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 40.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Current Balance Card (Matches Remit Style)
+                _buildInfoCard(
+                  'Current Balance',
+                  currencyFormat.format(currentBalance),
+                  Symbols.account_balance_wallet_rounded,
+                ),
+                const SizedBox(height: 32),
+
+                // 2. Step Indicator (Matches OTC Style)
+                _buildStepIndicator(),
+                const SizedBox(height: 32),
+
+                // 3. Amount Input Card (Matches Remit Style)
+                _buildAmountCard(currentBalance),
+                const SizedBox(height: 16),
+
+                // 4. Dynamic Note (Matches Remit Style)
+                Center(
+                  child: _errorText != null
+                      ? Text(
+                          _errorText!,
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : Text(
+                          'Remaining Balance: ${currencyFormat.format(remainingBalance < 0 ? 0 : remainingBalance)}',
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 40),
+
+                // 5. Next Button
+                _buildNextButton(provider),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String subtitle, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: _brandColor.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Image.asset('assets/images/step1.png', width: 40, height: 40),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Step 1',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Input the amount you want to withdraw from your komyut wallet below.',
+                style: GoogleFonts.nunito(fontSize: 15, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAmountCard(double currentBalance) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: _brandColor.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Enter Amount',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Divider(color: _brandColor.withValues(alpha: 0.5), height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 80,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₱',
+                      style: GoogleFonts.manrope(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _amountController.text.isEmpty
+                          ? "0"
+                          : _amountController.text,
+                      style: GoogleFonts.manrope(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                TextField(
+                  controller: _amountController,
+                  onChanged: (val) => _onAmountChanged(val, currentBalance),
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  showCursor: false,
+                  style: const TextStyle(color: Colors.transparent),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(5),
+                  ],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    fillColor: Colors.transparent,
+                    filled: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'A PHP 15.00 fee will be charged per transaction.',
+            style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextButton(DriverWalletProvider provider) {
+    return Center(
+      child: OutlinedButton(
+        onPressed: (provider.isPageLoading || !_isButtonEnabled)
+            ? null
+            : _onNextPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _isButtonEnabled ? _brandColor : Colors.grey,
+          backgroundColor: _isButtonEnabled
+              ? _brandColor.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.1),
+          side: BorderSide(
+            color: _isButtonEnabled
+                ? _brandColor
+                : Colors.grey.withValues(alpha: 0.5),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+        ),
+        child: provider.isPageLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                'Next',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+      ),
+    );
+  }
+}

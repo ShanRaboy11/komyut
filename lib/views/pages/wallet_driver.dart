@@ -211,7 +211,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Implement cash out logic
+              DriverApp.navigatorKey.currentState?.pushNamed('/cash_out');
             },
             style: ElevatedButton.styleFrom(
               foregroundColor: cashOutColor,

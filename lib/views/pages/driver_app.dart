@@ -14,6 +14,7 @@ import 'wallet_history_driver.dart';
 import 'remit_driver.dart';
 import 'remit_confirm.dart';
 import 'remit_success.dart';
+import 'co_driver.dart';
 
 class DriverApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -65,6 +66,10 @@ class DriverApp extends StatelessWidget {
 
       case '/remit_success':
         page = const RemittanceSuccessPage();
+        break;
+
+      case '/cash_out':
+        page = const DriverCashOutPage();
         break;
 
       default:
