@@ -86,11 +86,10 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 40.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 10),
                     _buildBalanceCard(provider.currentBalance),
                     const SizedBox(height: 24),
 
@@ -118,7 +117,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                         Text(
                           'Recent Transactions',
                           style: GoogleFonts.manrope(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -130,7 +129,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                           child: Text(
                             'View All',
                             style: GoogleFonts.manrope(
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF5B53C2),
                             ),
@@ -198,8 +197,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           Text(
             'Current Balance',
             style: GoogleFonts.nunito(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 16,
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
@@ -207,7 +207,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             currencyFormat.format(balance),
             style: GoogleFonts.manrope(
               color: Colors.white,
-              fontSize: 40,
+              fontSize: 36,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -251,7 +251,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               Text(
                 'Weekly Earnings',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -270,7 +270,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                   Text(
                     _getMonthAndYear(_selectedWeekOffset),
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: brandColor,
                     ),
@@ -321,6 +321,17 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final effectiveMaxVal = maxVal * 1.20;
 
+    String formatKiloValue(num value) {
+      if (value >= 1000) {
+        String formatted = (value / 1000).toStringAsFixed(1);
+        if (formatted.endsWith('.0')) {
+          formatted = formatted.substring(0, formatted.length - 2);
+        }
+        return '${formatted}k';
+      }
+      return value.toInt().toString();
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -335,7 +346,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
-              value > 0 ? value.toInt().toString() : '',
+              value > 0 ? formatKiloValue(value) : '',
               style: GoogleFonts.nunito(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -373,7 +384,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
               Text(
@@ -381,7 +392,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -437,7 +448,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -446,7 +457,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     date,
                     style: GoogleFonts.nunito(
                       color: Colors.grey.shade600,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -477,7 +488,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
     String modalTitle;
     if (type == 'remittance') {
-      modalTitle = 'Remittance Transaction';
+      modalTitle = 'Remittance Received';
     } else if (type == 'cash_out') {
       modalTitle = 'Cash Out Transaction';
     } else {
@@ -553,7 +564,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -573,7 +584,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                   Text(
                     transactionCode,
                     style: GoogleFonts.sourceCodePro(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.black54,
                     ),
                   ),
