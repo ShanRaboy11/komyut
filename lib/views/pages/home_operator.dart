@@ -18,21 +18,24 @@ class OperatorDashboardNav extends StatefulWidget {
 class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
   @override
   Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        OperatorDashboard(),
-        Center(child: Text("📋 Drivers")),
-        Center(child: Text("✍️ Transactions")),
-        Center(child: Text("🔔 Reports")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.group, label: 'Drivers'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Transactions'),
-        NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
+    return ChangeNotifierProvider(
+      create: (context) => OperatorDashboardProvider(),
+      child: AnimatedBottomNavBar(
+        pages: const [
+          OperatorDashboard(),
+          Center(child: Text("📋 Drivers")),
+          Center(child: Text("✍️ Transactions")),
+          Center(child: Text("🔔 Reports")),
+          Center(child: Text("👤 Profile")),
+        ],
+        items: const [
+          NavItem(icon: Icons.home_rounded, label: 'Home'),
+          NavItem(icon: Symbols.group, label: 'Drivers'),
+          NavItem(icon: Symbols.overview_rounded, label: 'Transactions'),
+          NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
+          NavItem(icon: Icons.person_rounded, label: 'Profile'),
+        ],
+      ),
     );
   }
 }
