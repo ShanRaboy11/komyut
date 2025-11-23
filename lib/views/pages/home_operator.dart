@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/operator_dashboard.dart';
+import 'wallet_operator.dart';
 
 class OperatorDashboardNav extends StatefulWidget {
   const OperatorDashboardNav({super.key});
@@ -67,9 +68,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
           builder: (context, provider, child) {
             if (provider.isLoading) {
               return Center(
-                child: CircularProgressIndicator(
-                  color: gradientColors[0],
-                ),
+                child: CircularProgressIndicator(color: gradientColors[0]),
               );
             }
 
@@ -78,7 +77,11 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading dashboard',
@@ -159,10 +162,30 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const Icon(
-                                Symbols.account_balance_wallet_rounded,
-                                color: Colors.white,
-                                size: 28,
+                              InkWell(
+                                onTap: () {
+                                  // Navigate to the new wallet page
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const OperatorWalletPage(),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(
+                                  50,
+                                ), // For ripple effect shape
+                                child: const Padding(
+                                  padding: EdgeInsets.all(
+                                    8.0,
+                                  ), // Add padding for a larger tap area
+                                  child: Icon(
+                                    Symbols.account_balance_wallet_rounded,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -246,9 +269,17 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                               child: _buildReportCard(
                                 title: report['title'] ?? 'Unknown Report',
                                 plate: report['plate'] ?? 'N/A',
-                                status: provider.getReportStatusDisplay(report['status'] ?? 'open'),
-                                statusColor: _getStatusColor(provider.getReportStatusColor(report['status'] ?? 'open')),
-                                buttonText: provider.getReportButtonText(report['status'] ?? 'open'),
+                                status: provider.getReportStatusDisplay(
+                                  report['status'] ?? 'open',
+                                ),
+                                statusColor: _getStatusColor(
+                                  provider.getReportStatusColor(
+                                    report['status'] ?? 'open',
+                                  ),
+                                ),
+                                buttonText: provider.getReportButtonText(
+                                  report['status'] ?? 'open',
+                                ),
                               ),
                             );
                           }),
