@@ -181,7 +181,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                             "Today's Revenue",
                             style: GoogleFonts.nunito(
                               color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -191,7 +191,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                             provider.todaysRevenueFormatted,
                             style: GoogleFonts.manrope(
                               color: Colors.white,
-                              fontSize: 56,
+                              fontSize: 36,
                               fontWeight: FontWeight.bold,
                               height: 1.0,
                             ),
@@ -226,14 +226,14 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                                     const Icon(
                                       Symbols.account_balance_wallet_rounded,
                                       color: Colors.white,
-                                      size: 22,
+                                      size: 20,
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
                                       "My Wallet",
                                       style: GoogleFonts.manrope(
                                         color: Colors.white,
-                                        fontSize: 15,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -302,7 +302,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                                 child: Text(
                                   'No driver performance data available',
                                   style: GoogleFonts.nunito(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -339,7 +339,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                                 child: Text(
                                   'No reports available',
                                   style: GoogleFonts.nunito(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -392,13 +392,13 @@ class _OperatorDashboardState extends State<OperatorDashboard>
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
           Text(
             value,
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.bold,
-              fontSize: 35,
+              fontSize: 28,
               color: color,
             ),
           ),
@@ -406,25 +406,19 @@ class _OperatorDashboardState extends State<OperatorDashboard>
           Text(
             label,
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 6),
           TextButton(
             onPressed: () {},
-            style: TextButton.styleFrom(
-              foregroundColor: color,
-              textStyle: GoogleFonts.manrope(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            style: TextButton.styleFrom(foregroundColor: color),
             child: Text(
               "View details",
               style: GoogleFonts.nunito(
                 fontWeight: FontWeight.normal,
-                fontSize: 14,
+                fontSize: 12,
                 color: color,
               ),
             ),
@@ -453,7 +447,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
               foregroundColor: Colors.grey[700],
               textStyle: GoogleFonts.manrope(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 12,
               ),
             ),
             child: Text(actionText),
@@ -475,7 +469,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
         children: [
           Row(
             children: [
-              const CircleAvatar(radius: 18, backgroundColor: Colors.grey),
+              const CircleAvatar(radius: 16, backgroundColor: Colors.grey),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +484,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                   Text(
                     'Revenue $revenue  •  Rating $rating',
                     style: GoogleFonts.nunito(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: const Color.fromARGB(255, 123, 123, 123),
                     ),
                   ),
@@ -504,10 +498,10 @@ class _OperatorDashboardState extends State<OperatorDashboard>
             isFilled: true,
             fillColor: const Color(0xFF5B53C2),
             textColor: Colors.white,
-            width: 85,
-            height: 30,
+            width: 70,
+            height: 28,
             borderRadius: 20,
-            fontSize: 13,
+            fontSize: 12,
             hasShadow: false,
           ),
         ],
@@ -546,7 +540,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
               Text(
                 'Plate No. $plate • Status: $status',
                 style: GoogleFonts.nunito(
-                  fontSize: 13,
+                  fontSize: 12,
                   color: const Color.fromARGB(255, 123, 123, 123),
                 ),
               ),
@@ -556,10 +550,10 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                 isFilled: true,
                 fillColor: statusColor,
                 textColor: Colors.white,
-                width: 85,
-                height: 30,
+                width: 70,
+                height: 28,
                 borderRadius: 20,
-                fontSize: 13,
+                fontSize: 12,
                 hasShadow: false,
               ),
             ],
