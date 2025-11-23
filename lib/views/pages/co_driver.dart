@@ -102,6 +102,21 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  'Withdraw Cash',
+                  style: GoogleFonts.manrope(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Divider(
+                  color: _brandColor.withValues(alpha: 0.5),
+                  thickness: 1,
+                ),
+                const SizedBox(height: 40),
+
                 _buildStepIndicator(),
                 const SizedBox(height: 48),
 

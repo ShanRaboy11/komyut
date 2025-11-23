@@ -33,11 +33,11 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
     final random = Random();
     final part1 = String.fromCharCodes(
       Iterable.generate(
-        10,
+        15,
         (_) => chars.codeUnitAt(random.nextInt(chars.length)),
       ),
     );
-    return 'K0MYUT-DCO$part1';
+    return 'K0MYUT-DCO$part1'.substring(0, 25);
   }
 
   Future<void> _onConfirmPressed() async {
@@ -46,26 +46,29 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
 
     if (amountValue == null) return;
 
-    // TODO: Implement the actual provider call for Cash Out here
-    // For now, we simulate the process
+    setState(() {
+      // You might need to expose a setter or just use internal loading state
+      // if provider doesn't expose one for local UI state
+    });
 
-    // final success = await provider.requestCashOut(
-    //   amount: amountValue,
-    //   transactionCode: _transactionCode,
-    // );
+    // TODO: Real API call here:
+    // await provider.requestCashOut(amount: amountValue, code: _transactionCode);
 
-    // Simulating delay for UI purposes
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      // Navigate to success or instruction page
-      // DriverApp.navigatorKey.currentState?.pushNamed('/cash_out_success');
+      final transactionData = {
+        'id': 'temp_id_${DateTime.now().millisecondsSinceEpoch}',
+        'transaction_number': _transactionCode,
+        'amount': amountValue,
+        'type': 'cash_out',
+        'created_at': DateTime.now().toIso8601String(),
+      };
 
-      // Temporary pop for now until success page is made
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cash Out Requested Successfully')),
+      DriverApp.navigatorKey.currentState?.pushNamed(
+        '/cash_out_instructions',
+        arguments: transactionData,
       );
-      DriverApp.navigatorKey.currentState?.popUntil((route) => route.isFirst);
     }
   }
 
@@ -108,7 +111,18 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gap removed to match RemitConfirmationPage reference
+            Text(
+              'Withdraw Cash',
+              style: GoogleFonts.manrope(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
+            const SizedBox(height: 40),
+
             _buildTransactionCard(
               context: context,
               date: date,
