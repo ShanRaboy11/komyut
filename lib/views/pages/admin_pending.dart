@@ -172,16 +172,43 @@ class StatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: const Color(0xFFD9D9D9),
-            backgroundImage: verification.imageUrl != null
-                ? NetworkImage(verification.imageUrl!)
-                : null,
-            child: verification.imageUrl == null
-                ? const Icon(Icons.person, color: Colors.grey)
-                : null,
-          ),
+          // Initials avatar (consistent with trip details UI)
+          Builder(builder: (_) {
+            String initials = 'U';
+            try {
+              final parts = verification.userName
+                      .split(RegExp(r'\s+'))
+                      .where((s) => s.isNotEmpty)
+                      .toList();
+              if (parts.isEmpty) {
+                initials = 'U';
+              } else if (parts.length == 1) {
+                initials = parts[0][0].toUpperCase();
+              } else {
+                initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+              }
+            } catch (_) {
+              initials = 'U';
+            }
+
+            return Container(
+              height: 36,
+              width: 36,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF2EAFF),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF9C6BFF),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            );
+          }),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,6 +268,26 @@ class UserInfoCard extends StatelessWidget {
 
   const UserInfoCard({super.key, required this.verification});
 
+  String _formatCommuterCategory(String? raw) {
+    if (raw == null) return 'Regular';
+    final val = raw.toLowerCase();
+    switch (val) {
+      case 'regular':
+        return 'Regular';
+      case 'senior':
+        return 'Senior Citizen';
+      case 'student':
+        return 'Student';
+      case 'pwd':
+        return 'PWD';
+      case 'discounted':
+        return 'Discounted';
+      default:
+        // Capitalize first letter as a fallback
+        return val.isEmpty ? 'Regular' : '${val[0].toUpperCase()}${val.substring(1)}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -274,18 +321,6 @@ class UserInfoCard extends StatelessWidget {
                         label: 'Address',
                         value: verification.address ?? 'Not provided'),
                     const SizedBox(height: 16),
-                    InfoItem(
-                        label: 'Phone',
-                        value: verification.phone ?? 'Not provided'),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 4,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
                     Row(
                       children: [
                         Expanded(
@@ -304,8 +339,15 @@ class UserInfoCard extends StatelessWidget {
                     InfoItem(
                         label: 'User type',
                         value: verification.roleCapitalized),
-                    const SizedBox(height: 16),
-                    // Role-specific information
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [                    
                     if (verification.role == 'driver') ...[
                       InfoItem(
                           label: 'License Number',
@@ -324,8 +366,9 @@ class UserInfoCard extends StatelessWidget {
                           value: verification.operatorName ?? 'Not assigned'),
                     ] else if (verification.role == 'commuter') ...[
                       InfoItem(
-                          label: 'Category',
-                          value: verification.commuterCategory ?? 'Regular'),
+                        label: 'Category',
+                        value: _formatCommuterCategory(verification.commuterCategory),
+                      ),
                       const SizedBox(height: 16),
                       InfoItem(
                           label: 'ID Verified',
