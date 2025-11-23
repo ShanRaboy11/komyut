@@ -35,16 +35,33 @@ class _DriverDashboardNavContent extends StatefulWidget {
 
 class _DriverDashboardNavContentState
     extends State<_DriverDashboardNavContent> {
+  bool _isQROpen = false;
+
+  void _openQR() {
+    setState(() {
+      _isQROpen = true;
+    });
+  }
+
+  void _closeQR() {
+    setState(() {
+      _isQROpen = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
-      pages: const [
-        DriverDashboard(),
-        DriverActivityPage(),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ Feedback")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+      pages: [
+        _isQROpen
+            ? DriverQRGeneratePage(onBack: _closeQR)
+            : DriverDashboard(onViewQR: _openQR),
+
+        const DriverActivityPage(),
+        const Center(child: Text("📋 Activity")),
+        const Center(child: Text("✍️ Feedback")),
+        const Center(child: Text("🔔 Notifications")),
+        const Center(child: Text("👤 Profile")),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -58,7 +75,9 @@ class _DriverDashboardNavContentState
 }
 
 class DriverDashboard extends StatefulWidget {
-  const DriverDashboard({super.key});
+  final VoidCallback? onViewQR;
+
+  const DriverDashboard({super.key, this.onViewQR});
 
   @override
   State<DriverDashboard> createState() => _DriverDashboardState();
@@ -101,15 +120,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
         qrData = result['data'];
       });
     }
-  }
-
-  void _navigateToQRGeneration() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DriverQRGenerateNav()),
-    ).then((_) {
-      _loadCurrentQR();
-    });
   }
 
   @override
@@ -476,7 +486,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                       text: qrGenerated
                                           ? 'View QR Code'
                                           : 'Generate QR Code',
-                                      onPressed: _navigateToQRGeneration,
+                                      onPressed: () {
+                                        if (widget.onViewQR != null) {
+                                          widget.onViewQR!();
+                                        }
+                                      },
                                       isFilled: true,
                                       textColor: Colors.white,
                                       width: double.infinity,
@@ -696,7 +710,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   'Reports',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
                   textAlign: TextAlign.left,
                 ),
