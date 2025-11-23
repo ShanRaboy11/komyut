@@ -25,9 +25,6 @@ class ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isSmall = width < 400;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
