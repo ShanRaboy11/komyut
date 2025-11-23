@@ -559,7 +559,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String type = transaction['type'] ?? 'fare_payment';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
 
@@ -568,7 +568,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 128),
+      barrierColor: Colors.black54,
       builder: (dialogContext) {
         return _buildDetailModal(
           context: dialogContext,

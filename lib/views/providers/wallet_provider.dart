@@ -351,6 +351,7 @@ class DriverWalletProvider extends ChangeNotifier {
   // Data
   double _totalBalance = 0.0;
   double _todayEarnings = 0.0;
+  String _operatorName = '';
   Map<String, double> _weeklyEarnings = {};
   List<Map<String, dynamic>> _recentTransactions = [];
   List<Map<String, dynamic>> _allTransactions = [];
@@ -363,11 +364,11 @@ class DriverWalletProvider extends ChangeNotifier {
 
   double get totalBalance => _totalBalance;
   double get todayEarnings => _todayEarnings;
+  String get operatorName => _operatorName;
   Map<String, double> get weeklyEarnings => _weeklyEarnings;
   List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
   List<Map<String, dynamic>> get allTransactions => _allTransactions;
 
-  /// Fetches the initial data for the main wallet page.
   Future<void> fetchWalletData() async {
     _isPageLoading = true;
     _errorMessage = null;
@@ -378,12 +379,16 @@ class DriverWalletProvider extends ChangeNotifier {
         _dashboardService.getTodayEarnings(),
         _dashboardService.getWeeklyEarnings(weekOffset: 0),
         _dashboardService.getRecentTransactions(),
+        _dashboardService.getDriverVehicleInfo(),
       ]);
 
       _totalBalance = (results[0] as num).toDouble();
       _todayEarnings = (results[1] as num).toDouble();
       _weeklyEarnings = results[2] as Map<String, double>;
       _recentTransactions = results[3] as List<Map<String, dynamic>>;
+
+      final vehicleInfo = results[4] as Map<String, dynamic>;
+      _operatorName = vehicleInfo['operator_name'] ?? 'Unknown Operator';
     } catch (e) {
       _errorMessage = 'Failed to load wallet data: $e';
     } finally {
@@ -392,7 +397,7 @@ class DriverWalletProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetches earnings for a specific week for the chart
+  /// Fetches earnings for a specific week
   Future<void> fetchWeeklyEarnings(int offset) async {
     _isChartLoading = true;
     notifyListeners();
@@ -426,7 +431,7 @@ class DriverWalletProvider extends ChangeNotifier {
   }
 
   /// Process Remittance
-  Future<bool> submitRemittance(double amount) async {
+  Future<bool> submitRemittance(double amount, String transactionCode) async {
     if (amount <= 0) {
       _errorMessage = 'Amount must be greater than 0';
       notifyListeners();
@@ -444,7 +449,7 @@ class DriverWalletProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _dashboardService.remitEarnings(amount);
+      await _dashboardService.remitEarnings(amount, transactionCode);
 
       await fetchWalletData();
 

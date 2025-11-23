@@ -29,30 +29,31 @@ class DriverDashboardService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('No authenticated user');
 
-      final profile = await _supabase
+      final data = await _supabase
           .from('profiles')
-          .select('id')
+          .select('''
+            id,
+            driver:drivers!drivers_profile_id_fkey (
+              id,
+              vehicle_plate,
+              license_number,
+              operator_name,
+              status,
+              routes:route_id (
+                code,
+                name,
+                description
+              )
+            )
+          ''')
           .eq('user_id', userId)
           .single();
 
-      final driverData = await _supabase
-          .from('drivers')
-          .select('''
-            id,
-            vehicle_plate,
-            license_number,
-            operator_name,
-            status,
-            routes:route_id (
-              code,
-              name,
-              description
-            )
-          ''')
-          .eq('profile_id', profile['id'])
-          .single();
+      if (data['driver'] == null) {
+        return {};
+      }
 
-      return driverData;
+      return data['driver'] as Map<String, dynamic>;
     } catch (e) {
       debugPrint('❌ Error fetching driver vehicle info: $e');
       rethrow;
@@ -62,27 +63,13 @@ class DriverDashboardService {
   /// Get driver's average rating
   Future<double> getAverageRating() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0.0;
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-      if (profile == null) return 0.0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-      if (driver == null) return 0.0;
+      final driverId = await _getCurrentDriverId();
+      if (driverId == null) return 0.0;
 
       final ratings = await _supabase
           .from('ratings')
           .select('overall')
-          .eq('driver_id', driver['id']);
+          .eq('driver_id', driverId);
 
       if (ratings.isEmpty) return 0.0;
 
@@ -101,28 +88,14 @@ class DriverDashboardService {
   /// Get count of reports filed against this driver
   Future<int> getReportsCount() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0;
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-      if (profile == null) return 0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-      if (driver == null) return 0;
+      final driverId = await _getCurrentDriverId();
+      if (driverId == null) return 0;
 
       final reports = await _supabase
           .from('reports')
           .select('id')
           .eq('reported_entity_type', 'driver')
-          .eq('reported_entity_id', driver['id']);
+          .eq('reported_entity_id', driverId);
 
       return reports.length;
     } catch (e) {
@@ -161,22 +134,8 @@ class DriverDashboardService {
   /// Get today's earnings
   Future<double> getTodayEarnings() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return 0.0;
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-      if (profile == null) return 0.0;
-
-      final driver = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('profile_id', profile['id'])
-          .maybeSingle();
-      if (driver == null) return 0.0;
+      final driverId = await _getCurrentDriverId();
+      if (driverId == null) return 0.0;
 
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day);
@@ -184,7 +143,7 @@ class DriverDashboardService {
       final trips = await _supabase
           .from('trips')
           .select('fare_amount')
-          .eq('driver_id', driver['id'])
+          .eq('driver_id', driverId)
           .eq('status', 'completed')
           .gte('started_at', startOfDay.toIso8601String());
 
@@ -197,6 +156,20 @@ class DriverDashboardService {
       debugPrint('❌ Error fetching today\'s earnings: $e');
       return 0.0;
     }
+  }
+
+  Future<String?> _getCurrentDriverId() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return null;
+
+    final data = await _supabase
+        .from('profiles')
+        .select('drivers!drivers_profile_id_fkey(id)')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (data == null || data['drivers'] == null) return null;
+    return data['drivers']['id'] as String?;
   }
 
   Future<Map<String, double>> getWeeklyEarnings({int weekOffset = 0}) async {
@@ -247,28 +220,12 @@ class DriverDashboardService {
     }
   }
 
-  /// Process a remittance to the operator
-  Future<void> remitEarnings(double amount) async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated.');
-      await _supabase.rpc(
-        'process_driver_remittance',
-        params: {'amount_to_remit': amount},
-      );
-      debugPrint('✅ Remittance of ₱$amount successful');
-    } catch (e) {
-      debugPrint('❌ Error processing remittance: $e');
-      rethrow;
-    }
-  }
-
-  /// Get recent transactions for the driver's wallet (Public wrapper)
+  /// Get recent transactions
   Future<List<Map<String, dynamic>>> getRecentTransactions() async {
     return _getTransactions(limit: 10);
   }
 
-  /// Get all transactions for the driver's wallet (Public wrapper)
+  /// Get all transactions
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     return _getTransactions();
   }
@@ -283,6 +240,7 @@ class DriverDashboardService {
           .select('id')
           .eq('user_id', userId)
           .single();
+
       final wallet = await _supabase
           .from('wallets')
           .select('id')
@@ -309,6 +267,27 @@ class DriverDashboardService {
       return transactions;
     } catch (e) {
       debugPrint('❌ Error fetching driver transactions: $e');
+      rethrow;
+    }
+  }
+
+  /// Process a remittance to the operator
+  Future<void> remitEarnings(double amount, String transactionCode) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated.');
+
+      await _supabase.rpc(
+        'process_driver_remittance',
+        params: {
+          'amount_to_remit': amount,
+          'transaction_code': transactionCode,
+        },
+      );
+
+      debugPrint('✅ Remittance successful. Code: $transactionCode');
+    } catch (e) {
+      debugPrint('❌ Error processing remittance: $e');
       rethrow;
     }
   }

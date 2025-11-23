@@ -517,19 +517,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+ALTER TABLE transactions 
+DROP CONSTRAINT IF EXISTS transactions_transaction_number_key;
+
 ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'remittance';
 
-CREATE OR REPLACE FUNCTION process_driver_remittance(amount_to_remit numeric)
+CREATE OR REPLACE FUNCTION process_driver_remittance(
+  amount_to_remit numeric, 
+  transaction_code text
+)
 RETURNS void AS $$
 DECLARE
   v_driver_user_id uuid;
   v_driver_profile_id uuid;
   v_driver_wallet_id uuid;
+  
   v_operator_id uuid;
   v_operator_profile_id uuid;
   v_operator_wallet_id uuid;
+  
   v_current_balance numeric;
-  v_txn_number text;
 BEGIN
   v_driver_user_id := auth.uid();
 
@@ -540,64 +547,87 @@ BEGIN
   JOIN wallets w ON p.id = w.owner_profile_id
   WHERE p.user_id = v_driver_user_id;
 
-  IF v_driver_wallet_id IS NULL THEN 
-    RAISE EXCEPTION 'Driver wallet not found'; 
-  END IF;
-  
-  IF v_operator_id IS NULL THEN 
-    RAISE EXCEPTION 'You are not linked to an operator to remit to.'; 
+  IF v_driver_wallet_id IS NULL THEN RAISE EXCEPTION 'Driver wallet not found.'; END IF;
+  IF v_operator_id IS NULL THEN RAISE EXCEPTION 'You are not linked to an operator.'; END IF;
+
+  SELECT profile_id INTO v_operator_profile_id
+  FROM operators 
+  WHERE id = v_operator_id;
+
+  IF v_operator_profile_id IS NULL THEN RAISE EXCEPTION 'Linked Operator profile does not exist.'; END IF;
+
+  SELECT id INTO v_operator_wallet_id 
+  FROM wallets 
+  WHERE owner_profile_id = v_operator_profile_id;
+
+  IF v_operator_wallet_id IS NULL THEN
+      INSERT INTO wallets (owner_profile_id, balance)
+      VALUES (v_operator_profile_id, 0)
+      RETURNING id INTO v_operator_wallet_id;
   END IF;
 
-  SELECT p.id, w.id
-  INTO v_operator_profile_id, v_operator_wallet_id
-  FROM operators o
-  JOIN profiles p ON o.profile_id = p.id
-  JOIN wallets w ON p.id = w.owner_profile_id
-  WHERE o.id = v_operator_id;
-
-  IF v_operator_wallet_id IS NULL THEN 
-    RAISE EXCEPTION 'Operator wallet configuration error.'; 
-  END IF;
-
-  SELECT balance INTO v_current_balance FROM wallets WHERE id = v_driver_wallet_id FOR UPDATE;
+  SELECT balance INTO v_current_balance 
+  FROM wallets 
+  WHERE id = v_driver_wallet_id 
+  FOR UPDATE;
   
   IF v_current_balance < amount_to_remit THEN 
-    RAISE EXCEPTION 'Insufficient wallet balance.'; 
+    RAISE EXCEPTION 'Insufficient balance.'; 
   END IF;
 
-  v_txn_number := 'REM-' || floor(extract(epoch from now()));
-
   UPDATE wallets 
-  SET balance = balance - amount_to_remit, updated_at = now()
+  SET balance = balance - amount_to_remit, updated_at = now() 
   WHERE id = v_driver_wallet_id;
 
   UPDATE wallets 
-  SET balance = balance + amount_to_remit, updated_at = now()
+  SET balance = balance + amount_to_remit, updated_at = now() 
   WHERE id = v_operator_wallet_id;
 
   INSERT INTO transactions (
-    wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, metadata
+    wallet_id, 
+    initiated_by_profile_id, 
+    type, 
+    amount, 
+    status, 
+    transaction_number, 
+    metadata
   ) VALUES (
-    v_driver_wallet_id, 
-    v_driver_profile_id, 
+    v_driver_wallet_id,       
+    v_driver_profile_id,      
     'remittance', 
-    -amount_to_remit,
+    amount_to_remit,          
     'completed', 
-    v_txn_number || '-DRV', 
-    jsonb_build_object('recipient_operator_id', v_operator_id)
-  );
-
-  INSERT INTO transactions (
-    wallet_id, initiated_by_profile_id, type, amount, status, transaction_number, metadata
-  ) VALUES (
-    v_operator_wallet_id, 
-    v_driver_profile_id, 
-    'remittance', 
-    amount_to_remit, 
-    'completed', 
-    v_txn_number || '-OPR', 
-    jsonb_build_object('sender_driver_id', v_driver_profile_id)
+    transaction_code,         
+    jsonb_build_object(
+      'recipient_operator_table_id', v_operator_id,
+      'recipient_profile_id', v_operator_profile_id,
+      'recipient_wallet_id', v_operator_wallet_id
+    )
   );
 
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+INSERT INTO public.operators (profile_id, company_name)
+SELECT id, (first_name || ' ' || last_name)
+FROM public.profiles
+WHERE role = 'operator'
+ON CONFLICT (profile_id) DO NOTHING;
+
+UPDATE public.drivers d
+SET operator_id = o.id
+FROM public.operators o
+WHERE d.operator_name = o.company_name
+  AND d.operator_id IS NULL;
+
+DO $$
+DECLARE 
+  unlinked_count int;
+BEGIN
+  SELECT count(*) INTO unlinked_count FROM drivers WHERE operator_id IS NULL;
+  IF unlinked_count > 0 THEN
+    RAISE NOTICE 'Warning: % drivers could not be matched to a profile by name. Please check spelling.', unlinked_count;
+  ELSE
+    RAISE NOTICE 'Success! All drivers matched to Operator Profiles.';
+  END IF;
+END $$;

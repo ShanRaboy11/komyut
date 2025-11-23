@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
@@ -18,8 +19,6 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
   String? _errorText;
-
-  final String _operatorName = 'Nunito Porcalla';
 
   final Color _brandColor = const Color(0xFF8E4CB6);
   final List<Color> _gradientColors = const [
@@ -78,11 +77,14 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
+
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+
     DriverApp.navigatorKey.currentState?.pushNamed(
       '/remit_confirmation',
       arguments: {
         'amount': _amountController.text,
-        'operatorName': _operatorName,
+        'operatorName': provider.operatorName,
       },
     );
   }
@@ -94,6 +96,8 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
     return Consumer<DriverWalletProvider>(
       builder: (context, provider, child) {
         final currentBalance = provider.totalBalance;
+        final operatorName = provider.operatorName;
+
         final amountValue = double.tryParse(_amountController.text) ?? 0;
         final remainingBalance = currentBalance - amountValue;
 
@@ -116,43 +120,45 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             ),
             centerTitle: true,
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildInfoCard(
-                  'Current Balance',
-                  currencyFormat.format(currentBalance),
-                  Symbols.account_balance_wallet_rounded,
+          body: provider.isPageLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildInfoCard(
+                        'Current Balance',
+                        currencyFormat.format(currentBalance),
+                        Symbols.account_balance_wallet_rounded,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoCard('Recipient', operatorName, Symbols.person),
+                      const SizedBox(height: 40),
+                      _buildAmountCard(),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: _errorText != null
+                            ? Text(
+                                _errorText!,
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.red,
+                                ),
+                              )
+                            : Text(
+                                'Remaining Balance: ${currencyFormat.format(remainingBalance)}',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildNextButton(),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildInfoCard('Recipient', _operatorName, Symbols.person),
-                const SizedBox(height: 40),
-                _buildAmountCard(),
-                const SizedBox(height: 16),
-                Center(
-                  child: _errorText != null
-                      ? Text(
-                          _errorText!,
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            color: Colors.red,
-                          ),
-                        )
-                      : Text(
-                          'Remaining Balance: ${currencyFormat.format(remainingBalance)}',
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 32),
-                _buildNextButton(),
-              ],
-            ),
-          ),
         );
       },
     );
@@ -188,25 +194,28 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             child: Icon(icon, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.nunito(
-                  color: Colors.grey[600],
-                  fontSize: 14,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

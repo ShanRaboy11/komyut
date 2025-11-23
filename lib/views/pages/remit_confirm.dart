@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
@@ -49,7 +50,10 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
     final provider = Provider.of<DriverWalletProvider>(context, listen: false);
     final double amountVal = double.tryParse(widget.amount) ?? 0.0;
 
-    final success = await provider.submitRemittance(amountVal);
+    final success = await provider.submitRemittance(
+      amountVal,
+      _transactionCode,
+    );
 
     if (!mounted) return;
 
@@ -72,7 +76,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
