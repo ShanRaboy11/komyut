@@ -105,7 +105,9 @@ class _TransactionItem extends StatelessWidget {
 
     final bool isEarning = type == 'fare_payment';
 
-    final String title = isEarning ? 'Trip Earning' : 'Remittance';
+    final String title = isEarning
+        ? 'Trip Earning'
+        : (type == 'cash_out' ? 'Cash Out' : 'Remittance');
     final Color amountColor = isEarning
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
@@ -167,7 +169,11 @@ class _TransactionItem extends StatelessWidget {
     final String type = transaction['type'] ?? 'fare_payment';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final bool isEarning = type == 'fare_payment';
-    final String modalTitle = isEarning ? 'Trip Earning' : 'Remittance';
+    final String modalTitle = isEarning
+        ? 'Trip Earning'
+        : (type == 'cash_out'
+              ? 'Cash Out Transaction'
+              : 'Remittance Transaction');
 
     showDialog(
       context: context,

@@ -261,6 +261,7 @@ class DriverDashboardService {
             'operator_payout',
             'driver_payout',
             'remittance',
+            'cash_out',
           ])
           .order('created_at', ascending: false);
 
@@ -295,5 +296,27 @@ class DriverDashboardService {
       debugPrint('❌ Error processing remittance: $e');
       rethrow;
     }
+  }
+
+  /// Process a Cash Out Request
+  Future<void> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    await _supabase.rpc(
+      'request_driver_cash_out',
+      params: {
+        'amount_val': amount,
+        'fee_val': 15.00,
+        'transaction_code': transactionCode,
+      },
+    );
+  }
+
+  Future<void> completeCashOut(String transactionCode) async {
+    await _supabase.rpc(
+      'complete_driver_cash_out',
+      params: {'transaction_code_arg': transactionCode},
+    );
   }
 }

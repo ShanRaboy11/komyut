@@ -529,4 +529,45 @@ class DriverWalletProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Process Cash Out
+  Future<bool> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    _isPageLoading = true;
+    notifyListeners();
+    try {
+      await _dashboardService.requestCashOut(
+        amount: amount,
+        transactionCode: transactionCode,
+      );
+      await fetchWalletData();
+      _isPageLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isPageLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> completeCashOut(String transactionCode) async {
+    _isPageLoading = true;
+    notifyListeners();
+    try {
+      await _dashboardService.completeCashOut(transactionCode);
+      await fetchFullDriverHistory();
+      _isPageLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _isPageLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }

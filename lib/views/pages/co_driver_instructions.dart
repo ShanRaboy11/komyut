@@ -18,12 +18,17 @@ class DriverCashOutInstructionsPage extends StatefulWidget {
 class _DriverCashOutInstructionsPageState
     extends State<DriverCashOutInstructionsPage> {
   Future<void> _onDonePressed() async {
-    // Since this is a Cash Out, the "Done" button usually just acknowledges
-    // the instructions or checks status. For simulation purposes, we assume
-    // the physical transaction is done and we move to success.
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final code = widget.transaction['transaction_number'];
 
-    if (mounted) {
-      DriverApp.navigatorKey.currentState?.pushNamed('/cash_out_success');
+    if (code != null) {
+      await provider.completeCashOut(code);
+
+      if (mounted) {
+        DriverApp.navigatorKey.currentState?.pushReplacementNamed(
+          '/cash_out_success',
+        );
+      }
     }
   }
 

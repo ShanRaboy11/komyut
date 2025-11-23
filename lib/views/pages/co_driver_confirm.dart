@@ -46,17 +46,12 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
 
     if (amountValue == null) return;
 
-    setState(() {
-      // You might need to expose a setter or just use internal loading state
-      // if provider doesn't expose one for local UI state
-    });
+    final success = await provider.requestCashOut(
+      amount: amountValue,
+      transactionCode: _transactionCode,
+    );
 
-    // TODO: Real API call here:
-    // await provider.requestCashOut(amount: amountValue, code: _transactionCode);
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
+    if (success && mounted) {
       final transactionData = {
         'id': 'temp_id_${DateTime.now().millisecondsSinceEpoch}',
         'transaction_number': _transactionCode,
@@ -68,6 +63,13 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
       DriverApp.navigatorKey.currentState?.pushNamed(
         '/cash_out_instructions',
         arguments: transactionData,
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Transaction Failed'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
