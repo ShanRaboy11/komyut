@@ -18,6 +18,7 @@ import 'remit_success.dart';
 import 'co_driver.dart';
 import 'co_driver_confirm.dart';
 import 'co_driver_instructions.dart';
+import 'co_driver_success.dart';
 
 class DriverApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -83,6 +84,10 @@ class DriverApp extends StatelessWidget {
       case '/cash_out_instructions':
         final args = settings.arguments as Map<String, dynamic>;
         page = DriverCashOutInstructionsPage(transaction: args);
+        break;
+
+      case '/cash_out_success':
+        page = const DriverCashOutSuccessPage();
         break;
 
       default:
