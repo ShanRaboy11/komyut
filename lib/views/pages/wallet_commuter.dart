@@ -591,7 +591,7 @@ class _WalletPageState extends State<WalletPage>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Wallet',
+          'My Wallet',
           style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.bold,
