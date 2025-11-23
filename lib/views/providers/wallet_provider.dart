@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/commuter_dashboard.dart';
+import '../services/auth_service.dart';
 import '../services/driver_dashboard.dart';
 import '../pages/wallet_history_commuter.dart';
 
@@ -10,6 +13,7 @@ import 'package:http/http.dart' as http;
 
 class WalletProvider extends ChangeNotifier {
   final CommuterDashboardService _dashboardService = CommuterDashboardService();
+  final AuthService authService = AuthService();
 
   final String _baseUrl = Platform.isAndroid
       ? 'http://10.0.2.2:3000'
@@ -84,6 +88,61 @@ class WalletProvider extends ChangeNotifier {
   bool get isFareExpensesLoading => _isFareExpensesLoading;
 
   // --- Methods ---
+  WalletProvider() {
+    // Keep wallet/profile state in sync with auth changes
+    _authSub = authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        _userProfile = null;
+        _balance = 0.0;
+        _wheelTokens = 0;
+        _recentTransactions = [];
+        notifyListeners();
+      } else {
+        // Decide whether to load wallet data based on the user's role
+        _maybeLoadForUser(user.id);
+      }
+    });
+  }
+
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching role for user $userId: $e');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    debugPrint('WalletProvider: user $userId role=$role');
+    if (role == 'commuter') {
+      await fetchWalletData();
+    } else {
+      // Not a commuter; clear commuter wallet state
+      _userProfile = null;
+      _balance = 0.0;
+      _wheelTokens = 0;
+      _recentTransactions = [];
+      notifyListeners();
+    }
+  }
+
+  StreamSubscription? _authSub;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
   Future<void> fetchWalletData() async {
     _isWalletLoading = true;
     _walletErrorMessage = null;
@@ -225,7 +284,14 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> fetchUserProfile() async {
-    if (_userProfile != null) return;
+    // If we have a cached profile, only reuse it when it belongs to the
+    // currently authenticated user. This prevents stale profile data from
+    // a previous session persisting across sign-ins during a single app run.
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (_userProfile != null) {
+      final cachedUserId = _userProfile?['user_id'] ?? _userProfile?['id'];
+      if (cachedUserId != null && cachedUserId == currentUserId) return;
+    }
 
     _isProfileLoading = true;
     _profileErrorMessage = null;

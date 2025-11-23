@@ -72,21 +72,31 @@ class HomeTabNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Access the provider from parent context
+    final provider = context.read<CommuterDashboardProvider>();
+
     return Navigator(
       initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
-        late Widget page;
-        switch (settings.name) {
-          case '/wallet':
-            page = const WalletPage();
-            break;
-          case '/':
-          default:
-            page = const CommuterDashboardPage();
-            break;
-        }
+        // Use a builder that provides the provider to nested routes
         return MaterialPageRoute(
-          builder: (context) => page,
+          builder: (context) {
+            // Provide the existing provider instance to the nested navigator's context
+            return ChangeNotifierProvider<CommuterDashboardProvider>.value(
+              value: provider,
+              child: Builder(
+                builder: (context) {
+                  switch (settings.name) {
+                    case '/wallet':
+                      return const WalletPage();
+                    case '/':
+                    default:
+                      return const CommuterDashboardPage();
+                  }
+                },
+              ),
+            );
+          },
           settings: settings,
         );
       },
@@ -118,8 +128,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   @override
   void initState() {
     super.initState();
+    // Load data immediately when the widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommuterDashboardProvider>().loadDashboardData();
+      if (mounted) {
+        context.read<CommuterDashboardProvider>().loadDashboardData();
+      }
     });
   }
 
@@ -137,114 +150,118 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     return Consumer<CommuterDashboardProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SvgPicture.asset(
-                    'assets/images/logo.svg',
-                    height: 50,
-                    width: 50,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
-                        style: GoogleFonts.manrope(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        'Welcome back!',
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF8E4CB6),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              Row(
-                children: [
-                  _buildTabButton('Wallet', true),
-                  _buildTabButton('Tokens', false),
-                ],
-              ),
-
-              // Wallet / Tokens Animated Card
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: gradientColors),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      final inFromRight = !showWallet;
-
-                      final offsetAnimation =
-                          Tween<Offset>(
-                            begin: Offset(inFromRight ? 1.0 : -1.0, 0.0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeInOutCubic,
-                            ),
-                          );
-
-                      final fadeAnimation = CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      );
-
-                      return ClipRect(
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: FadeTransition(
-                            opacity: fadeAnimation,
-                            child: child,
+        return Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/images/logo.svg',
+                      height: 50,
+                      width: 50,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      key: ValueKey<bool>(showWallet),
-                      child: showWallet
-                          ? _buildWalletCard(isSmallScreen, provider)
-                          : _buildTokensCard(isSmallScreen, provider),
+                        Text(
+                          'Welcome back!',
+                          style: GoogleFonts.manrope(
+                            color: const Color(0xFF8E4CB6),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+
+                Row(
+                  children: [
+                    _buildTabButton('Wallet', true),
+                    _buildTabButton('Tokens', false),
+                  ],
+                ),
+
+                // Wallet / Tokens Animated Card
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: gradientColors),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final inFromRight = !showWallet;
+
+                        final offsetAnimation =
+                            Tween<Offset>(
+                              begin: Offset(inFromRight ? 1.0 : -1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOutCubic,
+                              ),
+                            );
+
+                        final fadeAnimation = CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        );
+
+                        return ClipRect(
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: FadeTransition(
+                              opacity: fadeAnimation,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        key: ValueKey<bool>(showWallet),
+                        child: showWallet
+                            ? _buildWalletCard(isSmallScreen, provider)
+                            : _buildTokensCard(isSmallScreen, provider),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
-              _buildAnalyticsSection(isSmallScreen, provider),
-              const SizedBox(height: 20),
-              _buildPromoCard(),
-              const SizedBox(height: 20),
-              _buildQuickActions(),
-            ],
+                const SizedBox(height: 20),
+                _buildAnalyticsSection(isSmallScreen, provider),
+                const SizedBox(height: 20),
+                _buildPromoCard(),
+                const SizedBox(height: 20),
+                _buildQuickActions(),
+              ],
+            ),
           ),
         );
       },
@@ -472,8 +489,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Icons.directions_bus,
                 'Trips',
                 '${provider.totalTripsCount} trips',
-                subtitle:
-                    '12.6 mi', // Keep this static or calculate from trip data
+                subtitle: '12.6 mi',
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
@@ -522,7 +538,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Promo ----------------
   Widget _buildPromoCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -563,7 +578,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Quick Actions ----------------
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(16),

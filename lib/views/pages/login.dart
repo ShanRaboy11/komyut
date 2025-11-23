@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../widgets/button.dart';
 import '../widgets/shake_widget.dart';
 
 import '../providers/auth_provider.dart';
+import '../widgets/social_button.dart';
+import '../pages/create_account.dart';
+import '../widgets/shake_widget.dart';
 import '../../utils/toast_utils.dart';
-import 'create_account.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,17 +19,20 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // State for password visibility and checkbox
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   double _sheetHeight = 0;
   double _sheetOpacity = 0;
   double _logoOpacity = 0.0;
 
+  // Controllers and FocusNodes for TextFields
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
 
+  // NEW: Create separate keys for each text field to shake them individually
   final _emailShakeKey = GlobalKey<ShakeWidgetState>();
   final _passwordShakeKey = GlobalKey<ShakeWidgetState>();
 
@@ -40,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
     _emailFocusNode = FocusNode();
     _passwordFocusNode = FocusNode();
 
+    // Add listeners to rebuild the UI when focus or text changes
     _emailFocusNode.addListener(() => setState(() {}));
     _passwordFocusNode.addListener(() => setState(() {}));
     _emailController.addListener(() => setState(() {}));
@@ -68,6 +73,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
+    // Dispose controllers and focus nodes to prevent memory leaks
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
@@ -75,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // Helper method to get the correct home route based on user role
   String _getHomeRouteForRole(String? userRole) {
     if (userRole == null || userRole.isEmpty) {
       debugPrint('⚠️ User role is null or empty, defaulting to commuter');
@@ -96,10 +103,10 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<String?> _fetchUserRole() async {
+  Future<String?> _fetchUserRole({String? userId}) async {
     try {
       final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
+      userId ??= supabase.auth.currentUser?.id;
 
       if (userId == null) {
         debugPrint('⚠️ No authenticated user found');
@@ -108,6 +115,7 @@ class _LoginPageState extends State<LoginPage> {
 
       debugPrint('🔍 Fetching profile for user ID: $userId');
 
+      // Try both 'id' and 'user_id' column names
       try {
         final response = await supabase
             .from('profiles')
@@ -140,6 +148,7 @@ class _LoginPageState extends State<LoginPage> {
         debugPrint('⚠️ Failed to fetch with "user_id" column: $e');
       }
 
+      // Fallback: inspect table structure for diagnostics
       final profileCheck = await supabase
           .from('profiles')
           .select('id, user_id')
@@ -179,9 +188,8 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final userRole = await _fetchUserRole();
+      final userId = authProvider.user?.id;
+      final userRole = await _fetchUserRole(userId: userId);
 
       if (!mounted) return;
 
@@ -205,6 +213,7 @@ class _LoginPageState extends State<LoginPage> {
       _emailShakeKey.currentState?.shake();
       _passwordShakeKey.currentState?.shake();
 
+      // Convert technical error to friendly message
       String errorMsg;
       final error = authProvider.errorMessage?.toLowerCase() ?? '';
 

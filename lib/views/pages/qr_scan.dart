@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../widgets/background_circles.dart';
@@ -516,28 +515,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           .update({'balance': balance - initialPayment})
           .eq('id', walletId);
 
-      // Create initial transaction for boarding
-      final transactionNumber = 'TXN-${DateTime.now().millisecondsSinceEpoch}';
-
-      final transactionResponse = await supabase
-          .from('transactions')
-          .insert({
-            'transaction_number': transactionNumber,
-            'wallet_id': walletId,
-            'initiated_by_profile_id': profileId,
-            'type': 'fare_payment',
-            'amount': initialPayment,
-            'status': 'pending',
-            'metadata': {
-              'payment_type': 'initial_boarding',
-              'puv_type': puvType,
-              'initial_payment_per_person': initialPaymentPerPerson,
-            },
-          })
-          .select()
-          .single();
-
-      final transactionId = transactionResponse['id'] as String;
+      // Create initial transaction for boarding AFTER trip is created
+      // (transaction will be created and linked to the trip immediately after trip insert)
 
       // ==========================================
       // FETCH DRIVER INFO WITH PROFILE
@@ -641,11 +620,35 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final tripId = result['id'] as String;
 
-      // Link transaction to trip
-      await supabase
+      // Create initial transaction for boarding and link to the created trip
+      final transactionNumber =
+          'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
+
+      final transactionResponse = await supabase
           .from('transactions')
-          .update({'related_trip_id': tripId})
-          .eq('id', transactionId);
+          .insert({
+            'transaction_number': transactionNumber,
+            'wallet_id': walletId,
+            'initiated_by_profile_id': profileId,
+            'type': 'fare_payment',
+            'amount': initialPayment,
+            'status': 'pending',
+            'related_trip_id': tripId,
+            'processed_at': DateTime.now().toIso8601String(),
+            'metadata': {
+              'payment_type': 'initial_boarding',
+              'puv_type': puvType,
+              'initial_payment_per_person': initialPaymentPerPerson,
+            },
+          })
+          .select()
+          .single();
+
+      // transaction created and linked to trip; id available in `transactionResponse`
+      try {
+        final txnId = transactionResponse['id'] as String?;
+        debugPrint('💳 Initial transaction created and linked: $txnId');
+      } catch (_) {}
 
       debugPrint('✅ Trip created successfully: $tripId');
       debugPrint('💰 Initial payment: ₱$initialPayment');
@@ -839,7 +842,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
         // Step 10: Create transaction with barcode
         final transactionNumber =
-            'TXN-${DateTime.now().millisecondsSinceEpoch}';
+            'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
 
         await supabase.from('transactions').insert({
           'transaction_number': transactionNumber,
@@ -1098,18 +1101,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                             onPressed: () async {
                               Navigator.pop(context);
                             },
-                            icon: const Icon(
-                              Icons.chevron_left_rounded,
-                              size: 28,
-                            ),
+                            icon: const Icon(Icons.arrow_back, size: 28),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
                           const SizedBox(width: 12),
-                          Text(
+                          const Text(
                             'QR Scan',
-                            style: GoogleFonts.manrope(
-                              fontSize: 24,
+                            style: TextStyle(
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
