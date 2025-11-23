@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:komyut/views/pages/driver_app.dart';
 import '../widgets/background_circles.dart';
 import 'dart:async';
 import 'driver_app.dart';
@@ -16,7 +15,7 @@ class SuccessPage extends StatefulWidget {
     this.title = 'Report Submitted!',
     this.subtitle =
         'Thank you for submitting a report. By letting us know about this issue, you help us improve safety and the overall experience for everyone on the road.',
-    this.autoCloseDuration = 3,
+    this.autoCloseDuration = 5,
     this.onClose,
   });
 
@@ -37,7 +36,7 @@ class _SuccessPageState extends State<SuccessPage>
 
     // Setup animations
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
@@ -175,7 +174,7 @@ class _SuccessPageState extends State<SuccessPage>
                       Text(
                         widget.title,
                         style: GoogleFonts.manrope(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
@@ -190,7 +189,7 @@ class _SuccessPageState extends State<SuccessPage>
                         child: Text(
                           widget.subtitle,
                           style: GoogleFonts.nunito(
-                            fontSize: 16,
+                            fontSize: 12,
                             color: Colors.grey[600],
                             height: 1.5,
                           ),

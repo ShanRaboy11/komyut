@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/big_card.dart';
-import 'success_reportpage_commuter.dart';
+import 'success_reportpage_driver.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});

@@ -202,7 +202,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               'Remit',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 14,
               ),
             ),
           ),
@@ -227,7 +227,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               'Cash Out',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 14,
               ),
             ),
           ),
@@ -444,7 +444,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
             Text(
               'Recent Transactions',
               style: GoogleFonts.manrope(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -458,7 +458,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               child: Text(
                 'View All',
                 style: GoogleFonts.manrope(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF5B53C2),
                 ),
@@ -528,7 +528,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                     title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -536,7 +536,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                     date,
                     style: GoogleFonts.nunito(
                       color: Colors.grey.shade600,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -632,7 +632,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -652,7 +652,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                   Text(
                     transactionCode,
                     style: GoogleFonts.sourceCodePro(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.black54,
                     ),
                   ),

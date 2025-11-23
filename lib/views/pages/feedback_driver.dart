@@ -144,7 +144,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                         style: GoogleFonts.nunito(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                         items: const [
                           DropdownMenuItem(value: "Date", child: Text("Date")),

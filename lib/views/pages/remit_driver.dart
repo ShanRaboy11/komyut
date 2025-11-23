@@ -117,7 +117,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             title: Text(
               'Remittance',
               style: GoogleFonts.manrope(
-                fontSize: 28,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),

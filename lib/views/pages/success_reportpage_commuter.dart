@@ -15,7 +15,7 @@ class SuccessPage extends StatefulWidget {
     this.title = 'Report Submitted!',
     this.subtitle =
         'Thank you for submitting a report. By letting us know about this issue, you help us make your commute safer and better for everyone.',
-    this.autoCloseDuration = 3,
+    this.autoCloseDuration = 5,
     this.onClose,
   });
 
