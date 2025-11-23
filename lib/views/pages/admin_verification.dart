@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:developer' as devtools; 
-
-// --- FIX: Import the file where you saved the AdminPending class ---
-// Make sure the file name matches what you saved it as.
 import 'admin_pending.dart'; 
+import 'admin_approved.dart'; 
+import 'admin_rejected.dart'; // Added import for the rejected page
 
 class AdminVerifiedPage extends StatefulWidget {
   const AdminVerifiedPage({super.key});
@@ -24,7 +23,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   // --- State Variables ---
   String _statusFilter = ''; // '' = All statuses
   String _roleFilter = 'All'; // 'All', 'Driver', or 'Commuter'
-  String _searchQuery = ''; // Added state for search
+  String _searchQuery = ''; 
 
   final List<VerificationItem> _allItems = [
     VerificationItem(name: 'Driver name', role: 'Driver', timeAgo: '5m ago', status: Status.pending),
@@ -271,16 +270,35 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
                 itemCount: displayItems.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  final item = displayItems[index];
                   return VerificationCard(
-                    item: displayItems[index],
+                    item: item,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          // Navigate to the AdminPending page (Ensure it's imported)
-                          builder: (context) => const AdminPending(),
-                        ),
-                      );
+                      if (item.status == Status.pending) {
+                        // Navigate to Pending Page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminPending(),
+                          ),
+                        );
+                      } else if (item.status == Status.approved) {
+                        // Navigate to Approved Page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminApprovePage(),
+                          ),
+                        );
+                      } else if (item.status == Status.rejected) {
+                        // Navigate to Rejected Page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminRejectPage(),
+                          ),
+                        );
+                      }
                     },
                   );
                 },
@@ -380,7 +398,7 @@ class VerificationCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap, // This triggers the navigation
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

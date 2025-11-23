@@ -84,7 +84,7 @@ class StatusCard extends StatelessWidget {
           const CircleAvatar(
             radius: 18,
             backgroundColor: Color(0xFFD9D9D9),
-            child: Icon(Icons.person, color: Colors.grey),
+            child: Icon(Icons.person, color: Colors.black),
           ),
           const SizedBox(width: 12),
           Column(
