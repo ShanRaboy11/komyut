@@ -75,7 +75,8 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
         return 'Student';
       case 'pwd':
         return 'PWD';
-      case 'regular':
+      case 'discounted':
+        return 'Discounted';
       default:
         return 'Regular';
     }
