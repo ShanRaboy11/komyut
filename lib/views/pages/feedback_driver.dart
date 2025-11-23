@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/feedback_card.dart';
 import '../pages/feedbackdetails_driver.dart';
-import 'report_p1_driver.dart';
+import 'report_driver.dart';
 
 class DriverFeedbackPage extends StatefulWidget {
   const DriverFeedbackPage({super.key});
@@ -75,15 +75,15 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 100, right: 10),
         child: Container(
-          width: 60,
-          height: 60,
+          width: 45,
+          height: 45,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: gradientColors,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
                 color: Colors.purple.withValues(alpha: 0.3),
@@ -100,7 +100,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                 MaterialPageRoute(builder: (context) => const ReportPage()),
               );
             },
-            icon: const Icon(Icons.add_rounded, size: 30, color: Colors.white),
+            icon: const Icon(Icons.add_rounded, size: 25, color: Colors.white),
           ),
         ),
       ),
@@ -118,7 +118,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                   Text(
                     "Feedback",
                     style: GoogleFonts.manrope(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -144,6 +144,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                         style: GoogleFonts.nunito(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
                         items: const [
                           DropdownMenuItem(value: "Date", child: Text("Date")),

@@ -5,118 +5,148 @@ import '../widgets/logo.dart';
 import 'create_account.dart';
 import 'login.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage>
+    with SingleTickerProviderStateMixin {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay to allow fade-in
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _opacity = 1.0;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: AnimatedOpacity(
+        duration: const Duration(milliseconds: 2000),
+        curve: Curves.easeIn,
+        opacity: _opacity,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFDFDFF), Color(0xFFF1F0FA)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 39,
-              left: 172,
-              child: Image.asset("assets/images/Ellipse 1.png"),
-            ),
-            Positioned(
-              top: 39,
-              left: 172,
-              child: Image.asset("assets/images/Ellipse 1.png"),
-            ),
-            Positioned(
-              top: -134,
-              left: 22,
-              child: Image.asset("assets/images/Ellipse 3.png"),
-            ),
-            Positioned(
-              top: -134,
-              left: 22,
-              child: Image.asset("assets/images/Ellipse 3.png"),
-            ),
-            Positioned(
-              top: 672,
-              left: -94,
-              child: Image.asset("assets/images/Ellipse 2.png"),
-            ),
-            Positioned(
-              top: 672,
-              left: -94,
-              child: Image.asset("assets/images/Ellipse 2.png"),
-            ),
-            Positioned(
-              top: 454,
-              left: -293,
-              child: Image.asset("assets/images/Ellipse 4.png"),
-            ),
-            Positioned(
-              top: 454,
-              left: -293,
-              child: Image.asset("assets/images/Ellipse 4.png"),
-            ),
-            Positioned(
-              top: 454,
-              left: -293,
-              child: Image.asset("assets/images/Ellipse 5.png"),
-            ),
-            Positioned(
-              top: 454,
-              left: -293,
-              child: Image.asset("assets/images/Ellipse 5.png"),
-            ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 39,
+                left: 172,
+                child: Image.asset("assets/images/Ellipse 1.png"),
+              ),
+              Positioned(
+                top: 39,
+                left: 172,
+                child: Image.asset("assets/images/Ellipse 1.png"),
+              ),
+              Positioned(
+                top: -134,
+                left: 22,
+                child: Image.asset("assets/images/Ellipse 3.png"),
+              ),
+              Positioned(
+                top: -134,
+                left: 22,
+                child: Image.asset("assets/images/Ellipse 3.png"),
+              ),
+              Positioned(
+                top: 672,
+                left: -94,
+                child: Image.asset("assets/images/Ellipse 2.png"),
+              ),
+              Positioned(
+                top: 672,
+                left: -94,
+                child: Image.asset("assets/images/Ellipse 2.png"),
+              ),
+              Positioned(
+                top: 454,
+                left: -293,
+                child: Image.asset("assets/images/Ellipse 4.png"),
+              ),
+              Positioned(
+                top: 454,
+                left: -293,
+                child: Image.asset("assets/images/Ellipse 4.png"),
+              ),
+              Positioned(
+                top: 454,
+                left: -293,
+                child: Image.asset("assets/images/Ellipse 5.png"),
+              ),
+              Positioned(
+                top: 454,
+                left: -293,
+                child: Image.asset("assets/images/Ellipse 5.png"),
+              ),
 
-            Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildWelcomeText(),
-                    const SizedBox(height: 80),
+              Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildWelcomeText(),
+                      const SizedBox(height: 80),
 
-                    const Logo(),
+                      const Logo(),
 
-                    const SizedBox(height: 120),
-                    CustomButton(
-                      text: "Create Account",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateAccountPage(),
-                          ),
-                        );
-                      },
-                      isFilled: true,
-                      textColor: Colors.white,
-                    ),
+                      const SizedBox(height: 120),
+                      CustomButton(
+                        text: "Create Account",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateAccountPage(),
+                            ),
+                          );
+                        },
+                        isFilled: true,
+                        textColor: Colors.white,
+                        hasShadow: false,
+                        height: 45,
+                        fontSize: 16,
+                      ),
 
-                    const SizedBox(height: 20),
-                    CustomButton(
-                      text: "Log In",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      },
-                      isFilled: false,
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      CustomButton(
+                        text: "Log In",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
+                          );
+                        },
+                        isFilled: false,
+                        hasShadow: false,
+                        height: 45,
+                        fontSize: 16,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -137,7 +167,7 @@ class LandingPage extends StatelessWidget {
       child: Text(
         "Welcome",
         style: GoogleFonts.manrope(
-          fontSize: 50,
+          fontSize: 40,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

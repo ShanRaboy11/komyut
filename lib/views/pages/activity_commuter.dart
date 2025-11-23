@@ -14,7 +14,8 @@ class TripsPage extends StatefulWidget {
   State<TripsPage> createState() => _TripsPageState();
 }
 
-class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMixin {
+class _TripsPageState extends State<TripsPage>
+    with SingleTickerProviderStateMixin {
   final gradientColors = const [
     Color(0xFFB945AA),
     Color(0xFF8E4CB6),
@@ -30,7 +31,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    
+
     // Load data when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
@@ -88,16 +89,17 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8E4CB6),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
                         'Retry',
-                        style: GoogleFonts.nunito(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -109,7 +111,10 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               onRefresh: () => provider.refresh(),
               color: const Color(0xFF8E4CB6),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 30),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 30,
+                  horizontal: 30,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -120,7 +125,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                         Text(
                           "Activity",
                           style: GoogleFonts.manrope(
-                            fontSize: 28,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -141,15 +146,18 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                               iconEnabledColor: Colors.white,
                               style: GoogleFonts.nunito(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
-                              items: ['Weekly', 'Monthly', 'Yearly', 'All Trips']
-                                  .map((e) => DropdownMenuItem(
-                                        value: e,
-                                        child: Text(e),
-                                      ))
-                                  .toList(),
+                              items:
+                                  ['Weekly', 'Monthly', 'Yearly', 'All Trips']
+                                      .map(
+                                        (e) => DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e),
+                                        ),
+                                      )
+                                      .toList(),
                               onChanged: (value) {
                                 if (value != null) {
                                   provider.changeRange(value);
@@ -164,8 +172,8 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
 
                     // Analytics Card (show enhanced skeleton when analyticsLoading)
                     provider.analyticsLoading
-                      ? _buildAnalyticsSkeleton(size)
-                      : _buildAnalyticsCard(context, provider, size),
+                        ? _buildAnalyticsSkeleton(size)
+                        : _buildAnalyticsCard(context, provider, size),
 
                     const SizedBox(height: 30),
 
@@ -176,7 +184,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                         Text(
                           "Recent Trips",
                           style: GoogleFonts.manrope(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -194,7 +202,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                             "View All",
                             style: GoogleFonts.nunito(
                               color: const Color.fromARGB(255, 42, 42, 42),
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -210,14 +218,14 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                           style: GoogleFonts.nunito(
                             color: const Color.fromARGB(255, 0, 0, 0),
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontSize: 11,
                           ),
                         ),
                         const SizedBox(width: 20),
                         _buildStatusDot(Colors.yellow, "Ongoing"),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         _buildStatusDot(Colors.green, "Completed"),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         _buildStatusDot(Colors.red, "Cancelled"),
                       ],
                     ),
@@ -249,30 +257,32 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                         ),
                       )
                     else
-                      ...provider.recentTrips.map((trip) => TripsCard(
-                            date: trip.date,
-                            time: trip.time,
-                            from: trip.from.isNotEmpty ? trip.from : 'Unknown',
-                            to: trip.to.isNotEmpty ? trip.to : 'Unknown',
-                            tripCode: trip.tripCode,
-                            status: trip.status,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => TripDetailsPage(
-                                    tripId: trip.tripId,
-                                    date: trip.date,
-                                    time: trip.time,
-                                    from: trip.from,
-                                    to: trip.to,
-                                    tripCode: trip.tripCode,
-                                    status: trip.status,
-                                  ),
+                      ...provider.recentTrips.map(
+                        (trip) => TripsCard(
+                          date: trip.date,
+                          time: trip.time,
+                          from: trip.from.isNotEmpty ? trip.from : 'Unknown',
+                          to: trip.to.isNotEmpty ? trip.to : 'Unknown',
+                          tripCode: trip.tripCode,
+                          status: trip.status,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TripDetailsPage(
+                                  tripId: trip.tripId,
+                                  date: trip.date,
+                                  time: trip.time,
+                                  from: trip.from,
+                                  to: trip.to,
+                                  tripCode: trip.tripCode,
+                                  status: trip.status,
                                 ),
-                              );
-                            },
-                          )),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -294,11 +304,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[300]!,
-                Colors.grey[100]!,
-                Colors.grey[300]!,
-              ],
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
               stops: [
                 _shimmerController.value - 0.3,
                 _shimmerController.value,
@@ -455,7 +461,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                     ],
                   ),
                   const SizedBox(height: 14),
-                  
+
                   // Chart area with animated loading
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,7 +502,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                         ),
                       ),
                       const SizedBox(width: 20),
-                      
+
                       // Chart skeleton
                       Expanded(
                         flex: 2,
@@ -526,7 +532,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                     ],
                   ),
                   const SizedBox(height: 18),
-                  
+
                   // Stats cards
                   Row(
                     children: [
@@ -629,7 +635,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                  border: Border.all(
                     color: const Color(0xFF8E4CB6).withValues(alpha: 0.3),
                     width: 1.2,
                   ),
@@ -777,7 +783,11 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                   ),
                   const SizedBox(width: 8),
                   _buildShimmerOnGradient(
-                    child: Container(width: 80, height: 14, color: Colors.white24),
+                    child: Container(
+                      width: 80,
+                      height: 14,
+                      color: Colors.white24,
+                    ),
                   ),
                 ],
               ),
@@ -790,7 +800,13 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildShimmerOnGradient(child: Container(width: 80, height: 18, color: Colors.white24)),
+                    _buildShimmerOnGradient(
+                      child: Container(
+                        width: 80,
+                        height: 18,
+                        color: Colors.white24,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
                       width: 60,
@@ -857,7 +873,11 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildAnalyticsCard(BuildContext context, TripsProvider provider, Size size) {
+  Widget _buildAnalyticsCard(
+    BuildContext context,
+    TripsProvider provider,
+    Size size,
+  ) {
     final analytics = provider.analyticsData;
     final chartData = provider.chartData;
 
@@ -882,7 +902,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               Text(
                 "Analytics",
                 style: GoogleFonts.nunito(
-                  fontSize: 22,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -890,14 +910,17 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               Row(
                 children: [
                   IconButton(
-                    onPressed: provider.analyticsLoading ? null : () => provider.prevRange(),
+                    onPressed: provider.analyticsLoading
+                        ? null
+                        : () => provider.prevRange(),
                     icon: Icon(
-                      Icons.chevron_left, 
-                      color: provider.analyticsLoading ? Colors.white38 : Colors.white,
+                      Icons.chevron_left,
+                      color: provider.analyticsLoading
+                          ? Colors.white38
+                          : Colors.white,
                     ),
                   ),
                   SizedBox(
-                    width: 100,
                     child: Center(
                       child: provider.analyticsLoading
                           ? SizedBox(
@@ -911,19 +934,28 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                               ),
                             )
                           : Text(
-                              analytics.period.isNotEmpty ? analytics.period : '—',
-                              style: GoogleFonts.nunito(color: Colors.white, fontSize: 14),
+                              analytics.period.isNotEmpty
+                                  ? analytics.period
+                                  : '—',
+                              style: GoogleFonts.nunito(
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
                             ),
                     ),
                   ),
                   IconButton(
-                    onPressed: (provider.analyticsLoading || provider.currentIndex >= 0)
+                    onPressed:
+                        (provider.analyticsLoading ||
+                            provider.currentIndex >= 0)
                         ? null
                         : () => provider.nextRange(),
                     icon: Icon(
-                      Icons.chevron_right, 
-                      color: (provider.analyticsLoading || provider.currentIndex >= 0) 
-                          ? Colors.white38 
+                      Icons.chevron_right,
+                      color:
+                          (provider.analyticsLoading ||
+                              provider.currentIndex >= 0)
+                          ? Colors.white38
                           : Colors.white,
                     ),
                   ),
@@ -948,7 +980,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                       Text(
                         "Total Trips",
                         style: GoogleFonts.manrope(
-                          fontSize: 18,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFFF0D7FF),
                         ),
@@ -974,7 +1006,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                                 child: Text(
                                   analytics.totalTrips.toString(),
                                   style: GoogleFonts.manrope(
-                                    fontSize: 45,
+                                    fontSize: 35,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
@@ -999,7 +1031,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                              child: CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Colors.white.withValues(alpha: 0.8),
@@ -1039,7 +1071,8 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                                   interval: 1,
                                   getTitlesWidget: (value, meta) {
                                     int index = value.toInt();
-                                    if (index < 0 || index >= chartData.length) {
+                                    if (index < 0 ||
+                                        index >= chartData.length) {
                                       return const SizedBox();
                                     }
                                     return Padding(
@@ -1048,7 +1081,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                                         chartData[index].label,
                                         style: GoogleFonts.nunito(
                                           color: Colors.white,
-                                          fontSize: 12,
+                                          fontSize: 10,
                                         ),
                                       ),
                                     );
@@ -1071,10 +1104,12 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                                 spots: chartData
                                     .asMap()
                                     .entries
-                                    .map((e) => FlSpot(
-                                          e.key.toDouble(),
-                                          e.value.count.toDouble(),
-                                        ))
+                                    .map(
+                                      (e) => FlSpot(
+                                        e.key.toDouble(),
+                                        e.value.count.toDouble(),
+                                      ),
+                                    )
                                     .toList(),
                                 isCurved: true,
                                 color: Colors.white,
@@ -1100,39 +1135,55 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
               _analyticsCard(
                 "Distance",
                 provider.analyticsLoading,
-                provider.analyticsLoading ? '—' : "${analytics.totalDistance.toStringAsFixed(1)} km",
-                onTap: provider.analyticsLoading ? null : () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Distance Details'),
-                      content: Text(
-                          'Total distance: ${analytics.totalDistance.toStringAsFixed(2)} km\nTotal trips: ${analytics.totalTrips}'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-                      ],
-                    ),
-                  );
-                },
+                provider.analyticsLoading
+                    ? '—'
+                    : "${analytics.totalDistance.toStringAsFixed(1)} km",
+                onTap: provider.analyticsLoading
+                    ? null
+                    : () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Distance Details'),
+                            content: Text(
+                              'Total distance: ${analytics.totalDistance.toStringAsFixed(2)} km\nTotal trips: ${analytics.totalTrips}',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 10),
               _analyticsCard(
                 "Expense",
                 provider.analyticsLoading,
-                provider.analyticsLoading ? '—' : "₱${analytics.totalSpent.toStringAsFixed(2)}",
-                onTap: provider.analyticsLoading ? null : () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Expense Details'),
-                      content: Text(
-                          'Total spent: ₱${analytics.totalSpent.toStringAsFixed(2)}\nTotal trips: ${analytics.totalTrips}'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-                      ],
-                    ),
-                  );
-                },
+                provider.analyticsLoading
+                    ? '—'
+                    : "₱${analytics.totalSpent.toStringAsFixed(2)}",
+                onTap: provider.analyticsLoading
+                    ? null
+                    : () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Expense Details'),
+                            content: Text(
+                              'Total spent: ₱${analytics.totalSpent.toStringAsFixed(2)}\nTotal trips: ${analytics.totalTrips}',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
               ),
             ],
           ),
@@ -1150,12 +1201,17 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.nunito(fontSize: 14)),
+        Text(label, style: GoogleFonts.nunito(fontSize: 10)),
       ],
     );
   }
 
-  Widget _analyticsCard(String title, bool isLoading, String value, {VoidCallback? onTap}) {
+  Widget _analyticsCard(
+    String title,
+    bool isLoading,
+    String value, {
+    VoidCallback? onTap,
+  }) {
     final card = Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(14),
@@ -1169,7 +1225,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
           Text(
             title,
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 14,
               color: const Color(0xFFF0D7FF),
               fontWeight: FontWeight.w500,
             ),
@@ -1195,7 +1251,7 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
                     child: Text(
                       value,
                       style: GoogleFonts.manrope(
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -1206,7 +1262,9 @@ class _TripsPageState extends State<TripsPage> with SingleTickerProviderStateMix
       ),
     );
 
-    final tappable = onTap != null ? GestureDetector(onTap: onTap, child: card) : card;
+    final tappable = onTap != null
+        ? GestureDetector(onTap: onTap, child: card)
+        : card;
     return Expanded(child: tappable);
   }
 }
@@ -1225,15 +1283,16 @@ class _SkeletonChartPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path();
-    
+
     // Create a wavy line to simulate chart
     final points = 7;
     for (int i = 0; i < points; i++) {
       final x = (size.width / (points - 1)) * i;
-      final y = size.height * 0.5 + 
-                (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) * 
-                (0.5 + 0.5 * (1 - animation.value).abs());
-      
+      final y =
+          size.height * 0.5 +
+          (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) *
+              (0.5 + 0.5 * (1 - animation.value).abs());
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -1250,9 +1309,10 @@ class _SkeletonChartPainter extends CustomPainter {
 
     for (int i = 0; i < points; i++) {
       final x = (size.width / (points - 1)) * i;
-      final y = size.height * 0.5 + 
-                (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) * 
-                (0.5 + 0.5 * (1 - animation.value).abs());
+      final y =
+          size.height * 0.5 +
+          (size.height * 0.3 * (i % 2 == 0 ? -1 : 1)) *
+              (0.5 + 0.5 * (1 - animation.value).abs());
       canvas.drawCircle(Offset(x, y), 3, dotPaint);
     }
 

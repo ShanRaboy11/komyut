@@ -32,13 +32,13 @@ class CustomButton extends StatelessWidget {
     this.imagePath,
     this.fillColor,
     this.width = 325,
-    this.height = 50,
+    this.height = 45,
     this.strokeColor = Colors.transparent,
     this.outlinedFillColor = Colors.white,
     this.textColor,
     this.hasShadow = true,
     this.borderRadius = 50,
-    this.fontSize = 18.0,
+    this.fontSize = 16.0,
     this.fontWeight = FontWeight.bold,
   });
 

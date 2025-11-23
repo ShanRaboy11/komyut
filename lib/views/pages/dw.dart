@@ -48,13 +48,13 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Cash In',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -90,7 +90,7 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
         Text(
           'Digital Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -274,11 +274,11 @@ class _DigitalWalletPageState extends State<DigitalWalletPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
         ),
         child: Text(
           'Submit',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
         ),
       ),
     );

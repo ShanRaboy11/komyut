@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/text_field.dart'; 
-import '../widgets/background_circles.dart'; 
-import '../widgets/progress_bar.dart'; 
-import '../widgets/button.dart'; 
+import 'package:google_fonts/google_fonts.dart';
+import '../widgets/text_field.dart';
+import '../widgets/background_circles.dart';
+import '../widgets/progress_bar.dart';
+import '../widgets/button.dart';
 import '../pages/regis_set_login.dart';
 import '../providers/registration_provider.dart';
 
@@ -17,17 +18,18 @@ class RegistrationOperatorPersonalInfo extends StatefulWidget {
 
 class RegistrationOperatorPersonalInfoState
     extends State<RegistrationOperatorPersonalInfo> {
-  final _formKey = GlobalKey<FormState>(); 
+  final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _companyNameController = TextEditingController();
-  final TextEditingController _companyAddressController = TextEditingController();
+  final TextEditingController _companyAddressController =
+      TextEditingController();
   final TextEditingController _contactEmailController = TextEditingController();
 
   final List<ProgressBarStep> _registrationSteps = [
-    ProgressBarStep(title: 'Choose Role', isCompleted: true), 
-    ProgressBarStep(title: 'Personal Info', isActive: true), 
+    ProgressBarStep(title: 'Choose Role', isCompleted: true),
+    ProgressBarStep(title: 'Personal Info', isActive: true),
     ProgressBarStep(title: 'Set Login'),
     ProgressBarStep(title: 'Verify Email'),
   ];
@@ -36,9 +38,12 @@ class RegistrationOperatorPersonalInfoState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
+      );
       final data = registrationProvider.registrationData;
-      
+
       if (data['first_name'] != null) {
         _firstNameController.text = data['first_name'];
       }
@@ -81,30 +86,40 @@ class RegistrationOperatorPersonalInfoState
     }
 
     if (isFormValid) {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-      
-      registrationProvider.saveOperatorPersonalInfo(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        companyName: _companyNameController.text.trim(),
-        companyAddress: _companyAddressController.text.trim(),
-        contactEmail: _contactEmailController.text.trim(),
-      ).then((success) {
-        if (success && mounted) {
-          debugPrint('Operator personal info saved: ${registrationProvider.registrationData}');
-          
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
-          );
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(registrationProvider.errorMessage ?? 'Failed to save information'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      });
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
+      );
+
+      registrationProvider
+          .saveOperatorPersonalInfo(
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            companyName: _companyNameController.text.trim(),
+            companyAddress: _companyAddressController.text.trim(),
+            contactEmail: _contactEmailController.text.trim(),
+          )
+          .then((success) {
+            if (success && mounted) {
+              debugPrint(
+                'Operator personal info saved: ${registrationProvider.registrationData}',
+              );
+
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RegistrationSetLogin()),
+              );
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    registrationProvider.errorMessage ??
+                        'Failed to save information',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          });
     }
   }
 
@@ -144,24 +159,22 @@ class RegistrationOperatorPersonalInfoState
                       const SizedBox(height: 50),
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
-                      const Text(
+                      Text(
                         'Tell Us About You',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.manrope(
                           color: Color.fromRGBO(18, 18, 18, 1),
-                          fontFamily: 'Manrope',
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         'Provide some basic details so we \ncan set up your account.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.nunito(
                           color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
-                          fontFamily: 'Nunito',
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
                           height: 1.5,
@@ -169,11 +182,14 @@ class RegistrationOperatorPersonalInfoState
                       ),
                       const SizedBox(height: 20),
 
-                      const Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           '*All fields required unless noted.',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: GoogleFonts.nunito(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 15),
@@ -182,9 +198,14 @@ class RegistrationOperatorPersonalInfoState
                         labelText: 'First Name',
                         controller: _firstNameController,
                         width: fieldWidth,
-                        height: 60, 
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your first name';
@@ -198,9 +219,14 @@ class RegistrationOperatorPersonalInfoState
                         labelText: 'Last Name',
                         controller: _lastNameController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
@@ -214,9 +240,14 @@ class RegistrationOperatorPersonalInfoState
                         labelText: 'Company/Business Name',
                         controller: _companyNameController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter company/business name';
@@ -230,9 +261,14 @@ class RegistrationOperatorPersonalInfoState
                         labelText: 'Company Full Address',
                         controller: _companyAddressController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter company address';
@@ -246,16 +282,23 @@ class RegistrationOperatorPersonalInfoState
                         labelText: 'Contact Email',
                         controller: _contactEmailController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         keyboardType: TextInputType.emailAddress,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter contact email';
                           }
                           // Basic email validation
-                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          final emailRegex = RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          );
                           if (!emailRegex.hasMatch(value)) {
                             return 'Please enter a valid email';
                           }
@@ -263,7 +306,7 @@ class RegistrationOperatorPersonalInfoState
                         },
                       ),
                       const SizedBox(height: 30),
-                      
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -272,7 +315,6 @@ class RegistrationOperatorPersonalInfoState
                             onPressed: _onBackPressed,
                             isFilled: false,
                             width: buttonWidth,
-                            height: 60,
                             borderRadius: 15,
                             strokeColor: const Color.fromRGBO(176, 185, 198, 1),
                             outlinedFillColor: Colors.white,
@@ -281,11 +323,14 @@ class RegistrationOperatorPersonalInfoState
                           ),
                           const SizedBox(width: 20),
                           CustomButton(
-                            text: registrationProvider.isLoading ? 'Saving...' : 'Next',
-                            onPressed: registrationProvider.isLoading ? () {} : _onNextPressed,
+                            text: registrationProvider.isLoading
+                                ? 'Saving...'
+                                : 'Next',
+                            onPressed: registrationProvider.isLoading
+                                ? () {}
+                                : _onNextPressed,
                             isFilled: true,
                             width: buttonWidth,
-                            height: 60,
                             borderRadius: 15,
                             textColor: Colors.white,
                             hasShadow: true,

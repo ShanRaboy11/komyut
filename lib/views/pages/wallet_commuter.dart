@@ -474,12 +474,13 @@ class _WalletPageState extends State<WalletPage>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Center(
+                      Align(
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           'Deposit to komyut',
                           style: GoogleFonts.manrope(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -567,7 +568,7 @@ class _WalletPageState extends State<WalletPage>
             Text(
               text,
               style: GoogleFonts.manrope(
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: gradientColors[1],
               ),
@@ -587,13 +588,13 @@ class _WalletPageState extends State<WalletPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -729,7 +730,7 @@ class _WalletPageState extends State<WalletPage>
                 '₱${currencyFormat.format(provider.balance)}',
                 style: GoogleFonts.manrope(
                   color: Colors.white,
-                  fontSize: 34,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -798,7 +799,7 @@ class _WalletPageState extends State<WalletPage>
               Text(
                 'Fare Expenses',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -817,7 +818,7 @@ class _WalletPageState extends State<WalletPage>
                   Text(
                     _getMonthAndYear(_selectedWeekOffset),
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: brandColor,
                     ),
@@ -928,7 +929,7 @@ class _WalletPageState extends State<WalletPage>
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
               Text(
@@ -936,7 +937,7 @@ class _WalletPageState extends State<WalletPage>
                 style: GoogleFonts.nunito(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -965,7 +966,7 @@ class _WalletPageState extends State<WalletPage>
       ),
       child: Text(
         'View All',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
@@ -1043,7 +1044,7 @@ class _WalletPageState extends State<WalletPage>
                   title,
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1051,7 +1052,7 @@ class _WalletPageState extends State<WalletPage>
                   date,
                   style: GoogleFonts.nunito(
                     color: Colors.grey.shade600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -1061,7 +1062,7 @@ class _WalletPageState extends State<WalletPage>
               '${isExpense ? '-' : '+'}$amountText',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 14,
                 color: isExpense
                     ? const Color(0xFFC62828) // Red for expenses
                     : const Color(0xFF2E7D32), // Green for income
@@ -1102,7 +1103,7 @@ class _WalletPageState extends State<WalletPage>
                   title,
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1110,7 +1111,7 @@ class _WalletPageState extends State<WalletPage>
                   date,
                   style: GoogleFonts.nunito(
                     color: Colors.grey.shade600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -1121,7 +1122,7 @@ class _WalletPageState extends State<WalletPage>
                   '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                     color: isCredit
                         ? const Color(0xFF2E7D32)
                         : const Color(0xFFC62828),
