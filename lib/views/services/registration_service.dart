@@ -352,6 +352,15 @@ Future<Map<String, dynamic>> completeRegistration() async {
         'address': _registrationData['address'],
       };
 
+      // If registering a commuter and the category is 'regular', mark as verified
+      try {
+        final category = (_registrationData['category'] as String?)?.toLowerCase();
+        if (role == 'commuter' && category == 'regular') {
+          profileData['is_verified'] = true;
+          debugPrint('ℹ️ Commuter is regular; will set profile.is_verified = true');
+        }
+      } catch (_) {}
+
       debugPrint('📤 Profile data to insert: $profileData');
 
       try {
@@ -436,6 +445,17 @@ Future<Map<String, dynamic>> completeRegistration() async {
           'category': _registrationData['category'] ?? 'regular',
           'attachment_id': commuterAttachmentId,
         });
+
+        // If this commuter is regular, ensure the profile is marked verified
+        try {
+          final category = (_registrationData['category'] as String?)?.toLowerCase();
+          if (category == 'regular') {
+            await _supabase.from('profiles').update({'is_verified': true}).eq('id', profileId);
+            debugPrint('ℹ️ Profile $profileId marked as verified for regular commuter');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to mark profile as verified: $e');
+        }
 
         debugPrint('✅ Commuter created!');
       } else {
