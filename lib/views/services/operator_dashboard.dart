@@ -27,10 +27,7 @@ class OperatorDashboardService {
           .maybeSingle();
 
       debugPrint('✅ Operator profile fetched: ${profileData['first_name']}');
-      return {
-        'profile': profileData,
-        'operator': operatorData,
-      };
+      return {'profile': profileData, 'operator': operatorData};
     } catch (e) {
       debugPrint('❌ Error fetching operator profile: $e');
       rethrow;
@@ -168,7 +165,9 @@ class OperatorDashboardService {
   }
 
   /// Get driver performance data (top drivers by revenue with ratings)
-  Future<List<Map<String, dynamic>>> getDriverPerformance({int limit = 10}) async {
+  Future<List<Map<String, dynamic>>> getDriverPerformance({
+    int limit = 10,
+  }) async {
     try {
       final operatorId = await _getOperatorId();
       if (operatorId == null) return [];
@@ -196,7 +195,7 @@ class OperatorDashboardService {
       for (var driver in drivers) {
         final driverId = driver['id'];
         final profile = driver['profiles'];
-        
+
         if (profile == null) continue;
 
         final firstName = profile['first_name'] ?? '';
@@ -261,10 +260,14 @@ class OperatorDashboardService {
       }
 
       // Sort by revenue (descending) and limit
-      driverPerformance.sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+      driverPerformance.sort(
+        (a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double),
+      );
       final limitedPerformance = driverPerformance.take(limit).toList();
 
-      debugPrint('✅ Driver performance fetched: ${limitedPerformance.length} drivers');
+      debugPrint(
+        '✅ Driver performance fetched: ${limitedPerformance.length} drivers',
+      );
       return limitedPerformance;
     } catch (e) {
       debugPrint('❌ Error fetching driver performance: $e');
@@ -314,8 +317,10 @@ class OperatorDashboardService {
       // Format reports with vehicle plate numbers
       final formattedReports = reports.map((report) {
         final entityId = report['reported_entity_id'] as String?;
-        final plate = entityId != null ? (driverPlateMap[entityId] ?? 'N/A') : 'N/A';
-        
+        final plate = entityId != null
+            ? (driverPlateMap[entityId] ?? 'N/A')
+            : 'N/A';
+
         return {
           'id': report['id'],
           'title': _getReportTitle(report['category']),
@@ -327,7 +332,9 @@ class OperatorDashboardService {
         };
       }).toList();
 
-      debugPrint('✅ Recent reports fetched: ${formattedReports.length} reports');
+      debugPrint(
+        '✅ Recent reports fetched: ${formattedReports.length} reports',
+      );
       return formattedReports;
     } catch (e) {
       debugPrint('❌ Error fetching recent reports: $e');
@@ -356,7 +363,10 @@ class OperatorDashboardService {
   }
 
   /// Get total revenue for a time period
-  Future<double> getTotalRevenue({DateTime? startDate, DateTime? endDate}) async {
+  Future<double> getTotalRevenue({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
       final operatorId = await _getOperatorId();
       if (operatorId == null) return 0.0;
@@ -436,6 +446,148 @@ class OperatorDashboardService {
     } catch (e) {
       debugPrint('❌ Error fetching dashboard data: $e');
       rethrow;
+    }
+  }
+
+  /// Get operator's wallet balance
+  Future<double> getWalletBalance() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0.0;
+
+      final data = await _supabase
+          .from('profiles')
+          .select('wallets(balance)')
+          .eq('user_id', userId)
+          .single();
+
+      if (data['wallets'] == null) return 0.0;
+
+      final wallet = (data['wallets'] is List)
+          ? (data['wallets'] as List).first
+          : data['wallets'];
+
+      return (wallet['balance'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      debugPrint('❌ Error fetching operator balance: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get weekly earnings for operator (Remittances)
+  Future<Map<String, double>> getWeeklyEarnings({int weekOffset = 0}) async {
+    try {
+      final response = await _supabase.rpc(
+        'get_operator_weekly_earnings',
+        params: {'week_offset': weekOffset},
+      );
+
+      if (response is List) {
+        return {
+          for (var item in response)
+            (item['day_name'] as String): (item['total'] as num).toDouble(),
+        };
+      }
+      return {};
+    } catch (e) {
+      debugPrint('❌ Error fetching operator weekly earnings: $e');
+      return {};
+    }
+  }
+
+  /// Fetch Transactions with Driver & Vehicle Details
+  Future<List<Map<String, dynamic>>> getTransactions({int? limit}) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated');
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id, wallets(id)')
+          .eq('user_id', userId)
+          .single();
+
+      final walletId = (profile['wallets'] is List)
+          ? profile['wallets'][0]['id']
+          : profile['wallets']['id'];
+
+      var query = _supabase
+          .from('transactions')
+          .select('''
+            id,
+            transaction_number,
+            type,
+            amount,
+            status,
+            created_at,
+            metadata,
+            initiator:initiated_by_profile_id (
+              first_name,
+              last_name,
+              driver:drivers (
+                vehicle_plate
+              )
+            )
+          ''')
+          .eq('wallet_id', walletId)
+          .order('created_at', ascending: false);
+
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+
+      final List<dynamic> response = await query;
+
+      return response.map((tx) {
+        final initiator = tx['initiator'] as Map<String, dynamic>?;
+        final driverInfo = initiator?['driver'] as Map<String, dynamic>?;
+
+        String description = _formatDescription(tx['type']);
+        String? driverName;
+        String? vehiclePlate;
+
+        if (tx['type'] == 'remittance') {
+          if (initiator != null) {
+            driverName = '${initiator['first_name']} ${initiator['last_name']}';
+            description = 'Remittance from $driverName';
+          }
+          if (driverInfo != null) {
+            vehiclePlate = driverInfo['vehicle_plate'];
+          }
+        } else if (tx['type'] == 'cash_out') {
+          description = 'Cash Out';
+        }
+
+        return {
+          'id': tx['id'],
+          'transaction_number': tx['transaction_number'],
+          'type': tx['type'],
+          'amount': (tx['amount'] as num).toDouble(),
+          'date': tx['created_at'],
+          'created_at': tx['created_at'],
+          'status': tx['status'],
+          'description': description,
+          'driver_name': driverName,
+          'vehicle_plate': vehiclePlate,
+          'details': tx['metadata']?['description'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error fetching transactions: $e');
+      return [];
+    }
+  }
+
+  String _formatDescription(String type) {
+    switch (type) {
+      case 'remittance':
+        return 'Remittance Received';
+      case 'cash_out':
+        return 'Cash Out';
+      case 'admin_fee':
+        return 'System Fee';
+      default:
+        return 'Transaction';
     }
   }
 }

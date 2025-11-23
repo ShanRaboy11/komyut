@@ -682,3 +682,46 @@ BEGIN
   WHERE transaction_number = transaction_code_arg AND type = 'cash_out';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_weekly_earnings(week_offset integer DEFAULT 0)
+RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    v_operator_profile_id uuid;
+    v_wallet_id uuid;
+    target_week_start date;
+BEGIN
+    SELECT id INTO v_operator_profile_id
+    FROM public.profiles
+    WHERE user_id = auth.uid();
+
+    SELECT id INTO v_wallet_id
+    FROM public.wallets
+    WHERE owner_profile_id = v_operator_profile_id;
+
+    IF v_wallet_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        )::date AS day
+    )
+    SELECT
+        to_char(wd.day, 'Dy') AS day_name,
+        COALESCE(SUM(t.amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN transactions t
+        ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
+        AND t.wallet_id = v_wallet_id
+        AND t.type = 'remittance'
+        AND t.status = 'completed'
+    GROUP BY wd.day
+    ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+import '../providers/wallet_provider.dart';
 
 class WalletHistoryOperatorPage extends StatefulWidget {
   const WalletHistoryOperatorPage({super.key});
@@ -12,62 +14,13 @@ class WalletHistoryOperatorPage extends StatefulWidget {
 }
 
 class _WalletHistoryOperatorPageState extends State<WalletHistoryOperatorPage> {
-  // --- HARDCODED DATA ---
-  final List<Map<String, dynamic>> _dummyTransactions = [
-    {
-      'id': 'tx_101',
-      'type': 'remittance_received',
-      'amount': 850.00,
-      'created_at': DateTime.now()
-          .subtract(const Duration(minutes: 45))
-          .toIso8601String(),
-      'transaction_number': 'REM-88219001',
-      'driver_name': 'Juan Dela Cruz',
-      'vehicle_plate': 'ABC 1234',
-    },
-    {
-      'id': 'tx_102',
-      'type': 'remittance_received',
-      'amount': 1200.50,
-      'created_at': DateTime.now()
-          .subtract(const Duration(hours: 3))
-          .toIso8601String(),
-      'transaction_number': 'REM-88219002',
-      'driver_name': 'Pedro Penduko',
-      'vehicle_plate': 'XYZ 9876',
-    },
-    {
-      'id': 'tx_103',
-      'type': 'cash_out',
-      'amount': 5000.00,
-      'created_at': DateTime.now()
-          .subtract(const Duration(days: 1, hours: 2))
-          .toIso8601String(),
-      'transaction_number': 'WTH-55102933',
-      'details': 'Transfer to BDO',
-    },
-    {
-      'id': 'tx_104',
-      'type': 'remittance_received',
-      'amount': 640.00,
-      'created_at': DateTime.now()
-          .subtract(const Duration(days: 1, hours: 5))
-          .toIso8601String(),
-      'transaction_number': 'REM-88218888',
-      'driver_name': 'Jose Rizal',
-      'vehicle_plate': 'ABC 1234',
-    },
-    {
-      'id': 'tx_105',
-      'type': 'admin_fee',
-      'amount': 150.00,
-      'created_at': DateTime.now()
-          .subtract(const Duration(days: 2))
-          .toIso8601String(),
-      'transaction_number': 'FEE-11223344',
-      'details': 'Weekly platform maintenance',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperatorWalletProvider>().fetchFullHistory();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,17 +59,34 @@ class _WalletHistoryOperatorPageState extends State<WalletHistoryOperatorPage> {
             ),
           ),
           Expanded(
-            child: _dummyTransactions.isEmpty
-                ? const Center(child: Text('No history found.'))
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 40.0),
-                    itemCount: _dummyTransactions.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = _dummyTransactions[index];
-                      return _TransactionItem(transaction: item);
-                    },
-                  ),
+            child: Consumer<OperatorWalletProvider>(
+              builder: (context, provider, child) {
+                if (provider.isHistoryLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF8E4CB6)),
+                  );
+                }
+
+                if (provider.allTransactions.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No transaction history found.',
+                      style: GoogleFonts.nunito(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 40.0),
+                  itemCount: provider.allTransactions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final item = provider.allTransactions[index];
+                    return _TransactionItem(transaction: item);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -132,27 +102,32 @@ class _TransactionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
-    final String type = transaction['type'] ?? 'remittance_received';
+    final String type = transaction['type'] ?? 'remittance';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
 
-    final bool isEarning = type == 'remittance_received';
+    final bool isEarning = type == 'remittance';
 
     String title;
-    if (type == 'remittance_received') {
+    if (type == 'remittance') {
       title = 'Remittance: ${transaction['driver_name'] ?? 'Unknown Driver'}';
     } else if (type == 'cash_out') {
-      title = 'Cash Out to Bank';
+      title = 'Cash Out';
     } else {
-      title = 'System Fee';
+      title = transaction['description'] ?? 'Transaction';
     }
 
     final Color amountColor = isEarning
         ? Colors.green.shade700
         : Colors.red.shade700;
 
-    final String date = DateFormat(
-      'MMM d, hh:mm a',
-    ).format(DateTime.parse(transaction['created_at']));
+    DateTime txDate;
+    try {
+      txDate = DateTime.parse(transaction['created_at']);
+    } catch (e) {
+      txDate = DateTime.now();
+    }
+
+    final String date = DateFormat('MMM d, hh:mm a').format(txDate);
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
@@ -203,26 +178,31 @@ class _TransactionItem extends StatelessWidget {
     );
   }
 
-  // --- MODAL LOGIC ---
-
   void _showTransactionDetailModal(
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
-    final String type = transaction['type'] ?? 'remittance_received';
+    final String type = transaction['type'] ?? 'remittance';
     final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
 
     String modalTitle;
-    if (type == 'remittance_received') {
-      modalTitle = 'Remittance Received';
+    if (type == 'remittance') {
+      modalTitle = 'Remittance Transaction';
     } else if (type == 'cash_out') {
-      modalTitle = 'Cash Out';
+      modalTitle = 'Cash Out Transaction';
     } else {
       modalTitle = 'Transaction Details';
     }
 
     final String transactionCode = transaction['transaction_number'] ?? 'N/A';
+
+    DateTime txDate;
+    try {
+      txDate = DateTime.parse(transaction['created_at']);
+    } catch (e) {
+      txDate = DateTime.now();
+    }
 
     showDialog(
       context: context,
@@ -232,20 +212,9 @@ class _TransactionItem extends StatelessWidget {
           context: dialogContext,
           title: modalTitle,
           details: [
-            _buildDetailRow(
-              'Date:',
-              DateFormat(
-                'MM/dd/yyyy',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-            _buildDetailRow(
-              'Time:',
-              DateFormat(
-                'hh:mm a',
-              ).format(DateTime.parse(transaction['created_at'])),
-            ),
-            // ADDED DRIVER & VEHICLE INFO IF REMITTANCE
-            if (type == 'remittance_received') ...[
+            _buildDetailRow('Date:', DateFormat('MM/dd/yyyy').format(txDate)),
+            _buildDetailRow('Time:', DateFormat('hh:mm a').format(txDate)),
+            if (type == 'remittance') ...[
               _buildDetailRow('Driver:', transaction['driver_name'] ?? 'N/A'),
               _buildDetailRow(
                 'Vehicle:',

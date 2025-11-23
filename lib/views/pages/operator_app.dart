@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/role_navbar_wrapper.dart';
+import '../providers/wallet_provider.dart';
 
 import 'home_operator.dart';
 import 'report_operator.dart';
@@ -39,10 +41,11 @@ class OperatorApp extends StatelessWidget {
         break;
 
       case '/wallet_history':
-        page = const WalletHistoryOperatorPage();
+        page = ChangeNotifierProvider(
+          create: (_) => OperatorWalletProvider(),
+          child: const WalletHistoryOperatorPage(),
+        );
         break;
-
-      // Add other operator routes here (e.g., /driver_details, /cash_out)
 
       default:
         page = const OperatorNavBarWrapper(

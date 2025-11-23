@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+
 import '../providers/operator_dashboard.dart';
+import '../providers/wallet_provider.dart';
 import 'wallet_operator.dart';
 
 class OperatorDashboardNav extends StatefulWidget {
@@ -16,17 +18,38 @@ class OperatorDashboardNav extends StatefulWidget {
 }
 
 class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
+  bool _isWalletOpen = false;
+
+  void _openWallet() {
+    setState(() {
+      _isWalletOpen = true;
+    });
+  }
+
+  void _closeWallet() {
+    setState(() {
+      _isWalletOpen = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => OperatorDashboardProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => OperatorDashboardProvider()),
+        ChangeNotifierProvider(
+          create: (_) => OperatorWalletProvider()..loadWalletDashboard(),
+        ),
+      ],
       child: AnimatedBottomNavBar(
-        pages: const [
-          OperatorDashboard(),
-          Center(child: Text("📋 Drivers")),
-          Center(child: Text("✍️ Transactions")),
-          Center(child: Text("🔔 Reports")),
-          Center(child: Text("👤 Profile")),
+        pages: [
+          _isWalletOpen
+              ? OperatorWalletPage(onBack: _closeWallet)
+              : OperatorDashboard(onViewWallet: _openWallet),
+          const Center(child: Text("📋 Drivers")),
+          const Center(child: Text("✍️ Transactions")),
+          const Center(child: Text("🔔 Reports")),
+          const Center(child: Text("👤 Profile")),
         ],
         items: const [
           NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -41,29 +64,42 @@ class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
 }
 
 class OperatorDashboard extends StatefulWidget {
-  const OperatorDashboard({super.key});
+  final VoidCallback? onViewWallet;
+
+  const OperatorDashboard({super.key, this.onViewWallet});
 
   @override
   State<OperatorDashboard> createState() => _OperatorDashboardState();
 }
 
-class _OperatorDashboardState extends State<OperatorDashboard> {
+class _OperatorDashboardState extends State<OperatorDashboard>
+    with AutomaticKeepAliveClientMixin {
   final List<Color> gradientColors = const [
     Color(0xFF5B53C2),
     Color(0xFFB945AA),
   ];
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
-    // Load dashboard data when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OperatorDashboardProvider>().loadDashboardData();
+      final provider = context.read<OperatorDashboardProvider>();
+
+      if (!provider.isLoading &&
+          provider.driverPerformance.isEmpty &&
+          provider.todaysRevenue == 0) {
+        provider.loadDashboardData();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
@@ -120,7 +156,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- Header Card ---
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -132,81 +167,94 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                           bottomRight: Radius.circular(25),
                         ),
                       ),
-                      padding: const EdgeInsets.all(40),
+                      padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Logo
-                          Center(
-                            child: SvgPicture.asset(
-                              'assets/images/logo_white.svg',
-                              height: 80,
-                            ),
+                          SvgPicture.asset(
+                            'assets/images/logo_white.svg',
+                            height: 70,
                           ),
-                          const SizedBox(height: 12),
-                          // Today's Revenue row
-                          const Text(
+                          const SizedBox(height: 24),
+
+                          Text(
                             "Today's Revenue",
-                            style: TextStyle(
-                              color: Colors.white70,
+                            style: GoogleFonts.nunito(
+                              color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                provider.todaysRevenueFormatted,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          const SizedBox(height: 4),
+
+                          Text(
+                            provider.todaysRevenueFormatted,
+                            style: GoogleFonts.manrope(
+                              color: Colors.white,
+                              fontSize: 56,
+                              fontWeight: FontWeight.bold,
+                              height: 1.0,
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1,
                               ),
-                              InkWell(
-                                onTap: () {
-                                  // Navigate to the new wallet page
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const OperatorWalletPage(),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                if (widget.onViewWallet != null) {
+                                  widget.onViewWallet!();
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(30),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Symbols.account_balance_wallet_rounded,
+                                      color: Colors.white,
+                                      size: 22,
                                     ),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(
-                                  50,
-                                ), // For ripple effect shape
-                                child: const Padding(
-                                  padding: EdgeInsets.all(
-                                    8.0,
-                                  ), // Add padding for a larger tap area
-                                  child: Icon(
-                                    Symbols.account_balance_wallet_rounded,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      "My Wallet",
+                                      style: GoogleFonts.manrope(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 5),
 
-                    // --- Stats Row ---
                     Padding(
                       padding: const EdgeInsets.only(
                         left: 20.0,
                         right: 20.0,
-                        top: 5.0,
+                        top: 20.0,
                       ),
                       child: Column(
                         children: [
-                          // --- Stats Row ---
                           Row(
                             children: [
                               Expanded(
@@ -232,7 +280,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                           ),
                           const SizedBox(height: 20),
 
-                          // --- Driver Performance Section ---
                           _buildSectionHeader(
                             "Driver performance",
                             actionText: "View all",
@@ -263,7 +310,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                             ),
                           const SizedBox(height: 20),
 
-                          // --- Reports Section ---
                           _buildSectionHeader("Reports", actionText: "See all"),
                           const SizedBox(height: 10),
                           ...provider.recentReports.map((report) {
@@ -313,7 +359,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
     );
   }
 
-  // --- Helper method to convert color names to Color objects ---
   Color _getStatusColor(String colorName) {
     switch (colorName.toLowerCase()) {
       case 'orange':
@@ -330,8 +375,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         return Colors.blue;
     }
   }
-
-  // --- Widgets ---
 
   Widget _buildStatCard(
     BuildContext context, {

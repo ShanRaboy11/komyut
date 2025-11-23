@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
 import '../widgets/button.dart';
+import '../providers/wallet_provider.dart';
 
 class OperatorWalletPage extends StatefulWidget {
-  const OperatorWalletPage({super.key});
+  final VoidCallback? onBack;
+
+  const OperatorWalletPage({super.key, this.onBack});
 
   @override
   State<OperatorWalletPage> createState() => _OperatorWalletPageState();
@@ -14,69 +18,13 @@ class OperatorWalletPage extends StatefulWidget {
 
 class _OperatorWalletPageState extends State<OperatorWalletPage> {
   int _selectedWeekOffset = 0;
-  Map<String, double> _weeklyEarnings = {};
-
-  // Updated Data with Driver and Vehicle info
-  final List<Map<String, dynamic>> _transactions = const [
-    {
-      'type': 'remittance',
-      'description': 'Remittance from John Doe',
-      'driver_name': 'John Doe',
-      'vehicle_plate': 'ABC 1234',
-      'amount': 750.00,
-      'date': '2023-10-27T10:00:00Z',
-    },
-    {
-      'type': 'cash-out',
-      'description': 'Cash Out to BPI Account',
-      'amount': -5000.00,
-      'date': '2023-10-26T15:30:00Z',
-    },
-    {
-      'type': 'remittance',
-      'description': 'Remittance from Jane Smith',
-      'driver_name': 'Jane Smith',
-      'vehicle_plate': 'XYZ 9876',
-      'amount': 920.50,
-      'date': '2023-10-26T09:15:00Z',
-    },
-    {
-      'type': 'cash-in',
-      'description': 'Manual Top-up',
-      'amount': 10000.00,
-      'date': '2023-10-25T11:00:00Z',
-    },
-    {
-      'type': 'remittance',
-      'description': 'Remittance from Mike Ross',
-      'driver_name': 'Mike Ross',
-      'vehicle_plate': 'UVX 1122',
-      'amount': 680.00,
-      'date': '2023-10-25T08:45:00Z',
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchWeeklyEarnings();
-  }
-
-  void _fetchWeeklyEarnings() {
-    final random = Random();
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final newEarnings = <String, double>{};
-    for (var day in days) {
-      double earnings =
-          (random.nextDouble() * 2000 + 800) -
-          (_selectedWeekOffset.abs() * (random.nextDouble() * 500));
-      newEarnings[day] = earnings > 0 ? earnings : 0;
-    }
-    if (mounted) {
-      setState(() {
-        _weeklyEarnings = newEarnings;
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperatorWalletProvider>().loadWalletDashboard();
+    });
   }
 
   String _getMonthAndYear(int offset) {
@@ -103,7 +51,13 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         title: Text(
           'My Wallet',
@@ -115,77 +69,107 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 10),
-              _buildBalanceCard(),
-              const SizedBox(height: 24),
+      body: Consumer<OperatorWalletProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF5B53C2)),
+            );
+          }
 
-              CustomButton(
-                text: 'Cash Out',
-                onPressed: () {},
-                isFilled: true,
-                fillColor: const Color(0xFF5B53C2),
-                textColor: Colors.white,
-                height: 50,
-                fontSize: 16,
-                hasShadow: true,
-              ),
-              const SizedBox(height: 32),
+          return RefreshIndicator(
+            onRefresh: () => provider.loadWalletDashboard(),
+            color: const Color(0xFF5B53C2),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 10),
+                    _buildBalanceCard(provider.currentBalance),
+                    const SizedBox(height: 24),
 
-              _buildWeeklyEarningsCard(),
-              const SizedBox(height: 32),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Recent Transactions',
-                    style: GoogleFonts.manrope(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                    CustomButton(
+                      text: 'Cash Out',
+                      onPressed: () {},
+                      isFilled: true,
+                      fillColor: const Color(0xFF5B53C2),
+                      textColor: Colors.white,
+                      height: 50,
+                      fontSize: 16,
+                      hasShadow: true,
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/wallet_history');
-                    },
-                    child: Text(
-                      'View All',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF5B53C2),
+                    const SizedBox(height: 32),
+
+                    _buildWeeklyEarningsCard(provider),
+                    const SizedBox(height: 32),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Recent Transactions',
+                          style: GoogleFonts.manrope(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/wallet_history');
+                          },
+                          child: Text(
+                            'View All',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF5B53C2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (provider.recentTransactions.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text(
+                            'No recent transactions',
+                            style: GoogleFonts.nunito(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: min(provider.recentTransactions.length, 5),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return _buildTransactionTile(
+                            context,
+                            provider.recentTransactions[index],
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-              ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: min(_transactions.length, 10),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return _buildTransactionTile(_transactions[index]);
-                },
-              ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(double balance) {
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -215,7 +199,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '₱15,450.75',
+            currencyFormat.format(balance),
             style: GoogleFonts.manrope(
               color: Colors.white,
               fontSize: 40,
@@ -227,13 +211,14 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     );
   }
 
-  Widget _buildWeeklyEarningsCard() {
+  Widget _buildWeeklyEarningsCard(OperatorWalletProvider provider) {
     final brandColor = const Color(0xFF8E4CB6);
     const double chartHeight = 130;
+    final weeklyEarnings = provider.weeklyEarnings;
 
-    final double maxWeeklyExpense = _weeklyEarnings.values.isEmpty
+    final double maxWeeklyExpense = weeklyEarnings.values.isEmpty
         ? 0.0
-        : _weeklyEarnings.values.reduce(max);
+        : weeklyEarnings.values.reduce(max);
     final double dynamicMaxValue = maxWeeklyExpense > 0
         ? maxWeeklyExpense
         : 100.0;
@@ -271,8 +256,8 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                   IconButton(
                     icon: const Icon(Icons.chevron_left),
                     onPressed: () {
-                      _selectedWeekOffset--;
-                      _fetchWeeklyEarnings();
+                      setState(() => _selectedWeekOffset--);
+                      provider.fetchWeeklyEarnings(_selectedWeekOffset);
                     },
                     color: brandColor,
                     splashRadius: 20,
@@ -289,8 +274,8 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     icon: const Icon(Icons.chevron_right),
                     onPressed: _selectedWeekOffset < 0
                         ? () {
-                            _selectedWeekOffset++;
-                            _fetchWeeklyEarnings();
+                            setState(() => _selectedWeekOffset++);
+                            provider.fetchWeeklyEarnings(_selectedWeekOffset);
                           }
                         : null,
                     color: brandColor,
@@ -302,14 +287,20 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: chartHeight,
-            child: _buildBarChart(
-              chartHeight,
-              _weeklyEarnings,
-              dynamicMaxValue,
+          if (provider.isChartLoading)
+            SizedBox(
+              height: chartHeight,
+              child: const Center(child: CircularProgressIndicator()),
+            )
+          else
+            SizedBox(
+              height: chartHeight,
+              child: _buildBarChart(
+                chartHeight,
+                weeklyEarnings,
+                dynamicMaxValue,
+              ),
             ),
-          ),
           const SizedBox(height: 8),
           _buildXAxisLabels(),
         ],
@@ -395,10 +386,24 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction) {
-    final bool isCredit = transaction['amount'] > 0;
+  Widget _buildTransactionTile(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) {
+    final bool isCredit = (transaction['amount'] as num) > 0;
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
-    final amount = currencyFormat.format(transaction['amount'].abs());
+    final amount = currencyFormat.format((transaction['amount'] as num).abs());
+    final String type = transaction['type'] ?? 'remittance';
+
+    String title;
+    if (type == 'remittance') {
+      title = 'Remittance: ${transaction['driver_name'] ?? 'Unknown Driver'}';
+    } else if (type == 'cash_out') {
+      title = 'Cash Out';
+    } else {
+      title = transaction['description'] ?? 'Transaction';
+    }
+
     final date = DateFormat(
       'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['date']));
@@ -419,11 +424,12 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    transaction['description'],
+                    title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -451,8 +457,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     );
   }
 
-  // --- MODAL LOGIC ---
-
   void _showTransactionDetailModal(
     BuildContext context,
     Map<String, dynamic> transaction,
@@ -464,7 +468,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     String modalTitle;
     if (type == 'remittance') {
       modalTitle = 'Remittance Received';
-    } else if (type == 'cash-out') {
+    } else if (type == 'cash_out') {
       modalTitle = 'Cash Out';
     } else if (type == 'cash-in') {
       modalTitle = 'Manual Top-up';
@@ -472,8 +476,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       modalTitle = 'Transaction Details';
     }
 
-    // Dummy transaction ID
-    final String transactionCode = 'TX-${Random().nextInt(999999) + 100000}';
+    final String transactionCode =
+        transaction['transaction_number'] ??
+        'TX-${Random().nextInt(999999) + 100000}';
 
     showDialog(
       context: context,
@@ -493,7 +498,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               'Time:',
               DateFormat('hh:mm a').format(DateTime.parse(transaction['date'])),
             ),
-            // ADDED DRIVER & VEHICLE INFO IF REMITTANCE
             if (type == 'remittance') ...[
               _buildDetailRow('Driver:', transaction['driver_name'] ?? 'N/A'),
               _buildDetailRow(
