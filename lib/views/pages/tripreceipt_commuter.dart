@@ -43,8 +43,13 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
 
       // Prefer a real driver name; ignore placeholder 'Unknown Driver'.
       final rawDriver = details?.driverName?.trim();
-      final hasRealDriver = rawDriver != null && rawDriver.isNotEmpty && rawDriver.toLowerCase() != 'unknown driver';
-      final driverName = hasRealDriver ? rawDriver : (details?.passengerName ?? 'Unknown Driver');
+      final hasRealDriver =
+          rawDriver != null &&
+          rawDriver.isNotEmpty &&
+          rawDriver.toLowerCase() != 'unknown driver';
+      final driverName = hasRealDriver
+          ? rawDriver
+          : (details?.passengerName ?? 'Unknown Driver');
 
       setState(() {
         _details = details;
@@ -161,58 +166,64 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
               const Divider(),
               const SizedBox(height: 16),
               // Details skeleton
-              ...List.generate(3, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+              ...List.generate(
+                3,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                    Container(
-                      width: 100,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                      Container(
+                        width: 100,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )),
+              ),
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
               // Fare skeleton
-              ...List.generate(2, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+              ...List.generate(
+                2,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                    Container(
-                      width: 80,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                      Container(
+                        width: 80,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )),
+              ),
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
@@ -274,14 +285,18 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 24),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                        size: 24,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                   ),
                   Text(
                     'Payment Receipt',
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -290,7 +305,11 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                     alignment: Alignment.centerRight,
                     child: IconButton(
                       onPressed: () {},
-                      icon: const Icon(Symbols.download, color: Colors.black87, size: 24),
+                      icon: const Icon(
+                        Symbols.download,
+                        color: Colors.black87,
+                        size: 24,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                   ),
@@ -380,7 +399,8 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                       child: CustomButton(
                         text: 'Back to Home',
                         onPressed: () {
-                          CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
+                          CommuterApp.navigatorKey.currentState
+                              ?.pushNamedAndRemoveUntil('/', (route) => false);
                         },
                         width: double.infinity,
                         height: 50,

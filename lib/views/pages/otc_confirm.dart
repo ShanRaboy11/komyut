@@ -94,13 +94,13 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Cash In',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -115,7 +115,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             Text(
               'Over-the-Counter',
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -161,7 +161,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
             ),
             child: provider.isCashInLoading
                 ? const SizedBox(
@@ -173,7 +173,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
                     'Confirm',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -235,7 +235,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 14,
+                  fontSize: 11,
                   color: Colors.black54,
                   letterSpacing: 1.5,
                 ),

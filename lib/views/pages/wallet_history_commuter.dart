@@ -327,13 +327,13 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           isTransactions ? 'Transactions' : 'Tokens',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -348,7 +348,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             child: Text(
               isTransactions ? 'All Transactions' : 'Token History',
               style: GoogleFonts.manrope(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -443,7 +443,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   date,
                   style: GoogleFonts.nunito(
                     color: Colors.grey.shade600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -452,7 +452,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               '${isExpense ? '-' : '+'}$amountText',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 14,
                 color: isExpense
                     ? const Color(0xFFC62828)
                     : const Color(0xFF2E7D32),
@@ -501,7 +501,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   date,
                   style: GoogleFonts.nunito(
                     color: Colors.grey.shade600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -512,7 +512,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                     color: isCredit
                         ? const Color(0xFF2E7D32)
                         : const Color(0xFFC62828),

@@ -108,13 +108,16 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black54),
+              icon: const Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.black54,
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
               'Remittance',
               style: GoogleFonts.manrope(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -202,7 +205,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                   title,
                   style: GoogleFonts.nunito(
                     color: Colors.grey[600],
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -210,7 +213,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                   subtitle,
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 16,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -271,7 +274,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                           ? "0"
                           : _amountController.text,
                       style: GoogleFonts.manrope(
-                        fontSize: 72,
+                        fontSize: 60,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -321,11 +324,11 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
         child: Text(
           'Next',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 12),
         ),
       ),
     );

@@ -1,5 +1,6 @@
 // lib/widgets/option_card.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Enum to define different selection types
 enum OptionCardType { radio, checkbox, simple }
@@ -49,7 +50,7 @@ class OptionCard extends StatelessWidget {
       horizontal: 25,
       vertical: 8,
     ), // Default margin
-    this.textSize = 18, // Default text size
+    this.textSize = 16, // Default text size
   });
 
   @override
@@ -93,10 +94,9 @@ class OptionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: GoogleFonts.manrope(
                         // Changed: Active text color now matches selectedColor
                         color: isSelected ? selectedColor : Colors.grey[700],
-                        fontFamily: 'Manrope',
                         fontSize: textSize,
                         fontWeight: FontWeight.w500,
                       ),

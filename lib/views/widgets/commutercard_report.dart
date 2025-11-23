@@ -56,16 +56,17 @@ class ProfileCard extends StatelessWidget {
               Text(
                 name,
                 style: GoogleFonts.manrope(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
                 "$role • $id",
                 style: GoogleFonts.manrope(
-                  fontSize: 13,
+                  fontSize: 11,
                   color: Colors.black54,
                   fontWeight: FontWeight.w500,
                 ),

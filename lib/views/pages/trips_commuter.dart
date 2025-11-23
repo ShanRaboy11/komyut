@@ -13,7 +13,8 @@ class Trip1Page extends StatefulWidget {
   State<Trip1Page> createState() => _Trip1PageState();
 }
 
-class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMixin {
+class _Trip1PageState extends State<Trip1Page>
+    with SingleTickerProviderStateMixin {
   final TripsService _service = TripsService();
   bool _isLoading = true;
   String? _error;
@@ -68,11 +69,7 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[300]!,
-                Colors.grey[100]!,
-                Colors.grey[300]!,
-              ],
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
               stops: [
                 _shimmerController.value - 0.3,
                 _shimmerController.value,
@@ -93,7 +90,7 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -105,13 +102,16 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                   Text(
                     "All Trips",
                     style: GoogleFonts.nunito(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -160,7 +160,9 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                                         height: 14,
                                         decoration: BoxDecoration(
                                           color: Colors.grey[300],
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -171,14 +173,16 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                                         height: 14,
                                         decoration: BoxDecoration(
                                           color: Colors.grey[300],
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                
+
                                 // Route code
                                 _buildShimmer(
                                   child: Container(
@@ -191,7 +195,7 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                
+
                                 // From -> To
                                 Row(
                                   children: [
@@ -229,7 +233,9 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                                           height: 12,
                                           decoration: BoxDecoration(
                                             color: Colors.grey[300],
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -240,7 +246,7 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                             ),
                           ),
                           const SizedBox(width: 12),
-                          
+
                           // Status badge
                           _buildShimmer(
                             child: Container(
@@ -257,7 +263,6 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                     ),
                   ),
                 )
-              
               // Error State
               else if (_error != null)
                 Expanded(
@@ -304,7 +309,6 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                     ),
                   ),
                 )
-              
               // Empty State
               else if (_trips.isEmpty)
                 Expanded(
@@ -338,7 +342,6 @@ class _Trip1PageState extends State<Trip1Page> with SingleTickerProviderStateMix
                     ),
                   ),
                 )
-              
               // Trips List
               else
                 Expanded(

@@ -73,7 +73,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () {
             DriverApp.navigatorKey.currentState?.pop();
           },
@@ -81,7 +81,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
         title: Text(
           'Cash Out',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -105,7 +105,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                 Text(
                   'Withdraw Cash',
                   style: GoogleFonts.manrope(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -230,7 +230,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                           ? "0"
                           : _amountController.text,
                       style: GoogleFonts.manrope(
-                        fontSize: 72,
+                        fontSize: 60,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -287,7 +287,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
         child: provider.isPageLoading
             ? const SizedBox(
@@ -299,7 +299,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                 'Next',
                 style: GoogleFonts.manrope(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
               ),
       ),
