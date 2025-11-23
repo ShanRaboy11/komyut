@@ -576,16 +576,12 @@ class DriverWalletProvider extends ChangeNotifier {
 class OperatorWalletProvider extends ChangeNotifier {
   final OperatorDashboardService _service = OperatorDashboardService();
 
-  // State Variables
   bool _isLoading = false;
   bool _isHistoryLoading = false;
   bool _isChartLoading = false;
-  String? _errorMessage;
 
   double _currentBalance = 0.0;
   Map<String, double> _weeklyEarnings = {};
-
-  // Transactions lists
   List<Map<String, dynamic>> _recentTransactions = [];
   List<Map<String, dynamic>> _allTransactions = [];
 
@@ -593,17 +589,13 @@ class OperatorWalletProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isHistoryLoading => _isHistoryLoading;
   bool get isChartLoading => _isChartLoading;
-  String? get errorMessage => _errorMessage;
-
   double get currentBalance => _currentBalance;
   Map<String, double> get weeklyEarnings => _weeklyEarnings;
   List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
   List<Map<String, dynamic>> get allTransactions => _allTransactions;
 
-  /// Load initial data for the Wallet Dashboard
   Future<void> loadWalletDashboard() async {
     _isLoading = true;
-    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -616,40 +608,40 @@ class OperatorWalletProvider extends ChangeNotifier {
       _currentBalance = results[0] as double;
       _weeklyEarnings = results[1] as Map<String, double>;
       _recentTransactions = results[2] as List<Map<String, dynamic>>;
+
+      debugPrint(
+        "💰 Wallet Data Loaded: ${_recentTransactions.length} transactions",
+      );
     } catch (e) {
-      _errorMessage = 'Failed to load wallet data.';
-      debugPrint(e.toString());
+      debugPrint("❌ Wallet Provider Error: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Fetch chart data for specific week offset
   Future<void> fetchWeeklyEarnings(int offset) async {
     _isChartLoading = true;
     notifyListeners();
     try {
       _weeklyEarnings = await _service.getWeeklyEarnings(weekOffset: offset);
     } catch (e) {
-      debugPrint('Chart error: $e');
+      debugPrint("Chart error: $e");
     } finally {
       _isChartLoading = false;
       notifyListeners();
     }
   }
 
-  /// Fetch full history for the History Page
   Future<void> fetchFullHistory() async {
     _isHistoryLoading = true;
-    _allTransactions = [];
     notifyListeners();
 
     try {
       _allTransactions = await _service.getTransactions(limit: 50);
+      debugPrint("📜 History Loaded: ${_allTransactions.length} items");
     } catch (e) {
-      _errorMessage = 'Failed to load history.';
-      debugPrint(e.toString());
+      debugPrint("❌ History Error: $e");
     } finally {
       _isHistoryLoading = false;
       notifyListeners();

@@ -23,7 +23,10 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OperatorWalletProvider>().loadWalletDashboard();
+      final provider = context.read<OperatorWalletProvider>();
+      if (provider.recentTransactions.isEmpty && !provider.isLoading) {
+        provider.loadWalletDashboard();
+      }
     });
   }
 
@@ -71,7 +74,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       ),
       body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
+          if (provider.isLoading && provider.recentTransactions.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(color: Color(0xFF5B53C2)),
             );
@@ -93,7 +96,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
                     CustomButton(
                       text: 'Cash Out',
-                      onPressed: () {},
+                      onPressed: () {
+                        // TODO: Implement cash out navigation
+                      },
                       isFilled: true,
                       fillColor: const Color(0xFF5B53C2),
                       textColor: Colors.white,
@@ -404,9 +409,14 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       title = transaction['description'] ?? 'Transaction';
     }
 
-    final date = DateFormat(
-      'MMM d, hh:mm a',
-    ).format(DateTime.parse(transaction['date']));
+    DateTime txDate;
+    try {
+      txDate = DateTime.parse(transaction['created_at'] ?? transaction['date']);
+    } catch (e) {
+      txDate = DateTime.now();
+    }
+
+    final date = DateFormat('MMM d, hh:mm a').format(txDate);
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
@@ -467,11 +477,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
     String modalTitle;
     if (type == 'remittance') {
-      modalTitle = 'Remittance Received';
+      modalTitle = 'Remittance Transaction';
     } else if (type == 'cash_out') {
-      modalTitle = 'Cash Out';
-    } else if (type == 'cash-in') {
-      modalTitle = 'Manual Top-up';
+      modalTitle = 'Cash Out Transaction';
     } else {
       modalTitle = 'Transaction Details';
     }
@@ -479,6 +487,13 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     final String transactionCode =
         transaction['transaction_number'] ??
         'TX-${Random().nextInt(999999) + 100000}';
+
+    DateTime txDate;
+    try {
+      txDate = DateTime.parse(transaction['created_at'] ?? transaction['date']);
+    } catch (e) {
+      txDate = DateTime.now();
+    }
 
     showDialog(
       context: context,
@@ -488,16 +503,8 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           context: dialogContext,
           title: modalTitle,
           details: [
-            _buildDetailRow(
-              'Date:',
-              DateFormat(
-                'MM/dd/yyyy',
-              ).format(DateTime.parse(transaction['date'])),
-            ),
-            _buildDetailRow(
-              'Time:',
-              DateFormat('hh:mm a').format(DateTime.parse(transaction['date'])),
-            ),
+            _buildDetailRow('Date:', DateFormat('MM/dd/yyyy').format(txDate)),
+            _buildDetailRow('Time:', DateFormat('hh:mm a').format(txDate)),
             if (type == 'remittance') ...[
               _buildDetailRow('Driver:', transaction['driver_name'] ?? 'N/A'),
               _buildDetailRow(

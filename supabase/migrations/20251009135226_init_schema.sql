@@ -690,17 +690,12 @@ DECLARE
     v_wallet_id uuid;
     target_week_start date;
 BEGIN
-    SELECT id INTO v_operator_profile_id
-    FROM public.profiles
-    WHERE user_id = auth.uid();
+    SELECT w.id INTO v_wallet_id
+    FROM wallets w
+    JOIN profiles p ON w.owner_profile_id = p.id
+    WHERE p.user_id = auth.uid();
 
-    SELECT id INTO v_wallet_id
-    FROM public.wallets
-    WHERE owner_profile_id = v_operator_profile_id;
-
-    IF v_wallet_id IS NULL THEN
-        RETURN;
-    END IF;
+    IF v_wallet_id IS NULL THEN RETURN; END IF;
 
     target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
 
@@ -718,10 +713,60 @@ BEGIN
     FROM week_days wd
     LEFT JOIN transactions t
         ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
-        AND t.wallet_id = v_wallet_id
-        AND t.type = 'remittance'
         AND t.status = 'completed'
+        AND (
+            (t.type = 'remittance' AND (t.metadata->>'recipient_wallet_id')::uuid = v_wallet_id)
+        )
     GROUP BY wd.day
     ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_transactions(p_limit integer DEFAULT 20)
+RETURNS TABLE (
+  id uuid,
+  transaction_number text,
+  type transaction_type,
+  amount numeric,
+  status transaction_status,
+  created_at timestamptz,
+  metadata jsonb,
+  driver_name text,
+  vehicle_plate text
+) AS $$
+DECLARE
+  v_op_wallet_id uuid;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  RETURN QUERY
+  SELECT 
+    t.id,
+    t.transaction_number,
+    t.type,
+    t.amount,
+    t.status,
+    t.created_at,
+    t.metadata,
+    CASE 
+      WHEN t.type = 'remittance' THEN (p.first_name || ' ' || p.last_name)
+      ELSE NULL 
+    END,
+    CASE 
+      WHEN t.type = 'remittance' THEN d.vehicle_plate
+      ELSE NULL 
+    END
+  FROM transactions t
+  LEFT JOIN profiles p ON t.initiated_by_profile_id = p.id
+  LEFT JOIN drivers d ON p.id = d.profile_id
+  WHERE 
+    t.wallet_id = v_op_wallet_id 
+    OR 
+    ((t.metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id AND t.type = 'remittance')
+  ORDER BY t.created_at DESC
+  LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

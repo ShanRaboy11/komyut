@@ -449,7 +449,7 @@ class OperatorDashboardService {
     }
   }
 
-  /// Get operator's wallet balance
+  /// Get Operator Wallet Balance
   Future<double> getWalletBalance() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -459,22 +459,25 @@ class OperatorDashboardService {
           .from('profiles')
           .select('wallets(balance)')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
-      if (data['wallets'] == null) return 0.0;
+      if (data == null || data['wallets'] == null) return 0.0;
 
-      final wallet = (data['wallets'] is List)
+      final wallet =
+          (data['wallets'] is List && (data['wallets'] as List).isNotEmpty)
           ? (data['wallets'] as List).first
           : data['wallets'];
 
+      if (wallet is! Map) return 0.0;
+
       return (wallet['balance'] as num?)?.toDouble() ?? 0.0;
     } catch (e) {
-      debugPrint('❌ Error fetching operator balance: $e');
+      debugPrint('❌ Error fetching balance: $e');
       return 0.0;
     }
   }
 
-  /// Get weekly earnings for operator (Remittances)
+  /// Get Weekly Earnings
   Future<Map<String, double>> getWeeklyEarnings({int weekOffset = 0}) async {
     try {
       final response = await _supabase.rpc(
@@ -490,70 +493,24 @@ class OperatorDashboardService {
       }
       return {};
     } catch (e) {
-      debugPrint('❌ Error fetching operator weekly earnings: $e');
+      debugPrint('❌ Error fetching weekly earnings: $e');
       return {};
     }
   }
 
-  /// Fetch Transactions with Driver & Vehicle Details
+  /// Get Transactions
   Future<List<Map<String, dynamic>>> getTransactions({int? limit}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
-      final profile = await _supabase
-          .from('profiles')
-          .select('id, wallets(id)')
-          .eq('user_id', userId)
-          .single();
-
-      final walletId = (profile['wallets'] is List)
-          ? profile['wallets'][0]['id']
-          : profile['wallets']['id'];
-
-      var query = _supabase
-          .from('transactions')
-          .select('''
-            id,
-            transaction_number,
-            type,
-            amount,
-            status,
-            created_at,
-            metadata,
-            initiator:initiated_by_profile_id (
-              first_name,
-              last_name,
-              driver:drivers (
-                vehicle_plate
-              )
-            )
-          ''')
-          .eq('wallet_id', walletId)
-          .order('created_at', ascending: false);
-
-      if (limit != null) {
-        query = query.limit(limit);
-      }
-
-      final List<dynamic> response = await query;
+      final List<dynamic> response = await _supabase.rpc(
+        'get_operator_transactions',
+        params: {'p_limit': limit ?? 20},
+      );
 
       return response.map((tx) {
-        final initiator = tx['initiator'] as Map<String, dynamic>?;
-        final driverInfo = initiator?['driver'] as Map<String, dynamic>?;
-
-        String description = _formatDescription(tx['type']);
-        String? driverName;
-        String? vehiclePlate;
+        String description = 'Transaction';
 
         if (tx['type'] == 'remittance') {
-          if (initiator != null) {
-            driverName = '${initiator['first_name']} ${initiator['last_name']}';
-            description = 'Remittance from $driverName';
-          }
-          if (driverInfo != null) {
-            vehiclePlate = driverInfo['vehicle_plate'];
-          }
+          description = 'Remittance Received';
         } else if (tx['type'] == 'cash_out') {
           description = 'Cash Out';
         }
@@ -567,27 +524,14 @@ class OperatorDashboardService {
           'created_at': tx['created_at'],
           'status': tx['status'],
           'description': description,
-          'driver_name': driverName,
-          'vehicle_plate': vehiclePlate,
+          'driver_name': tx['driver_name'] ?? 'Unknown Driver',
+          'vehicle_plate': tx['vehicle_plate'] ?? 'N/A',
           'details': tx['metadata']?['description'] ?? '',
         };
       }).toList();
     } catch (e) {
       debugPrint('❌ Error fetching transactions: $e');
       return [];
-    }
-  }
-
-  String _formatDescription(String type) {
-    switch (type) {
-      case 'remittance':
-        return 'Remittance Received';
-      case 'cash_out':
-        return 'Cash Out';
-      case 'admin_fee':
-        return 'System Fee';
-      default:
-        return 'Transaction';
     }
   }
 }
