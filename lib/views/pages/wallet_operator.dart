@@ -53,7 +53,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () {
             if (widget.onBack != null) {
               widget.onBack!();
@@ -65,7 +65,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
         title: Text(
           'My Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -97,7 +97,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     CustomButton(
                       text: 'Cash Out',
                       onPressed: () {
-                        // TODO: Implement cash out navigation
+                        Navigator.of(context).pushNamed('/cash_out');
                       },
                       isFilled: true,
                       fillColor: const Color(0xFF5B53C2),

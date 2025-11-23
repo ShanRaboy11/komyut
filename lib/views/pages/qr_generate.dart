@@ -197,7 +197,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     Text(
                       'QR Code',
                       style: GoogleFonts.manrope(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
