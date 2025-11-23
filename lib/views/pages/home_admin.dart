@@ -47,7 +47,8 @@ class AdminDashboard extends StatefulWidget {
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProviderStateMixin {
+class _AdminDashboardState extends State<AdminDashboard>
+    with SingleTickerProviderStateMixin {
   final List<Color> gradientColors = const [
     Color(0xFF5B53C2),
     Color(0xFFB945AA),
@@ -66,7 +67,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       dashProvider.changePeriod(AnalyticsPeriod.weekly);
       context.read<AdminVerificationProvider>().loadVerifications();
     });
-    _shimmerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
@@ -79,13 +83,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [            
+          children: [
             Text(
               'Logout',
               style: GoogleFonts.manrope(
@@ -115,7 +117,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text('Cancel', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -123,10 +128,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               backgroundColor: const Color(0xFFEF5350),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               elevation: 0,
             ),
-            child: Text('Logout', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Logout',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -165,10 +175,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       if (mounted) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Logout failed: $e', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+            content: Text(
+              'Logout failed: $e',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -215,10 +230,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Logo
-                    SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      height: 45,
-                    ),
+                    SvgPicture.asset('assets/images/logo.svg', height: 60),
                     // Logout Button
                     Material(
                       color: Colors.transparent,
@@ -231,12 +243,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Color(0xFFEF5350).withAlpha((0.2 * 255).round()),
+                              color: Color(
+                                0xFFEF5350,
+                              ).withAlpha((0.2 * 255).round()),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFFEF5350).withAlpha((0.1 * 255).round()),
+                                color: Color(
+                                  0xFFEF5350,
+                                ).withAlpha((0.1 * 255).round()),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -274,7 +290,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     if (provider.isLoadingStats) {
                       return _buildStatsLoadingSkeleton();
                     }
-                    
+
                     final stats = provider.overallStats;
                     if (stats == null) {
                       return const SizedBox.shrink();
@@ -310,7 +326,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                               child: _StatCard(
                                 icon: Symbols.payments,
                                 title: 'Total Revenue',
-                                value: '₱${stats.totalRevenue.toStringAsFixed(0)}',
+                                value:
+                                    '₱${stats.totalRevenue.toStringAsFixed(0)}',
                                 color: const Color(0xFF4CAF50),
                               ),
                             ),
@@ -318,7 +335,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             Expanded(
                               child: _StatCard(
                                 icon: Symbols.pending_actions,
-                                title: 'Pending Verifications',
+                                title: 'Pending Verifs',
                                 value: stats.pendingVerifications.toString(),
                                 color: const Color(0xFFFFA726),
                               ),
@@ -339,7 +356,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       'Fare Analytics',
                       style: GoogleFonts.manrope(
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 14,
                       ),
                     ),
                     // Period Filter Buttons
@@ -357,18 +374,30 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             children: [
                               _PeriodButton(
                                 label: 'Week',
-                                isSelected: provider.currentPeriod == AnalyticsPeriod.weekly,
-                                onTap: () => provider.changePeriod(AnalyticsPeriod.weekly),
+                                isSelected:
+                                    provider.currentPeriod ==
+                                    AnalyticsPeriod.weekly,
+                                onTap: () => provider.changePeriod(
+                                  AnalyticsPeriod.weekly,
+                                ),
                               ),
                               _PeriodButton(
                                 label: 'Month',
-                                isSelected: provider.currentPeriod == AnalyticsPeriod.monthly,
-                                onTap: () => provider.changePeriod(AnalyticsPeriod.monthly),
+                                isSelected:
+                                    provider.currentPeriod ==
+                                    AnalyticsPeriod.monthly,
+                                onTap: () => provider.changePeriod(
+                                  AnalyticsPeriod.monthly,
+                                ),
                               ),
                               _PeriodButton(
                                 label: 'Year',
-                                isSelected: provider.currentPeriod == AnalyticsPeriod.yearly,
-                                onTap: () => provider.changePeriod(AnalyticsPeriod.yearly),
+                                isSelected:
+                                    provider.currentPeriod ==
+                                    AnalyticsPeriod.yearly,
+                                onTap: () => provider.changePeriod(
+                                  AnalyticsPeriod.yearly,
+                                ),
                               ),
                             ],
                           ),
@@ -394,8 +423,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     }
 
                     // Calculate max value for chart scaling
-                    final maxAmount = fareData.map((d) => d.amount).reduce(math.max);
-                    final chartMaxY = (maxAmount > 0 ? (maxAmount * 1.2).ceilToDouble() : 100.0);
+                    final maxAmount = fareData
+                        .map((d) => d.amount)
+                        .reduce(math.max);
+                    final chartMaxY = (maxAmount > 0
+                        ? (maxAmount * 1.2).ceilToDouble()
+                        : 100.0);
 
                     // Get period label
                     String periodLabel;
@@ -420,7 +453,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         border: Border.all(color: Colors.purple.shade100),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withAlpha((0.05 * 255).round()),
+                            color: Colors.purple.withAlpha(
+                              (0.05 * 255).round(),
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -482,13 +517,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                       interval: 1,
                                       getTitlesWidget: (value, _) {
                                         final index = value.toInt();
-                                        if (index >= 0 && index < fareData.length) {
+                                        if (index >= 0 &&
+                                            index < fareData.length) {
                                           return Padding(
-                                            padding: const EdgeInsets.only(top: 8),
+                                            padding: const EdgeInsets.only(
+                                              top: 8,
+                                            ),
                                             child: Text(
                                               fareData[index].dayName,
                                               style: GoogleFonts.nunito(
-                                                fontSize: provider.currentPeriod == AnalyticsPeriod.yearly ? 9 : 11,
+                                                fontSize:
+                                                    provider.currentPeriod ==
+                                                        AnalyticsPeriod.yearly
+                                                    ? 9
+                                                    : 11,
                                                 color: Colors.grey.shade700,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -503,8 +545,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 borderData: FlBorderData(
                                   show: true,
                                   border: Border(
-                                    bottom: BorderSide(color: Colors.grey.shade300),
-                                    left: BorderSide(color: Colors.grey.shade300),
+                                    bottom: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    left: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                 ),
                                 minX: 0,
@@ -516,31 +562,40 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     spots: fareData
                                         .asMap()
                                         .entries
-                                        .map((e) => FlSpot(
-                                              e.key.toDouble(),
-                                              e.value.amount,
-                                            ))
+                                        .map(
+                                          (e) => FlSpot(
+                                            e.key.toDouble(),
+                                            e.value.amount,
+                                          ),
+                                        )
                                         .toList(),
                                     isCurved: true,
-                                    gradient: LinearGradient(colors: gradientColors),
+                                    gradient: LinearGradient(
+                                      colors: gradientColors,
+                                    ),
                                     barWidth: 3,
                                     isStrokeCapRound: true,
                                     dotData: FlDotData(
                                       show: true,
-                                      getDotPainter: (spot, percent, barData, index) {
-                                        return FlDotCirclePainter(
-                                          radius: 4,
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                          strokeColor: gradientColors[0],
-                                        );
-                                      },
+                                      getDotPainter:
+                                          (spot, percent, barData, index) {
+                                            return FlDotCirclePainter(
+                                              radius: 4,
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                              strokeColor: gradientColors[0],
+                                            );
+                                          },
                                     ),
                                     belowBarData: BarAreaData(
                                       show: true,
                                       gradient: LinearGradient(
                                         colors: gradientColors
-                                            .map((c) => c.withAlpha((0.15 * 255).round()))
+                                            .map(
+                                              (c) => c.withAlpha(
+                                                (0.15 * 255).round(),
+                                              ),
+                                            )
                                             .toList(),
                                       ),
                                     ),
@@ -605,7 +660,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withAlpha((0.05 * 255).round()),
+                            color: Colors.purple.withAlpha(
+                              (0.05 * 255).round(),
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -711,8 +768,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       return _buildVerificationsLoadingSkeleton();
                     }
 
-                    final items = List<VerificationListItem>.from(provider.verifications)
-                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                    final items = List<VerificationListItem>.from(
+                      provider.verifications,
+                    )..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
                     if (items.isEmpty) {
                       return _buildEmptyCard('No verifications yet');
@@ -734,16 +792,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, String actionText) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    String actionText,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.bold),
         ),
         TextButton(
           onPressed: () {
@@ -763,7 +822,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             children: [
               Text(
                 actionText,
-                style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+                style: GoogleFonts.nunito(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(width: 4),
               const Icon(Icons.arrow_forward_ios, size: 14),
@@ -833,10 +895,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _buildVerificationsLoadingSkeleton() {
     return Column(
-      children: List.generate(3, (i) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: _buildSkeletonCard(height: 80),
-      )),
+      children: List.generate(
+        3,
+        (i) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildSkeletonCard(height: 80),
+        ),
+      ),
     );
   }
 
@@ -855,7 +920,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           children: [
             Container(height: 16, width: 120, color: Colors.white),
             const SizedBox(height: 12),
-            Expanded(child: Container(color: Colors.white, width: double.infinity)),
+            Expanded(
+              child: Container(color: Colors.white, width: double.infinity),
+            ),
           ],
         ),
       ),
@@ -987,8 +1054,10 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percentage = total > 0 ? (count / total * 100).toStringAsFixed(1) : '0.0';
-    
+    final percentage = total > 0
+        ? (count / total * 100).toStringAsFixed(1)
+        : '0.0';
+
     return Row(
       children: [
         Container(
@@ -1011,18 +1080,12 @@ class _LegendItem extends StatelessWidget {
         ),
         Text(
           '$count',
-          style: GoogleFonts.manrope(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         const SizedBox(width: 8),
         Text(
           '($percentage%)',
-          style: GoogleFonts.nunito(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
     );
@@ -1075,7 +1138,7 @@ class _VerificationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha((0.03 * 255).round()),
+            color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1175,7 +1238,7 @@ class _PeriodButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.nunito(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
             color: isSelected ? Colors.white : Colors.grey.shade600,
           ),

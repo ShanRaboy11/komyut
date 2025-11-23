@@ -8,16 +8,14 @@ import '../providers/admin_verification.dart';
 class AdminPending extends StatefulWidget {
   final String verificationId;
 
-  const AdminPending({
-    super.key,
-    required this.verificationId,
-  });
+  const AdminPending({super.key, required this.verificationId});
 
   @override
   State<AdminPending> createState() => _AdminPendingState();
 }
 
-class _AdminPendingState extends State<AdminPending> with SingleTickerProviderStateMixin {
+class _AdminPendingState extends State<AdminPending>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _notesController = TextEditingController();
   late AnimationController _shimmerController;
 
@@ -25,7 +23,9 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminVerificationProvider>().loadVerificationDetail(widget.verificationId);
+      context.read<AdminVerificationProvider>().loadVerificationDetail(
+        widget.verificationId,
+      );
     });
     _shimmerController = AnimationController(
       vsync: this,
@@ -50,11 +50,7 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[200]!,
-                Colors.grey[50]!,
-                Colors.grey[200]!
-              ],
+              colors: [Colors.grey[200]!, Colors.grey[50]!, Colors.grey[200]!],
               stops: [
                 _shimmerController.value - 0.3,
                 _shimmerController.value,
@@ -75,105 +71,178 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-                // Status card skeleton (avatar + two lines)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                  child: Row(
-                    children: [
-                      Container(width: 40, height: 40, decoration: const BoxDecoration(color: Color(0xFFF2EAFF), shape: BoxShape.circle)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            // Status card skeleton (avatar + two lines)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF2EAFF),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(height: 14, width: 200, color: Colors.white),
+                        const SizedBox(height: 8),
+                        Container(height: 12, width: 120, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // User info skeleton (two-column layout)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(height: 14, width: 180, color: Colors.white),
+                        const SizedBox(height: 12),
+                        Container(
+                          height: 12,
+                          width: double.infinity,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
                           children: [
-                            Container(height: 14, width: 200, color: Colors.white),
-                            const SizedBox(height: 8),
-                            Container(height: 12, width: 120, color: Colors.white),
+                            Container(
+                              height: 12,
+                              width: 80,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              height: 12,
+                              width: 80,
+                              color: Colors.white,
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Container(height: 12, width: 140, color: Colors.white),
+                      ],
+                    ),
                   ),
-                ),
-
-                // User info skeleton (two-column layout)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(height: 14, width: 180, color: Colors.white),
-                            const SizedBox(height: 12),
-                            Container(height: 12, width: double.infinity, color: Colors.white),
-                            const SizedBox(height: 12),
-                            Row(children: [Container(height: 12, width: 80, color: Colors.white), const SizedBox(width: 8), Container(height: 12, width: 80, color: Colors.white)]),
-                            const SizedBox(height: 12),
-                            Container(height: 12, width: 140, color: Colors.white),
-                          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 12,
+                          width: double.infinity,
+                          color: Colors.white,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 4,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(height: 12, width: double.infinity, color: Colors.white),
-                            const SizedBox(height: 12),
-                            Container(height: 12, width: double.infinity, color: Colors.white),
-                            const SizedBox(height: 12),
-                            Container(height: 12, width: 120, color: Colors.white),
-                          ],
+                        const SizedBox(height: 12),
+                        Container(
+                          height: 12,
+                          width: double.infinity,
+                          color: Colors.white,
                         ),
+                        const SizedBox(height: 12),
+                        Container(height: 12, width: 120, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Documents skeleton (button + preview)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 12, width: 160, color: Colors.white),
+                  const SizedBox(height: 12),
+                  Container(height: 14, width: 120, color: Colors.white),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 180,
+                    width: double.infinity,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+
+            // Action buttons skeleton (two small + one large)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-
-                // Documents skeleton (button + preview)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(height: 12, width: 160, color: Colors.white),
-                      const SizedBox(height: 12),
-                      Container(height: 14, width: 120, color: Colors.white),
-                      const SizedBox(height: 12),
-                      Container(height: 180, width: double.infinity, color: Colors.white),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                    ),
                   ),
-                ),
-
-                // Action buttons skeleton (two small + one large)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                  child: Row(
-                    children: [
-                      Expanded(child: Container(height: 44, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)))),
-                      const SizedBox(width: 12),
-                      Expanded(child: Container(height: 44, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)))),
-                      const SizedBox(width: 12),
-                      Expanded(child: Container(height: 44, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)))),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -183,18 +252,18 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF7F4FF),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
+            child: const Icon(
+              Icons.chevron_left_rounded,
+              size: 28,
+              color: Color(0xFF2D3436),
             ),
-            child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Color(0xFF2D3436)),
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -202,7 +271,7 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
           'Verification Details',
           style: GoogleFonts.manrope(
             color: const Color(0xFF2D3436),
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -227,7 +296,11 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
                         color: Colors.red[50],
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red[400],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -249,11 +322,16 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: () => provider.loadVerificationDetail(widget.verificationId),
+                      onPressed: () => provider.loadVerificationDetail(
+                        widget.verificationId,
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6C63FF),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -295,8 +373,9 @@ class _AdminPendingState extends State<AdminPending> with SingleTickerProviderSt
                 const SizedBox(height: 16),
                 _EnhancedUserInfoCard(verification: verification),
                 const SizedBox(height: 16),
-                if (!(verification.role == 'commuter' && 
-                    (verification.commuterCategory?.toLowerCase() == 'regular'))) ...[
+                if (!(verification.role == 'commuter' &&
+                    (verification.commuterCategory?.toLowerCase() ==
+                        'regular'))) ...[
                   _EnhancedDocumentsCard(verification: verification),
                   const SizedBox(height: 24),
                 ],
@@ -358,10 +437,7 @@ class _EnhancedStatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF6A1B9A),
-            Color(0xFF8E24AA),
-          ],
+          colors: [Color(0xFF5B53C2), Color(0xFF8E4CB6), Color(0xFFB945AA)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -377,8 +453,8 @@ class _EnhancedStatusCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            height: 56,
-            width: 56,
+            height: 40,
+            width: 40,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -395,7 +471,7 @@ class _EnhancedStatusCard extends StatelessWidget {
               initials,
               style: GoogleFonts.manrope(
                 color: const Color(0xFF6A1B9A),
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -408,7 +484,7 @@ class _EnhancedStatusCard extends StatelessWidget {
                 Text(
                   verification.userName,
                   style: GoogleFonts.manrope(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
@@ -419,7 +495,10 @@ class _EnhancedStatusCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha((0.2 * 255).round()),
                         borderRadius: BorderRadius.circular(6),
@@ -428,19 +507,23 @@ class _EnhancedStatusCard extends StatelessWidget {
                         verification.roleCapitalized,
                         style: GoogleFonts.manrope(
                           color: Colors.white,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.access_time, size: 12, color: Colors.white.withAlpha((0.8 * 255).round())),
+                    Icon(
+                      Icons.access_time,
+                      size: 12,
+                      color: Colors.white.withAlpha((0.8 * 255).round()),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       verification.timeAgo,
                       style: GoogleFonts.manrope(
                         color: Colors.white.withAlpha((0.9 * 255).round()),
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -450,7 +533,7 @@ class _EnhancedStatusCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: _getStatusColor(),
               borderRadius: BorderRadius.circular(20),
@@ -466,7 +549,7 @@ class _EnhancedStatusCard extends StatelessWidget {
               verification.status.toUpperCase(),
               style: GoogleFonts.manrope(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
@@ -499,7 +582,9 @@ class _EnhancedUserInfoCard extends StatelessWidget {
       case 'discounted':
         return 'Discounted';
       default:
-        return val.isEmpty ? 'Regular' : '${val[0].toUpperCase()}${val.substring(1)}';
+        return val.isEmpty
+            ? 'Regular'
+            : '${val[0].toUpperCase()}${val.substring(1)}';
     }
   }
 
@@ -683,7 +768,7 @@ class _InfoRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: GoogleFonts.manrope(
+                style: GoogleFonts.nunito(
                   color: const Color(0xFF2D3436),
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -764,7 +849,11 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Center(
-                                  child: Icon(Icons.error_outline, size: 48, color: Colors.white),
+                                  child: Icon(
+                                    Icons.error_outline,
+                                    size: 48,
+                                    color: Colors.white,
+                                  ),
                                 );
                               },
                             ),
@@ -780,7 +869,10 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                                 color: Colors.black54,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.close, color: Colors.white),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                              ),
                             ),
                             onPressed: () => Navigator.pop(context),
                           ),
@@ -793,10 +885,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF5B53C2),
-                      Color(0xFFB945AA),
-                    ],
+                    colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -841,7 +930,9 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                           Text(
                             'Tap to view full image',
                             style: GoogleFonts.manrope(
-                              color: Colors.white.withAlpha((0.9 * 255).round()),
+                              color: Colors.white.withAlpha(
+                                (0.9 * 255).round(),
+                              ),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -885,7 +976,11 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                          Icon(
+                            Icons.broken_image,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Failed to load image',
@@ -912,7 +1007,11 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.description_outlined, size: 48, color: Colors.grey[400]),
+                    Icon(
+                      Icons.description_outlined,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       'No document uploaded',
@@ -1004,7 +1103,7 @@ class _EnhancedActionButtons extends StatelessWidget {
       rootNavigator.pop();
 
       if (success) {
-          if (action == 'approve') {
+        if (action == 'approve') {
           await showDialog<void>(
             context: navigator.context,
             barrierDismissible: false,
@@ -1132,29 +1231,27 @@ class _EnhancedActionButtons extends StatelessWidget {
 
   Future<String?> _showNotesDialog(BuildContext context, String action) async {
     final controller = TextEditingController();
-    
+
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: action == 'reject' 
-                    ? const Color(0xFFFFEBEE) 
+                color: action == 'reject'
+                    ? const Color(0xFFFFEBEE)
                     : const Color(0xFFFFF3E0),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 action == 'reject' ? Icons.cancel : Icons.warning,
-                color: action == 'reject' 
-                    ? const Color(0xFFEF5350) 
+                color: action == 'reject'
+                    ? const Color(0xFFEF5350)
                     : const Color(0xFFFFA726),
                 size: 24,
               ),
@@ -1253,8 +1350,8 @@ class _EnhancedActionButtons extends StatelessWidget {
               Navigator.pop(context, controller.text.trim());
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: action == 'reject' 
-                  ? const Color(0xFFEF5350) 
+              backgroundColor: action == 'reject'
+                  ? const Color(0xFFEF5350)
                   : const Color(0xFFFFA726),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1420,7 +1517,12 @@ class _ActionButton extends StatelessWidget {
                 : null,
             color: isPrimary ? null : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: isPrimary ? null : Border.all(color: color.withAlpha((0.3 * 255).round()), width: 2),
+            border: isPrimary
+                ? null
+                : Border.all(
+                    color: color.withAlpha((0.3 * 255).round()),
+                    width: 2,
+                  ),
             boxShadow: [
               BoxShadow(
                 color: color.withAlpha(((isPrimary ? 0.3 : 0.1) * 255).round()),
@@ -1430,8 +1532,8 @@ class _ActionButton extends StatelessWidget {
             ],
           ),
           child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            height: 45,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1439,9 +1541,9 @@ class _ActionButton extends StatelessWidget {
                 const SizedBox(width: 0),
                 Text(
                   label,
-                  style: GoogleFonts.manrope(
+                  style: GoogleFonts.nunito(
                     color: isPrimary ? Colors.white : color,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,
                   ),
