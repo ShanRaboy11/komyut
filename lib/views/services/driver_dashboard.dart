@@ -114,7 +114,13 @@ class DriverDashboardService {
           .from('profiles')
           .select('id')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
+
+      if (profile == null) {
+        // No profile found (shouldn't normally happen), return empty map
+        debugPrint('ℹ️ No profile found for user when fetching driver vehicle info');
+        return {};
+      }
 
       final walletData = await _supabase
           .from('wallets')

@@ -1,29 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import 'dart:async';
-import 'commuter_app.dart';
 
-class SuccessPage extends StatefulWidget {
+class AcceptSuccessPage extends StatefulWidget {
   final String title;
   final String subtitle;
   final int autoCloseDuration; // in seconds
   final VoidCallback? onClose;
 
-  const SuccessPage({
+  const AcceptSuccessPage({
     super.key, // Fixed: use_super_parameters
-    this.title = 'Report Submitted!',
-    this.subtitle =
-        'Thank you for submitting a report. By letting us know about this issue, you help us make your commute safer and better for everyone.',
+    this.title = 'Account Approved',
+    this.subtitle = 'The driver has been approved successfully.',
     this.autoCloseDuration = 3,
     this.onClose,
   });
 
   @override
-  State<SuccessPage> createState() => _SuccessPageState();
+  State<AcceptSuccessPage> createState() => _SuccessPageState();
 }
 
-class _SuccessPageState extends State<SuccessPage>
+class _SuccessPageState extends State<AcceptSuccessPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -57,10 +54,7 @@ class _SuccessPageState extends State<SuccessPage>
         if (widget.onClose != null) {
           widget.onClose!();
         } else {
-          CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-            '/',
-            (route) => false,
-          );
+          Navigator.of(context).pop();
         }
       }
     });
@@ -76,7 +70,7 @@ class _SuccessPageState extends State<SuccessPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF7F4FF),
+      backgroundColor: Colors.white,
       body: Stack(
         // Use a Stack to layer the background circles and content
         children: [
@@ -173,7 +167,7 @@ class _SuccessPageState extends State<SuccessPage>
                       // Title
                       Text(
                         widget.title,
-                        style: GoogleFonts.manrope(
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -188,7 +182,7 @@ class _SuccessPageState extends State<SuccessPage>
                         padding: const EdgeInsets.symmetric(horizontal: 40.0),
                         child: Text(
                           widget.subtitle,
-                          style: GoogleFonts.nunito(
+                          style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[600],
                             height: 1.5,

@@ -4,6 +4,7 @@ import './home_operator.dart';
 import './report_operator.dart';
 import './placeholders.dart';
 import './profile.dart';
+import 'driver_operator.dart';
 
 class OperatorApp extends StatelessWidget {
   const OperatorApp({super.key});

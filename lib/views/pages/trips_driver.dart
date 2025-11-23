@@ -1,26 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-
-class DriverTrip {
-  final DateTime date;
-  final String origin;
-  final String destination;
-  final String routeCode;
-  final double fareAmount;
-  final String status;
-
-  DriverTrip({
-    required this.date,
-    required this.origin,
-    required this.destination,
-    required this.routeCode,
-    required this.fareAmount,
-    required this.status,
-  });
-}
+import '../models/driver_trip.dart';
+import '../services/driver_trip.dart';
+import 'tripdetails_driver.dart';
 
 class DriverTripHistoryPage extends StatefulWidget {
   const DriverTripHistoryPage({super.key});
@@ -29,49 +13,48 @@ class DriverTripHistoryPage extends StatefulWidget {
   State<DriverTripHistoryPage> createState() => _DriverTripHistoryPageState();
 }
 
-class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
-  final List<DriverTrip> _trips = List.generate(15, (index) {
-    final random = Random();
-    const locations = [
-      'SM Cebu',
-      'Colon',
-      'Ayala',
-      'IT Park',
-      'Talamban',
-      'Mactan Airport',
-      'Plaza Independencia',
-    ];
-    final origin = locations[random.nextInt(locations.length)];
-    String destination;
-    do {
-      destination = locations[random.nextInt(locations.length)];
-    } while (destination == origin);
+class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> with SingleTickerProviderStateMixin {
+  final DriverTripService _tripService = DriverTripService();
+  List<DriverTrip> _trips = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  late AnimationController _shimmerController;
 
-    String status;
-    if (index == 0) {
-      status = 'ongoing';
-    } else {
-      final statusChance = random.nextDouble();
-      if (statusChance > 0.8) {
-        status = 'cancelled';
-      } else {
-        status = 'completed';
-      }
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _loadTrips();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadTrips() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final trips = await _tripService.getDriverTripHistory();
+      setState(() {
+        _trips = trips;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
     }
-
-    return DriverTrip(
-      date: DateTime.now().subtract(
-        Duration(days: index, hours: random.nextInt(12)),
-      ),
-      origin: origin,
-      destination: destination,
-      routeCode: '04L',
-      fareAmount: status == 'completed'
-          ? (random.nextDouble() * 800 + 400)
-          : 0.0,
-      status: status,
-    );
-  });
+  }
 
   Color _statusBackground(String status) {
     switch (status.toLowerCase()) {
@@ -108,7 +91,7 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -121,41 +104,278 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 40.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'All Trips',
-              style: GoogleFonts.manrope(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+        body: _isLoading
+          ? _buildLoadingList()
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade300,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to load trips',
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadTrips,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8E4CB6),
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : _trips.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.history,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No trips yet',
+                            style: GoogleFonts.manrope(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Your trip history will appear here',
+                            style: GoogleFonts.nunito(
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadTrips,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 40.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'All Trips',
+                              style: GoogleFonts.manrope(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                _buildStatusDot(_statusColor("ongoing"), "Ongoing"),
+                                const SizedBox(width: 20),
+                                _buildStatusDot(_statusColor("completed"), "Completed"),
+                                const SizedBox(width: 20),
+                                _buildStatusDot(_statusColor("cancelled"), "Cancelled"),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ListView.separated(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: _trips.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                return _buildTripCard(_trips[index]);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+    );
+  }
+
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
+              ],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildLoadingList() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 40.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Trips',
+            style: GoogleFonts.manrope(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildStatusDot(_statusColor("ongoing"), "Ongoing"),
+              const SizedBox(width: 20),
+              _buildStatusDot(_statusColor("completed"), "Completed"),
+              const SizedBox(width: 20),
+              _buildStatusDot(_statusColor("cancelled"), "Cancelled"),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Column(
+            children: List.generate(6, (index) => Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: _buildTripSkeletonCard(),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripSkeletonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShimmer(
+                child: Container(
+                  width: 160,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+              _buildShimmer(
+                child: Container(
+                  width: 80,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildShimmer(
+            child: Container(
+              width: 100,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildStatusDot(_statusColor("ongoing"), "Ongoing"),
-                const SizedBox(width: 20),
-                _buildStatusDot(_statusColor("completed"), "Completed"),
-                const SizedBox(width: 20),
-                _buildStatusDot(_statusColor("cancelled"), "Cancelled"),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: _trips.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _buildTripCard(_trips[index]);
-              },
-            ),
-          ],
-        ),
+          ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Container(width: 24, height: 24, color: Colors.transparent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmer(
+                      child: Container(
+                        width: double.infinity,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildShimmer(
+                      child: Container(
+                        width: 120,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -180,7 +400,24 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
     final statusColor = _statusColor(trip.status);
     final statusBackgroundColor = _statusBackground(trip.status);
 
-    return Container(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DriverTripDetailsPage(
+              tripId: trip.id,
+              date: DateFormat('MMMM d, yyyy').format(trip.startedAt),
+              time: DateFormat('hh:mm a').format(trip.startedAt),
+              from: trip.originName,
+              to: trip.destinationName,
+              tripCode: trip.routeCode,
+              status: trip.status,
+            ),
+          ),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -201,7 +438,7 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                DateFormat('MMMM d, yyyy').format(trip.date),
+                DateFormat('MMMM d, yyyy').format(trip.startedAt),
                 style: GoogleFonts.manrope(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -227,7 +464,7 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            DateFormat('hh:mm a').format(trip.date),
+            DateFormat('hh:mm a').format(trip.startedAt),
             style: GoogleFonts.nunito(color: Colors.grey[600], fontSize: 14),
           ),
           const Divider(height: 24),
@@ -240,7 +477,7 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${trip.origin} → ${trip.destination}',
+                      '${trip.originName} → ${trip.destinationName}',
                       style: GoogleFonts.manrope(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -271,6 +508,7 @@ class _DriverTripHistoryPageState extends State<DriverTripHistoryPage> {
           ),
         ],
       ),
+    ),
     );
   }
 }

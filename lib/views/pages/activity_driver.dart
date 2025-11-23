@@ -4,39 +4,45 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'wallet_driver.dart';
 import 'trips_driver.dart';
+import 'operatorlist_driver.dart';
+import '../services/driver_dashboard.dart';
 
-class DriverActivityPage extends StatelessWidget {
-  const DriverActivityPage({super.key});
+class _ActivityHub extends StatefulWidget {
+  const _ActivityHub();
 
   @override
-  Widget build(BuildContext context) {
-    return Navigator(
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        late Widget page;
-        switch (settings.name) {
-          case '/wallet':
-            page = const DriverWalletPage();
-            break;
-          case '/trip_history':
-            page = const DriverTripHistoryPage();
-            break;
-          case '/':
-          default:
-            page = const _ActivityHub();
-            break;
-        }
-        return MaterialPageRoute(
-          builder: (context) => page,
-          settings: settings,
-        );
-      },
-    );
-  }
+  State<_ActivityHub> createState() => _ActivityHubState();
 }
 
-class _ActivityHub extends StatelessWidget {
-  const _ActivityHub();
+class _ActivityHubState extends State<_ActivityHub> {
+  final DriverDashboardService _service = DriverDashboardService();
+  bool _loading = true;
+  bool _hasOperator = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDriverInfo();
+  }
+
+  Future<void> _loadDriverInfo() async {
+    try {
+      final info = await _service.getDriverVehicleInfo();
+      // If driverData contains operator_name or routes/operator data, treat as having operator
+      final operatorName = info['operator_name'] as String?;
+      setState(() {
+        _hasOperator = operatorName != null && operatorName.trim().isNotEmpty;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _hasOperator = false;
+        _loading = false;
+      });
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +86,24 @@ class _ActivityHub extends StatelessWidget {
                 Navigator.of(context).pushNamed('/trip_history');
               },
             ),
+            const SizedBox(height: 16),
+            // Join an Operator: displayed only when driver has NO operator.
+            if (_loading || !_hasOperator) ...[
+              _buildOptionCard(
+                context: context,
+                icon: Symbols.handshake_rounded,
+                title: 'Join an Operator',
+                subtitle: _loading
+                    ? 'Checking operator status...'
+                    : 'Find and apply to your preferred transport operator.',
+                onTap: (_loading || _hasOperator)
+                    ? () {}
+                    : () {
+                        Navigator.of(context).pushNamed('/operator_list');
+                      },
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),
@@ -141,6 +165,39 @@ class _ActivityHub extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+}
+class DriverActivityPage extends StatelessWidget {
+  const DriverActivityPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        late Widget page;
+        switch (settings.name) {
+          case '/wallet':
+            page = const DriverWalletPage();
+            break;
+          case '/trip_history':
+            page = const DriverTripHistoryPage();
+            break;
+          case '/operator_list':
+            page = const OperatorListPage();
+            break;
+          case '/':
+          default:
+            page = const _ActivityHub();
+            break;
+        }
+        return MaterialPageRoute(
+          builder: (context) => page,
+          settings: settings,
+        );
+      },
     );
   }
 }

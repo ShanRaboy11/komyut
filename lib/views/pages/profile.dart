@@ -2,12 +2,85 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'personalinfo_commuter.dart';
 import 'personalinfo_driver.dart';
 import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
-import 'landingpage.dart';
+
+/// Helper class for authentication operations
+class AuthHelper {
+  /// Logout the current user and navigate to landing page
+  static Future<void> logout(BuildContext context) async {
+    try {
+      debugPrint('🔄 Logging out user...');
+      
+      // Sign out from Supabase
+      await Supabase.instance.client.auth.signOut();
+      
+      debugPrint('✅ User logged out successfully');
+      
+      // Navigate to landing page and remove all previous routes
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/landing',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Logout error: $e');
+      
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get current user role
+  static Future<String?> getCurrentUserRole() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      
+      if (user == null) {
+        return null;
+      }
+
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+      return response['role'] as String?;
+    } catch (e) {
+      debugPrint('❌ Error fetching user role: $e');
+      return null;
+    }
+  }
+
+  /// Check if current user has a specific role
+  static Future<bool> hasRole(String role) async {
+    final currentRole = await getCurrentUserRole();
+    return currentRole?.toLowerCase() == role.toLowerCase();
+  }
+
+  /// Get current user ID
+  static String? getCurrentUserId() {
+    return Supabase.instance.client.auth.currentUser?.id;
+  }
+
+  /// Check if user is logged in
+  static bool isLoggedIn() {
+    return Supabase.instance.client.auth.currentUser != null;
+  }
+}
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -71,7 +144,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _getUserId() {
     if (_profileData == null) return '';
-    // You can customize this based on which ID you want to show
     return _profileData!['id']?.toString().substring(0, 8) ?? '';
   }
 
@@ -98,6 +170,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
+    // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -125,47 +198,34 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    if (confirm == true && mounted) {
-      try {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: CircularProgressIndicator(
-              color: const Color(0xFF8E4CB6),
-            ),
+    // Exit if user cancels
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => PopScope(
+        canPop: false,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF8E4CB6),
           ),
-        );
+        ),
+      ),
+    );
 
-        // Sign out using Supabase directly
-        await _supabase.auth.signOut();
+    // Wait a bit to ensure dialog is shown
+    await Future.delayed(const Duration(milliseconds: 100));
 
-        if (mounted) {
-          // Close loading dialog
-          Navigator.pop(context);
-          
-          // Navigate to Landing Page and clear navigation stack
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LandingPage(),
-            ),
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          // Close loading dialog if still showing
-          Navigator.pop(context);
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout failed: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+    // Use AuthHelper to logout
+    if (mounted) {
+      // Close loading dialog first
+      Navigator.of(context).pop();
+      
+      // Then logout (this will navigate to landing page)
+      await AuthHelper.logout(context);
     }
   }
 
