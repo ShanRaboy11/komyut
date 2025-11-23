@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../widgets/background_circles.dart';
@@ -1101,15 +1102,18 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                             onPressed: () async {
                               Navigator.pop(context);
                             },
-                            icon: const Icon(Icons.arrow_back, size: 28),
+                            icon: const Icon(
+                              Icons.chevron_left_rounded,
+                              size: 28,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'QR Scan',
-                            style: TextStyle(
-                              fontSize: 28,
+                            style: GoogleFonts.manrope(
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

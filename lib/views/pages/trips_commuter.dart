@@ -90,7 +90,7 @@ class _Trip1PageState extends State<Trip1Page>
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

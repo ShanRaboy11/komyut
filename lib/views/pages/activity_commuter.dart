@@ -184,7 +184,7 @@ class _TripsPageState extends State<TripsPage>
                         Text(
                           "Recent Trips",
                           style: GoogleFonts.manrope(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -202,7 +202,7 @@ class _TripsPageState extends State<TripsPage>
                             "View All",
                             style: GoogleFonts.nunito(
                               color: const Color.fromARGB(255, 42, 42, 42),
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -218,14 +218,14 @@ class _TripsPageState extends State<TripsPage>
                           style: GoogleFonts.nunito(
                             color: const Color.fromARGB(255, 0, 0, 0),
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontSize: 11,
                           ),
                         ),
                         const SizedBox(width: 20),
                         _buildStatusDot(Colors.yellow, "Ongoing"),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         _buildStatusDot(Colors.green, "Completed"),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         _buildStatusDot(Colors.red, "Cancelled"),
                       ],
                     ),
@@ -902,7 +902,7 @@ class _TripsPageState extends State<TripsPage>
               Text(
                 "Analytics",
                 style: GoogleFonts.nunito(
-                  fontSize: 22,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -921,7 +921,6 @@ class _TripsPageState extends State<TripsPage>
                     ),
                   ),
                   SizedBox(
-                    width: 100,
                     child: Center(
                       child: provider.analyticsLoading
                           ? SizedBox(
@@ -940,7 +939,7 @@ class _TripsPageState extends State<TripsPage>
                                   : '—',
                               style: GoogleFonts.nunito(
                                 color: Colors.white,
-                                fontSize: 14,
+                                fontSize: 10,
                               ),
                             ),
                     ),
@@ -981,7 +980,7 @@ class _TripsPageState extends State<TripsPage>
                       Text(
                         "Total Trips",
                         style: GoogleFonts.manrope(
-                          fontSize: 18,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFFF0D7FF),
                         ),
@@ -1007,7 +1006,7 @@ class _TripsPageState extends State<TripsPage>
                                 child: Text(
                                   analytics.totalTrips.toString(),
                                   style: GoogleFonts.manrope(
-                                    fontSize: 45,
+                                    fontSize: 35,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
@@ -1082,7 +1081,7 @@ class _TripsPageState extends State<TripsPage>
                                         chartData[index].label,
                                         style: GoogleFonts.nunito(
                                           color: Colors.white,
-                                          fontSize: 12,
+                                          fontSize: 10,
                                         ),
                                       ),
                                     );
@@ -1159,7 +1158,7 @@ class _TripsPageState extends State<TripsPage>
                         );
                       },
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 10),
               _analyticsCard(
                 "Expense",
                 provider.analyticsLoading,
@@ -1226,7 +1225,7 @@ class _TripsPageState extends State<TripsPage>
           Text(
             title,
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 14,
               color: const Color(0xFFF0D7FF),
               fontWeight: FontWeight.w500,
             ),
@@ -1252,7 +1251,7 @@ class _TripsPageState extends State<TripsPage>
                     child: Text(
                       value,
                       style: GoogleFonts.manrope(
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),

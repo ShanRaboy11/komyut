@@ -286,7 +286,7 @@ class _TripReceiptPageState extends State<TripReceiptPage> {
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(
-                        Icons.arrow_back,
+                        Icons.chevron_left_rounded,
                         color: Colors.black87,
                         size: 24,
                       ),

@@ -157,7 +157,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
         return Scaffold(
           body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
+            padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -321,11 +321,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               children: [
                 Text(
                   _isBalanceVisible
-                      ? '₱${provider.balance.toStringAsFixed(2)}'
+                      ? '₱ ${provider.balance.toStringAsFixed(2)}'
                       : '₱•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -351,7 +351,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               fillColor: Colors.white,
               textColor: const Color(0xFF5B53C2),
               iconColor: const Color(0xFF5B53C2),
-              width: 120,
+              width: 100,
               height: 45,
               borderRadius: 30,
               hasShadow: false,
@@ -389,7 +389,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   _isTokensVisible ? provider.wheelTokens.toString() : '•••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -414,7 +414,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               fillColor: Colors.white,
               textColor: const Color(0xFFB945AA),
               iconColor: const Color(0xFFB945AA),
-              width: 120,
+              width: 100,
               height: 45,
               borderRadius: 30,
               hasShadow: false,
