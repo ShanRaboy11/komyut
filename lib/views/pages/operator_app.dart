@@ -11,6 +11,7 @@ import 'driver_operator.dart';
 
 import 'wallet_history_operator.dart';
 import 'co_operator.dart';
+import 'co_operator_confirm.dart';
 
 class OperatorApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -52,6 +53,14 @@ class OperatorApp extends StatelessWidget {
         page = ChangeNotifierProvider(
           create: (_) => OperatorWalletProvider(),
           child: const OperatorCashOutPage(),
+        );
+        break;
+
+      case '/cash_out_confirm':
+        final amount = settings.arguments as String;
+        page = ChangeNotifierProvider(
+          create: (_) => OperatorWalletProvider(),
+          child: OperatorCashOutConfirmPage(amount: amount),
         );
         break;
 

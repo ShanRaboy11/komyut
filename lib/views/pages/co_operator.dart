@@ -56,7 +56,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
 
     Navigator.of(
       context,
-    ).pushNamed('/cash_out_confirmation', arguments: _amountController.text);
+    ).pushNamed('/cash_out_confirm', arguments: _amountController.text);
   }
 
   @override
@@ -71,9 +71,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Cash Out',
@@ -87,9 +85,10 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
       ),
       body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
-          final currentBalance = provider.currentBalance;
-          final amountValue = double.tryParse(_amountController.text) ?? 0;
+          final currentBalance = 100.00;
+          // final currentBalance = provider.currentBalance; // Use this later
 
+          final amountValue = double.tryParse(_amountController.text) ?? 0;
           final fee = 15.00;
           final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
           final remainingBalance = currentBalance - totalDeduction;
