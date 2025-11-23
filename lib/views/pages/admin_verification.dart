@@ -7,11 +7,6 @@ import 'admin_pending.dart';
 class AdminVerifiedPage extends StatefulWidget {
   final String defaultStatus;
 
-  /// `onlyVerified` is kept for backward compatibility with older call sites.
-  /// If `onlyVerified` is provided it will determine the `defaultStatus`:
-  /// - `true` => 'approved'
-  /// - `false` => 'pending'
-  /// If `defaultStatus` is provided it takes precedence.
   const AdminVerifiedPage({
     super.key,
     bool? onlyVerified,
@@ -22,7 +17,7 @@ class AdminVerifiedPage extends StatefulWidget {
   State<AdminVerifiedPage> createState() => _AdminVerifiedPageState();
 }
 
-class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
+class _AdminVerifiedPageState extends State<AdminVerifiedPage> with SingleTickerProviderStateMixin {
   static const LinearGradient _kGradient = LinearGradient(
     colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
     begin: Alignment.centerLeft,
@@ -32,6 +27,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
   String _statusFilter = '';
   String _roleFilter = 'All';
   String _searchQuery = '';
+  late AnimationController _shimmerController;
 
   @override
   void initState() {
@@ -43,6 +39,73 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AdminVerificationProvider>().loadVerifications();
     });
+    _shimmerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildListSkeleton() {
+    return _buildShimmer(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          children: List.generate(6, (index) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  Container(width: 48, height: 48, decoration: const BoxDecoration(color: Color(0xFFF2EAFF), shape: BoxShape.circle)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(height: 12, width: double.infinity, color: Colors.white),
+                        const SizedBox(height: 8),
+                        Container(height: 10, width: 150, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(height: 20, width: 60, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
   }
 
   @override
@@ -52,6 +115,9 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
       body: SafeArea(
         child: Consumer<AdminVerificationProvider>(
           builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return _buildListSkeleton();
+            }
             // Apply filters
             var displayItems = provider.applyFilters(
               status: _statusFilter,
@@ -223,13 +289,13 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
                             const PopupMenuItem(
                                 value: 'All', child: Text('All Users')),
                             const PopupMenuItem(
-                                value: 'Driver', child: Text('Drivers Only')),
+                                value: 'Driver', child: Text('Drivers')),
                             const PopupMenuItem(
                                 value: 'Commuter',
-                                child: Text('Commuters Only')),
+                                child: Text('Commuters')),
                             const PopupMenuItem(
                                 value: 'Operator',
-                                child: Text('Operators Only')),
+                                child: Text('Operators')),
                           ],
                           child: Container(
                             padding: const EdgeInsets.all(10),
@@ -305,7 +371,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> {
                                           color: Colors.grey.shade400),
                                       const SizedBox(height: 16),
                                       Text(
-                                        "No items found",
+                                        "No users found",
                                         style: GoogleFonts.manrope(
                                             fontSize: 16,
                                             color: Colors.grey.shade600),
@@ -409,20 +475,6 @@ class VerificationCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Color getStatusColor() {
-    switch (item.status.toLowerCase()) {
-      case 'approved':
-        return const Color(0xFF2ECC71);
-      case 'pending':
-        return const Color(0xFFFFC107);
-      case 'rejected':
-        return const Color(0xFFE74C3C);
-      case 'lacking':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +484,7 @@ class VerificationCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -441,16 +493,44 @@ class VerificationCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 22.5,
-                backgroundColor: const Color(0xFFE0E0E0),
-                backgroundImage:
-                    item.imageUrl != null ? NetworkImage(item.imageUrl!) : null,
-                child: item.imageUrl == null
-                    ? const Icon(Icons.person, color: Colors.grey)
-                    : null,
-              ),
-              const SizedBox(width: 12),
+              // Initials avatar (consistent with trip details and pending UI)
+              Builder(builder: (_) {
+                String initials = 'U';
+                try {
+                  final parts = item.userName
+                      .split(RegExp(r'\s+'))
+                      .where((s) => s.isNotEmpty)
+                      .toList();
+                  if (parts.isEmpty) {
+                    initials = 'U';
+                  } else if (parts.length == 1) {
+                    initials = parts[0][0].toUpperCase();
+                  } else {
+                    initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+                  }
+                } catch (_) {
+                  initials = 'U';
+                }
+
+                return Container(
+                  height: 45,
+                  width: 45,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF2EAFF),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: GoogleFonts.manrope(
+                      color: const Color(0xFF9C6BFF),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(width: 22),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,22 +574,7 @@ class VerificationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: getStatusColor(),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  item.statusCapitalized,
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              
             ],
           ),
         ),

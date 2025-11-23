@@ -36,8 +36,9 @@ class AdminPending extends StatefulWidget {
   State<AdminPending> createState() => _AdminPendingState();
 }
 
-class _AdminPendingState extends State<AdminPending> {
+class _AdminPendingState extends State<AdminPending> with SingleTickerProviderStateMixin {
   final TextEditingController _notesController = TextEditingController();
+  late AnimationController _shimmerController;
 
   @override
   void initState() {
@@ -46,12 +47,59 @@ class _AdminPendingState extends State<AdminPending> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AdminVerificationProvider>().loadVerificationDetail(widget.verificationId);
     });
+    _shimmerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _shimmerController.dispose();
     super.dispose();
+  }
+
+  Widget _buildShimmer({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, shimmerChild) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
+              stops: [
+                _shimmerController.value - 0.3,
+                _shimmerController.value,
+                _shimmerController.value + 0.3,
+              ],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildDetailSkeleton() {
+    return _buildShimmer(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
+        child: Column(
+          children: [
+            // Status card skeleton
+            Container(height: 70, width: double.infinity, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10))),
+            // User info skeleton
+            Container(height: 220, width: double.infinity, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10))),
+            // Documents skeleton
+            Container(height: 260, width: double.infinity, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10))),
+            // Action buttons skeleton
+            Container(height: 80, width: double.infinity, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10))),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -78,7 +126,7 @@ class _AdminPendingState extends State<AdminPending> {
       body: Consumer<AdminVerificationProvider>(
         builder: (context, provider, child) {
           if (provider.isLoadingDetail) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildDetailSkeleton();
           }
 
           if (provider.detailErrorMessage != null) {
@@ -105,7 +153,7 @@ class _AdminPendingState extends State<AdminPending> {
 
           final verification = provider.currentVerificationDetail;
           if (verification == null) {
-            return const Center(child: Text('No data available'));
+            return const Center(child: Text('No users found'));
           }
 
           return SingleChildScrollView(
@@ -139,20 +187,7 @@ class StatusCard extends StatelessWidget {
 
   const StatusCard({super.key, required this.verification});
 
-  Color _getStatusColor() {
-    switch (verification.status.toLowerCase()) {
-      case 'approved':
-        return const Color(0xFF2ECC71);
-      case 'pending':
-        return AdminPending.secondaryYellow;
-      case 'rejected':
-        return const Color(0xFFE74C3C);
-      case 'lacking':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
+  // Status color helper removed — status label not displayed in this card.
 
   @override
   Widget build(BuildContext context) {
@@ -236,21 +271,6 @@ class StatusCard extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getStatusColor(),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              verification.statusCapitalized,
-              style: GoogleFonts.manrope(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -635,15 +655,39 @@ class ActionButtons extends StatelessWidget {
       navigator.pop();
 
       if (success) {
-        // Show success message and go back to list
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Verification ${action}d successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Go back to list
-        navigator.pop();
+        // Show success message. For 'approve' show a modal dialog; for
+        // other actions continue to use a snackbar.
+        if (action == 'approve') {
+          // Show modal using the captured navigator context so we don't use
+          // the original BuildContext after awaiting async work.
+          await showDialog<void>(
+            context: navigator.context,
+            barrierDismissible: false,
+            builder: (dialogCtx) => AlertDialog(
+              title: const Text('Success'),
+              content: const Text('Verification approved successfully'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+
+          // After modal is dismissed, go back to the list
+          navigator.pop();
+        } else {
+          // Show success message and go back to list for other actions
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Verification ${action}d successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Go back to list
+          navigator.pop();
+        }
       } else {
         // Show error message
         messenger.showSnackBar(
@@ -725,10 +769,11 @@ class ActionButtons extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'This verification has been ${verification.statusCapitalized.toLowerCase()}',
+          'No actions available for this verification.',
           style: GoogleFonts.manrope(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            color: Colors.black87,
           ),
           textAlign: TextAlign.center,
         ),
