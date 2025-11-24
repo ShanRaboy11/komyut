@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/commuter_dashboard.dart';
 import '../services/auth_service.dart';
 import '../services/driver_dashboard.dart';
+import '../services/operator_dashboard.dart';
 import '../pages/wallet_history_commuter.dart';
 
 import 'dart:convert';
@@ -89,7 +90,6 @@ class WalletProvider extends ChangeNotifier {
 
   // --- Methods ---
   WalletProvider() {
-    // Keep wallet/profile state in sync with auth changes
     _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
@@ -99,7 +99,6 @@ class WalletProvider extends ChangeNotifier {
         _recentTransactions = [];
         notifyListeners();
       } else {
-        // Decide whether to load wallet data based on the user's role
         _maybeLoadForUser(user.id);
       }
     });
@@ -126,7 +125,6 @@ class WalletProvider extends ChangeNotifier {
     if (role == 'commuter') {
       await fetchWalletData();
     } else {
-      // Not a commuter; clear commuter wallet state
       _userProfile = null;
       _balance = 0.0;
       _wheelTokens = 0;
@@ -284,9 +282,6 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> fetchUserProfile() async {
-    // If we have a cached profile, only reuse it when it belongs to the
-    // currently authenticated user. This prevents stale profile data from
-    // a previous session persisting across sign-ins during a single app run.
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     if (_userProfile != null) {
       final cachedUserId = _userProfile?['user_id'] ?? _userProfile?['id'];
@@ -566,6 +561,153 @@ class DriverWalletProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint(e.toString());
       _isPageLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+}
+
+class OperatorWalletProvider extends ChangeNotifier {
+  final OperatorDashboardService _service = OperatorDashboardService();
+
+  bool _isLoading = false;
+  bool _isHistoryLoading = false;
+  bool _isChartLoading = false;
+
+  double _currentBalance = 0.0;
+  Map<String, double> _weeklyEarnings = {};
+  List<Map<String, dynamic>> _recentTransactions = [];
+  List<Map<String, dynamic>> _allTransactions = [];
+
+  // Getters
+  bool get isLoading => _isLoading;
+  bool get isHistoryLoading => _isHistoryLoading;
+  bool get isChartLoading => _isChartLoading;
+  double get currentBalance => _currentBalance;
+  Map<String, double> get weeklyEarnings => _weeklyEarnings;
+  List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
+  List<Map<String, dynamic>> get allTransactions => _allTransactions;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  Future<void> loadWalletDashboard() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final results = await Future.wait([
+        _service.getWalletBalance(),
+        _service.getWeeklyEarnings(weekOffset: 0),
+        _service.getTransactions(limit: 5),
+      ]);
+
+      _currentBalance = results[0] as double;
+      _weeklyEarnings = results[1] as Map<String, double>;
+      _recentTransactions = results[2] as List<Map<String, dynamic>>;
+
+      _recentTransactions.sort(
+        (a, b) =>
+            DateTime.parse(b["date"]).compareTo(DateTime.parse(a["date"])),
+      );
+
+      debugPrint("💰 Dashboard Loaded: ${_recentTransactions.length} recent");
+    } catch (e) {
+      debugPrint("❌ Wallet Provider Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshRecentTransactions() async {
+    try {
+      _recentTransactions = await _service.getTransactions(limit: 5);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to refresh recent transactions: $e");
+    }
+  }
+
+  Future<void> refreshWallet() async {
+    try {
+      await loadWalletDashboard();
+    } catch (e) {
+      debugPrint("❌ Refresh Wallet Error: $e");
+    }
+  }
+
+  Future<void> fetchWeeklyEarnings(int offset) async {
+    _isChartLoading = true;
+    notifyListeners();
+    try {
+      _weeklyEarnings = await _service.getWeeklyEarnings(weekOffset: offset);
+    } catch (e) {
+      debugPrint("Chart error: $e");
+    } finally {
+      _isChartLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchFullHistory() async {
+    _isHistoryLoading = true;
+    notifyListeners();
+
+    try {
+      _allTransactions = await _service.getTransactions(limit: 50);
+      debugPrint("📜 History Loaded: ${_allTransactions.length} items");
+    } catch (e) {
+      debugPrint("❌ History Error: $e");
+    } finally {
+      _isHistoryLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _service.requestCashOut(
+        amount: amount,
+        transactionCode: transactionCode,
+      );
+
+      await loadWalletDashboard();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> completeCashOut(String transactionCode) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _service.completeCashOut(transactionCode);
+
+      await loadWalletDashboard();
+      await refreshRecentTransactions();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("Cashout error: $e");
+      _isLoading = false;
       notifyListeners();
       return false;
     }

@@ -6,21 +6,24 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
-import 'driver_app.dart';
+import 'operator_app.dart';
 
-class DriverCashOutConfirmPage extends StatefulWidget {
+class OperatorCashOutConfirmPage extends StatefulWidget {
   final String amount;
 
-  const DriverCashOutConfirmPage({super.key, required this.amount});
+  const OperatorCashOutConfirmPage({super.key, required this.amount});
 
   @override
-  State<DriverCashOutConfirmPage> createState() =>
-      _DriverCashOutConfirmPageState();
+  State<OperatorCashOutConfirmPage> createState() =>
+      _OperatorCashOutConfirmPageState();
 }
 
-class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
+class _OperatorCashOutConfirmPageState
+    extends State<OperatorCashOutConfirmPage> {
   late String _transactionCode;
   final double _fee = 15.00;
+
+  final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
   void initState() {
@@ -37,11 +40,14 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
         (_) => chars.codeUnitAt(random.nextInt(chars.length)),
       ),
     );
-    return 'K0MYUT-DCO$part1'.substring(0, 25);
+    return 'K0MYUT-OCO$part1'.substring(0, 25);
   }
 
   Future<void> _onConfirmPressed() async {
-    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final provider = Provider.of<OperatorWalletProvider>(
+      context,
+      listen: false,
+    );
     final amountValue = double.tryParse(widget.amount);
 
     if (amountValue == null) return;
@@ -51,20 +57,21 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
       transactionCode: _transactionCode,
     );
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
       final transactionData = {
-        'id': 'temp_id_${DateTime.now().millisecondsSinceEpoch}',
         'transaction_number': _transactionCode,
         'amount': amountValue,
-        'type': 'cash_out',
         'created_at': DateTime.now().toIso8601String(),
+        'type': 'cash_out',
       };
 
-      DriverApp.navigatorKey.currentState?.pushNamed(
+      OperatorApp.navigatorKey.currentState?.pushNamed(
         '/cash_out_instructions',
         arguments: transactionData,
       );
-    } else if (mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(provider.errorMessage ?? 'Transaction Failed'),
@@ -86,8 +93,6 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
     final String formattedAmount = currencyFormat.format(amountValue);
     final String formattedTotal = currencyFormat.format(totalValue);
 
-    final Color brandColor = const Color(0xFF8E4CB6);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
       appBar: AppBar(
@@ -101,7 +106,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
         title: Text(
           'Cash Out',
           style: GoogleFonts.manrope(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -122,7 +127,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: brandColor.withValues(alpha: 0.5), thickness: 1),
+            Divider(color: _brandColor.withValues(alpha: 0.3), thickness: 1),
             const SizedBox(height: 40),
 
             _buildTransactionCard(
@@ -132,13 +137,12 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
               amount: formattedAmount,
               total: formattedTotal,
               transactionCode: _transactionCode,
-              brandColor: brandColor,
             ),
             const SizedBox(height: 24),
             Center(
               child: Text(
                 'Ensure the details are correct before confirming.',
-                style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
+                style: GoogleFonts.nunito(fontSize: 13, color: Colors.black54),
               ),
             ),
             const SizedBox(height: 16),
@@ -150,22 +154,21 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
   }
 
   Widget _buildConfirmButton() {
-    final Color brandColor = const Color(0xFF8E4CB6);
-    return Consumer<DriverWalletProvider>(
+    return Consumer<OperatorWalletProvider>(
       builder: (context, provider, child) {
         return Center(
           child: OutlinedButton(
-            onPressed: provider.isPageLoading ? null : _onConfirmPressed,
+            onPressed: provider.isLoading ? null : _onConfirmPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: brandColor,
-              backgroundColor: brandColor.withValues(alpha: 0.1),
-              side: BorderSide(color: brandColor),
+              foregroundColor: _brandColor,
+              backgroundColor: _brandColor.withValues(alpha: 0.1),
+              side: BorderSide(color: _brandColor),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
             ),
-            child: provider.isPageLoading
+            child: provider.isLoading
                 ? const SizedBox(
                     height: 20,
                     width: 20,
@@ -175,7 +178,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
                     'Confirm',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -191,17 +194,16 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
     required String amount,
     required String total,
     required String transactionCode,
-    required Color brandColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: brandColor.withValues(alpha: 0.5)),
+        border: Border.all(color: _brandColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: brandColor.withValues(alpha: 0.1),
+            color: _brandColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -219,13 +221,13 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+              Divider(color: _brandColor.withValues(alpha: 0.3), height: 24),
               _buildDetailRow('Date:', date),
               _buildDetailRow('Time:', time),
               _buildDetailRow('Amount:', amount),
-              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+              Divider(color: _brandColor.withValues(alpha: 0.3), height: 24),
               _buildDetailRow('Total:', total, isTotal: true),
-              Divider(color: brandColor.withValues(alpha: 0.5), height: 24),
+              Divider(color: _brandColor.withValues(alpha: 0.3), height: 24),
               BarcodeWidget(
                 barcode: Barcode.code128(),
                 data: transactionCode,
@@ -248,9 +250,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                DriverApp.navigatorKey.currentState?.popUntil(
-                  ModalRoute.withName('/'),
-                );
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: Container(
                 padding: const EdgeInsets.all(2),
@@ -258,7 +258,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.close, color: brandColor),
+                child: Icon(Icons.close, color: _brandColor, size: 20),
               ),
             ),
           ),

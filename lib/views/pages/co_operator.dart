@@ -3,23 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../providers/wallet_provider.dart';
-import 'driver_app.dart';
+import 'operator_app.dart';
 
-class DriverCashOutPage extends StatefulWidget {
-  const DriverCashOutPage({super.key});
+class OperatorCashOutPage extends StatefulWidget {
+  const OperatorCashOutPage({super.key});
 
   @override
-  State<DriverCashOutPage> createState() => _DriverCashOutPageState();
+  State<OperatorCashOutPage> createState() => _OperatorCashOutPageState();
 }
 
-class _DriverCashOutPageState extends State<DriverCashOutPage> {
+class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
   final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
   String? _errorText;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperatorWalletProvider>().loadWalletDashboard();
+    });
+  }
 
   @override
   void dispose() {
@@ -56,8 +63,8 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
 
-    DriverApp.navigatorKey.currentState?.pushNamed(
-      '/cash_out_confirmation',
+    OperatorApp.navigatorKey.currentState?.pushNamed(
+      '/cash_out_confirm',
       arguments: _amountController.text,
     );
   }
@@ -74,9 +81,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
-          onPressed: () {
-            DriverApp.navigatorKey.currentState?.pop();
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Cash Out',
@@ -88,11 +93,10 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
         ),
         centerTitle: true,
       ),
-      body: Consumer<DriverWalletProvider>(
+      body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
-          final currentBalance = provider.totalBalance;
+          final currentBalance = provider.currentBalance;
           final amountValue = double.tryParse(_amountController.text) ?? 0;
-
           final fee = 15.00;
           final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
           final remainingBalance = currentBalance - totalDeduction;
@@ -264,10 +268,10 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
     );
   }
 
-  Widget _buildNextButton(DriverWalletProvider provider) {
+  Widget _buildNextButton(OperatorWalletProvider provider) {
     return Center(
       child: OutlinedButton(
-        onPressed: (provider.isPageLoading || !_isButtonEnabled)
+        onPressed: (provider.isLoading || !_isButtonEnabled)
             ? null
             : _onNextPressed,
         style: OutlinedButton.styleFrom(
@@ -285,7 +289,7 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
-        child: provider.isPageLoading
+        child: provider.isLoading
             ? const SizedBox(
                 width: 24,
                 height: 24,
