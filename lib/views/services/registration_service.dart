@@ -6,6 +6,18 @@ class RegistrationService {
   final _registrationData = <String, dynamic>{};
   final _supabase = Supabase.instance.client;
 
+  /// Determine whether we should create an 'ID Verification' record for a
+  /// given role and commuter category. Only drivers and non-regular
+  /// commuters should have an ID Verification created.
+  bool _shouldCreateIdVerification(String role, String? commuterCategory) {
+    if (role == 'driver') return true;
+    if (role == 'commuter') {
+      final cat = commuterCategory?.toLowerCase() ?? 'regular';
+      return cat != 'regular';
+    }
+    return false;
+  }
+
   // Get all registration data
   Map<String, dynamic> getRegistrationData() {
     return Map<String, dynamic>.from(_registrationData);
@@ -575,13 +587,20 @@ class RegistrationService {
           // with this profile so admin can review it.
           if (licenseAttachmentId != null) {
             try {
-              await _supabase.from('verifications').insert({
-                'profile_id': profileId,
-                'verification_type': 'ID Verification',
-                'attachment_id': licenseAttachmentId,
-                'status': 'pending',
-              });
-              debugPrint('✅ Verification row created for driver license');
+              // Only create ID Verification when allowed by role/category.
+              // This ensures operators (and regular commuters) do not get
+              // a separate 'ID Verification' row.
+              if (_shouldCreateIdVerification(role, _registrationData['category'] as String?)) {
+                await _supabase.from('verifications').insert({
+                  'profile_id': profileId,
+                  'verification_type': 'ID Verification',
+                  'attachment_id': licenseAttachmentId,
+                  'status': 'pending',
+                });
+                debugPrint('✅ Verification row created for driver license');
+              } else {
+                debugPrint('ℹ️ Skipping ID Verification creation for role: $role');
+              }
             } catch (e) {
               debugPrint('⚠️ Failed to create verification row: $e');
             }
@@ -753,6 +772,8 @@ class RegistrationService {
             } else {
               debugPrint('⚠️ Verification insert returned null');
             }
+            // (Previously had cleanup here — removed to avoid deleting records;
+            // creation is now guarded by role/category logic.)
           } catch (e) {
             debugPrint('❌ Failed to create verification record: $e');
             return {
@@ -781,6 +802,8 @@ class RegistrationService {
           debugPrint('✅ Operator already exists');
         }
       }
+
+      // Creation is now guarded; no deletion cleanup performed here.
 
       debugPrint('🎉 Registration completed successfully!');
       debugPrint('📤 Returning role: $role');
