@@ -589,7 +589,9 @@ class RegistrationService {
         } else {
           debugPrint('✅ Driver already exists');
         }
-      } else if (role == 'operator') {
+      } // UPDATED: Operator section for completeRegistration() method
+      // This creates a SINGLE verification record with metadata containing all 3 attachment IDs
+      else if (role == 'operator') {
         debugPrint('🏢 Checking/creating operator record...');
         final existingOperator = await _supabase
             .from('operators')
@@ -603,7 +605,7 @@ class RegistrationService {
           String? ltfrbFranchiseAttachmentId;
           String? governmentIdAttachmentId;
 
-          // Upload LTO OR and CR
+          // 1. Upload LTO OR and CR
           final String? ltoOrCrPath = _registrationData['lto_cr_path'];
           if (ltoOrCrPath != null) {
             try {
@@ -617,13 +619,20 @@ class RegistrationService {
               if (res != null) {
                 ltoOrCrAttachmentId = res['id'] as String?;
                 debugPrint('✅ LTO OR/CR uploaded: $ltoOrCrAttachmentId');
+
+                if (ltoOrCrAttachmentId != null) {
+                  await _supabase
+                      .from('attachments')
+                      .update({'owner_profile_id': profileId})
+                      .eq('id', ltoOrCrAttachmentId);
+                }
               }
             } catch (e) {
               debugPrint('⚠️ Failed to upload LTO OR/CR: $e');
             }
           }
 
-          // Upload LTFRB Franchise
+          // 2. Upload LTFRB Franchise
           final String? ltfrbFranchisePath =
               _registrationData['ltfrb_franchise_path'];
           if (ltfrbFranchisePath != null) {
@@ -640,13 +649,20 @@ class RegistrationService {
                 debugPrint(
                   '✅ LTFRB Franchise uploaded: $ltfrbFranchiseAttachmentId',
                 );
+
+                if (ltfrbFranchiseAttachmentId != null) {
+                  await _supabase
+                      .from('attachments')
+                      .update({'owner_profile_id': profileId})
+                      .eq('id', ltfrbFranchiseAttachmentId);
+                }
               }
             } catch (e) {
               debugPrint('⚠️ Failed to upload LTFRB Franchise: $e');
             }
           }
 
-          // Upload Government ID
+          // 3. Upload Government ID
           final String? governmentIdPath =
               _registrationData['government_id_path'];
           if (governmentIdPath != null) {
@@ -663,13 +679,20 @@ class RegistrationService {
                 debugPrint(
                   '✅ Government ID uploaded: $governmentIdAttachmentId',
                 );
+
+                if (governmentIdAttachmentId != null) {
+                  await _supabase
+                      .from('attachments')
+                      .update({'owner_profile_id': profileId})
+                      .eq('id', governmentIdAttachmentId);
+                }
               }
             } catch (e) {
               debugPrint('⚠️ Failed to upload Government ID: $e');
             }
           }
 
-          // Create operator record with attachment IDs
+          // 4. Create operator record
           await _supabase.from('operators').insert({
             'profile_id': profileId,
             'company_name': _registrationData['company_name'] ?? '',
@@ -679,47 +702,80 @@ class RegistrationService {
             'ltfrb_franchise_attachment_id': ltfrbFranchiseAttachmentId,
             'government_id_attachment_id': governmentIdAttachmentId,
           });
-          debugPrint('✅ Operator created with document references!');
+          debugPrint('✅ Operator created!');
 
-          // Create verification records for each document
-          final verifications = <Map<String, dynamic>>[];
-
-          if (ltoOrCrAttachmentId != null) {
-            verifications.add({
-              'profile_id': profileId,
-              'verification_type': 'LTO OR/CR',
-              'attachment_id': ltoOrCrAttachmentId,
-              'status': 'pending',
-            });
+          if (ltoOrCrAttachmentId == null ||
+              ltfrbFranchiseAttachmentId == null ||
+              governmentIdAttachmentId == null) {
+            debugPrint('⚠️ Some documents failed to upload');
+            return {
+              'success': false,
+              'message':
+                  'Failed to upload all required documents. Please try again.',
+            };
           }
 
-          if (ltfrbFranchiseAttachmentId != null) {
-            verifications.add({
-              'profile_id': profileId,
-              'verification_type': 'LTFRB Franchise',
-              'attachment_id': ltfrbFranchiseAttachmentId,
-              'status': 'pending',
-            });
-          }
+          // 5. Create SINGLE verification record with all attachment IDs in metadata
+          try {
+            debugPrint('📝 Creating consolidated verification record...');
 
-          if (governmentIdAttachmentId != null) {
-            verifications.add({
+            final verificationMetadata = {
+              'lto_cr_attachment_id': ltoOrCrAttachmentId,
+              'ltfrb_franchise_attachment_id': ltfrbFranchiseAttachmentId,
+              'government_id_attachment_id': governmentIdAttachmentId,
+              'document_types': [
+                'LTO OR/CR',
+                'LTFRB Franchise',
+                'Government ID',
+              ],
+            };
+
+            // Create a single verification record with the primary attachment
+            // (government ID) and include the other attachments in `metadata`.
+            final insertData = <String, dynamic>{
               'profile_id': profileId,
-              'verification_type': 'ID Verification',
+              'verification_type': 'Operator Documents',
               'attachment_id': governmentIdAttachmentId,
               'status': 'pending',
-            });
+              'metadata': verificationMetadata,
+            };
+
+            final inserted = await _supabase
+                .from('verifications')
+                .insert(insertData)
+                .select('id')
+                .maybeSingle();
+
+            if (inserted != null) {
+              final createdId = inserted['id'];
+              debugPrint('✅ Consolidated verification record created: $createdId');
+              debugPrint('   Contains 3 attachments in metadata');
+            } else {
+              debugPrint('⚠️ Verification insert returned null');
+            }
+          } catch (e) {
+            debugPrint('❌ Failed to create verification record: $e');
+            return {
+              'success': false,
+              'message':
+                  'Failed to create verification record: ${e.toString()}',
+            };
           }
 
-          if (verifications.isNotEmpty) {
-            try {
-              await _supabase.from('verifications').insert(verifications);
-              debugPrint(
-                '✅ Created ${verifications.length} verification records',
-              );
-            } catch (e) {
-              debugPrint('⚠️ Failed to create verification records: $e');
-            }
+          // 6. Verify record was created
+          final verificationCheck = await _supabase
+              .from('verifications')
+              .select('id, verification_type, attachment_id, metadata')
+              .eq('profile_id', profileId);
+
+          debugPrint(
+            '🔍 Verification check - Total: ${verificationCheck.length}',
+          );
+          if (verificationCheck.isNotEmpty) {
+            debugPrint(
+              '   ✓ Operator Documents: ${verificationCheck[0]['id']}',
+            );
+            debugPrint('   ✓ Metadata: ${verificationCheck[0]['metadata']}');
           }
         } else {
           debugPrint('✅ Operator already exists');

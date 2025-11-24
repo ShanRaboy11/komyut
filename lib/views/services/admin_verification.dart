@@ -54,284 +54,260 @@ class AdminVerificationService {
           .from('verifications')
           .select('''
             *,
-            profiles!verifications_profile_id_fkey(
-              id,
-              user_id,
-              first_name,
-              last_name,
-              role,
-              age,
-              sex,
-              address,
-              is_verified
-            ),
-            attachments(
-              id,
-              url,
-              path,
-              content_type
-            )
-          ''')
-          .eq('id', verificationId)
-          .single();
+            import 'package:flutter/material.dart';
+            import 'package:supabase_flutter/supabase_flutter.dart';
 
-      debugPrint('✅ Fetched verification detail');
+            /// Service class that handles all verification-related API calls
+            class AdminVerificationService {
+              final _supabase = Supabase.instance.client;
 
-      final profileId = verification['profile_id'] as String;
-      final role = (verification['profiles'] as Map<String, dynamic>)['role'] as String;
+              /// Fetch all verification requests with user details
+              Future<List<Map<String, dynamic>>> fetchVerifications() async {
+                try {
+                  debugPrint('🔍 Fetching verifications...');
 
-      // Fetch role-specific data
-      Map<String, dynamic>? roleData;
-      
-      if (role == 'driver') {
-        roleData = await _fetchDriverData(profileId);
-      } else if (role == 'commuter') {
-        roleData = await _fetchCommuterData(profileId);
-      } else if (role == 'operator') {
-        roleData = await _fetchOperatorData(profileId);
-      }
+                  final response = await _supabase
+                      .from('verifications')
+                      .select('''
+                        *,
+                        profiles!verifications_profile_id_fkey(
+                          id,
+                          first_name,
+                          last_name,
+                          role,
+                          age,
+                          sex,
+                          address,
+                          is_verified
+                        ),
+                        attachments(
+                          id,
+                          url,
+                          path,
+                          content_type
+                        )
+                      ''')
+                      .order('created_at', ascending: false);
 
-      // Combine all data
-      return {
-        ...verification,
-        'role_specific_data': roleData,
-      };
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error fetching verification detail: $e');
-      debugPrint('Stack trace: $stackTrace');
-      rethrow;
-    }
-  }
+                  return List<Map<String, dynamic>>.from(response);
+                } catch (e, stackTrace) {
+                  debugPrint('❌ Error fetching verifications: $e');
+                  debugPrint('Stack trace: $stackTrace');
+                  rethrow;
+                }
+              }
 
-  /// Fetch driver-specific data
-  Future<Map<String, dynamic>?> _fetchDriverData(String profileId) async {
-    try {
-      final driver = await _supabase
-          .from('drivers')
-          .select('''
-            id,
-            license_number,
-            vehicle_plate,
-            puv_type,
-            operator_id,
-            operators!drivers_operator_id_fkey (
-              id,
-              company_name,
-              profiles!operators_profile_id_fkey (
-                first_name,
-                last_name
-              )
-            )
-          ''')
-          .eq('profile_id', profileId)
-          .maybeSingle();
+              /// Fetch detailed information for a specific verification
+              Future<Map<String, dynamic>> fetchVerificationDetail(String verificationId) async {
+                try {
+                  debugPrint('🔍 Fetching verification detail for: $verificationId');
 
-      if (driver != null) {
-        // Format operator name
-        String? operatorName;
-        if (driver['operators'] != null) {
-          final operatorProfile = driver['operators']['profiles'];
-          if (operatorProfile != null) {
-            operatorName = '${operatorProfile['first_name']} ${operatorProfile['last_name']}';
-          } else {
-            operatorName = driver['operators']['company_name'];
-          }
-        }
+                  final verification = await _supabase
+                      .from('verifications')
+                      .select('''
+                        *,
+                        profiles!verifications_profile_id_fkey(
+                          id,
+                          user_id,
+                          first_name,
+                          last_name,
+                          role,
+                          age,
+                          sex,
+                          address,
+                          is_verified
+                        ),
+                        attachments(
+                          id,
+                          url,
+                          path,
+                          content_type
+                        )
+                      ''')
+                      .eq('id', verificationId)
+                      .single();
 
-        return {
-          'license_number': driver['license_number'],
-          'vehicle_plate': driver['vehicle_plate'],
-          'puv_type': driver['puv_type'],
-          'operator_name': operatorName ?? 'Not assigned',
-        };
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ Error fetching driver data: $e');
-      return null;
-    }
-  }
+                  final profileId = verification['profile_id'] as String;
+                  final role = (verification['profiles'] as Map<String, dynamic>)['role'] as String;
 
-  /// Fetch commuter-specific data
-  Future<Map<String, dynamic>?> _fetchCommuterData(String profileId) async {
-    try {
-      final commuter = await _supabase
-          .from('commuters')
-          .select('id, category, id_verified')
-          .eq('profile_id', profileId)
-          .maybeSingle();
+                  Map<String, dynamic>? roleData;
+                  if (role == 'driver') {
+                    roleData = await _fetchDriverData(profileId);
+                  } else if (role == 'commuter') {
+                    roleData = await _fetchCommuterData(profileId);
+                  } else if (role == 'operator') {
+                    roleData = await _fetchOperatorData(profileId);
+                  }
 
-      if (commuter != null) {
-        return {
-          'category': commuter['category'],
-          'id_verified': commuter['id_verified'],
-        };
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ Error fetching commuter data: $e');
-      return null;
-    }
-  }
+                  return {
+                    ...Map<String, dynamic>.from(verification),
+                    'role_specific_data': roleData,
+                  };
+                } catch (e, stackTrace) {
+                  debugPrint('❌ Error fetching verification detail: $e');
+                  debugPrint('Stack trace: $stackTrace');
+                  rethrow;
+                }
+              }
 
-  /// Fetch operator-specific data
-  Future<Map<String, dynamic>?> _fetchOperatorData(String profileId) async {
-    try {
-      final operator = await _supabase
-          .from('operators')
-          .select('id, company_name, company_address, contact_email')
-          .eq('profile_id', profileId)
-          .maybeSingle();
+              /// Fetch driver-specific data
+              Future<Map<String, dynamic>?> _fetchDriverData(String profileId) async {
+                try {
+                  final driver = await _supabase
+                      .from('drivers')
+                      .select('''
+                        id,
+                        license_number,
+                        vehicle_plate,
+                        puv_type,
+                        operator_id,
+                        operators!drivers_operator_id_fkey (
+                          id,
+                          company_name,
+                          profiles!operators_profile_id_fkey (
+                            first_name,
+                            last_name
+                          )
+                        )
+                      ''')
+                      .eq('profile_id', profileId)
+                      .maybeSingle();
 
-      return operator;
-    } catch (e) {
-      debugPrint('❌ Error fetching operator data: $e');
-      return null;
-    }
-  }
+                  if (driver != null) {
+                    String? operatorName;
+                    if (driver['operators'] != null) {
+                      final operatorProfile = driver['operators']['profiles'];
+                      if (operatorProfile != null) {
+                        operatorName = '${operatorProfile['first_name']} ${operatorProfile['last_name']}';
+                      } else {
+                        operatorName = driver['operators']['company_name'];
+                      }
+                    }
 
-  /// Get current admin's profile ID
-  Future<String?> getAdminProfileId() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        debugPrint('❌ No authenticated user');
-        return null;
-      }
+                    // If driver table had a license attachment id stored in metadata or a column,
+                    // the caller can add attachment fetching here. For now return structured data.
+                    return {
+                      'license_number': driver['license_number'],
+                      'vehicle_plate': driver['vehicle_plate'],
+                      'puv_type': driver['puv_type'],
+                      'operator_name': operatorName ?? 'Not assigned',
+                    };
+                  }
+                  return null;
+                } catch (e) {
+                  debugPrint('❌ Error fetching driver data: $e');
+                  return null;
+                }
+              }
 
-      debugPrint('🔍 Getting admin profile for user: $userId');
+              /// Fetch commuter-specific data
+              Future<Map<String, dynamic>?> _fetchCommuterData(String profileId) async {
+                try {
+                  final commuter = await _supabase
+                      .from('commuters')
+                      .select('id, category, id_verified')
+                      .eq('profile_id', profileId)
+                      .maybeSingle();
 
-      final response = await _supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('user_id', userId)
-          .single();
+                  if (commuter != null) {
+                    return {
+                      'category': commuter['category'],
+                      'id_verified': commuter['id_verified'],
+                    };
+                  }
+                  return null;
+                } catch (e) {
+                  debugPrint('❌ Error fetching commuter data: $e');
+                  return null;
+                }
+              }
 
-      debugPrint('✅ Admin profile: ${response['id']}, role: ${response['role']}');
-      return response['id'] as String;
-    } catch (e) {
-      debugPrint('❌ Error getting admin profile ID: $e');
-      return null;
-    }
-  }
+              /// Fetch operator-specific data
+              Future<Map<String, dynamic>?> _fetchOperatorData(String profileId) async {
+                try {
+                  final operator = await _supabase
+                      .from('operators')
+                      .select('id, company_name, company_address, contact_email')
+                      .eq('profile_id', profileId)
+                      .maybeSingle();
 
-  /// Approve a verification request
-  Future<void> approveVerification(String verificationId, String profileId, String? notes) async {
-    try {
-      debugPrint('🔍 Approving verification: $verificationId');
-      
-      final adminProfileId = await getAdminProfileId();
-      
-      if (adminProfileId == null) {
-        throw Exception('Admin profile not found');
-      }
+                  return operator;
+                } catch (e) {
+                  debugPrint('❌ Error fetching operator data: $e');
+                  return null;
+                }
+              }
 
-      // Get the verification to check the role
-      final verification = await _supabase
-          .from('verifications')
-          .select('profiles!verifications_profile_id_fkey(role)')
-          .eq('id', verificationId)
-          .single();
+              /// Get current admin's profile ID
+              Future<String?> getAdminProfileId() async {
+                try {
+                  final userId = _supabase.auth.currentUser?.id;
+                  if (userId == null) return null;
 
-      final role = (verification['profiles'] as Map<String, dynamic>)['role'] as String;
+                  final response = await _supabase.from('profiles').select('id, role').eq('user_id', userId).single();
+                  return response['id'] as String;
+                } catch (e) {
+                  debugPrint('❌ Error getting admin profile ID: $e');
+                  return null;
+                }
+              }
 
-      // Update verification status
-      await _supabase
-          .from('verifications')
-          .update({
-            'status': 'approved',
-            'reviewer_profile_id': adminProfileId,
-            'reviewer_notes': notes,
-            'reviewed_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', verificationId);
+              /// Approve a verification request
+              Future<void> approveVerification(String verificationId, String profileId, String? notes) async {
+                try {
+                  final adminProfileId = await getAdminProfileId();
+                  if (adminProfileId == null) throw Exception('Admin profile not found');
 
-      // Update profile verified status
-      await _supabase
-          .from('profiles')
-          .update({'is_verified': true})
-          .eq('id', profileId);
+                  final verification = await _supabase.from('verifications').select('profiles!verifications_profile_id_fkey(role)').eq('id', verificationId).single();
+                  final role = (verification['profiles'] as Map<String, dynamic>)['role'] as String;
 
-      // If commuter, update commuter-specific verification
-      if (role == 'commuter') {
-        await _supabase
-            .from('commuters')
-            .update({'id_verified': true})
-            .eq('profile_id', profileId);
-      }
+                  await _supabase.from('verifications').update({'status': 'approved', 'reviewer_profile_id': adminProfileId, 'reviewer_notes': notes, 'reviewed_at': DateTime.now().toIso8601String()}).eq('id', verificationId);
 
-      debugPrint('✅ Approved verification: $verificationId');
-    } catch (e) {
-      debugPrint('❌ Error approving verification: $e');
-      rethrow;
-    }
-  }
+                  await _supabase.from('profiles').update({'is_verified': true}).eq('id', profileId);
 
-  /// Reject a verification request
-  Future<void> rejectVerification(String verificationId, String notes) async {
-    try {
-      debugPrint('🔍 Rejecting verification: $verificationId');
-      
-      final adminProfileId = await getAdminProfileId();
-      
-      if (adminProfileId == null) {
-        throw Exception('Admin profile not found');
-      }
+                  if (role == 'commuter') {
+                    await _supabase.from('commuters').update({'id_verified': true}).eq('profile_id', profileId);
+                  }
+                } catch (e) {
+                  debugPrint('❌ Error approving verification: $e');
+                  rethrow;
+                }
+              }
 
-      await _supabase
-          .from('verifications')
-          .update({
-            'status': 'rejected',
-            'reviewer_profile_id': adminProfileId,
-            'reviewer_notes': notes,
-            'reviewed_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', verificationId);
+              /// Reject a verification request
+              Future<void> rejectVerification(String verificationId, String notes) async {
+                try {
+                  final adminProfileId = await getAdminProfileId();
+                  if (adminProfileId == null) throw Exception('Admin profile not found');
 
-      debugPrint('✅ Rejected verification: $verificationId');
-    } catch (e) {
-      debugPrint('❌ Error rejecting verification: $e');
-      rethrow;
-    }
-  }
+                  await _supabase.from('verifications').update({'status': 'rejected', 'reviewer_profile_id': adminProfileId, 'reviewer_notes': notes, 'reviewed_at': DateTime.now().toIso8601String()}).eq('id', verificationId);
+                } catch (e) {
+                  debugPrint('❌ Error rejecting verification: $e');
+                  rethrow;
+                }
+              }
 
-  /// Mark verification as lacking documents
-  Future<void> markAsLacking(String verificationId, String notes) async {
-    try {
-      debugPrint('🔍 Marking verification as lacking: $verificationId');
-      
-      final adminProfileId = await getAdminProfileId();
-      
-      if (adminProfileId == null) {
-        throw Exception('Admin profile not found');
-      }
+              /// Mark verification as lacking documents
+              Future<void> markAsLacking(String verificationId, String notes) async {
+                try {
+                  final adminProfileId = await getAdminProfileId();
+                  if (adminProfileId == null) throw Exception('Admin profile not found');
 
-      await _supabase
-          .from('verifications')
-          .update({
-            'status': 'lacking',
-            'reviewer_profile_id': adminProfileId,
-            'reviewer_notes': notes,
-            'reviewed_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', verificationId);
+                  await _supabase.from('verifications').update({'status': 'lacking', 'reviewer_profile_id': adminProfileId, 'reviewer_notes': notes, 'reviewed_at': DateTime.now().toIso8601String()}).eq('id', verificationId);
+                } catch (e) {
+                  debugPrint('❌ Error marking as lacking: $e');
+                  rethrow;
+                }
+              }
 
-      debugPrint('✅ Marked verification as lacking: $verificationId');
-    } catch (e) {
-      debugPrint('❌ Error marking as lacking: $e');
-      rethrow;
-    }
-  }
-
-  /// Get storage URL for an attachment
-  String? getAttachmentUrl(String? path) {
-    if (path == null) return null;
-    
-    try {
-      return _supabase.storage.from('attachments').getPublicUrl(path);
-    } catch (e) {
-      debugPrint('❌ Error getting attachment URL: $e');
-      return null;
-    }
-  }
-}
+              /// Get storage URL for an attachment
+              String? getAttachmentUrl(String? path) {
+                if (path == null) return null;
+                try {
+                  return _supabase.storage.from('attachments').getPublicUrl(path);
+                } catch (e) {
+                  debugPrint('❌ Error getting attachment URL: $e');
+                  return null;
+                }
+              }
+            }

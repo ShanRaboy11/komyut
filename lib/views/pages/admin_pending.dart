@@ -590,6 +590,11 @@ class _EnhancedUserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Prepare operator attachments (if any) for rendering below
+    final opAttachments = (verification.roleSpecificData != null && verification.roleSpecificData!['attachments'] != null)
+        ? List<Map<String, dynamic>>.from(verification.roleSpecificData!['attachments'] as List)
+        : <Map<String, dynamic>>[];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -790,6 +795,11 @@ class _EnhancedDocumentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Prepare operator attachments (if any) for rendering below
+    final opAttachments = (verification.roleSpecificData != null && verification.roleSpecificData!['attachments'] != null)
+        ? List<Map<String, dynamic>>.from(verification.roleSpecificData!['attachments'] as List)
+        : <Map<String, dynamic>>[];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -831,8 +841,180 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          if (verification.imageUrl != null) ...[
+            const SizedBox(height: 20),
+
+            if (opAttachments.isNotEmpty) ...[
+            // Render each operator attachment as a tappable card
+            for (final att in opAttachments) ...[
+              GestureDetector(
+                onTap: () {
+                  final url = att['url'] as String?;
+                  if (url == null) return;
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.black,
+                      insetPadding: const EdgeInsets.all(20),
+                      child: Stack(
+                        children: [
+                          InteractiveViewer(
+                            child: Center(
+                              child: Image.network(
+                                url,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          size: 24,
+                          color: Color(0xFFFF6B9A),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              att['type'] as String? ?? 'Document',
+                              style: GoogleFonts.manrope(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap to view full image',
+                              style: GoogleFonts.manrope(
+                                color: Colors.white.withAlpha((0.9 * 255).round()),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha((0.2 * 255).round()),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.visibility,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            // Show thumbnails grid
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[200]!, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: opAttachments.map((att) {
+                    final url = att['url'] as String?;
+                    return GestureDetector(
+                      onTap: () {
+                        if (url == null) return;
+                        showDialog(
+                          context: context,
+                          builder: (context) => Dialog(
+                            backgroundColor: Colors.black,
+                            insetPadding: const EdgeInsets.all(20),
+                            child: InteractiveViewer(
+                              child: Image.network(url, fit: BoxFit.contain),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 120,
+                        height: 80,
+                        color: Colors.grey[100],
+                        child: url != null
+                            ? Image.network(url, fit: BoxFit.cover)
+                            : Center(child: Icon(Icons.broken_image, color: Colors.grey[400])),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ] else if (verification.imageUrl != null) ...[
+            // Single verification image (drivers and other roles)
             GestureDetector(
               onTap: () {
                 showDialog(
@@ -849,11 +1031,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Center(
-                                  child: Icon(
-                                    Icons.error_outline,
-                                    size: 48,
-                                    color: Colors.white,
-                                  ),
+                                  child: Icon(Icons.error_outline, size: 48, color: Colors.white),
                                 );
                               },
                             ),
@@ -882,117 +1060,36 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                   ),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[200]!, width: 2),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.image,
-                        size: 24,
-                        color: Color(0xFFFF6B9A),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            verification.verificationType,
-                            style: GoogleFonts.manrope(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                  child: Image.network(
+                    verification.imageUrl!,
+                    height: 240,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 240,
+                        color: Colors.grey[100],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 12),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap to view full image',
-                            style: GoogleFonts.manrope(
-                              color: Colors.white.withAlpha(
-                                (0.9 * 255).round(),
-                              ),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((0.2 * 255).round()),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.visibility,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[200]!, width: 2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Image.network(
-                  verification.imageUrl!,
-                  height: 240,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 240,
-                      color: Colors.grey[100],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Failed to load image',
-                            style: GoogleFonts.manrope(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
