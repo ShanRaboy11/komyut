@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/button.dart';
 
 import '../providers/wallet_provider.dart';
@@ -20,6 +21,7 @@ class OperatorWalletPage extends StatefulWidget {
 
 class _OperatorWalletPageState extends State<OperatorWalletPage> {
   int _selectedWeekOffset = 0;
+  RealtimeChannel? _transactionChannel;
 
   @override
   void initState() {
@@ -29,12 +31,67 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       if (provider.recentTransactions.isEmpty && !provider.isLoading) {
         provider.loadWalletDashboard();
       }
+      _setupRealtimeListener();
+    });
+  }
+
+  void _setupRealtimeListener() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('wallets(id)')
+          .eq('user_id', userId)
+          .single();
+
+      final walletId = response['wallets']?['id'];
+      if (walletId == null) return;
+
+      _transactionChannel = Supabase.instance.client
+          .channel('operator_wallet_$walletId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'transactions',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'wallet_id',
+              value: walletId,
+            ),
+            callback: (payload) {
+              if (mounted) {
+                debugPrint('🔔 Transaction changed, reloading wallet...');
+                context.read<OperatorWalletProvider>().loadWalletDashboard();
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('Error setting up realtime listener: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _transactionChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<OperatorWalletProvider>().loadWalletDashboard();
+      }
     });
   }
 
   String _getMonthAndYear(int offset) {
     final now = DateTime.now();
-    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
+    final dayInSelectedWeek = now.add(Duration(days: offset * 7));
     return DateFormat('MMM yyyy').format(dayInSelectedWeek);
   }
 
@@ -372,9 +429,10 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
   Widget _buildXAxisLabels() {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final now = DateTime.now();
-    final startOfWeek = now.subtract(
-      Duration(days: now.weekday - 1 + (-_selectedWeekOffset * 7)),
-    );
+    final startOfWeek = now
+        .subtract(Duration(days: now.weekday - 1))
+        .add(Duration(days: _selectedWeekOffset * 7));
+
     final weekDates = List.generate(
       7,
       (index) => startOfWeek.add(Duration(days: index)),

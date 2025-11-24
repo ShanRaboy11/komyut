@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/wallet_provider.dart';
 import 'operator_app.dart';
 
 class OperatorCashOutInstructionsPage extends StatefulWidget {
@@ -14,10 +17,22 @@ class OperatorCashOutInstructionsPage extends StatefulWidget {
 
 class _OperatorCashOutInstructionsPageState
     extends State<OperatorCashOutInstructionsPage> {
-  void _onDonePressed() {
-    OperatorApp.navigatorKey.currentState?.pushReplacementNamed(
-      '/cash_out_success',
+  Future<void> _onDonePressed() async {
+    final provider = Provider.of<OperatorWalletProvider>(
+      context,
+      listen: false,
     );
+    final code = widget.transaction['transaction_number'];
+
+    if (code != null) {
+      await provider.completeCashOut(code);
+
+      if (mounted) {
+        OperatorApp.navigatorKey.currentState?.pushReplacementNamed(
+          '/cash_out_success',
+        );
+      }
+    }
   }
 
   @override
@@ -89,30 +104,39 @@ class _OperatorCashOutInstructionsPageState
             ),
             const SizedBox(height: 50),
 
-            // Done Button
-            Center(
-              child: OutlinedButton(
-                onPressed: _onDonePressed,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandColor,
-                  backgroundColor: brandColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: brandColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Consumer<OperatorWalletProvider>(
+              builder: (context, provider, child) {
+                return Center(
+                  child: OutlinedButton(
+                    onPressed: provider.isLoading ? null : _onDonePressed,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandColor,
+                      backgroundColor: brandColor.withValues(alpha: 0.1),
+                      side: BorderSide(color: brandColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 60,
+                        vertical: 10,
+                      ),
+                    ),
+                    child: provider.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Done',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 60,
-                    vertical: 10,
-                  ),
-                ),
-                child: Text(
-                  'Done',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),

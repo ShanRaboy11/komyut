@@ -68,7 +68,10 @@ class OperatorApp extends StatelessWidget {
 
       case '/cash_out_instructions':
         final args = settings.arguments as Map<String, dynamic>;
-        page = OperatorCashOutInstructionsPage(transaction: args);
+        page = ChangeNotifierProvider(
+          create: (_) => OperatorWalletProvider(),
+          child: OperatorCashOutInstructionsPage(transaction: args),
+        );
         break;
 
       case '/cash_out_success':

@@ -90,7 +90,6 @@ class WalletProvider extends ChangeNotifier {
 
   // --- Methods ---
   WalletProvider() {
-    // Keep wallet/profile state in sync with auth changes
     _authSub = authService.authStateChanges.listen((event) {
       final user = event.session?.user;
       if (user == null) {
@@ -100,7 +99,6 @@ class WalletProvider extends ChangeNotifier {
         _recentTransactions = [];
         notifyListeners();
       } else {
-        // Decide whether to load wallet data based on the user's role
         _maybeLoadForUser(user.id);
       }
     });
@@ -127,7 +125,6 @@ class WalletProvider extends ChangeNotifier {
     if (role == 'commuter') {
       await fetchWalletData();
     } else {
-      // Not a commuter; clear commuter wallet state
       _userProfile = null;
       _balance = 0.0;
       _wheelTokens = 0;
@@ -285,9 +282,6 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> fetchUserProfile() async {
-    // If we have a cached profile, only reuse it when it belongs to the
-    // currently authenticated user. This prevents stale profile data from
-    // a previous session persisting across sign-ins during a single app run.
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     if (_userProfile != null) {
       final cachedUserId = _userProfile?['user_id'] ?? _userProfile?['id'];
@@ -605,21 +599,41 @@ class OperatorWalletProvider extends ChangeNotifier {
       final results = await Future.wait([
         _service.getWalletBalance(),
         _service.getWeeklyEarnings(weekOffset: 0),
-        _service.getTransactions(limit: 10),
+        _service.getTransactions(limit: 5),
       ]);
 
       _currentBalance = results[0] as double;
       _weeklyEarnings = results[1] as Map<String, double>;
       _recentTransactions = results[2] as List<Map<String, dynamic>>;
 
-      debugPrint(
-        "💰 Wallet Data Loaded: ${_recentTransactions.length} transactions",
+      _recentTransactions.sort(
+        (a, b) =>
+            DateTime.parse(b["date"]).compareTo(DateTime.parse(a["date"])),
       );
+
+      debugPrint("💰 Dashboard Loaded: ${_recentTransactions.length} recent");
     } catch (e) {
       debugPrint("❌ Wallet Provider Error: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshRecentTransactions() async {
+    try {
+      _recentTransactions = await _service.getTransactions(limit: 5);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to refresh recent transactions: $e");
+    }
+  }
+
+  Future<void> refreshWallet() async {
+    try {
+      await loadWalletDashboard();
+    } catch (e) {
+      debugPrint("❌ Refresh Wallet Error: $e");
     }
   }
 
@@ -651,7 +665,6 @@ class OperatorWalletProvider extends ChangeNotifier {
     }
   }
 
-  /// Process Cash Out Request
   Future<bool> requestCashOut({
     required double amount,
     required String transactionCode,
@@ -679,18 +692,21 @@ class OperatorWalletProvider extends ChangeNotifier {
     }
   }
 
-  /// Complete the process
   Future<bool> completeCashOut(String transactionCode) async {
     _isLoading = true;
     notifyListeners();
+
     try {
       await _service.completeCashOut(transactionCode);
-      await fetchFullHistory();
+
+      await loadWalletDashboard();
+      await refreshRecentTransactions();
+
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint("Cashout error: $e");
       _isLoading = false;
       notifyListeners();
       return false;
