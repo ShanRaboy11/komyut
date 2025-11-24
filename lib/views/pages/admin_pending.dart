@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_verification.dart';
+import '../services/admin_verification.dart';
 
 /// Enhanced Admin Verification Details Page
 class AdminPending extends StatefulWidget {
@@ -831,7 +832,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Documents',
+                'Document',
                 style: GoogleFonts.manrope(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -1155,22 +1156,72 @@ class _EnhancedActionButtons extends StatelessWidget {
 
     bool success = false;
 
-    // Show progress dialog on root navigator so it can be popped reliably
-    showDialog(
-      context: rootNavigator.context,
-      useRootNavigator: true,
-      barrierDismissible: false,
-      builder: (dialogCtx) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+    // If approving a commuter who isn't regular, prompt for category first
+    if (action == 'approve' && verification.role == 'commuter' &&
+        (verification.commuterCategory == null ||
+            verification.commuterCategory!.toLowerCase() != 'regular')) {
+      final selected = await _showCommuterCategoryDialog(navigator.context);
+      if (selected == null) return; // user cancelled
+
+      // Show progress dialog on root navigator so it can be popped reliably
+      showDialog(
+        context: rootNavigator.context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (dialogCtx) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const CircularProgressIndicator(),
           ),
-          child: const CircularProgressIndicator(),
         ),
-      ),
-    );
+      );
+
+      try {
+        // Update commuter category before approving
+        await AdminVerificationService()
+            .updateCommuterCategory(verification.profileId, selected);
+      } catch (e) {
+        try {
+          rootNavigator.pop();
+        } catch (_) {}
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update commuter category: $e',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        return;
+      }
+    } else {
+      // Show progress dialog on root navigator so it can be popped reliably
+      showDialog(
+        context: rootNavigator.context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (dialogCtx) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
 
     try {
       switch (action) {
@@ -1466,6 +1517,146 @@ class _EnhancedActionButtons extends StatelessWidget {
     );
   }
 
+  Future<String?> _showCommuterCategoryDialog(BuildContext context) async {
+    String? selected;
+
+    // Use the app's purple -> pink gradient and green confirm color
+    const gradientColors = [Color(0xFF5B53C2), Color(0xFF8E4CB6), Color(0xFFB945AA)];
+    const confirmColor = Color(0xFF66BB6A);
+
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with gradient
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    gradient: const LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.category, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Select Commuter Category',
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CategoryOption(
+                        label: 'Senior Citizen',
+                        value: 'senior',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                      const SizedBox(height: 12),
+                      _CategoryOption(
+                        label: 'PWD',
+                        value: 'pwd',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                      const SizedBox(height: 12),
+                      _CategoryOption(
+                        label: 'Student',
+                        value: 'student',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey[700],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text('Cancel', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (selected == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Please select a category', style: GoogleFonts.manrope()),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+                            Navigator.pop(context, selected);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: confirmColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text('Confirm', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (verification.status.toLowerCase() != 'pending') {
@@ -1647,6 +1838,76 @@ class _ActionButton extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Small option card for commuter categories
+class _CategoryOption extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? selected;
+  final void Function(String) onTap;
+
+  const _CategoryOption({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSelected = selected == value;
+
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF5B53C2).withOpacity(0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF5B53C2) : Colors.grey[200]!,
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isSelected ? 0.04 : 0.02),
+              blurRadius: isSelected ? 8 : 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D3436),
+                ),
+              ),
+            ),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? const Color(0xFF5B53C2) : Colors.white,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF5B53C2) : Colors.grey[300]!,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 18, color: Colors.white)
+                  : null,
+            ),
+          ],
         ),
       ),
     );

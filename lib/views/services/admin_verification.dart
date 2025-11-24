@@ -343,6 +343,20 @@ class AdminVerificationService {
     }
   }
 
+  /// Update commuter category for a profile (e.g., senior, student, pwd, regular)
+  Future<void> updateCommuterCategory(String profileId, String category) async {
+    try {
+      await _supabase
+          .from('commuters')
+          .update({'category': category})
+          .eq('profile_id', profileId);
+      debugPrint('✅ Updated commuter category for $profileId -> $category');
+    } catch (e) {
+      debugPrint('❌ Error updating commuter category: $e');
+      rethrow;
+    }
+  }
+
   /// Reject a verification request
   Future<void> rejectVerification(String verificationId, String notes) async {
     try {
