@@ -184,21 +184,24 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                                   fontSize: 14,
                                   color: Colors.white.withAlpha(204),
                                   height: 1.5,
+                                  fontWeight: FontWeight.w400,
                                 ),
-                                children: const <TextSpan>[
-                                  TextSpan(
+                                children: <TextSpan>[
+                                  const TextSpan(
                                     text:
                                         "We're here to help you reach the peaks\nof every ride. ",
                                   ),
                                   TextSpan(
                                     text: 'Are you ready?',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                    style: GoogleFonts.nunito(
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white.withAlpha(204),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+
                             const SizedBox(height: 30),
 
                             CustomButton(
