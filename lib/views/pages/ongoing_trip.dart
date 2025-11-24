@@ -454,82 +454,183 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFB945AA),
-                  Color(0xFF8E4CB6),
-                  Color(0xFF5B53C2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.all(3),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(21),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success Animation Icon
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF8E4CB6),
+                        Color(0xFFB945AA),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 60,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Title
+                const Text(
+                  'Trip Confirmed!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Passenger count badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF8E4CB6).withOpacity(0.1),
+                        const Color(0xFFB945AA).withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.people_rounded,
+                        color: Color(0xFF8E4CB6),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$_passengerCount ${_passengerCount == 1 ? 'Passenger' : 'Passengers'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF8E4CB6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Description
+                Text(
+                  'Your trip has been confirmed. Please scan the QR code again when you reach your destination to complete the trip.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey[700],
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF8E4CB6), Color(0xFFB945AA)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFF8E4CB6),
+                          Color(0xFFB945AA),
+                        ],
                       ),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF8E4CB6).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Trip Confirmed!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF8E4CB6),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You\'re traveling with $_passengerCount ${_passengerCount == 1 ? 'passenger' : 'passengers'}.\n\nScan the QR code again when you reach your destination.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
-                        // Process initial payment when user confirms passenger count
-                        // Show a loading dialog while processing
+                        // Show loading overlay
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (_) => Center(
-                            child: Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                          builder: (_) => Container(
+                            color: Colors.black.withOpacity(0.5),
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 50,
+                                      height: 50,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 4,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xFF8E4CB6),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      'Processing payment...',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: const CircularProgressIndicator(),
                             ),
                           ),
                         );
@@ -537,7 +638,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                         final ok = await _processInitialPayment();
 
                         // Dismiss loading
-                        Navigator.of(context).pop();
+                        if (mounted) Navigator.of(context).pop();
 
                         if (ok) {
                           if (!mounted) return;
@@ -548,29 +649,119 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF8E4CB6),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSwipeButton() {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+        ),
+        borderRadius: BorderRadius.circular(35),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5B53C2).withAlpha(102),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Text(
+              'Swipe to Proceed',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withAlpha(204),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 4,
+            top: 4,
+            bottom: 4,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _swipeProgress += details.delta.dx;
+                  if (_swipeProgress < 0) _swipeProgress = 0;
+                  if (_swipeProgress > MediaQuery.of(context).size.width - 110) {
+                    _swipeProgress = MediaQuery.of(context).size.width - 110;
+                  }
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                if (_swipeProgress > MediaQuery.of(context).size.width - 150) {
+                  _updatePassengerCount();
+                  _showConfirmationModal();
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                } else {
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.only(left: _swipeProgress),
+                width: 62,
+                height: 62,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Color(0xFF8E4CB6),
+                  size: 30,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1306,82 +1497,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     );
   }
 
-  Widget _buildSwipeButton() {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
-        ),
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5B53C2).withAlpha(102),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Text(
-              'Swipe to Proceed',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withAlpha(204),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 4,
-            top: 4,
-            bottom: 4,
-            child: GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                setState(() {
-                  _swipeProgress += details.delta.dx;
-                  if (_swipeProgress < 0) _swipeProgress = 0;
-                  if (_swipeProgress > MediaQuery.of(context).size.width - 110) {
-                    _swipeProgress = MediaQuery.of(context).size.width - 110;
-                  }
-                });
-              },
-              onHorizontalDragEnd: (details) {
-                if (_swipeProgress > MediaQuery.of(context).size.width - 150) {
-                  _updatePassengerCount();
-                  _showConfirmationModal();
-                  setState(() {
-                    _swipeProgress = 0;
-                  });
-                } else {
-                  setState(() {
-                    _swipeProgress = 0;
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(left: _swipeProgress),
-                width: 62,
-                height: 62,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.qr_code_scanner,
-                  color: Color(0xFF8E4CB6),
-                  size: 30,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildScanForDepartureButton() {
     return Positioned(
