@@ -327,7 +327,7 @@ class DriverListPageState extends State<DriverListPage>
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.nunito(
-              fontSize: 16,
+              fontSize: 14,
               color: isActive ? Color(0xFF8E4CB6) : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),

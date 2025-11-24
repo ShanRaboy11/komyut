@@ -434,7 +434,7 @@ class _EnhancedStatusCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20, right: 10),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF5B53C2), Color(0xFF8E4CB6), Color(0xFFB945AA)],
