@@ -214,7 +214,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
         title: Text(
           'Drivers',
           style: GoogleFonts.manrope(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -236,7 +236,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
               Text(
                 "Driver Details",
                 style: GoogleFonts.manrope(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Colors.black87,
                 ),
@@ -250,7 +250,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                   Text(
                     "Registered: ${widget.registeredDate}",
                     style: GoogleFonts.nunito(
-                      fontSize: 17,
+                      fontSize: 14,
                       color: Colors.black.withValues(alpha: 0.7),
                     ),
                   ),
@@ -282,7 +282,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                 Text(
                   "Inactive since: ${widget.inactiveDate ?? "N/A"}",
                   style: GoogleFonts.nunito(
-                    fontSize: 16,
+                    fontSize: 13,
                     color: Colors.redAccent.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w600,
                   ),
@@ -291,7 +291,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                 Text(
                   "Suspended: ${widget.suspensionDate ?? "N/A"} • Returning: ${widget.returnDate ?? "N/A"}",
                   style: GoogleFonts.nunito(
-                    fontSize: 16,
+                    fontSize: 13,
                     color: Colors.orangeAccent.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w600,
                   ),
@@ -367,8 +367,8 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                   const SizedBox(height: 16),
                   Text(
                     "Reason of Rejection:",
-                    style: GoogleFonts.nunito(
-                      fontSize: 16,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.redAccent,
                     ),
@@ -377,6 +377,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                   TextField(
                     controller: _reasonController,
                     maxLines: 3,
+                    style: GoogleFonts.nunito(fontSize: 12),
                     decoration: InputDecoration(
                       hintText: "Enter reason...",
                       border: OutlineInputBorder(
@@ -403,6 +404,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                   _reasonController.clear();
                                 });
                               },
+                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -422,6 +424,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                   ),
                                 );
                               },
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -440,6 +443,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                   _showRejectionReason = true;
                                 });
                               },
+                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -457,6 +461,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                   ),
                                 );
                               },
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -483,7 +488,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                           Text(
                             "Analytics",
                             style: GoogleFonts.nunito(
-                              fontSize: 22,
+                              fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -501,7 +506,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                                 week["dateRange"],
                                 style: GoogleFonts.nunito(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: 10,
                                 ),
                               ),
                               IconButton(
@@ -577,7 +582,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         childAspectRatio:
-                            1.8, // adjust for better card proportion
+                            1.5, // adjust for better card proportion
                         children: [
                           _buildStatCard(
                             "Total Earnings",
@@ -703,7 +708,6 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
 
   Widget _buildStatCard(String title, String value, Color color) {
     return Container(
-      width: 160,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.2),
@@ -711,10 +715,13 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             title,
-            style: GoogleFonts.nunito(color: Colors.white70, fontSize: 16),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
@@ -722,7 +729,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
             style: GoogleFonts.nunito(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 25,
+              fontSize: 20,
             ),
           ),
         ],

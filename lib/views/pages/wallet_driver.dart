@@ -46,7 +46,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         title: Text(
           'My Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
