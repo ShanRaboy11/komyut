@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
+import 'commuter_app.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
 import 'wallet_commuter.dart';
@@ -588,15 +589,21 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
       ),
       child: Column(
         children: [
-          _buildActionButton('Find Route', Icons.route),
+          _buildActionButton('Find Route', Icons.route, () {
+            CommuterApp.navigatorKey.currentState?.pushNamed('/route_finder');
+          }),
           const SizedBox(height: 10),
-          _buildActionButton('Report an issue', Icons.report_problem_outlined),
+          _buildActionButton(
+            'Report an issue',
+            Icons.report_problem_outlined,
+            null,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon) {
+  Widget _buildActionButton(String title, IconData icon, VoidCallback? onTap) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
@@ -613,7 +620,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           size: 12,
         ),
         leading: Icon(icon, color: Colors.white),
-        onTap: () {},
+        onTap: onTap ?? () {},
       ),
     );
   }

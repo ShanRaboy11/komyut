@@ -6,6 +6,7 @@ import 'activity_commuter.dart';
 import 'notification_commuter.dart';
 import 'profile.dart';
 
+import 'route_finder.dart';
 import 'wallet_history_commuter.dart';
 
 import 'otc.dart';
@@ -49,6 +50,10 @@ class CommuterApp extends StatelessWidget {
           notificationsPage: NotificationPage(),
           profilePage: ProfilePage(),
         );
+        break;
+
+      case '/route_finder':
+        page = const RouteFinder();
         break;
 
       case '/history':
