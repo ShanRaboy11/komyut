@@ -415,9 +415,10 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     Map<String, dynamic> transaction,
     NumberFormat currencyFormat,
   ) {
-    final bool isCredit = (transaction['amount'] as num) > 0;
-    final amount = currencyFormat.format((transaction['amount'] as num).abs());
     final String type = transaction['type'] ?? 'remittance';
+    final bool isCredit = type == 'remittance';
+
+    final amount = currencyFormat.format((transaction['amount'] as num).abs());
 
     String title;
     if (type == 'remittance') {

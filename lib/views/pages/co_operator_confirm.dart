@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/wallet_provider.dart';
 import 'operator_app.dart';
 
 class OperatorCashOutConfirmPage extends StatefulWidget {
@@ -19,7 +22,6 @@ class _OperatorCashOutConfirmPageState
     extends State<OperatorCashOutConfirmPage> {
   late String _transactionCode;
   final double _fee = 15.00;
-  bool _isLoading = false;
 
   final Color _brandColor = const Color(0xFF8E4CB6);
 
@@ -42,21 +44,39 @@ class _OperatorCashOutConfirmPageState
   }
 
   Future<void> _onConfirmPressed() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
+    final provider = Provider.of<OperatorWalletProvider>(
+      context,
+      listen: false,
+    );
+    final amountValue = double.tryParse(widget.amount);
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+    if (amountValue == null) return;
 
+    final success = await provider.requestCashOut(
+      amount: amountValue,
+      transactionCode: _transactionCode,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
       final transactionData = {
         'transaction_number': _transactionCode,
-        'amount': widget.amount,
+        'amount': amountValue,
         'created_at': DateTime.now().toIso8601String(),
+        'type': 'cash_out',
       };
 
       OperatorApp.navigatorKey.currentState?.pushNamed(
         '/cash_out_instructions',
         arguments: transactionData,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Transaction Failed'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -134,32 +154,36 @@ class _OperatorCashOutConfirmPageState
   }
 
   Widget _buildConfirmButton() {
-    return Center(
-      child: OutlinedButton(
-        onPressed: _isLoading ? null : _onConfirmPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: _brandColor,
-          backgroundColor: _brandColor.withValues(alpha: 0.1),
-          side: BorderSide(color: _brandColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                'Confirm',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+    return Consumer<OperatorWalletProvider>(
+      builder: (context, provider, child) {
+        return Center(
+          child: OutlinedButton(
+            onPressed: provider.isLoading ? null : _onConfirmPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _brandColor,
+              backgroundColor: _brandColor.withValues(alpha: 0.1),
+              side: BorderSide(color: _brandColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-      ),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+            ),
+            child: provider.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Confirm',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 
