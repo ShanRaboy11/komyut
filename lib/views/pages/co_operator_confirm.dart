@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'operator_app.dart'; // Imported to use navigatorKey
 
 class OperatorCashOutConfirmPage extends StatefulWidget {
   final String amount;
@@ -56,10 +57,11 @@ class _OperatorCashOutConfirmPageState
         'created_at': DateTime.now().toIso8601String(),
       };
 
-      // FIX: Navigate to Instructions Page
-      Navigator.of(
-        context,
-      ).pushNamed('/cash_out_instructions', arguments: transactionData);
+      // FIX: Use OperatorApp navigatorKey for consistent navigation
+      OperatorApp.navigatorKey.currentState?.pushNamed(
+        '/cash_out_instructions',
+        arguments: transactionData,
+      );
     }
   }
 
@@ -228,7 +230,7 @@ class _OperatorCashOutConfirmPageState
             right: -12,
             child: GestureDetector(
               onTap: () {
-                // FIX: Pop until the first route (which is the Dashboard with Wallet Open)
+                // FIX: Pop until the first route (Wallet Page) instead of just popping back
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: Container(

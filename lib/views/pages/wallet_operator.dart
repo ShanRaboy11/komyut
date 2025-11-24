@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../widgets/button.dart';
+
 import '../providers/wallet_provider.dart';
+import 'operator_app.dart';
 
 class OperatorWalletPage extends StatefulWidget {
   final VoidCallback? onBack;
@@ -89,7 +91,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                   CustomButton(
                     text: 'Cash Out',
                     onPressed: () {
-                      Navigator.of(context).pushNamed('/cash_out');
+                      OperatorApp.navigatorKey.currentState?.pushNamed(
+                        '/cash_out',
+                      );
                     },
                     isFilled: true,
                     fillColor: const Color(0xFF5B53C2),
@@ -117,7 +121,9 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pushNamed('/wallet_history');
+                          OperatorApp.navigatorKey.currentState?.pushNamed(
+                            '/wallet_history',
+                          );
                         },
                         child: Text(
                           'View All',
@@ -145,7 +151,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     ListView.separated(
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
-                      // FIX: Use math.min
                       itemCount: math.min(
                         provider.recentTransactions.length,
                         5,
@@ -194,7 +199,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             'Current Balance',
             style: GoogleFonts.nunito(
               color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 12, // Adjusted to match Driver Label Size
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -203,7 +208,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
             currencyFormat.format(balance),
             style: GoogleFonts.manrope(
               color: Colors.white,
-              fontSize: 32, // Slightly reduced from 36
+              fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -217,7 +222,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     const double chartHeight = 130;
     final weeklyEarnings = provider.weeklyEarnings;
 
-    // FIX: Use math.max
     final double maxWeeklyValue = weeklyEarnings.values.isEmpty
         ? 0.0
         : weeklyEarnings.values.reduce(math.max);
@@ -452,7 +456,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14, // Adjusted to 14
+                      fontSize: 14,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -461,7 +465,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                     date,
                     style: GoogleFonts.nunito(
                       color: Colors.grey.shade600,
-                      fontSize: 12, // Adjusted to 12
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -472,7 +476,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               '${isCredit ? '+' : '-'}$amount',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16, // Adjusted to 16
+                fontSize: 16,
                 color: isCredit ? Colors.green.shade700 : Colors.red.shade700,
               ),
             ),
@@ -486,7 +490,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
-    // FIX: Use P symbol for Modal as requested
+    // FIX: Use 'P' as symbol
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
     final String type = transaction['type'] ?? 'remittance';
@@ -501,7 +505,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
       modalTitle = 'Transaction Details';
     }
 
-    // FIX: Removed random generation, use fallback 'N/A'
     final String transactionCode = transaction['transaction_number'] ?? 'N/A';
 
     DateTime txDate;
@@ -569,7 +572,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontSize: 16, // Size 16
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -626,7 +629,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
           Text(
             label,
             style: GoogleFonts.nunito(
-              fontSize: 15, // Size 15
+              fontSize: 15,
               color: isTotal ? Colors.black87 : Colors.grey[600],
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             ),
@@ -636,7 +639,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
               value.toString(),
               textAlign: TextAlign.right,
               style: GoogleFonts.manrope(
-                fontSize: 15, // Size 15
+                fontSize: 15,
                 color: Colors.black87,
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
               ),

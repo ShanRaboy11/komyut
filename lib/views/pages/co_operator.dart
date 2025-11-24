@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'operator_app.dart';
 
 class OperatorCashOutPage extends StatefulWidget {
   const OperatorCashOutPage({super.key});
@@ -17,7 +18,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
   bool _isButtonEnabled = false;
   String? _errorText;
 
-  final Color _brandColor = const Color(0xFF8E4CB6);
+  final Color _brandColor = const Color(0xFF8E4CB6); // Operator Theme
 
   @override
   void dispose() {
@@ -54,9 +55,11 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
 
-    Navigator.of(
-      context,
-    ).pushNamed('/cash_out_confirm', arguments: _amountController.text);
+    // FIX: Use OperatorApp navigatorKey
+    OperatorApp.navigatorKey.currentState?.pushNamed(
+      '/cash_out_confirm',
+      arguments: _amountController.text,
+    );
   }
 
   @override
@@ -85,8 +88,9 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
       ),
       body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
+          // Hardcoded balance for testing as requested
           final currentBalance = 100.00;
-          // final currentBalance = provider.currentBalance; // Use this later
+          // final currentBalance = provider.currentBalance;
 
           final amountValue = double.tryParse(_amountController.text) ?? 0;
           final fee = 15.00;

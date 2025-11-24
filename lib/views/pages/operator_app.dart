@@ -13,6 +13,7 @@ import 'wallet_history_operator.dart';
 import 'co_operator.dart';
 import 'co_operator_confirm.dart';
 import 'co_operator_instructions.dart';
+import 'co_operator_success.dart';
 
 class OperatorApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -58,6 +59,7 @@ class OperatorApp extends StatelessWidget {
         break;
 
       case '/cash_out_confirm':
+        // Retrieve the amount argument passed from OperatorCashOutPage
         final amount = settings.arguments as String;
         page = ChangeNotifierProvider(
           create: (_) => OperatorWalletProvider(),
@@ -66,11 +68,14 @@ class OperatorApp extends StatelessWidget {
         break;
 
       case '/cash_out_instructions':
+        // Retrieve transaction details passed from confirm page
         final args = settings.arguments as Map<String, dynamic>;
-        page = ChangeNotifierProvider(
-          create: (_) => OperatorWalletProvider(),
-          child: OperatorCashOutInstructionsPage(transaction: args),
-        );
+        // Instructions page is static UI, doesn't strictly need provider but good for consistency
+        page = OperatorCashOutInstructionsPage(transaction: args);
+        break;
+
+      case '/cash_out_success':
+        page = const OperatorCashOutSuccessPage();
         break;
 
       default:

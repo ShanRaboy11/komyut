@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'package:provider/provider.dart'; // Not needed for static
-// import '../providers/operator_wallet_provider.dart'; // Not needed for static
+import 'operator_app.dart'; // Required for OperatorApp.navigatorKey
 
 class OperatorCashOutInstructionsPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
@@ -16,13 +15,15 @@ class OperatorCashOutInstructionsPage extends StatefulWidget {
 class _OperatorCashOutInstructionsPageState
     extends State<OperatorCashOutInstructionsPage> {
   void _onDonePressed() {
-    // Static behavior: Go back to the main Wallet/Dashboard
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Use OperatorApp's navigator key for global navigation
+    OperatorApp.navigatorKey.currentState?.pushReplacementNamed(
+      '/cash_out_success',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color brandColor = const Color(0xFF8E4CB6);
+    final Color brandColor = const Color(0xFF8E4CB6); // Operator Theme
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
@@ -89,7 +90,7 @@ class _OperatorCashOutInstructionsPageState
             ),
             const SizedBox(height: 50),
 
-            // Static Button (No Consumer/Provider needed for layout)
+            // Done Button
             Center(
               child: OutlinedButton(
                 onPressed: _onDonePressed,
@@ -128,7 +129,7 @@ class _OperatorCashOutInstructionsPageState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Assumes assets exist as per driver app
+        // Assumes assets exist
         Image.asset(iconPath, width: 40, height: 40),
         const SizedBox(width: 16),
         Expanded(
