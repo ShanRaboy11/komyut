@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RouteFinder extends StatefulWidget {
   const RouteFinder({super.key});
@@ -16,12 +17,81 @@ class _RouteFinderState extends State<RouteFinder> {
   final Color _primaryPurple = const Color(0xFF8E4CB6);
   final Color _secondaryPurple = const Color(0xFF5B53C2);
 
-  final List<Map<String, String>> _recentPlaces = [
-    {'name': 'SM Seaside', 'area': 'Lagos'},
-    {'name': 'SM Cebu Entrance 1', 'area': 'Lekki'},
-    {'name': 'CIT-U', 'area': 'Lagos'},
-    {'name': 'Colonade', 'area': 'Lekki'},
-  ];
+  // Backend state
+  final _supabase = Supabase.instance.client;
+  bool _isLoading = true;
+  List<Map<String, String>> _recentPlaces = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserRecentDestinations();
+
+    // Listen to changes to update button state
+    _fromController.addListener(() => setState(() {}));
+    _toController.addListener(() => setState(() {}));
+  }
+
+  /// Fetches recent destinations from the user's trip history
+  Future<void> _fetchUserRecentDestinations() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            destination_stop:destination_stop_id (
+              name,
+              latitude,
+              longitude
+            )
+          ''')
+          .eq('created_by_profile_id', profile['id'])
+          .order('started_at', ascending: false)
+          .limit(20);
+
+      final List<Map<String, String>> uniquePlaces = [];
+      final Set<String> seenNames = {};
+
+      for (var item in response) {
+        final dest = item['destination_stop'];
+        if (dest != null) {
+          final String name = dest['name'] ?? 'Unknown Location';
+
+          if (!seenNames.contains(name)) {
+            final double lat = (dest['latitude'] as num?)?.toDouble() ?? 0.0;
+            final double long = (dest['longitude'] as num?)?.toDouble() ?? 0.0;
+
+            // UPDATED: No rounding off. Shows exact DB value.
+            final String coordString = '$lat, $long';
+
+            uniquePlaces.add({'name': name, 'area': coordString});
+            seenNames.add(name);
+          }
+        }
+        if (uniquePlaces.length >= 5) break;
+      }
+
+      if (mounted) {
+        setState(() {
+          _recentPlaces = uniquePlaces;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching recent places: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   void _swapLocations() {
     final temp = _fromController.text;
@@ -38,6 +108,10 @@ class _RouteFinderState extends State<RouteFinder> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if both fields have text
+    final bool hasInput =
+        _fromController.text.isNotEmpty && _toController.text.isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF), // Wallet background color
       body: SafeArea(
@@ -214,42 +288,52 @@ class _RouteFinderState extends State<RouteFinder> {
 
             const SizedBox(height: 24),
 
-            // UPDATED: "Search" Button (Navigates to JCode Finder as requested)
+            // UPDATED: Search Button (Disabled logic added)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Container(
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_primaryPurple, _secondaryPurple],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                  // Show gradient only if enabled
+                  gradient: hasInput
+                      ? LinearGradient(
+                          colors: [_primaryPurple, _secondaryPurple],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        )
+                      : null,
+                  // Show grey if disabled
+                  color: hasInput ? null : Colors.grey[300],
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _secondaryPurple.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  boxShadow: hasInput
+                      ? [
+                          BoxShadow(
+                            color: _secondaryPurple.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ]
+                      : [], // No shadow when disabled
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      // Navigate to JCode Finder as per previous instruction
-                      Navigator.pushNamed(context, '/jcode_finder');
-                    },
+                    // Disable tap if inputs are empty
+                    onTap: hasInput
+                        ? () {
+                            Navigator.pushNamed(context, '/jcode_finder');
+                          }
+                        : null,
                     child: Center(
                       child: Text(
                         'Search',
                         style: GoogleFonts.manrope(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          // Change text color to greyish if disabled
+                          color: hasInput ? Colors.white : Colors.grey[500],
                         ),
                       ),
                     ),
@@ -281,14 +365,26 @@ class _RouteFinderState extends State<RouteFinder> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      itemCount: _recentPlaces.length,
-                      itemBuilder: (context, index) {
-                        final place = _recentPlaces[index];
-                        return _buildPlaceItem(place['name']!, place['area']!);
-                      },
-                    ),
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _recentPlaces.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No recent trips found',
+                              style: GoogleFonts.nunito(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 30),
+                            itemCount: _recentPlaces.length,
+                            itemBuilder: (context, index) {
+                              final place = _recentPlaces[index];
+                              return _buildPlaceItem(
+                                place['name']!,
+                                place['area']!,
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -299,7 +395,7 @@ class _RouteFinderState extends State<RouteFinder> {
     );
   }
 
-  Widget _buildPlaceItem(String name, String area) {
+  Widget _buildPlaceItem(String name, String coordinates) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: InkWell(
@@ -330,27 +426,32 @@ class _RouteFinderState extends State<RouteFinder> {
               ),
             ),
             const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.manrope(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  area,
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 4),
+                  Text(
+                    coordinates, // Full precision coordinates
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
