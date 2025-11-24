@@ -132,7 +132,6 @@ class _RouteFinderState extends State<RouteFinder> {
 
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       try {
-        // 1. Filter from Recent Destinations first
         final List<Map<String, String>> filteredRecents = _recentDestinations
             .where(
               (place) =>
@@ -140,7 +139,6 @@ class _RouteFinderState extends State<RouteFinder> {
             )
             .toList();
 
-        // 2. Search Database
         final response = await _supabase
             .from('route_stops')
             .select('name, latitude, longitude')
@@ -149,30 +147,22 @@ class _RouteFinderState extends State<RouteFinder> {
 
         final List<Map<String, String>> dbResults = [];
 
-        // Helper set to track names we already have in filteredRecents
-        // to prevent showing the same place twice
         final Set<String> existingNames = filteredRecents
             .map((e) => e['name']!)
             .toSet();
 
         for (var item in response) {
           final name = item['name'] as String;
-
-          // Only add if it's NOT already in the filtered recents list
           if (!existingNames.contains(name)) {
             final double lat = (item['latitude'] as num?)?.toDouble() ?? 0.0;
             final double long = (item['longitude'] as num?)?.toDouble() ?? 0.0;
-
             dbResults.add({'name': name, 'area': '$lat, $long'});
-            existingNames.add(
-              name,
-            ); // Add to set to prevent duplicates within dbResults too
+            existingNames.add(name);
           }
         }
 
         if (mounted) {
           setState(() {
-            // Combine lists
             _displayList = [...filteredRecents, ...dbResults].take(5).toList();
           });
         }
@@ -309,7 +299,6 @@ class _RouteFinderState extends State<RouteFinder> {
                                   : Colors.grey[400],
                               size: 20,
                             ),
-                            // Clear Button (X) - Only shows if active & has text
                             suffixIcon:
                                 (_fromFocus.hasFocus &&
                                     _fromController.text.isNotEmpty)
@@ -343,91 +332,53 @@ class _RouteFinderState extends State<RouteFinder> {
                       const SizedBox(height: 12),
 
                       // To Field
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F5F5),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: TextField(
-                                controller: _toController,
-                                focusNode: _toFocus,
-                                decoration: InputDecoration(
-                                  hintText: 'To',
-                                  hintStyle: GoogleFonts.nunito(
-                                    color: Colors.grey[500],
-                                    fontSize: 16,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.location_on_rounded,
-                                    color: _primaryPurple,
-                                    size: 20,
-                                  ),
-                                  // Clear Button (X) - Only shows if active & has text
-                                  suffixIcon:
-                                      (_toFocus.hasFocus &&
-                                          _toController.text.isNotEmpty)
-                                      ? GestureDetector(
-                                          onTap: () {
-                                            _toController.clear();
-                                            _onSearchChanged('');
-                                            setState(() {});
-                                          },
-                                          child: Icon(
-                                            Icons.close,
-                                            color: Colors.grey[400],
-                                            size: 18,
-                                          ),
-                                        )
-                                      : null,
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                ),
-                                style: GoogleFonts.nunito(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: TextField(
+                          controller: _toController,
+                          focusNode: _toFocus,
+                          decoration: InputDecoration(
+                            hintText: 'To',
+                            hintStyle: GoogleFonts.nunito(
+                              color: Colors.grey[500],
+                              fontSize: 16,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Swap button
-                          GestureDetector(
-                            onTap: _swapLocations,
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [_primaryPurple, _secondaryPurple],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _secondaryPurple.withValues(
-                                      alpha: 0.3,
+                            prefixIcon: Icon(
+                              Icons.location_on_rounded,
+                              color: _primaryPurple,
+                              size: 20,
+                            ),
+                            suffixIcon:
+                                (_toFocus.hasFocus &&
+                                    _toController.text.isNotEmpty)
+                                ? GestureDetector(
+                                    onTap: () {
+                                      _toController.clear();
+                                      _onSearchChanged('');
+                                      setState(() {});
+                                    },
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.grey[400],
+                                      size: 18,
                                     ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.swap_vert_rounded,
-                                color: Colors.white,
-                                size: 26,
-                              ),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
                             ),
                           ),
-                        ],
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -436,53 +387,98 @@ class _RouteFinderState extends State<RouteFinder> {
 
               const SizedBox(height: 24),
 
-              // Search Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: hasInput
-                        ? LinearGradient(
-                            colors: [_primaryPurple, _secondaryPurple],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          )
-                        : null,
-                    color: hasInput ? null : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: hasInput
-                            ? _secondaryPurple.withValues(alpha: 0.25)
-                            : Colors.grey.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: hasInput
-                          ? () {
-                              Navigator.pushNamed(context, '/jcode_finder');
-                            }
-                          : null,
-                      child: Center(
-                        child: Text(
-                          'Search',
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: hasInput ? Colors.white : Colors.grey[500],
+                child: Row(
+                  children: [
+                    // Search Button
+                    Expanded(
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: hasInput
+                              ? LinearGradient(
+                                  colors: [_primaryPurple, _secondaryPurple],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                )
+                              : null,
+                          color: hasInput
+                              ? null
+                              : _primaryPurple.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: hasInput
+                              ? [
+                                  BoxShadow(
+                                    color: _secondaryPurple.withValues(
+                                      alpha: 0.25,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: hasInput
+                                ? () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/jcode_finder',
+                                    );
+                                  }
+                                : null,
+                            child: Center(
+                              child: Text(
+                                'Search',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: hasInput
+                                      ? Colors.white
+                                      : _primaryPurple.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(width: 12),
+
+                    // Swap Button
+                    GestureDetector(
+                      onTap: _swapLocations,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primaryPurple, _secondaryPurple],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _secondaryPurple.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.swap_vert_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
