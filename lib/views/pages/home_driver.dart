@@ -225,8 +225,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 children: [
                                   SvgPicture.asset(
                                     'assets/images/logo_white.svg',
-                                    height: 90,
-                                    width: 90,
+                                    height: 60,
+                                    width: 60,
                                   ),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -244,7 +244,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                         '${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}!',
                                         style: GoogleFonts.manrope(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 26,
+                                          fontSize: 20,
                                           color: Colors.white,
                                           height: 1.1,
                                         ),
@@ -543,7 +543,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
             title,
             style: GoogleFonts.manrope(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
@@ -710,7 +710,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   'Reports',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.left,
                 ),

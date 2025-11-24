@@ -484,7 +484,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                   Text(
                     'Revenue $revenue  •  Rating $rating',
                     style: GoogleFonts.nunito(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: const Color.fromARGB(255, 123, 123, 123),
                     ),
                   ),
@@ -498,10 +498,10 @@ class _OperatorDashboardState extends State<OperatorDashboard>
             isFilled: true,
             fillColor: const Color(0xFF5B53C2),
             textColor: Colors.white,
-            width: 70,
+            width: 60,
             height: 28,
             borderRadius: 20,
-            fontSize: 12,
+            fontSize: 10,
             hasShadow: false,
           ),
         ],

@@ -230,7 +230,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                   Text(
                     "Analytics",
                     style: GoogleFonts.manrope(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -256,7 +256,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       iconEnabledColor: Colors.white,
                       style: GoogleFonts.nunito(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                       onChanged: (v) => setState(() => rangeFilter = v!),
@@ -307,7 +307,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                           iconEnabledColor: Colors.white,
                           style: GoogleFonts.nunito(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                           onChanged: (v) => setState(() => metricFilter = v!),
@@ -332,7 +332,10 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                             ),
                             Text(
                               getFormattedDate(),
-                              style: GoogleFonts.nunito(color: Colors.white70),
+                              style: GoogleFonts.nunito(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
                             ),
                             IconButton(
                               padding: EdgeInsets.zero,
@@ -381,7 +384,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                                 "${i + 1}.  ",
                                 style: GoogleFonts.nunito(
                                   color: Colors.white,
-                                  fontSize: 15,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -390,7 +393,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                                   alignment: Alignment.centerLeft,
                                   children: [
                                     Container(
-                                      height: 26,
+                                      height: 25,
                                       decoration: BoxDecoration(
                                         color: Colors.white24,
                                         borderRadius: BorderRadius.circular(20),
@@ -399,7 +402,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                                     FractionallySizedBox(
                                       widthFactor: barFactor,
                                       child: Container(
-                                        height: 26,
+                                        height: 25,
                                         decoration: BoxDecoration(
                                           color: Colors.white.withValues(
                                             alpha: 0.4,
@@ -418,7 +421,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                                         "$name • ${displayValue()}",
                                         style: GoogleFonts.nunito(
                                           color: Colors.white,
-                                          fontSize: 15,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
                                         overflow: TextOverflow.ellipsis,
@@ -445,7 +448,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                   Text(
                     "Active Drivers",
                     style: GoogleFonts.manrope(
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -464,7 +467,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       "View All",
                       style: GoogleFonts.nunito(
                         color: const Color.fromARGB(255, 42, 42, 42),
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -528,7 +531,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                   Text(
                     "Pending Drivers",
                     style: GoogleFonts.manrope(
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -547,7 +550,7 @@ class _OperatorDriversPageState extends State<OperatorDriversPage> {
                       "View All",
                       style: GoogleFonts.nunito(
                         color: const Color.fromARGB(255, 42, 42, 42),
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                   ),
