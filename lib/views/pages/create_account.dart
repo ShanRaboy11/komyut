@@ -157,13 +157,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         topRight: Radius.circular(60),
                       ),
                     ),
-                    shadows: [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: BigCard(
                     child: Padding(

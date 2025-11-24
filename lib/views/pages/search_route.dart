@@ -14,6 +14,7 @@ class _RouteFinderState extends State<RouteFinder> {
 
   // Common color used in the app
   final Color _primaryPurple = const Color(0xFF8E4CB6);
+  final Color _secondaryPurple = const Color(0xFF5B53C2);
 
   final List<Map<String, String>> _recentPlaces = [
     {'name': 'SM Seaside', 'area': 'Lagos'},
@@ -51,7 +52,6 @@ class _RouteFinderState extends State<RouteFinder> {
                 child: const Icon(
                   Icons.chevron_left_rounded,
                   color: Colors.black54,
-                  // UPDATED: Decreased size further to 24
                   size: 24,
                 ),
               ),
@@ -85,7 +85,7 @@ class _RouteFinderState extends State<RouteFinder> {
 
             const SizedBox(height: 24),
 
-            // UPDATED: Input card with cleaner UI (Shadows, no thick border)
+            // Input card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Container(
@@ -93,7 +93,6 @@ class _RouteFinderState extends State<RouteFinder> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  // Added shadow for depth instead of border
                   boxShadow: [
                     BoxShadow(
                       color: _primaryPurple.withValues(alpha: 0.15),
@@ -118,7 +117,6 @@ class _RouteFinderState extends State<RouteFinder> {
                             color: Colors.grey[500],
                             fontSize: 16,
                           ),
-                          // Added icon for better UI
                           prefixIcon: Icon(
                             Icons.my_location_rounded,
                             color: Colors.grey[400],
@@ -157,7 +155,6 @@ class _RouteFinderState extends State<RouteFinder> {
                                   color: Colors.grey[500],
                                   fontSize: 16,
                                 ),
-                                // Added icon for better UI
                                 prefixIcon: Icon(
                                   Icons.location_on_rounded,
                                   color: _primaryPurple,
@@ -185,17 +182,17 @@ class _RouteFinderState extends State<RouteFinder> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+                              gradient: LinearGradient(
+                                colors: [_primaryPurple, _secondaryPurple],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
-                                    0xFF5B53C2,
-                                  ).withValues(alpha: 0.3),
+                                  color: _secondaryPurple.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -215,9 +212,55 @@ class _RouteFinderState extends State<RouteFinder> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
-            // UPDATED: Recent places section (No Background Container)
+            // UPDATED: "Search" Button (Navigates to JCode Finder as requested)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_primaryPurple, _secondaryPurple],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _secondaryPurple.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      // Navigate to JCode Finder as per previous instruction
+                      Navigator.pushNamed(context, '/jcode_finder');
+                    },
+                    child: Center(
+                      child: Text(
+                        'Search',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Recent places section
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,8 +313,7 @@ class _RouteFinderState extends State<RouteFinder> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors
-                    .white, // White bg for icon to stand out on purple page
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
@@ -282,7 +324,7 @@ class _RouteFinderState extends State<RouteFinder> {
                 ],
               ),
               child: Icon(
-                Icons.history_rounded, // Changed to history icon for "Recent"
+                Icons.history_rounded,
                 color: _primaryPurple,
                 size: 22,
               ),
