@@ -428,6 +428,11 @@ class _RouteFinderState extends State<RouteFinder> {
                                     Navigator.pushNamed(
                                       context,
                                       '/jcode_finder',
+                                      arguments: {
+                                        'origin': _fromController.text.trim(),
+                                        'destination': _toController.text
+                                            .trim(),
+                                      },
                                     );
                                   }
                                 : null,

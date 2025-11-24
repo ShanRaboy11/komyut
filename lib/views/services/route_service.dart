@@ -4,6 +4,54 @@ import 'dart:math' as math;
 class RouteService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  /// Find routes that connect two specific places
+  Future<List<RouteBasic>> findRoutesConnecting(
+    String origin,
+    String destination,
+  ) async {
+    try {
+      final originResponse = await _supabase
+          .from('route_stops')
+          .select('route_id')
+          .ilike('name', '%$origin%');
+
+      final destResponse = await _supabase
+          .from('route_stops')
+          .select('route_id')
+          .ilike('name', '%$destination%');
+
+      final originRouteIds = originResponse
+          .map((e) => e['route_id'] as String)
+          .toSet();
+      final destRouteIds = destResponse
+          .map((e) => e['route_id'] as String)
+          .toSet();
+
+      final commonRouteIds = originRouteIds.intersection(destRouteIds);
+
+      if (commonRouteIds.isEmpty) {
+        return [];
+      }
+
+      final routesResponse = await _supabase
+          .from('routes')
+          .select()
+          .inFilter('id', commonRouteIds.toList())
+          .order('code', ascending: true);
+
+      return routesResponse.map<RouteBasic>((route) {
+        return RouteBasic(
+          id: route['id'],
+          code: route['code'],
+          name: route['name'],
+          description: route['description'],
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Error finding connecting routes: $e');
+    }
+  }
+
   /// Search routes by place name
   /// This is the core function for your Route Finder feature
   Future<List<RouteSearchResult>> searchRoutesByPlace(String placeName) async {
