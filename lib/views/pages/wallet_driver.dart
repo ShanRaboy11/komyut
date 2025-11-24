@@ -44,9 +44,9 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Wallet',
+          'My Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),

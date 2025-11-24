@@ -40,16 +40,33 @@ class _DriverDashboardNavContent extends StatefulWidget {
 
 class _DriverDashboardNavContentState
     extends State<_DriverDashboardNavContent> {
+  bool _isQROpen = false;
+
+  void _openQR() {
+    setState(() {
+      _isQROpen = true;
+    });
+  }
+
+  void _closeQR() {
+    setState(() {
+      _isQROpen = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
-      pages: const [
-        DriverDashboard(),
-        DriverActivityPage(),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ Feedback")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+      pages: [
+        _isQROpen
+            ? DriverQRGeneratePage(onBack: _closeQR)
+            : DriverDashboard(onViewQR: _openQR),
+
+        const DriverActivityPage(),
+        const Center(child: Text("📋 Activity")),
+        const Center(child: Text("✍️ Feedback")),
+        const Center(child: Text("🔔 Notifications")),
+        const Center(child: Text("👤 Profile")),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -63,7 +80,9 @@ class _DriverDashboardNavContentState
 }
 
 class DriverDashboard extends StatefulWidget {
-  const DriverDashboard({super.key});
+  final VoidCallback? onViewQR;
+
+  const DriverDashboard({super.key, this.onViewQR});
 
   @override
   State<DriverDashboard> createState() => _DriverDashboardState();
@@ -93,14 +112,11 @@ class _DriverDashboardState extends State<DriverDashboard>
   AnimationController? _shimmerController;
 
   Future<void> _loadData() async {
-    // Load dashboard data from database
     final dashboardProvider = Provider.of<DriverDashboardProvider>(
       context,
       listen: false,
     );
     await dashboardProvider.loadDashboardData();
-
-    // Load QR code
     await _loadCurrentQR();
     // Load analytics chart data
     await _loadAnalytics();
@@ -152,15 +168,6 @@ class _DriverDashboardState extends State<DriverDashboard>
         qrData = result['data'];
       });
     }
-  }
-
-  void _navigateToQRGeneration() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DriverQRGenerateNav()),
-    ).then((_) {
-      _loadCurrentQR();
-    });
   }
 
   @override
@@ -262,7 +269,6 @@ class _DriverDashboardState extends State<DriverDashboard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // HEADER SECTION
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(30),
@@ -297,18 +303,21 @@ class _DriverDashboardState extends State<DriverDashboard>
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        'Hi, ${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}',
-                                        style: GoogleFonts.manrope(
-                                          fontWeight: FontWeight.bold,
+                                        'Welcome back,',
+                                        style: GoogleFonts.nunito(
                                           fontSize: 16,
-                                          color: Colors.white,
+                                          color: Colors.white.withAlpha(230),
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const Text(
-                                        'Welcome back!',
-                                        style: TextStyle(
-                                          fontSize: 14,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}!',
+                                        style: GoogleFonts.manrope(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20,
                                           color: Colors.white,
+                                          height: 1.1,
                                         ),
                                       ),
                                     ],
@@ -317,7 +326,6 @@ class _DriverDashboardState extends State<DriverDashboard>
                               ),
                               const SizedBox(height: 20),
 
-                              // EARNINGS + BALANCE
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
@@ -364,7 +372,6 @@ class _DriverDashboardState extends State<DriverDashboard>
                           ),
                           child: Column(
                             children: [
-                              // MAIN QR DISPLAY AREA
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -453,7 +460,6 @@ class _DriverDashboardState extends State<DriverDashboard>
 
                                     const SizedBox(height: 20),
 
-                                    // QR Code Display or Prompt
                                     if (!qrGenerated)
                                       DottedBorder(
                                         color: const Color(0xFFB945AA),
@@ -547,12 +553,15 @@ class _DriverDashboardState extends State<DriverDashboard>
 
                                     const SizedBox(height: 20),
 
-                                    // Generate/View QR Button
                                     CustomButton(
                                       text: qrGenerated
                                           ? 'View QR Code'
                                           : 'Generate QR Code',
-                                      onPressed: _navigateToQRGeneration,
+                                      onPressed: () {
+                                        if (widget.onViewQR != null) {
+                                          widget.onViewQR!();
+                                        }
+                                      },
                                       isFilled: true,
                                       textColor: Colors.white,
                                       width: double.infinity,
@@ -563,15 +572,11 @@ class _DriverDashboardState extends State<DriverDashboard>
                                   ],
                                 ),
                               ),
-
                               const SizedBox(height: 20),
 
                               // ANALYTICS CARD (backend-driven)
                               _buildAnalyticsCard(dashboardProvider.rating),
-
                               const SizedBox(height: 20),
-
-                              // FEEDBACK CARD
                               _buildFeedbackCard(
                                 dashboardProvider.reportsCount,
                               ),
@@ -607,52 +612,56 @@ class _DriverDashboardState extends State<DriverDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            title,
+            style: GoogleFonts.manrope(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Text(
+                        '₱',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isBalanceVisible ? amount : '•••••',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              IconButton(
-                onPressed: onToggleVisibility,
-                icon: Icon(
-                  isBalanceVisible
-                      ? Icons.visibility_rounded
-                      : Icons.visibility_off_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Text(
-                '₱ ',
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.normal,
                 ),
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  isBalanceVisible ? amount : '•••',
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              InkWell(
+                onTap: onToggleVisibility,
+                borderRadius: BorderRadius.circular(12),
+                child: Icon(
+                  isBalanceVisible
+                      ? Icons.visibility_rounded
+                      : Icons.visibility_off_rounded,
+                  color: Colors.white.withAlpha(200),
+                  size: 20,
                 ),
               ),
             ],

@@ -682,3 +682,193 @@ BEGIN
   WHERE transaction_number = transaction_code_arg AND type = 'cash_out';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_weekly_earnings(week_offset integer DEFAULT 0)
+RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    v_operator_profile_id uuid;
+    v_wallet_id uuid;
+    target_week_start date;
+BEGIN
+    SELECT w.id INTO v_wallet_id
+    FROM wallets w
+    JOIN profiles p ON w.owner_profile_id = p.id
+    WHERE p.user_id = auth.uid();
+
+    IF v_wallet_id IS NULL THEN RETURN; END IF;
+
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        )::date AS day
+    )
+    SELECT
+        to_char(wd.day, 'Dy') AS day_name,
+        COALESCE(SUM(t.amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN transactions t
+        ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
+        AND t.status = 'completed'
+        AND (
+            (t.type = 'remittance' AND (t.metadata->>'recipient_wallet_id')::uuid = v_wallet_id)
+        )
+    GROUP BY wd.day
+    ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_transactions(p_limit integer DEFAULT 20)
+RETURNS TABLE (
+  id uuid,
+  transaction_number text,
+  type transaction_type,
+  amount numeric,
+  status transaction_status,
+  created_at timestamptz,
+  metadata jsonb,
+  driver_name text,
+  vehicle_plate text
+) AS $$
+DECLARE
+  v_op_wallet_id uuid;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  RETURN QUERY
+  SELECT 
+    t.id,
+    t.transaction_number,
+    t.type,
+    t.amount,
+    t.status,
+    t.created_at,
+    t.metadata,
+    CASE 
+      WHEN t.type = 'remittance' THEN (p.first_name || ' ' || p.last_name)
+      ELSE NULL 
+    END,
+    CASE 
+      WHEN t.type = 'remittance' THEN d.vehicle_plate
+      ELSE NULL 
+    END
+  FROM transactions t
+  LEFT JOIN profiles p ON t.initiated_by_profile_id = p.id
+  LEFT JOIN drivers d ON p.id = d.profile_id
+  WHERE 
+    t.wallet_id = v_op_wallet_id 
+    OR 
+    ((t.metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id AND t.type = 'remittance')
+  ORDER BY t.created_at DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_todays_revenue()
+RETURNS numeric AS $$
+DECLARE
+  v_op_wallet_id uuid;
+  v_total numeric;
+  v_start_date timestamptz;
+  v_end_date timestamptz;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  IF v_op_wallet_id IS NULL THEN RETURN 0; END IF;
+
+  v_start_date := date_trunc('day', now() AT TIME ZONE 'Asia/Manila');
+  v_end_date := v_start_date + interval '1 day';
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_total
+  FROM transactions
+  WHERE status = 'completed'
+  AND created_at >= v_start_date
+  AND created_at < v_end_date
+  AND type = 'remittance'
+  AND (metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id;
+
+  RETURN v_total;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION request_operator_cash_out(
+  amount_val numeric,
+  fee_val numeric,
+  transaction_code text
+)
+RETURNS void AS $$
+DECLARE
+  v_user_id uuid;
+  v_profile_id uuid;
+  v_wallet_id uuid;
+  v_current_balance numeric;
+  v_total_deduction numeric;
+BEGIN
+  v_user_id := auth.uid();
+  
+  SELECT p.id, w.id INTO v_profile_id, v_wallet_id
+  FROM profiles p
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_user_id;
+
+  IF v_wallet_id IS NULL THEN 
+    RAISE EXCEPTION 'Operator wallet not found.'; 
+  END IF;
+
+  SELECT balance INTO v_current_balance 
+  FROM wallets 
+  WHERE id = v_wallet_id 
+  FOR UPDATE;
+
+  v_total_deduction := amount_val + fee_val;
+
+  IF v_current_balance < v_total_deduction THEN
+    RAISE EXCEPTION 'Insufficient balance to cover amount and fee.';
+  END IF;
+
+  UPDATE wallets 
+  SET balance = balance - v_total_deduction, 
+      updated_at = now() 
+  WHERE id = v_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, 
+    initiated_by_profile_id, 
+    type, 
+    amount, 
+    fee, 
+    status, 
+    transaction_number, 
+    metadata
+  ) VALUES (
+    v_wallet_id, 
+    v_profile_id, 
+    'cash_out', 
+    amount_val, 
+    fee_val, 
+    'pending',
+    transaction_code, 
+    jsonb_build_object('description', 'Operator Cash Withdrawal Request')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION complete_operator_cash_out(transaction_code_arg text)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.transactions
+  SET status = 'completed', processed_at = now()
+  WHERE transaction_number = transaction_code_arg 
+  AND type = 'cash_out';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

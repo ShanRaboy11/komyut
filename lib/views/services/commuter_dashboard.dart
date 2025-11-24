@@ -257,7 +257,7 @@ class CommuterDashboardService {
           )
           .eq('wallet_id', wallet['id'])
           .order('created_at', ascending: false)
-          .limit(10);
+          .limit(5);
 
       debugPrint('✅ Recent transactions fetched: ${transactions.length}');
       return transactions;
@@ -268,7 +268,7 @@ class CommuterDashboardService {
   }
 
   Future<List<Map<String, dynamic>>> getRecentTokens() async {
-    return getAllTokens(limit: 10);
+    return getAllTokens(limit: 5);
   }
 
   /// Get total trips count

@@ -227,7 +227,7 @@ class DriverDashboardService {
 
   /// Get recent transactions
   Future<List<Map<String, dynamic>>> getRecentTransactions() async {
-    return _getTransactions(limit: 10);
+    return _getTransactions(limit: 5);
   }
 
   /// Get all transactions

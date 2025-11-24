@@ -168,7 +168,7 @@ class _SuccessPageState extends State<RejectSuccessPage>
                       Text(
                         widget.title,
                         style: const TextStyle(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
@@ -183,7 +183,7 @@ class _SuccessPageState extends State<RejectSuccessPage>
                         child: Text(
                           widget.subtitle,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             color: Colors.grey[600],
                             height: 1.5,
                           ),
