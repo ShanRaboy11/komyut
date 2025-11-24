@@ -249,6 +249,22 @@ class RegistrationService {
         debugPrint('🔐 Setting user password...');
         await _supabase.auth.updateUser(UserAttributes(password: password));
         debugPrint('✅ Password set successfully');
+
+        // Ensure the user is signed in with the new password. Some OTP flows
+        // may not establish a persistent session; explicitly sign in so
+        // subsequent server calls rely on an authenticated user.
+        try {
+          debugPrint('🔑 Signing in user with new password to establish session...');
+          await _supabase.auth.signInWithPassword(
+            email: email,
+            password: password,
+          );
+          debugPrint('✅ Sign-in after password set succeeded');
+        } catch (signinErr) {
+          debugPrint('⚠️ Sign-in after password set failed: $signinErr');
+          // Not fatal here; subsequent completeRegistration will still try
+          // to operate using current session if available.
+        }
       }
 
       return {'success': true};
