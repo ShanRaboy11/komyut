@@ -8,7 +8,7 @@ import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
 import '../pages/success_page.dart';
 import '../providers/registration_provider.dart';
-import 'package:komyut/main.dart';
+// Removed unused import of main.dart
 
 class RegistrationVerifyEmail extends StatefulWidget {
   final String email;

@@ -407,7 +407,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         border: Border.all(color: const Color(0xFF8E4CB6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -426,7 +426,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                   Container(
                     height: 35,
                     width: 2,
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withAlpha((0.2 * 255).round()),
                   ),
                   _buildSkeletonBox(46, 46, radius: 12),
                 ],
@@ -449,7 +449,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          Divider(height: 4, thickness: 1, color: Colors.grey.withOpacity(0.2)),
+          Divider(height: 4, thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
           const SizedBox(height: 16),
 
           // Fare details skeleton
@@ -457,12 +457,12 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
           _buildSkeletonRow(),
           _buildSkeletonRow(),
           const SizedBox(height: 8),
-          Divider(thickness: 1, color: Colors.grey.withOpacity(0.2)),
+          Divider(thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
           const SizedBox(height: 8),
           _buildSkeletonRow(),
           _buildSkeletonRow(),
           const SizedBox(height: 12),
-          Divider(thickness: 1, color: Colors.grey.withOpacity(0.2)),
+          Divider(thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
           const SizedBox(height: 8),
           _buildSkeletonRow(),
           const SizedBox(height: 20),
@@ -487,7 +487,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.2),
+        color: Colors.grey.withAlpha((0.2 * 255).round()),
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -519,8 +519,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
       );
     }
 
-    final driver = _tripDetails!['drivers'];
-    final route = _tripDetails!['routes'];
+    // driver and route details are available on _tripDetails if needed
     final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
     
     final driverName = _getDriverName();
@@ -551,7 +550,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
 
     // Check if discount was applied
     final discountApplied = metadata?['discount_applied'] == true;
-    final discountRate = (metadata?['discount_rate'] as num?)?.toDouble() ?? 0.0;
+    // discountRate extracted from metadata if needed
     final originalFare = (metadata?['original_fare'] as num?)?.toDouble() ?? widget.fareAmount ?? 0.0;
     final discountAmount = discountApplied ? (originalFare - (widget.fareAmount ?? 0)) : 0.0;
     
@@ -566,7 +565,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         border: Border.all(color: const Color(0xFF8E4CB6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -597,7 +596,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                   Container(
                     height: 35,
                     width: 2,
-                    color: const Color(0xFFB945AA).withOpacity(0.4),
+                    color: const Color(0xFFB945AA).withAlpha((0.4 * 255).round()),
                   ),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -678,7 +677,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                                 style: GoogleFonts.nunito(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
-                                  color: Colors.black.withOpacity(0.7),
+                                  color: Colors.black.withAlpha((0.7 * 255).round()),
                                 ),
                               ),
                             ],
@@ -689,10 +688,10 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                                 height: 60,
                                 width: 200,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.1),
+                                  color: Colors.grey.withAlpha((0.1 * 255).round()),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.grey.withOpacity(0.3),
+                                    color: Colors.grey.withAlpha((0.3 * 255).round()),
                                     style: BorderStyle.solid,
                                     width: 1,
                                   ),
@@ -701,7 +700,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                                   child: Icon(
                                     Icons.qr_code_2,
                                     size: 40,
-                                    color: Colors.grey.withOpacity(0.4),
+                                    color: Colors.grey.withAlpha((0.4 * 255).round()),
                                   ),
                                 ),
                               ),
@@ -711,7 +710,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                                 style: GoogleFonts.nunito(
                                   fontWeight: FontWeight.w500,
                                   fontSize: 12,
-                                  color: Colors.grey.withOpacity(0.6),
+                                  color: Colors.grey.withAlpha((0.6 * 255).round()),
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -734,9 +733,9 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         Text(
           title,
           style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.grey.withAlpha((0.6 * 255).round()),
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -745,9 +744,9 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         Text(
           time,
           style: GoogleFonts.nunito(
-            fontSize: 12,
-            color: Colors.black.withOpacity(0.6),
-          ),
+              fontSize: 12,
+              color: Colors.black.withAlpha((0.6 * 255).round()),
+            ),
         ),
       ],
     );

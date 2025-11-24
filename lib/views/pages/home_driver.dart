@@ -690,7 +690,7 @@ class _DriverDashboardState extends State<DriverDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _PeriodButton(
+              _periodButton(
                 label: 'Week',
                 isSelected: _currentPeriod == AnalyticsPeriod.weekly,
                 onTap: () async {
@@ -699,7 +699,7 @@ class _DriverDashboardState extends State<DriverDashboard>
                 },
               ),
               const SizedBox(width: 8),
-              _PeriodButton(
+              _periodButton(
                 label: 'Month',
                 isSelected: _currentPeriod == AnalyticsPeriod.monthly,
                 onTap: () async {
@@ -708,7 +708,7 @@ class _DriverDashboardState extends State<DriverDashboard>
                 },
               ),
               const SizedBox(width: 8),
-              _PeriodButton(
+              _periodButton(
                 label: 'Year',
                 isSelected: _currentPeriod == AnalyticsPeriod.yearly,
                 onTap: () async {
@@ -834,7 +834,7 @@ class _DriverDashboardState extends State<DriverDashboard>
   }
 
   // Small reusable period button used by analytics
-  Widget _PeriodButton({required String label, required bool isSelected, required VoidCallback onTap}) {
+  Widget _periodButton({required String label, required bool isSelected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -892,29 +892,7 @@ class _DriverDashboardState extends State<DriverDashboard>
     );
   }
 
-  Widget _buildSkeletonCard({required double height}) {
-    final card = Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.purple.shade50),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(height: 16, width: 120, color: Colors.white),
-            const SizedBox(height: 12),
-            Expanded(child: Container(color: Colors.white, width: double.infinity)),
-          ],
-        ),
-      ),
-    );
-
-    return _buildShimmer(child: card);
-  }
+  // Skeleton helper is provided by admin pages; driver uses detailed skeleton builders below.
 
   // Detailed header skeleton (gradient header with two stat placeholders)
   Widget _buildHeaderSkeleton() {

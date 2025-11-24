@@ -1,3 +1,7 @@
+// Intentionally allow using captured Navigator/BuildContext objects across
+// async gaps in this file where the code captures Navigator/ScaffoldMessenger
+// before awaiting. Suppress the lint to avoid noisy analyzer info here.
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -590,10 +594,7 @@ class _EnhancedUserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Prepare operator attachments (if any) for rendering below
-    final opAttachments = (verification.roleSpecificData != null && verification.roleSpecificData!['attachments'] != null)
-        ? List<Map<String, dynamic>>.from(verification.roleSpecificData!['attachments'] as List)
-        : <Map<String, dynamic>>[];
+    // Operator attachments (if any) are accessible via verification.roleSpecificData when needed
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1555,7 +1556,7 @@ class _EnhancedActionButtons extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withAlpha((0.12 * 255).round()),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.category, color: Colors.white),
@@ -1867,15 +1868,15 @@ class _CategoryOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF5B53C2).withOpacity(0.08) : Colors.white,
+          color: isSelected ? const Color(0xFF5B53C2).withAlpha((0.08 * 255).round()) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? const Color(0xFF5B53C2) : Colors.grey[200]!,
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isSelected ? 0.04 : 0.02),
+              BoxShadow(
+              color: Colors.black.withAlpha(((isSelected ? 0.04 : 0.02) * 255).round()),
               blurRadius: isSelected ? 8 : 4,
               offset: const Offset(0, 2),
             ),

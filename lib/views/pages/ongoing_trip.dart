@@ -463,7 +463,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha((0.1 * 255).round()),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -489,7 +489,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                        color: const Color(0xFF8E4CB6).withAlpha((0.3 * 255).round()),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -525,13 +525,13 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF8E4CB6).withOpacity(0.1),
-                        const Color(0xFFB945AA).withOpacity(0.1),
+                        const Color(0xFF8E4CB6).withAlpha((0.1 * 255).round()),
+                        const Color(0xFFB945AA).withAlpha((0.1 * 255).round()),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFF8E4CB6).withOpacity(0.3),
+                      color: const Color(0xFF8E4CB6).withAlpha((0.3 * 255).round()),
                       width: 1,
                     ),
                   ),
@@ -585,7 +585,7 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF8E4CB6).withOpacity(0.4),
+                          color: const Color(0xFF8E4CB6).withAlpha((0.4 * 255).round()),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -594,11 +594,12 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         // Show loading overlay
+                        final nav = Navigator.of(context);
                         showDialog(
-                          context: context,
+                          context: nav.context,
                           barrierDismissible: false,
                           builder: (_) => Container(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withAlpha((0.5 * 255).round()),
                             child: Center(
                               child: Container(
                                 padding: const EdgeInsets.all(32),
@@ -637,12 +638,12 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
 
                         final ok = await _processInitialPayment();
 
-                        // Dismiss loading
-                        if (mounted) Navigator.of(context).pop();
+                        // Dismiss loading using captured navigator
+                        if (mounted) nav.pop();
 
                         if (ok) {
                           if (!mounted) return;
-                          Navigator.of(context).pop();
+                          nav.pop();
                           setState(() {
                             _hasConfirmed = true;
                           });
