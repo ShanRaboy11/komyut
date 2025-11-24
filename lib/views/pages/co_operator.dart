@@ -21,6 +21,14 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
   final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperatorWalletProvider>().loadWalletDashboard();
+    });
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
@@ -54,6 +62,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
+
     OperatorApp.navigatorKey.currentState?.pushNamed(
       '/cash_out_confirm',
       arguments: _amountController.text,
@@ -86,9 +95,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
       ),
       body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
-          final currentBalance = 100.00;
-          // final currentBalance = provider.currentBalance;
-
+          final currentBalance = provider.currentBalance;
           final amountValue = double.tryParse(_amountController.text) ?? 0;
           final fee = 15.00;
           final totalDeduction = amountValue > 0 ? (amountValue + fee) : 0.0;
@@ -113,13 +120,10 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
                   thickness: 1,
                 ),
                 const SizedBox(height: 40),
-
                 _buildStepIndicator(),
                 const SizedBox(height: 48),
-
                 _buildAmountCard(currentBalance),
                 const SizedBox(height: 16),
-
                 Center(
                   child: _errorText != null
                       ? Text(
@@ -139,7 +143,6 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
                         ),
                 ),
                 const SizedBox(height: 32),
-
                 _buildNextButton(provider),
               ],
             ),

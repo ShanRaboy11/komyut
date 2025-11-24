@@ -116,13 +116,10 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                   thickness: 1,
                 ),
                 const SizedBox(height: 40),
-
                 _buildStepIndicator(),
                 const SizedBox(height: 48),
-
                 _buildAmountCard(currentBalance),
                 const SizedBox(height: 16),
-
                 Center(
                   child: _errorText != null
                       ? Text(
@@ -142,7 +139,6 @@ class _DriverCashOutPageState extends State<DriverCashOutPage> {
                         ),
                 ),
                 const SizedBox(height: 32),
-
                 _buildNextButton(provider),
               ],
             ),

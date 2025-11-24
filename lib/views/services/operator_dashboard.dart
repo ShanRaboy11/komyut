@@ -417,21 +417,14 @@ class OperatorDashboardService {
       if (userId == null) return 0.0;
 
       final data = await _supabase
-          .from('profiles')
-          .select('wallets(balance)')
-          .eq('user_id', userId)
+          .from('wallets')
+          .select('balance, profiles!inner(user_id)')
+          .eq('profiles.user_id', userId)
           .maybeSingle();
 
-      if (data == null || data['wallets'] == null) return 0.0;
+      if (data == null) return 0.0;
 
-      final wallet =
-          (data['wallets'] is List && (data['wallets'] as List).isNotEmpty)
-          ? (data['wallets'] as List).first
-          : data['wallets'];
-
-      if (wallet is! Map) return 0.0;
-
-      return (wallet['balance'] as num?)?.toDouble() ?? 0.0;
+      return (data['balance'] as num?)?.toDouble() ?? 0.0;
     } catch (e) {
       debugPrint('❌ Error fetching balance: $e');
       return 0.0;
