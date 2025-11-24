@@ -43,18 +43,23 @@ class _OperatorCashOutConfirmPageState
   Future<void> _onConfirmPressed() async {
     setState(() => _isLoading = true);
 
+    // Simulate network delay
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
       setState(() => _isLoading = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cash Out Request Submitted!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Create transaction data to pass to instructions
+      final transactionData = {
+        'transaction_number': _transactionCode,
+        'amount': widget.amount,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      // FIX: Navigate to Instructions Page
+      Navigator.of(
+        context,
+      ).pushNamed('/cash_out_instructions', arguments: transactionData);
     }
   }
 
@@ -66,7 +71,7 @@ class _OperatorCashOutConfirmPageState
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
 
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String formattedAmount = currencyFormat.format(amountValue);
     final String formattedTotal = currencyFormat.format(totalValue);
 

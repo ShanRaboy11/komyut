@@ -82,7 +82,7 @@ class _DriverCashOutConfirmPageState extends State<DriverCashOutConfirmPage> {
     final date = DateFormat('MM/dd/yyyy').format(now);
     final time = DateFormat('hh:mm a').format(now);
 
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String formattedAmount = currencyFormat.format(amountValue);
     final String formattedTotal = currencyFormat.format(totalValue);
 
