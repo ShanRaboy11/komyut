@@ -69,8 +69,8 @@ class RegistrationOperatorPersonalInfoState
       }
 
       // Restore files if they exist
-      if (data['lto_or_cr_path'] != null) {
-        _ltoOrCrFile = File(data['lto_or_cr_path']);
+      if (data['lto_cr_path'] != null) {
+        _ltoOrCrFile = File(data['lto_cr_path']);
       }
       if (data['ltfrb_franchise_path'] != null) {
         _ltfrbFranchiseFile = File(data['ltfrb_franchise_path']);
@@ -101,7 +101,7 @@ class RegistrationOperatorPersonalInfoState
       if (pickedFile != null) {
         setState(() {
           switch (type) {
-            case 'lto_or_cr':
+            case 'lto_cr':
               _ltoOrCrFile = File(pickedFile.path);
               break;
             case 'ltfrb_franchise':
@@ -466,7 +466,7 @@ class RegistrationOperatorPersonalInfoState
 
                       _buildFileUploadButton(
                         label: 'LTO Certificate of Registration',
-                        type: 'lto_or_cr',
+                        type: 'lto_cr',
                         file: _ltoOrCrFile,
                       ),
                       const SizedBox(height: 15),

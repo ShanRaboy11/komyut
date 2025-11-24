@@ -180,7 +180,7 @@ class RegistrationService {
     _registrationData['company_name'] = companyName;
     _registrationData['company_address'] = companyAddress;
     _registrationData['contact_email'] = contactEmail;
-    _registrationData['lto_or_cr_path'] = ltoOrCrPath;
+    _registrationData['lto_cr_path'] = ltoOrCrPath;
     _registrationData['ltfrb_franchise_path'] = ltfrbFranchisePath;
     _registrationData['government_id_path'] = governmentIdPath;
     debugPrint('✅ Operator personal info saved with documents');
@@ -604,7 +604,7 @@ class RegistrationService {
           String? governmentIdAttachmentId;
 
           // Upload LTO OR and CR
-          final String? ltoOrCrPath = _registrationData['lto_or_cr_path'];
+          final String? ltoOrCrPath = _registrationData['lto_cr_path'];
           if (ltoOrCrPath != null) {
             try {
               debugPrint('📤 Uploading LTO OR/CR...');
@@ -612,7 +612,7 @@ class RegistrationService {
                 File(ltoOrCrPath),
                 folder: 'operator_lto_documents',
                 ownerProfileId: profileId,
-                filenamePrefix: 'lto_or_cr',
+                filenamePrefix: 'lto_cr',
               );
               if (res != null) {
                 ltoOrCrAttachmentId = res['id'] as String?;
@@ -675,7 +675,7 @@ class RegistrationService {
             'company_name': _registrationData['company_name'] ?? '',
             'company_address': _registrationData['company_address'] ?? '',
             'contact_email': _registrationData['contact_email'] ?? '',
-            'lto_or_cr_attachment_id': ltoOrCrAttachmentId,
+            'lto_cr_attachment_id': ltoOrCrAttachmentId,
             'ltfrb_franchise_attachment_id': ltfrbFranchiseAttachmentId,
             'government_id_attachment_id': governmentIdAttachmentId,
           });
