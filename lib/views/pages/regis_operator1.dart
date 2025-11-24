@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
@@ -26,6 +28,12 @@ class RegistrationOperatorPersonalInfoState
   final TextEditingController _companyAddressController =
       TextEditingController();
   final TextEditingController _contactEmailController = TextEditingController();
+
+  File? _ltoOrCrFile;
+  File? _ltfrbFranchiseFile;
+  File? _governmentIdFile;
+
+  final ImagePicker _picker = ImagePicker();
 
   final List<ProgressBarStep> _registrationSteps = [
     ProgressBarStep(title: 'Choose Role', isCompleted: true),
@@ -59,6 +67,17 @@ class RegistrationOperatorPersonalInfoState
       if (data['contact_email'] != null) {
         _contactEmailController.text = data['contact_email'];
       }
+
+      // Restore files if they exist
+      if (data['lto_or_cr_path'] != null) {
+        _ltoOrCrFile = File(data['lto_or_cr_path']);
+      }
+      if (data['ltfrb_franchise_path'] != null) {
+        _ltfrbFranchiseFile = File(data['ltfrb_franchise_path']);
+      }
+      if (data['government_id_path'] != null) {
+        _governmentIdFile = File(data['government_id_path']);
+      }
     });
   }
 
@@ -72,8 +91,73 @@ class RegistrationOperatorPersonalInfoState
     super.dispose();
   }
 
+  Future<void> _pickImage(String type) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          switch (type) {
+            case 'lto_or_cr':
+              _ltoOrCrFile = File(pickedFile.path);
+              break;
+            case 'ltfrb_franchise':
+              _ltfrbFranchiseFile = File(pickedFile.path);
+              break;
+            case 'government_id':
+              _governmentIdFile = File(pickedFile.path);
+              break;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _onNextPressed() {
     bool isFormValid = _formKey.currentState!.validate();
+
+    // Validate file uploads
+    if (_ltoOrCrFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload LTO OR and CR'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_ltfrbFranchiseFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload LTFRB Franchise'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_governmentIdFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload Government ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (!isFormValid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,6 +182,9 @@ class RegistrationOperatorPersonalInfoState
             companyName: _companyNameController.text.trim(),
             companyAddress: _companyAddressController.text.trim(),
             contactEmail: _contactEmailController.text.trim(),
+            ltoOrCrFile: _ltoOrCrFile!,
+            ltfrbFranchiseFile: _ltfrbFranchiseFile!,
+            governmentIdFile: _governmentIdFile!,
           )
           .then((success) {
             if (success && mounted) {
@@ -125,6 +212,91 @@ class RegistrationOperatorPersonalInfoState
 
   void _onBackPressed() {
     Navigator.of(context).pop();
+  }
+
+  Widget _buildFileUploadButton({
+    required String label,
+    required String type,
+    required File? file,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.nunito(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color.fromRGBO(18, 18, 18, 1),
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () => _pickImage(type),
+          child: Container(
+            width: double.infinity,
+            height: 120,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: file != null
+                    ? const Color.fromRGBO(185, 69, 170, 1)
+                    : const Color.fromRGBO(200, 200, 200, 1),
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+            ),
+            child: file != null
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          file,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 40,
+                        color: Color.fromRGBO(185, 69, 170, 1),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap to upload',
+                        style: GoogleFonts.nunito(
+                          fontSize: 14,
+                          color: const Color.fromRGBO(100, 100, 100, 1),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -160,10 +332,10 @@ class RegistrationOperatorPersonalInfoState
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
                       Text(
-                        'Tell Us About You',
+                        'Tell Us About Your Business',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.manrope(
-                          color: Color.fromRGBO(18, 18, 18, 1),
+                          color: const Color.fromRGBO(18, 18, 18, 1),
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           height: 1.5,
@@ -171,10 +343,10 @@ class RegistrationOperatorPersonalInfoState
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Provide some basic details so we \ncan set up your account.',
+                        'Provide your company details and\nrequired documentation.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.nunito(
-                          color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
+                          color: const Color.fromRGBO(0, 0, 0, 0.699999988079071),
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
                           height: 1.5,
@@ -200,12 +372,7 @@ class RegistrationOperatorPersonalInfoState
                         width: fieldWidth,
                         height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your first name';
@@ -221,12 +388,7 @@ class RegistrationOperatorPersonalInfoState
                         width: fieldWidth,
                         height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
@@ -242,12 +404,7 @@ class RegistrationOperatorPersonalInfoState
                         width: fieldWidth,
                         height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter company/business name';
@@ -263,12 +420,7 @@ class RegistrationOperatorPersonalInfoState
                         width: fieldWidth,
                         height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter company address';
@@ -285,17 +437,11 @@ class RegistrationOperatorPersonalInfoState
                         height: 50,
                         keyboardType: TextInputType.emailAddress,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(
-                          185,
-                          69,
-                          170,
-                          1,
-                        ),
+                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter contact email';
                           }
-                          // Basic email validation
                           final emailRegex = RegExp(
                             r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                           );
@@ -304,6 +450,38 @@ class RegistrationOperatorPersonalInfoState
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 25),
+
+                      // Document Uploads Section
+                      Text(
+                        'Required Documents',
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color.fromRGBO(18, 18, 18, 1),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      _buildFileUploadButton(
+                        label: 'LTO Certificate of Registration',
+                        type: 'lto_or_cr',
+                        file: _ltoOrCrFile,
+                      ),
+                      const SizedBox(height: 15),
+
+                      _buildFileUploadButton(
+                        label: 'LTFRB Franchise',
+                        type: 'ltfrb_franchise',
+                        file: _ltfrbFranchiseFile,
+                      ),
+                      const SizedBox(height: 15),
+
+                      _buildFileUploadButton(
+                        label: 'Government ID',
+                        type: 'government_id',
+                        file: _governmentIdFile,
                       ),
                       const SizedBox(height: 30),
 
