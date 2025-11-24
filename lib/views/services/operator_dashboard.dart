@@ -495,4 +495,40 @@ class OperatorDashboardService {
       return [];
     }
   }
+
+  /// Request a Cash Out
+  Future<void> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    try {
+      final fee = 15.00;
+      await _supabase.rpc(
+        'request_operator_cash_out',
+        params: {
+          'amount_val': amount,
+          'fee_val': fee,
+          'transaction_code': transactionCode,
+        },
+      );
+      debugPrint('✅ Cash out requested successfully');
+    } catch (e) {
+      debugPrint('❌ Error requesting cash out: $e');
+      rethrow;
+    }
+  }
+
+  /// Complete Cash Out
+  Future<void> completeCashOut(String transactionCode) async {
+    try {
+      await _supabase.rpc(
+        'complete_operator_cash_out',
+        params: {'transaction_code_arg': transactionCode},
+      );
+      debugPrint('✅ Cash out completed successfully');
+    } catch (e) {
+      debugPrint('❌ Error completing cash out: $e');
+      rethrow;
+    }
+  }
 }

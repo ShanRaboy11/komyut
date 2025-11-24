@@ -800,3 +800,75 @@ BEGIN
   RETURN v_total;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION request_operator_cash_out(
+  amount_val numeric,
+  fee_val numeric,
+  transaction_code text
+)
+RETURNS void AS $$
+DECLARE
+  v_user_id uuid;
+  v_profile_id uuid;
+  v_wallet_id uuid;
+  v_current_balance numeric;
+  v_total_deduction numeric;
+BEGIN
+  v_user_id := auth.uid();
+  
+  SELECT p.id, w.id INTO v_profile_id, v_wallet_id
+  FROM profiles p
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_user_id;
+
+  IF v_wallet_id IS NULL THEN 
+    RAISE EXCEPTION 'Operator wallet not found.'; 
+  END IF;
+
+  SELECT balance INTO v_current_balance 
+  FROM wallets 
+  WHERE id = v_wallet_id 
+  FOR UPDATE;
+
+  v_total_deduction := amount_val + fee_val;
+
+  IF v_current_balance < v_total_deduction THEN
+    RAISE EXCEPTION 'Insufficient balance to cover amount and fee.';
+  END IF;
+
+  UPDATE wallets 
+  SET balance = balance - v_total_deduction, 
+      updated_at = now() 
+  WHERE id = v_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, 
+    initiated_by_profile_id, 
+    type, 
+    amount, 
+    fee, 
+    status, 
+    transaction_number, 
+    metadata
+  ) VALUES (
+    v_wallet_id, 
+    v_profile_id, 
+    'cash_out', 
+    amount_val, 
+    fee_val, 
+    'pending',
+    transaction_code, 
+    jsonb_build_object('description', 'Operator Cash Withdrawal Request')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION complete_operator_cash_out(transaction_code_arg text)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.transactions
+  SET status = 'completed', processed_at = now()
+  WHERE transaction_number = transaction_code_arg 
+  AND type = 'cash_out';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

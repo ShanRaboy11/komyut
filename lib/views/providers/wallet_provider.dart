@@ -594,6 +594,9 @@ class OperatorWalletProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get recentTransactions => _recentTransactions;
   List<Map<String, dynamic>> get allTransactions => _allTransactions;
 
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
   Future<void> loadWalletDashboard() async {
     _isLoading = true;
     notifyListeners();
@@ -645,6 +648,52 @@ class OperatorWalletProvider extends ChangeNotifier {
     } finally {
       _isHistoryLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Process Cash Out Request
+  Future<bool> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _service.requestCashOut(
+        amount: amount,
+        transactionCode: transactionCode,
+      );
+
+      await loadWalletDashboard();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Complete the process
+  Future<bool> completeCashOut(String transactionCode) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _service.completeCashOut(transactionCode);
+      await fetchFullHistory();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }
