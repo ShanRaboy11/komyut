@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-import 'operator_app.dart'; // Imported to use navigatorKey
+import 'operator_app.dart';
 
 class OperatorCashOutConfirmPage extends StatefulWidget {
   final String amount;
@@ -43,21 +43,17 @@ class _OperatorCashOutConfirmPageState
 
   Future<void> _onConfirmPressed() async {
     setState(() => _isLoading = true);
-
-    // Simulate network delay
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
       setState(() => _isLoading = false);
 
-      // Create transaction data to pass to instructions
       final transactionData = {
         'transaction_number': _transactionCode,
         'amount': widget.amount,
         'created_at': DateTime.now().toIso8601String(),
       };
 
-      // FIX: Use OperatorApp navigatorKey for consistent navigation
       OperatorApp.navigatorKey.currentState?.pushNamed(
         '/cash_out_instructions',
         arguments: transactionData,
@@ -230,7 +226,6 @@ class _OperatorCashOutConfirmPageState
             right: -12,
             child: GestureDetector(
               onTap: () {
-                // FIX: Pop until the first route (Wallet Page) instead of just popping back
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: Container(

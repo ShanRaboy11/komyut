@@ -490,7 +490,6 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
     BuildContext context,
     Map<String, dynamic> transaction,
   ) {
-    // FIX: Use 'P' as symbol
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
 
     final String type = transaction['type'] ?? 'remittance';
@@ -498,7 +497,7 @@ class _OperatorWalletPageState extends State<OperatorWalletPage> {
 
     String modalTitle;
     if (type == 'remittance') {
-      modalTitle = 'Remittance Received';
+      modalTitle = 'Remittance Transaction';
     } else if (type == 'cash_out') {
       modalTitle = 'Cash Out Transaction';
     } else {

@@ -18,7 +18,7 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
   bool _isButtonEnabled = false;
   String? _errorText;
 
-  final Color _brandColor = const Color(0xFF8E4CB6); // Operator Theme
+  final Color _brandColor = const Color(0xFF8E4CB6);
 
   @override
   void dispose() {
@@ -54,8 +54,6 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-
-    // FIX: Use OperatorApp navigatorKey
     OperatorApp.navigatorKey.currentState?.pushNamed(
       '/cash_out_confirm',
       arguments: _amountController.text,
@@ -88,7 +86,6 @@ class _OperatorCashOutPageState extends State<OperatorCashOutPage> {
       ),
       body: Consumer<OperatorWalletProvider>(
         builder: (context, provider, child) {
-          // Hardcoded balance for testing as requested
           final currentBalance = 100.00;
           // final currentBalance = provider.currentBalance;
 

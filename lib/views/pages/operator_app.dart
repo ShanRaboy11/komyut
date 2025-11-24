@@ -59,7 +59,6 @@ class OperatorApp extends StatelessWidget {
         break;
 
       case '/cash_out_confirm':
-        // Retrieve the amount argument passed from OperatorCashOutPage
         final amount = settings.arguments as String;
         page = ChangeNotifierProvider(
           create: (_) => OperatorWalletProvider(),
@@ -68,9 +67,7 @@ class OperatorApp extends StatelessWidget {
         break;
 
       case '/cash_out_instructions':
-        // Retrieve transaction details passed from confirm page
         final args = settings.arguments as Map<String, dynamic>;
-        // Instructions page is static UI, doesn't strictly need provider but good for consistency
         page = OperatorCashOutInstructionsPage(transaction: args);
         break;
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'operator_app.dart'; // Required for OperatorApp.navigatorKey
+import 'operator_app.dart';
 
 class OperatorCashOutInstructionsPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
@@ -15,7 +15,6 @@ class OperatorCashOutInstructionsPage extends StatefulWidget {
 class _OperatorCashOutInstructionsPageState
     extends State<OperatorCashOutInstructionsPage> {
   void _onDonePressed() {
-    // Use OperatorApp's navigator key for global navigation
     OperatorApp.navigatorKey.currentState?.pushReplacementNamed(
       '/cash_out_success',
     );
@@ -23,7 +22,7 @@ class _OperatorCashOutInstructionsPageState
 
   @override
   Widget build(BuildContext context) {
-    final Color brandColor = const Color(0xFF8E4CB6); // Operator Theme
+    final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F1FF),
@@ -129,7 +128,6 @@ class _OperatorCashOutInstructionsPageState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Assumes assets exist
         Image.asset(iconPath, width: 40, height: 40),
         const SizedBox(width: 16),
         Expanded(

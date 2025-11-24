@@ -60,14 +60,14 @@ class _OperatorCashOutSuccessPageState extends State<OperatorCashOutSuccessPage>
               'Withdrawal Successful!',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
-                fontSize: 18, // Matched Driver style
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
             const SizedBox(height: 100),
             _buildHomeButton(context),
-            const SizedBox(height: 10), // Matched Driver style
+            const SizedBox(height: 10),
             _buildWalletButton(context),
           ],
         ),
