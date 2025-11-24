@@ -132,6 +132,7 @@ class _RouteFinderState extends State<RouteFinder> {
 
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       try {
+        // 1. Filter from Recent Destinations first
         final List<Map<String, String>> filteredRecents = _recentDestinations
             .where(
               (place) =>
@@ -139,6 +140,7 @@ class _RouteFinderState extends State<RouteFinder> {
             )
             .toList();
 
+        // 2. Search Database
         final response = await _supabase
             .from('route_stops')
             .select('name, latitude, longitude')
@@ -146,17 +148,31 @@ class _RouteFinderState extends State<RouteFinder> {
             .limit(5);
 
         final List<Map<String, String>> dbResults = [];
+
+        // Helper set to track names we already have in filteredRecents
+        // to prevent showing the same place twice
+        final Set<String> existingNames = filteredRecents
+            .map((e) => e['name']!)
+            .toSet();
+
         for (var item in response) {
           final name = item['name'] as String;
-          if (!filteredRecents.any((r) => r['name'] == name)) {
+
+          // Only add if it's NOT already in the filtered recents list
+          if (!existingNames.contains(name)) {
             final double lat = (item['latitude'] as num?)?.toDouble() ?? 0.0;
             final double long = (item['longitude'] as num?)?.toDouble() ?? 0.0;
+
             dbResults.add({'name': name, 'area': '$lat, $long'});
+            existingNames.add(
+              name,
+            ); // Add to set to prevent duplicates within dbResults too
           }
         }
 
         if (mounted) {
           setState(() {
+            // Combine lists
             _displayList = [...filteredRecents, ...dbResults].take(5).toList();
           });
         }
@@ -269,6 +285,7 @@ class _RouteFinderState extends State<RouteFinder> {
                   ),
                   child: Column(
                     children: [
+                      // From Field
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFF5F5F5),
@@ -292,6 +309,23 @@ class _RouteFinderState extends State<RouteFinder> {
                                   : Colors.grey[400],
                               size: 20,
                             ),
+                            // Clear Button (X) - Only shows if active & has text
+                            suffixIcon:
+                                (_fromFocus.hasFocus &&
+                                    _fromController.text.isNotEmpty)
+                                ? GestureDetector(
+                                    onTap: () {
+                                      _fromController.clear();
+                                      _onSearchChanged('');
+                                      setState(() {});
+                                    },
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.grey[400],
+                                      size: 18,
+                                    ),
+                                  )
+                                : null,
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -308,6 +342,7 @@ class _RouteFinderState extends State<RouteFinder> {
 
                       const SizedBox(height: 12),
 
+                      // To Field
                       Row(
                         children: [
                           Expanded(
@@ -330,6 +365,23 @@ class _RouteFinderState extends State<RouteFinder> {
                                     color: _primaryPurple,
                                     size: 20,
                                   ),
+                                  // Clear Button (X) - Only shows if active & has text
+                                  suffixIcon:
+                                      (_toFocus.hasFocus &&
+                                          _toController.text.isNotEmpty)
+                                      ? GestureDetector(
+                                          onTap: () {
+                                            _toController.clear();
+                                            _onSearchChanged('');
+                                            setState(() {});
+                                          },
+                                          child: Icon(
+                                            Icons.close,
+                                            color: Colors.grey[400],
+                                            size: 18,
+                                          ),
+                                        )
+                                      : null,
                                   border: InputBorder.none,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
