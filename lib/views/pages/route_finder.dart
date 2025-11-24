@@ -38,8 +38,7 @@ class _RouteFinderState extends State<RouteFinder> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // UPDATED: Used the Wallet Page background color
-      backgroundColor: const Color(0xFFF6F1FF),
+      backgroundColor: const Color(0xFFF6F1FF), // Wallet background color
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,8 +51,8 @@ class _RouteFinderState extends State<RouteFinder> {
                 child: const Icon(
                   Icons.chevron_left_rounded,
                   color: Colors.black54,
-                  // UPDATED: Decreased size to 28 (was 35)
-                  size: 28,
+                  // UPDATED: Decreased size further to 24
+                  size: 24,
                 ),
               ),
             ),
@@ -86,23 +85,30 @@ class _RouteFinderState extends State<RouteFinder> {
 
             const SizedBox(height: 24),
 
-            // Input card with From/To fields
+            // UPDATED: Input card with cleaner UI (Shadows, no thick border)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _primaryPurple, width: 2),
+                  borderRadius: BorderRadius.circular(24),
+                  // Added shadow for depth instead of border
+                  boxShadow: [
+                    BoxShadow(
+                      color: _primaryPurple.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     // From field
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: TextField(
                         controller: _fromController,
@@ -112,17 +118,22 @@ class _RouteFinderState extends State<RouteFinder> {
                             color: Colors.grey[500],
                             fontSize: 16,
                           ),
+                          // Added icon for better UI
+                          prefixIcon: Icon(
+                            Icons.my_location_rounded,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 16,
                           ),
                         ),
-                        // Text color matches "Find..." style
                         style: GoogleFonts.nunito(
                           fontSize: 16,
                           color: _primaryPurple,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -135,8 +146,8 @@ class _RouteFinderState extends State<RouteFinder> {
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
+                              color: const Color(0xFFF5F5F5),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: TextField(
                               controller: _toController,
@@ -146,17 +157,22 @@ class _RouteFinderState extends State<RouteFinder> {
                                   color: Colors.grey[500],
                                   fontSize: 16,
                                 ),
+                                // Added icon for better UI
+                                prefixIcon: Icon(
+                                  Icons.location_on_rounded,
+                                  color: _primaryPurple,
+                                  size: 20,
+                                ),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 16,
                                 ),
                               ),
-                              // Text color matches "Find..." style
                               style: GoogleFonts.nunito(
                                 fontSize: 16,
                                 color: _primaryPurple,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -166,18 +182,29 @@ class _RouteFinderState extends State<RouteFinder> {
                         GestureDetector(
                           onTap: _swapLocations,
                           child: Container(
-                            width: 44,
-                            height: 44,
+                            width: 48,
+                            height: 48,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF5B53C2,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
-                              Icons.swap_vert,
+                              Icons.swap_vert_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: 26,
                             ),
                           ),
                         ),
@@ -190,45 +217,37 @@ class _RouteFinderState extends State<RouteFinder> {
 
             const SizedBox(height: 32),
 
-            // Recent places section
+            // UPDATED: Recent places section (No Background Container)
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 0,
+                    ),
+                    child: Text(
+                      'Recent places',
+                      style: GoogleFonts.manrope(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(30, 24, 30, 16),
-                      child: Text(
-                        'Recent places',
-                        style: GoogleFonts.manrope(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      itemCount: _recentPlaces.length,
+                      itemBuilder: (context, index) {
+                        final place = _recentPlaces[index];
+                        return _buildPlaceItem(place['name']!, place['area']!);
+                      },
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 30),
-                        itemCount: _recentPlaces.length,
-                        itemBuilder: (context, index) {
-                          final place = _recentPlaces[index];
-                          return _buildPlaceItem(
-                            place['name']!,
-                            place['area']!,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -242,20 +261,31 @@ class _RouteFinderState extends State<RouteFinder> {
       padding: const EdgeInsets.only(bottom: 20),
       child: InkWell(
         onTap: () {
-          // Handle place selection
           _toController.text = name;
         },
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: _primaryPurple.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: Colors
+                    .white, // White bg for icon to stand out on purple page
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.05),
+                    blurRadius: 5,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
-              child: Icon(Icons.location_on, color: _primaryPurple, size: 22),
+              child: Icon(
+                Icons.history_rounded, // Changed to history icon for "Recent"
+                color: _primaryPurple,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Column(
@@ -265,16 +295,17 @@ class _RouteFinderState extends State<RouteFinder> {
                   name,
                   style: GoogleFonts.manrope(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   area,
                   style: GoogleFonts.nunito(
                     fontSize: 13,
                     color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
