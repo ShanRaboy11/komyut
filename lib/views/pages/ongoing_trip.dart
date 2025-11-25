@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // 'dart:convert' removed: notifications are now created in the DB trigger
 import './qr_scan.dart';
-import 'commuter_app.dart';
 
 class OngoingTripScreen extends StatefulWidget {
   final String tripId;
