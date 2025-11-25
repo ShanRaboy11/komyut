@@ -337,6 +337,24 @@ class AdminVerificationService {
       }
 
       debugPrint('✅ Approved verification: $verificationId');
+      // Create notification for the profile owner
+      try {
+        await _supabase.from('notifications').insert({
+          'recipient_profile_id': profileId,
+          'type': 'verification',
+          'title': 'Verification approved',
+          'message': notes != null && notes.isNotEmpty
+              ? 'Your verification has been approved. Notes: $notes'
+              : 'Your verification has been approved.',
+          'payload': {
+            'verification_id': verificationId,
+            'action': 'approved',
+            'reviewer_profile_id': adminProfileId,
+          },
+        });
+      } catch (e) {
+        debugPrint('⚠️ Failed to create notification: $e');
+      }
     } catch (e) {
       debugPrint('❌ Error approving verification: $e');
       rethrow;
@@ -379,6 +397,31 @@ class AdminVerificationService {
           .eq('id', verificationId);
 
       debugPrint('✅ Rejected verification: $verificationId');
+      // Create notification for the profile owner (if we can determine the profile)
+      String? profileId;
+      try {
+        final vrow = await _supabase.from('verifications').select('profile_id').eq('id', verificationId).maybeSingle();
+        profileId = vrow != null ? vrow['profile_id'] as String? : null;
+      } catch (_) {
+        profileId = null;
+      }
+      if (profileId != null) {
+        try {
+          await _supabase.from('notifications').insert({
+            'recipient_profile_id': profileId,
+            'type': 'verification',
+            'title': 'Verification rejected',
+            'message': notes.isNotEmpty ? 'Your verification was rejected. Notes: $notes' : 'Your verification was rejected.',
+            'payload': {
+              'verification_id': verificationId,
+              'action': 'rejected',
+              'reviewer_profile_id': adminProfileId,
+            },
+          });
+        } catch (e) {
+          debugPrint('⚠️ Failed to create notification: $e');
+        }
+      }
     } catch (e) {
       debugPrint('❌ Error rejecting verification: $e');
       rethrow;
@@ -407,6 +450,31 @@ class AdminVerificationService {
           .eq('id', verificationId);
 
       debugPrint('✅ Marked verification as lacking: $verificationId');
+      // Create notification for the profile owner (if we can determine the profile)
+      String? profileId;
+      try {
+        final vrow = await _supabase.from('verifications').select('profile_id').eq('id', verificationId).maybeSingle();
+        profileId = vrow != null ? vrow['profile_id'] as String? : null;
+      } catch (_) {
+        profileId = null;
+      }
+      if (profileId != null) {
+        try {
+          await _supabase.from('notifications').insert({
+            'recipient_profile_id': profileId,
+            'type': 'verification',
+            'title': 'Verification requires more documents',
+            'message': notes.isNotEmpty ? 'Your verification is lacking required documents. Notes: $notes' : 'Your verification is marked as lacking required documents.',
+            'payload': {
+              'verification_id': verificationId,
+              'action': 'lacking',
+              'reviewer_profile_id': adminProfileId,
+            },
+          });
+        } catch (e) {
+          debugPrint('⚠️ Failed to create notification: $e');
+        }
+      }
     } catch (e) {
       debugPrint('❌ Error marking as lacking: $e');
       rethrow;
