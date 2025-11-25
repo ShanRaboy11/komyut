@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import '../widgets/notification.dart';
 import '../services/notifications.dart';
 import '../models/notification.dart';
+
 import 'tripdetails_commuter.dart';
+import 'wallet_commuter.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -31,39 +33,26 @@ class NotificationPageState extends State<NotificationPage> {
     });
   }
 
-  // Grouping Logic
   String _getSection(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final check = DateTime(date.year, date.month, date.day);
 
-    if (check == today) {
-      return 'Today';
-    }
-    if (check == yesterday) {
-      return 'Yesterday';
-    }
+    if (check == today) return 'Today';
+    if (check == yesterday) return 'Yesterday';
     return 'Older';
   }
 
-  // Time Display Logic
   String _getDisplayTime(NotifItem item, String section) {
-    if (item.isLocal) {
-      return item.timeOrDate;
-    }
-    if (section == 'Today') {
-      return DateFormat('hh:mm a').format(item.sortDate);
-    }
-    if (section == 'Yesterday') {
-      return 'Yesterday';
-    }
+    if (item.isLocal) return item.timeOrDate;
+    if (section == 'Today') return DateFormat('hh:mm a').format(item.sortDate);
+    if (section == 'Yesterday') return 'Yesterday';
     return DateFormat('MMM dd, yyyy').format(item.sortDate);
   }
 
-  // Tap Logic: Mark Read + Navigate
   void _onTapNotif(NotifItem item) async {
-    // 1. Mark Read Immediately
+    // 1. Mark Read
     if (!item.isRead) {
       Provider.of<NotificationProvider>(
         context,
@@ -71,7 +60,7 @@ class NotificationPageState extends State<NotificationPage> {
       ).markAsRead(item.id);
     }
 
-    // 2. Navigate if Trip
+    // 2. Navigation
     if (item.variant == 'trips' && item.payload != null) {
       final p = item.payload!;
       await Navigator.push(
@@ -89,6 +78,13 @@ class NotificationPageState extends State<NotificationPage> {
         ),
       );
     }
+    // Rewards go to Wallet Page
+    else if (item.variant == 'rewards') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const WalletPage()),
+      );
+    }
   }
 
   @override
@@ -100,19 +96,19 @@ class NotificationPageState extends State<NotificationPage> {
       builder: (context, provider, child) {
         final all = provider.notifications;
 
-        // Filter Tabs
+        // --- STRICT FILTERING LOGIC ---
         List<NotifItem> filtered;
         if (activeTab == 'Trips') {
+          // Only Trips from DB
           filtered = all.where((n) => n.variant == 'trips').toList();
         } else if (activeTab == 'Wallet') {
+          // Only Static Wallet Items
           filtered = all.where((n) => n.variant == 'wallet').toList();
         } else {
-          filtered = all
-              .where((n) => n.variant != 'trips' && n.variant != 'wallet')
-              .toList();
+          // 'Others' = Rewards (From DB)
+          filtered = all.where((n) => n.variant == 'rewards').toList();
         }
 
-        // Group by Date
         final Map<String, List<NotifItem>> grouped = {};
         for (var n in filtered) {
           String section;
@@ -305,11 +301,12 @@ class NotificationPageState extends State<NotificationPage> {
     return Column(
       children: items.map((n) {
         return Padding(
-          key: ValueKey(n.virtualId), // Use Virtual ID for uniqueness
+          key: ValueKey(n.virtualId),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: NotificationCard(
-            variant: n.variant == 'alert' ? 'alert' : n.variant,
-            description: n.title, // Strict Title
+            // Map "rewards" to generic if your card widget doesn't have specific styling for rewards
+            variant: n.variant == 'rewards' ? 'rewards' : n.variant,
+            description: n.title,
             timeOrDate: _getDisplayTime(n, section),
             isRead: n.isRead,
             onTap: () => _onTapNotif(n),
