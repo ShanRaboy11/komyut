@@ -437,7 +437,7 @@ void _showTransactionDetailModal(
         _buildDetailRow('Date:', DateFormat('MM/dd/yyyy').format(createdAt)),
         _buildDetailRow('Time:', DateFormat('hh:mm a').format(createdAt)),
         _buildDetailRow(
-          'Driver/Operator:',
+          'Recipient:',
           transaction.driverName ?? transaction.initiatorName ?? 'N/A',
         ),
         _buildDetailRow('Amount:', currencyFormat.format(amount.abs())),
