@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'commuter_ratingsubmission.dart';
 
 class RateReviewPage extends StatefulWidget {
   const RateReviewPage({super.key});
@@ -286,9 +287,11 @@ class _RateReviewPageState extends State<RateReviewPage> {
                               height: 50,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  // Handle Submit Logic Here
-                                  debugPrint("Ratings: $_ratings");
-                                  debugPrint("Review: ${_reviewController.text}");
+                                  // Navigate to the Success Page
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const FeedbackSuccessPage()),
+                                  );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
