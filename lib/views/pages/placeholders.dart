@@ -485,7 +485,7 @@ class AdminDashboardPage extends StatelessWidget {
   }
 }*/
 
-class AdminActivityPage extends StatelessWidget {
+/*class AdminActivityPage extends StatelessWidget {
   const AdminActivityPage({super.key});
 
   @override
@@ -514,7 +514,7 @@ class AdminActivityPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 /*class AdminReportsPage extends StatelessWidget {
   const AdminReportsPage({super.key});
