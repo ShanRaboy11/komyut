@@ -407,30 +407,29 @@ class _ReportPageState extends State<ReportPage> {
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
-                                  children: ["Low", "Medium", "High"].map((
-                                    level,
-                                  ) {
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Radio<String>(
-                                          value: level,
-                                          groupValue: severity,
-                                          activeColor: Colors.white,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              severity = value!;
-                                            });
-                                          },
+                                  children: ["Low", "Medium", "High"].map((level) {
+                                    final bool isSelected = severity == level;
+                                    return ChoiceChip(
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            severity = level;
+                                          });
+                                        }
+                                      },
+                                      label: Text(
+                                        level,
+                                        style: GoogleFonts.nunito(
+                                          color: isSelected ? const Color(0xFF5B53C2) : Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                         ),
-                                        Text(
-                                          level,
-                                          style: GoogleFonts.nunito(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
+                                      ),
+                                      backgroundColor: Colors.transparent,
+                                      selectedColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     );
                                   }).toList(),
                                 ),

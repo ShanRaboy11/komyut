@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import '../widgets/feedback_card.dart';
 import '../pages/reportdetails_operator.dart';
@@ -100,13 +101,9 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
               Expanded(
                 child: Consumer<OperatorReportProvider>(
                   builder: (context, provider, child) {
-                    // Show loading indicator
+                    // Show shimmer skeleton while loading and no data yet
                     if (provider.isLoading && provider.reports.isEmpty) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF8E4CB6),
-                        ),
-                      );
+                      return _buildShimmerSkeleton(isSmall);
                     }
 
                     // Get filtered reports based on active priority
@@ -222,6 +219,116 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
             child: Text(label),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerSkeleton(bool isSmall) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Pill tabs skeleton
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: List.generate(3, (i) {
+                return Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    height: isSmall ? 36 : 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // List skeleton
+          Expanded(
+            child: ListView.separated(
+              itemCount: 6,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // avatar placeholder
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 14,
+                              width: double.infinity,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 12,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  height: 10,
+                                  width: 60,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  height: 10,
+                                  width: 40,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
