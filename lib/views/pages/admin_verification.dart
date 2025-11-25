@@ -147,19 +147,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> with SingleTicker
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7F4FF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.verified_user_outlined,
-                          color: Color(0xFF5B53C2),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 15),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +155,7 @@ class _AdminVerifiedPageState extends State<AdminVerifiedPage> with SingleTicker
                             Text(
                               'Verification',
                               style: GoogleFonts.manrope(
-                                fontSize: 18,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF222222),
                               ),
