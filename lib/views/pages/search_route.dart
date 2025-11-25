@@ -1,0 +1,820 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class RouteFinder extends StatefulWidget {
+  const RouteFinder({super.key});
+
+  @override
+  State<RouteFinder> createState() => _RouteFinderState();
+}
+
+class _RouteFinderState extends State<RouteFinder> {
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
+
+  // Focus nodes
+  final FocusNode _fromFocus = FocusNode();
+  final FocusNode _toFocus = FocusNode();
+
+  // Colors
+  final Color _primaryPurple = const Color(0xFF8E4CB6);
+  final Color _secondaryPurple = const Color(0xFF5B53C2);
+
+  // Input Colors
+  final Color _defaultInputFill = const Color(0xFFF5F5F5);
+  final Color _errorInputFill = const Color(0xFFFFF5F5);
+  final Color _errorBorder = const Color(0xFFFF5252);
+
+  // Backend state
+  final _supabase = Supabase.instance.client;
+  bool _isLoading = true;
+  bool _isValidating = false;
+
+  // Validation state
+  bool _isFromValid = false;
+  bool _isToValid = false;
+
+  // Explicit Error States
+  bool _fromHasError = false;
+  bool _toHasError = false;
+
+  bool _isProgrammaticUpdate = false;
+
+  List<Map<String, String>> _recentDestinations = [];
+  List<Map<String, String>> _displayList = [];
+
+  Timer? _searchDebounce;
+  Timer? _validationDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserRecentDestinations();
+
+    // FROM Listener
+    _fromController.addListener(() {
+      if (!_isProgrammaticUpdate) {
+        setState(() {
+          _isFromValid = false;
+          _fromHasError = false;
+        });
+
+        if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
+
+        if (_fromController.text.isNotEmpty && _toController.text.isNotEmpty) {
+          _debounceValidation();
+        }
+      }
+    });
+
+    // TO Listener
+    _toController.addListener(() {
+      if (!_isProgrammaticUpdate) {
+        setState(() {
+          _isToValid = false;
+          _toHasError = false;
+        });
+
+        if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+
+        if (_fromController.text.isNotEmpty && _toController.text.isNotEmpty) {
+          _debounceValidation();
+        }
+      }
+    });
+
+    _fromFocus.addListener(() {
+      if (_fromFocus.hasFocus) {
+        _onSearchChanged(_fromController.text);
+      } else {
+        setState(() {});
+      }
+    });
+
+    _toFocus.addListener(() {
+      if (_toFocus.hasFocus) {
+        _onSearchChanged(_toController.text);
+      } else {
+        setState(() {});
+      }
+    });
+  }
+
+  void _debounceValidation() {
+    if (_validationDebounce?.isActive ?? false) _validationDebounce!.cancel();
+
+    setState(() => _isValidating = true);
+
+    _validationDebounce = Timer(const Duration(milliseconds: 500), () {
+      _validateInputs();
+    });
+  }
+
+  Future<void> _validateInputs() async {
+    if (!mounted) return;
+
+    if (!_isFromValid && _fromController.text.isNotEmpty) {
+      bool valid = await _checkIfLocationExists(_fromController.text);
+      if (mounted) {
+        setState(() {
+          _isFromValid = valid;
+          _fromHasError = !valid;
+        });
+      }
+    }
+
+    // Check To Field
+    if (!_isToValid && _toController.text.isNotEmpty) {
+      bool valid = await _checkIfLocationExists(_toController.text);
+      if (mounted) {
+        setState(() {
+          _isToValid = valid;
+          _toHasError = !valid;
+        });
+      }
+    }
+
+    if (mounted) setState(() => _isValidating = false);
+  }
+
+  Future<bool> _checkIfLocationExists(String name) async {
+    final inRecents = _recentDestinations.any(
+      (place) => place['name']!.toLowerCase() == name.toLowerCase(),
+    );
+    if (inRecents) return true;
+
+    try {
+      final response = await _supabase
+          .from('route_stops')
+          .select('name')
+          .ilike('name', name)
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      debugPrint('Validation error: $e');
+      return false;
+    }
+  }
+
+  Future<void> _fetchUserRecentDestinations() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final profile = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            destination_stop:destination_stop_id (
+              name,
+              latitude,
+              longitude
+            )
+          ''')
+          .eq('created_by_profile_id', profile['id'])
+          .order('started_at', ascending: false)
+          .limit(20);
+
+      final List<Map<String, String>> uniquePlaces = [];
+      final Set<String> seenNames = {};
+
+      for (var item in response) {
+        final dest = item['destination_stop'];
+        if (dest != null) {
+          final String name = dest['name'] ?? 'Unknown Location';
+
+          if (!seenNames.contains(name)) {
+            final double lat = (dest['latitude'] as num?)?.toDouble() ?? 0.0;
+            final double long = (dest['longitude'] as num?)?.toDouble() ?? 0.0;
+            final String coordString = '$lat, $long';
+
+            uniquePlaces.add({'name': name, 'area': coordString});
+            seenNames.add(name);
+          }
+        }
+        if (uniquePlaces.length >= 5) break;
+      }
+
+      if (mounted) {
+        setState(() {
+          _recentDestinations = uniquePlaces;
+          _displayList = List.from(uniquePlaces);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching recent places: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _onSearchChanged(String query) async {
+    if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+
+    if (query.isEmpty) {
+      setState(() {
+        _displayList = List.from(_recentDestinations);
+      });
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        final List<Map<String, String>> filteredRecents = _recentDestinations
+            .where(
+              (place) =>
+                  place['name']!.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+
+        final response = await _supabase
+            .from('route_stops')
+            .select('name, latitude, longitude')
+            .ilike('name', '%$query%')
+            .limit(5);
+
+        final List<Map<String, String>> dbResults = [];
+
+        final Set<String> existingNames = filteredRecents
+            .map((e) => e['name']!)
+            .toSet();
+
+        for (var item in response) {
+          final name = item['name'] as String;
+          if (!existingNames.contains(name)) {
+            final double lat = (item['latitude'] as num?)?.toDouble() ?? 0.0;
+            final double long = (item['longitude'] as num?)?.toDouble() ?? 0.0;
+            dbResults.add({'name': name, 'area': '$lat, $long'});
+            existingNames.add(name);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _displayList = [...filteredRecents, ...dbResults].take(5).toList();
+          });
+        }
+      } catch (e) {
+        debugPrint("Search error: $e");
+      }
+    });
+  }
+
+  void _swapLocations() {
+    _isProgrammaticUpdate = true;
+
+    final tempText = _fromController.text;
+    final tempValid = _isFromValid;
+    final tempError = _fromHasError;
+
+    _fromController.text = _toController.text;
+    _isFromValid = _isToValid;
+    _fromHasError = _toHasError;
+
+    _toController.text = tempText;
+    _isToValid = tempValid;
+    _toHasError = tempError;
+
+    _isProgrammaticUpdate = false;
+
+    if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
+    if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    _fromFocus.dispose();
+    _toFocus.dispose();
+    _searchDebounce?.cancel();
+    _validationDebounce?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool inputsFilled =
+        _fromController.text.isNotEmpty && _toController.text.isNotEmpty;
+    final bool canSearch =
+        inputsFilled &&
+        _isFromValid &&
+        _isToValid &&
+        !_isValidating &&
+        !_fromHasError &&
+        !_toHasError;
+
+    String listTitle = 'Recent destinations';
+    if (_fromFocus.hasFocus) {
+      listTitle = 'Suggested origin';
+    } else if (_toFocus.hasFocus) {
+      listTitle = 'Suggested destination';
+    }
+
+    String currentQuery = '';
+    if (_fromFocus.hasFocus) currentQuery = _fromController.text;
+    if (_toFocus.hasFocus) currentQuery = _toController.text;
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF6F1FF),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30, 20, 30, 10),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.chevron_left_rounded,
+                    color: Colors.black54,
+                    size: 24,
+                  ),
+                ),
+              ),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Find your next Trip',
+                      style: GoogleFonts.manrope(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryPurple,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Where are you heading for?',
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Input card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primaryPurple.withValues(alpha: 0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // From Field
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: _fromHasError
+                              ? _errorInputFill
+                              : _defaultInputFill,
+                          borderRadius: BorderRadius.circular(16),
+                          border: _fromHasError
+                              ? Border.all(
+                                  color: _errorBorder.withValues(alpha: 0.5),
+                                  width: 1,
+                                )
+                              : Border.all(color: Colors.transparent, width: 1),
+                        ),
+                        child: TextField(
+                          controller: _fromController,
+                          focusNode: _fromFocus,
+                          decoration: InputDecoration(
+                            hintText: 'From',
+                            hintStyle: GoogleFonts.nunito(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.my_location_rounded,
+                              color:
+                                  (_fromFocus.hasFocus ||
+                                      _fromController.text.isNotEmpty)
+                                  ? _primaryPurple
+                                  : Colors.grey[400],
+                              size: 20,
+                            ),
+                            suffixIcon:
+                                (_fromFocus.hasFocus &&
+                                    _fromController.text.isNotEmpty)
+                                ? GestureDetector(
+                                    onTap: () {
+                                      _fromController.clear();
+                                      _fromHasError = false;
+                                      _isFromValid = false;
+                                      _onSearchChanged('');
+                                      setState(() {});
+                                    },
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.grey[400],
+                                      size: 18,
+                                    ),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // To Field
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: _toHasError
+                              ? _errorInputFill
+                              : _defaultInputFill,
+                          borderRadius: BorderRadius.circular(16),
+                          border: _toHasError
+                              ? Border.all(
+                                  color: _errorBorder.withValues(alpha: 0.5),
+                                  width: 1,
+                                )
+                              : Border.all(color: Colors.transparent, width: 1),
+                        ),
+                        child: TextField(
+                          controller: _toController,
+                          focusNode: _toFocus,
+                          decoration: InputDecoration(
+                            hintText: 'To',
+                            hintStyle: GoogleFonts.nunito(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.location_on_rounded,
+                              color: _primaryPurple,
+                              size: 20,
+                            ),
+                            suffixIcon:
+                                (_toFocus.hasFocus &&
+                                    _toController.text.isNotEmpty)
+                                ? GestureDetector(
+                                    onTap: () {
+                                      _toController.clear();
+                                      _toHasError = false;
+                                      _isToValid = false;
+                                      _onSearchChanged('');
+                                      setState(() {});
+                                    },
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.grey[400],
+                                      size: 18,
+                                    ),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Row(
+                  children: [
+                    // Search Button
+                    Expanded(
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: canSearch
+                              ? LinearGradient(
+                                  colors: [_primaryPurple, _secondaryPurple],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                )
+                              : null,
+                          color: canSearch
+                              ? null
+                              : _primaryPurple.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: canSearch
+                              ? [
+                                  BoxShadow(
+                                    color: _secondaryPurple.withValues(
+                                      alpha: 0.25,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: canSearch
+                                ? () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/jcode_finder',
+                                      arguments: {
+                                        'origin': _fromController.text.trim(),
+                                        'destination': _toController.text
+                                            .trim(),
+                                      },
+                                    );
+                                  }
+                                : null,
+                            child: Center(
+                              child: _isValidating
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: _primaryPurple,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Search',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: canSearch
+                                            ? Colors.white
+                                            : _primaryPurple.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Swap Button
+                    GestureDetector(
+                      onTap: _swapLocations,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primaryPurple, _secondaryPurple],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _secondaryPurple.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.swap_vert_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // List Section
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 0,
+                      ),
+                      child: Text(
+                        listTitle,
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _displayList.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No locations found',
+                                style: GoogleFonts.nunito(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 30,
+                              ),
+                              itemCount: _displayList.length,
+                              itemBuilder: (context, index) {
+                                final place = _displayList[index];
+                                return _buildPlaceItem(
+                                  place['name']!,
+                                  place['area']!,
+                                  currentQuery,
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceItem(String name, String coordinates, String query) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: InkWell(
+        onTap: () {
+          _isProgrammaticUpdate = true;
+
+          if (_fromFocus.hasFocus) {
+            _fromController.text = name;
+            _isFromValid = true;
+            _fromHasError = false;
+            _toFocus.requestFocus();
+          } else if (_toFocus.hasFocus) {
+            _toController.text = name;
+            _isToValid = true;
+            _toHasError = false;
+            FocusScope.of(context).unfocus();
+          } else {
+            _toController.text = name;
+            _isToValid = true;
+            _toHasError = false;
+          }
+
+          _isProgrammaticUpdate = false;
+
+          if (_fromController.text.isNotEmpty &&
+              _toController.text.isNotEmpty) {
+            _debounceValidation();
+          }
+
+          setState(() {});
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.05),
+                    blurRadius: 3,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.history_rounded,
+                color: _primaryPurple,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHighlightedText(name, query),
+                  const SizedBox(height: 4),
+                  Text(
+                    coordinates,
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHighlightedText(String text, String query) {
+    final TextStyle baseStyle = GoogleFonts.nunito(
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      color: Colors.black87,
+    );
+
+    if (query.isEmpty) {
+      return Text(text, style: baseStyle, overflow: TextOverflow.ellipsis);
+    }
+
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+
+    if (!lowerText.contains(lowerQuery)) {
+      return Text(text, style: baseStyle, overflow: TextOverflow.ellipsis);
+    }
+
+    final start = lowerText.indexOf(lowerQuery);
+    final end = start + lowerQuery.length;
+
+    return RichText(
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: text.substring(0, start)),
+          TextSpan(
+            text: text.substring(start, end),
+            style: GoogleFonts.nunito(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: _primaryPurple,
+            ),
+          ),
+          TextSpan(text: text.substring(end)),
+        ],
+      ),
+    );
+  }
+}

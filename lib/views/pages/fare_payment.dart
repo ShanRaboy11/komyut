@@ -8,7 +8,10 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:gal/gal.dart';
+import 'package:komyut/main.dart';
 import 'commuter_app.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class RideBookingScreen extends StatefulWidget {
   final String? tripId;
@@ -114,16 +117,6 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
               tripResponse['drivers']['profiles'] = driverProfile;
             } else {
               debugPrint('⚠️ Profile query returned null');
-              debugPrint('⚠️ Checking if profile exists in database...');
-              
-              // Try to get ANY profile to see if table is accessible
-              final testQuery = await supabase
-                  .from('profiles')
-                  .select('id, first_name, last_name')
-                  .eq('id', driverProfileId)
-                  .maybeSingle();
-              
-              debugPrint('🔍 Test query result: $testQuery');
             }
           } catch (e, stackTrace) {
             debugPrint('❌ Error fetching driver profile: $e');
@@ -155,9 +148,6 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
 
       debugPrint('✅ Trip details loaded');
       debugPrint('📝 Transaction number: $_transactionNumber');
-      debugPrint('👤 Driver info: ${tripResponse['drivers']}');
-      debugPrint('👤 Driver profile: ${tripResponse['drivers']?['profiles']}');
-      debugPrint('👤 Trip metadata: ${tripResponse['metadata']}');
     } catch (e, stackTrace) {
       debugPrint('❌ Error loading trip details: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -330,7 +320,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
               child: Container(
                 color: Colors.white,
                 padding: const EdgeInsets.all(24),
-                child: _buildReceiptContent(),
+                child: _isLoading ? _buildSkeletonLoading() : _buildReceiptContent(),
               ),
             ),
             
@@ -341,7 +331,7 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: _isDownloading ? null : _downloadReceipt,
+                      onPressed: _isDownloading || _isLoading ? null : _downloadReceipt,
                       icon: _isDownloading
                           ? const SizedBox(
                               width: 20,
@@ -370,13 +360,21 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CommuterApp(),
-                          ),
-                          (route) => false,
-                        );
+                        // Prefer navigating via the CommuterApp nested navigator
+                        // (matches other receipt pages). If it's not available
+                        // fall back to AuthStateHandler to re-evaluate role.
+                        if (CommuterApp.navigatorKey.currentState != null) {
+                          CommuterApp.navigatorKey.currentState
+                              ?.pushNamedAndRemoveUntil('/', (route) => false);
+                        } else {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AuthStateHandler(),
+                            ),
+                            (route) => false,
+                          );
+                        }
                       },
                       icon: const Icon(Icons.home),
                       label: const Text('Home'),
@@ -399,26 +397,132 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
     );
   }
 
+  Widget _buildSkeletonLoading() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF8E4CB6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.05 * 255).round()),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Route skeleton
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  _buildSkeletonBox(46, 46, radius: 12),
+                  Container(
+                    height: 35,
+                    width: 2,
+                    color: Colors.grey.withAlpha((0.2 * 255).round()),
+                  ),
+                  _buildSkeletonBox(46, 46, radius: 12),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSkeletonBox(120, 16),
+                    const SizedBox(height: 4),
+                    _buildSkeletonBox(80, 12),
+                    const SizedBox(height: 43),
+                    _buildSkeletonBox(120, 16),
+                    const SizedBox(height: 4),
+                    _buildSkeletonBox(80, 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Divider(height: 4, thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
+          const SizedBox(height: 16),
+
+          // Fare details skeleton
+          _buildSkeletonRow(),
+          _buildSkeletonRow(),
+          _buildSkeletonRow(),
+          const SizedBox(height: 8),
+          Divider(thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
+          const SizedBox(height: 8),
+          _buildSkeletonRow(),
+          _buildSkeletonRow(),
+          const SizedBox(height: 12),
+          Divider(thickness: 1, color: Colors.grey.withAlpha((0.2 * 255).round())),
+          const SizedBox(height: 8),
+          _buildSkeletonRow(),
+          const SizedBox(height: 20),
+
+          // Barcode skeleton
+          Center(
+            child: Column(
+              children: [
+                _buildSkeletonBox(200, 60, radius: 8),
+                const SizedBox(height: 8),
+                _buildSkeletonBox(120, 12),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonBox(double width, double height, {double radius = 4}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.withAlpha((0.2 * 255).round()),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildSkeletonBox(100, 14),
+          _buildSkeletonBox(60, 14),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReceiptContent() {
-    if (_isLoading || _tripDetails == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40.0),
-          child: CircularProgressIndicator(),
+    if (_tripDetails == null) {
+      return Center(
+        child: Text(
+          'No trip details available',
+          style: GoogleFonts.nunito(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
         ),
       );
     }
 
-    final driver = _tripDetails!['drivers'];
-    final route = _tripDetails!['routes'];
+    // driver and route details are available on _tripDetails if needed
     final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
     
     final driverName = _getDriverName();
-    final vehiclePlate = driver?['vehicle_plate'] ?? 'N/A';
-    final puvType = driver?['puv_type'] ?? metadata?['puv_type'] ?? 'traditional';
-    final routeCode = route?['code'] ?? metadata?['route_code'] ?? 'N/A';
-
-    final distanceKm = (widget.distanceMeters ?? 0) / 1000;
     
     // Get origin and destination stop names
     String originStop = widget.originStopName ?? 
@@ -435,309 +539,249 @@ class _RideBookingScreenState extends State<RideBookingScreen> {
         ? DateTime.parse(_tripDetails!['started_at'])
         : DateTime.now();
     
-    final dateFormat = '${startedAt.month}/${startedAt.day}/${startedAt.year}';
-    final timeFormat = '${startedAt.hour.toString().padLeft(2, '0')}:${startedAt.minute.toString().padLeft(2, '0')}';
+    final completedAt = _tripDetails!['completed_at'] != null 
+        ? DateTime.parse(_tripDetails!['completed_at'])
+        : DateTime.now();
+
+    final dateFormat = DateFormat('MMMM d, yyyy').format(startedAt);
+    final fromTime = DateFormat('h:mm a').format(startedAt);
+    final toTime = DateFormat('h:mm a').format(completedAt);
+    final timeFormat = DateFormat('h:mm a').format(startedAt);
 
     // Check if discount was applied
     final discountApplied = metadata?['discount_applied'] == true;
-    final discountRate = (metadata?['discount_rate'] as num?)?.toDouble() ?? 0.0;
-    final originalFare = metadata?['original_fare'] as num?;
+    // discountRate extracted from metadata if needed
+    final originalFare = (metadata?['original_fare'] as num?)?.toDouble() ?? widget.fareAmount ?? 0.0;
+    final discountAmount = discountApplied ? (originalFare - (widget.fareAmount ?? 0)) : 0.0;
+    
+    final passengers = _tripDetails!['passengers_count'] ?? 1;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Success header
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_circle,
-                color: Colors.green.shade600,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Trip Completed!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Payment successful',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Transaction barcode
-        if (_transactionNumber != null) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Column(
-              children: [
-                BarcodeWidget(
-                  barcode: Barcode.code128(),
-                  data: _transactionNumber!,
-                  width: 250,
-                  height: 80,
-                  drawText: false,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _transactionNumber!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF8E4CB6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.05 * 255).round()),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
-          const SizedBox(height: 24),
         ],
-
-        // Date and Time
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Date',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  dateFormat,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Time',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  timeFormat,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 20),
-        const Divider(),
-        const SizedBox(height: 20),
-
-        // Trip details
-        _buildDetailRow('Driver', driverName),
-        _buildDetailRow('Vehicle', '$vehiclePlate (${puvType.toUpperCase()})'),
-        _buildDetailRow('Route', routeCode),
-        
-        const SizedBox(height: 16),
-
-        // Route visualization
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Column(
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🗺️ Route
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Trip Route',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
+              // Icon column with fixed width
+              Column(
                 children: [
                   Container(
-                    width: 12,
-                    height: 12,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade600,
-                      shape: BoxShape.circle,
+                      color: const Color(0xFFFFCCF8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.map_outlined,
+                      color: Color(0xFFB945AA),
+                      size: 30,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      originStop,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  Container(
+                    height: 35,
+                    width: 2,
+                    color: const Color(0xFFB945AA).withAlpha((0.4 * 255).round()),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE9C5FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: Color(0xFF8E4CB6),
+                      size: 30,
                     ),
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 5),
+              const SizedBox(width: 16),
+              // Text column
+              Expanded(
                 child: Column(
-                  children: List.generate(
-                    3,
-                    (index) => Container(
-                      width: 2,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Boarding location
+                    _buildLocationRow(originStop, fromTime),
+                    const SizedBox(height: 43),
+                    // Departure location
+                    _buildLocationRow(destinationStop, toTime),
+                  ],
                 ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade600,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      destinationStop,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        ),
+          const Divider(height: 28, thickness: 1),
 
-        const SizedBox(height: 20),
-        const Divider(),
-        const SizedBox(height: 20),
-        
-        // Payment breakdown
-        const Text(
-          'Payment Summary',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        _buildDetailRow(
-          'Distance',
-          '${distanceKm.toStringAsFixed(2)} km',
-        ),
-        _buildDetailRow(
-          'Passenger${(_tripDetails!['passengers_count'] ?? 1) > 1 ? 's' : ''}',
-          '${_tripDetails!['passengers_count'] ?? 1}',
-        ),
-        
-        // Show discount information if applicable
-        if (discountApplied && originalFare != null) ...[
+          // 🧾 Fare details
+          _buildFareRow("Driver", driverName, isBoldRight: true),
+          _buildFareRow("Date", "$dateFormat   $timeFormat", isBoldRight: true),
+          _buildFareRow("No. of Passenger/s", passengers.toString()),
           const SizedBox(height: 8),
-          _buildDetailRow(
-            'Original Fare',
-            '₱${originalFare.toStringAsFixed(2)}',
+          const Divider(thickness: 1),
+          const SizedBox(height: 8),
+          _buildFareRow("Base Fare", "₱${originalFare.toStringAsFixed(2)}"),
+          _buildFareRow(
+            "Discount (if applicable)",
+            "₱${discountAmount.toStringAsFixed(2)}",
           ),
-          _buildDetailRow(
-            'Discount (${(discountRate * 100).toStringAsFixed(0)}%)',
-            '-₱${(originalFare - (widget.fareAmount ?? 0)).toStringAsFixed(2)}',
-            valueColor: Colors.green,
+          const SizedBox(height: 12),
+          const Divider(thickness: 1),
+          const SizedBox(height: 8),
+          _buildFareRow(
+            "Total Fare",
+            "₱${(widget.fareAmount ?? 0.0).toStringAsFixed(2)}",
+            isBoldRight: true,
+            isBoldLeft: true,
+          ),
+
+          const SizedBox(height: 20),
+
+          // 🧍 Barcode Section
+          Center(
+            child: Column(
+              children: [
+                Builder(
+                  builder: (context) {
+                    final tx = (_transactionNumber ?? '').trim();
+                    return tx.isNotEmpty
+                        ? Column(
+                            children: [
+                              BarcodeWidget(
+                                barcode: Barcode.code128(),
+                                data: tx,
+                                height: 60,
+                                width: 200,
+                                drawText: false,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                tx,
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.black.withAlpha((0.7 * 255).round()),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              Container(
+                                height: 60,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withAlpha((0.1 * 255).round()),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.grey.withAlpha((0.3 * 255).round()),
+                                    style: BorderStyle.solid,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.qr_code_2,
+                                    size: 40,
+                                    color: Colors.grey.withAlpha((0.4 * 255).round()),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No Transaction Number',
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  color: Colors.grey.withAlpha((0.6 * 255).round()),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
-        
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.purple.shade50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: _buildDetailRow(
-            'Total Fare',
-            '₱${widget.fareAmount?.toStringAsFixed(2) ?? '0.00'}',
-            isTotal: true,
-          ),
-        ),
+      ),
+    );
+  }
 
-        const SizedBox(height: 24),
+  Widget _buildLocationRow(String title, String time) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.manrope(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.grey.withAlpha((0.6 * 255).round()),
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          time,
+          style: GoogleFonts.nunito(
+              fontSize: 12,
+              color: Colors.black.withAlpha((0.6 * 255).round()),
+            ),
+        ),
       ],
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isTotal = false, Color? valueColor}) {
+  Widget _buildFareRow(
+    String label,
+    String value, {
+    bool isBoldRight = false,
+    bool isBoldLeft = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              color: isTotal ? Colors.black : Colors.grey.shade700,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontWeight: isBoldLeft ? FontWeight.w800 : FontWeight.w600,
+                fontSize: isBoldLeft ? 16 : 14,
+                color: Colors.black87,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 14,
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? (isTotal ? const Color(0xFF8E4CB6) : Colors.black),
+            style: GoogleFonts.manrope(
+              fontWeight: isBoldRight ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 13,
+              color: Colors.black87,
             ),
+            textAlign: TextAlign.right,
           ),
         ],
       ),

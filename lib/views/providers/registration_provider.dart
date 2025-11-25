@@ -9,6 +9,9 @@ class RegistrationProvider extends ChangeNotifier {
   String? _errorMessage;
   File? _idProofFile;
   File? _driverLicenseFile;
+  File? _ltoOrCrFile;
+  File? _ltfrbFranchiseFile;
+  File? _governmentIdFile;
   List<Map<String, dynamic>> _availableRoutes = [];
 
   // Getters
@@ -16,6 +19,9 @@ class RegistrationProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   File? get idProofFile => _idProofFile;
   File? get driverLicenseFile => _driverLicenseFile;
+  File? get ltoOrCrFile => _ltoOrCrFile;
+  File? get ltfrbFranchiseFile => _ltfrbFranchiseFile;
+  File? get governmentIdFile => _governmentIdFile;
   List<Map<String, dynamic>> get availableRoutes => _availableRoutes;
   Map<String, dynamic> get registrationData =>
       _registrationService.getRegistrationData();
@@ -67,7 +73,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // Step 2b: Save driver personal info (UPDATED with puv_type)
+  // Step 2b: Save driver personal info
   Future<bool> saveDriverPersonalInfo({
     required String firstName,
     required String lastName,
@@ -88,7 +94,6 @@ class RegistrationProvider extends ChangeNotifier {
 
       _driverLicenseFile = driverLicenseFile;
 
-      // Just save the LOCAL file path (don't upload yet)
       _registrationService.saveDriverPersonalInfo(
         firstName: firstName,
         lastName: lastName,
@@ -97,7 +102,7 @@ class RegistrationProvider extends ChangeNotifier {
         address: address,
         licenseNumber: licenseNumber,
         assignedOperator: assignedOperator,
-        driverLicensePath: driverLicenseFile.path, // Local path
+        driverLicensePath: driverLicenseFile.path,
         vehiclePlate: vehiclePlate,
         routeCode: routeCode,
         puvType: puvType,
@@ -114,18 +119,25 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  // Step 2c: Save operator personal info
+  // Step 2c: Save operator personal info (UPDATED with file uploads)
   Future<bool> saveOperatorPersonalInfo({
     required String firstName,
     required String lastName,
     required String companyName,
     required String companyAddress,
     required String contactEmail,
+    required File ltoOrCrFile,
+    required File ltfrbFranchiseFile,
+    required File governmentIdFile,
   }) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+
+      _ltoOrCrFile = ltoOrCrFile;
+      _ltfrbFranchiseFile = ltfrbFranchiseFile;
+      _governmentIdFile = governmentIdFile;
 
       _registrationService.saveOperatorPersonalInfo(
         firstName: firstName,
@@ -133,6 +145,9 @@ class RegistrationProvider extends ChangeNotifier {
         companyName: companyName,
         companyAddress: companyAddress,
         contactEmail: contactEmail,
+        ltoOrCrPath: ltoOrCrFile.path,
+        ltfrbFranchisePath: ltfrbFranchiseFile.path,
+        governmentIdPath: governmentIdFile.path,
       );
 
       _isLoading = false;
@@ -280,6 +295,9 @@ class RegistrationProvider extends ChangeNotifier {
     _registrationService.clearRegistrationData();
     _idProofFile = null;
     _driverLicenseFile = null;
+    _ltoOrCrFile = null;
+    _ltfrbFranchiseFile = null;
+    _governmentIdFile = null;
     _availableRoutes = [];
     _errorMessage = null;
     notifyListeners();

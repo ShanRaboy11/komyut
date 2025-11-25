@@ -46,7 +46,7 @@ class ReportDetailsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -72,7 +72,7 @@ class ReportDetailsPage extends StatelessWidget {
                 Text(
                   "Reports",
                   style: GoogleFonts.nunito(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -84,7 +84,7 @@ class ReportDetailsPage extends StatelessWidget {
             Text(
               "Report Details",
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -96,7 +96,7 @@ class ReportDetailsPage extends StatelessWidget {
                   formattedDate,
                   style: GoogleFonts.manrope(
                     color: Colors.black87,
-                    fontSize: 15,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -117,7 +117,7 @@ class ReportDetailsPage extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         color: _getPriorityColor(priority!),
                         fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -135,7 +135,7 @@ class ReportDetailsPage extends StatelessWidget {
             Text(
               "Description",
               style: GoogleFonts.manrope(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
@@ -146,7 +146,7 @@ class ReportDetailsPage extends StatelessWidget {
             Text(
               description,
               style: GoogleFonts.manrope(
-                fontSize: 14,
+                fontSize: 12,
                 height: 1.4,
                 color: Colors.black87.withValues(alpha: 0.8),
               ),
@@ -172,7 +172,7 @@ class ReportDetailsPage extends StatelessWidget {
                     tag,
                     style: GoogleFonts.manrope(
                       color: const Color(0xFF7A3DB8),
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -186,7 +186,7 @@ class ReportDetailsPage extends StatelessWidget {
             Text(
               "Attachment",
               style: GoogleFonts.manrope(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),

@@ -114,7 +114,7 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                   Text(
                     "Reports",
                     style: GoogleFonts.manrope(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -202,7 +202,7 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 14,
               color: isActive ? Color(0xFF8E4CB6) : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),

@@ -90,6 +90,12 @@ class _AdminReportsPage extends State<AdminReportsPage> {
     }
   }
 
+  static const LinearGradient _kGradient = LinearGradient(
+    colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -100,7 +106,6 @@ class _AdminReportsPage extends State<AdminReportsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
@@ -139,16 +144,96 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                           tab["value"],
                           activePriority == tab["value"],
                           isSmall,
-                        ),
-                      )
-                      .toList(),
-                ),
+=======
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Reports',
+                              style: GoogleFonts.manrope(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Manage reports',
+                              style: GoogleFonts.nunito(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: _kGradient,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${reports.length} Reports',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF9C6BFF).withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: priorityTabs
+                          .map(
+                            (tab) => _buildPillTab(
+                              tab["label"],
+                              tab["value"],
+                              activePriority == tab["value"],
+                              isSmall,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-              // --- Reports List ---
-              Expanded(
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ListView.builder(
                   itemCount: filteredReports.length,
                   itemBuilder: (context, index) {
@@ -171,6 +256,8 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                               name: r.name,
                               role: r.role ?? "Commuter", 
                               id: "123456789", 
+                              role: r.role,
+                              id: "123456789",
                               priority: r.priority,
                               date: r.date,
                               description: r.description,
@@ -184,8 +271,8 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                   },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -196,9 +283,11 @@ class _AdminReportsPage extends State<AdminReportsPage> {
       child: GestureDetector(
         onTap: () => setState(() => activePriority = value),
         child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           padding: EdgeInsets.symmetric(vertical: isSmall ? 10 : 12),
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
+            gradient: isActive ? _kGradient : null,
+            color: isActive ? null : Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -207,6 +296,8 @@ class _AdminReportsPage extends State<AdminReportsPage> {
             style: GoogleFonts.manrope(
               fontSize: 16,
               color: isActive ? const Color(0xFF8E4CB6) : Colors.grey[600],
+              fontSize: 13,
+              color: isActive ? Colors.white : Colors.grey.shade700,
               fontWeight: FontWeight.w600,
             ),
             child: Text(label),

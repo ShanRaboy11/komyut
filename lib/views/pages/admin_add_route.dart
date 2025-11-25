@@ -556,13 +556,12 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F4FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
                       icon: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF5B53C2),
+                        Icons.chevron_left_rounded,
+                        color: Color.fromARGB(255, 0, 0, 0),
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -575,14 +574,14 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                         Text(
                           'Add New Route',
                           style: GoogleFonts.manrope(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           'Create a new jeepney route',
                           style: GoogleFonts.nunito(
-                            fontSize: 13,
+                            fontSize: 11,
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -668,6 +667,10 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                         const SizedBox(height: 20),
                         TextField(
                           controller: _routeCodeController,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Route Code *',
                             hintText: 'e.g., 04L',
@@ -700,6 +703,10 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _routeNameController,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Route Name (Optional)',
                             hintText: 'e.g., SM to Ayala',
@@ -731,6 +738,10 @@ class _AdminAddRoutePageState extends State<AdminAddRoutePage> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _descriptionController,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Description (Optional)',
                             hintText: 'Brief description of the route',

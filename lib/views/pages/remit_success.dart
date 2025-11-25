@@ -15,12 +15,6 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
 
-  final gradientColors = const [
-    Color(0xFFB945AA),
-    Color(0xFF8E4CB6),
-    Color(0xFF5B53C2),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -65,14 +59,14 @@ class _RemittanceSuccessPageState extends State<RemittanceSuccessPage>
               'Remittance Successful!',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 150),
+            const SizedBox(height: 100),
             _buildHomeButton(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
             _buildWalletButton(context),
           ],
         ),

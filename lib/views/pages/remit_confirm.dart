@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
 class RemitConfirmationPage extends StatefulWidget {
@@ -41,21 +44,39 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
     return 'K0MYUT-RMT$part1'.substring(0, 25);
   }
 
-  void _onConfirmPressed() {
+  Future<void> _onConfirmPressed() async {
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final double amountVal = double.tryParse(widget.amount) ?? 0.0;
+
+    final success = await provider.submitRemittance(
+      amountVal,
+      _transactionCode,
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (success) {
       DriverApp.navigatorKey.currentState?.pushReplacementNamed(
         '/remit_success',
       );
-    });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Transaction failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
-    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+    final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final Color brandColor = const Color(0xFF8E4CB6);
 
     return Scaffold(
@@ -65,12 +86,12 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Remittance',
-          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -88,7 +109,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
               'Ensure details are correct before confirming.',
               style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 40),
             _buildConfirmButton(brandColor),
           ],
         ),
@@ -107,7 +128,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -119,7 +140,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
                 'Confirm',
                 style: GoogleFonts.manrope(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
               ),
       ),
@@ -153,7 +174,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
               Text(
                 'Remittance Transaction',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -180,7 +201,7 @@ class _RemitConfirmationPageState extends State<RemitConfirmationPage> {
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 14,
+                  fontSize: 11,
                   color: Colors.black54,
                   letterSpacing: 1.5,
                 ),

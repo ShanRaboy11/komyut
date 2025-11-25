@@ -4,6 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+import '../services/trips.dart';
+import '../models/trips.dart';
+import '../services/admin_dashboard.dart' show AnalyticsPeriod;
 
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
@@ -35,16 +40,33 @@ class _DriverDashboardNavContent extends StatefulWidget {
 
 class _DriverDashboardNavContentState
     extends State<_DriverDashboardNavContent> {
+  bool _isQROpen = false;
+
+  void _openQR() {
+    setState(() {
+      _isQROpen = true;
+    });
+  }
+
+  void _closeQR() {
+    setState(() {
+      _isQROpen = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBottomNavBar(
-      pages: const [
-        DriverDashboard(),
-        DriverActivityPage(),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ Feedback")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
+      pages: [
+        _isQROpen
+            ? DriverQRGeneratePage(onBack: _closeQR)
+            : DriverDashboard(onViewQR: _openQR),
+
+        const DriverActivityPage(),
+        const Center(child: Text("📋 Activity")),
+        const Center(child: Text("✍️ Feedback")),
+        const Center(child: Text("🔔 Notifications")),
+        const Center(child: Text("👤 Profile")),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -58,13 +80,16 @@ class _DriverDashboardNavContentState
 }
 
 class DriverDashboard extends StatefulWidget {
-  const DriverDashboard({super.key});
+  final VoidCallback? onViewQR;
+
+  const DriverDashboard({super.key, this.onViewQR});
 
   @override
   State<DriverDashboard> createState() => _DriverDashboardState();
 }
 
-class _DriverDashboardState extends State<DriverDashboard> {
+class _DriverDashboardState extends State<DriverDashboard>
+  with SingleTickerProviderStateMixin {
   final QRService _qrService = QRService();
 
   bool _isBalanceVisible = true;
@@ -78,21 +103,60 @@ class _DriverDashboardState extends State<DriverDashboard> {
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
   }
 
+  AnimationController? _shimmerController;
+
   Future<void> _loadData() async {
-    // Load dashboard data from database
     final dashboardProvider = Provider.of<DriverDashboardProvider>(
       context,
       listen: false,
     );
     await dashboardProvider.loadDashboardData();
-
-    // Load QR code
     await _loadCurrentQR();
+    // Load analytics chart data
+    await _loadAnalytics();
+  }
+
+  // Analytics state
+  AnalyticsPeriod _currentPeriod = AnalyticsPeriod.weekly;
+  List<ChartDataPoint> _chartData = [];
+  bool _isAnalyticsLoading = false;
+  String? _analyticsError;
+
+  Future<void> _loadAnalytics() async {
+    setState(() {
+      _isAnalyticsLoading = true;
+      _analyticsError = null;
+    });
+
+    try {
+      final tripsService = TripsService();
+      final timeRange = _currentPeriod == AnalyticsPeriod.weekly
+          ? 'weekly'
+          : (_currentPeriod == AnalyticsPeriod.monthly ? 'monthly' : 'yearly');
+
+      final points = await tripsService.getChartData(
+        timeRange: timeRange,
+        rangeOffset: 0,
+      );
+
+      setState(() {
+        _chartData = points;
+      });
+    } catch (e) {
+      setState(() {
+        _analyticsError = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isAnalyticsLoading = false;
+      });
+    }
   }
 
   Future<void> _loadCurrentQR() async {
@@ -106,15 +170,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
     }
   }
 
-  void _navigateToQRGeneration() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DriverQRGenerateNav()),
-    ).then((_) {
-      _loadCurrentQR();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -123,9 +178,32 @@ class _DriverDashboardState extends State<DriverDashboard> {
     return Consumer<DriverDashboardProvider>(
       builder: (context, dashboardProvider, child) {
         if (dashboardProvider.isLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFB945AA)),
+          // Show enhanced shimmer skeletons while provider is loading
+          return Scaffold(
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header gradient skeleton with two stat cards
+                    _buildShimmer(child: _buildHeaderSkeleton()),
+                    const SizedBox(height: 16),
+
+                    // QR Card skeleton
+                    _buildShimmer(child: _buildQrSkeleton()),
+                    const SizedBox(height: 16),
+
+                    // Analytics skeleton (period buttons + chart)
+                    _buildShimmer(child: _buildAnalyticsSkeleton()),
+                    const SizedBox(height: 16),
+
+                    // Feedback / Reports skeleton
+                    _buildShimmer(child: _buildFeedbackSkeleton()),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
             ),
           );
         }
@@ -191,7 +269,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // HEADER SECTION
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(30),
@@ -219,25 +296,28 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                 children: [
                                   SvgPicture.asset(
                                     'assets/images/logo_white.svg',
-                                    height: 80,
-                                    width: 80,
+                                    height: 60,
+                                    width: 60,
                                   ),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        'Hi, ${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}',
-                                        style: GoogleFonts.manrope(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 24,
-                                          color: Colors.white,
+                                        'Welcome back,',
+                                        style: GoogleFonts.nunito(
+                                          fontSize: 16,
+                                          color: Colors.white.withAlpha(230),
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const Text(
-                                        'Welcome back!',
-                                        style: TextStyle(
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${dashboardProvider.firstName.isEmpty ? 'Driver' : dashboardProvider.firstName}!',
+                                        style: GoogleFonts.manrope(
+                                          fontWeight: FontWeight.bold,
                                           fontSize: 20,
                                           color: Colors.white,
+                                          height: 1.1,
                                         ),
                                       ),
                                     ],
@@ -246,14 +326,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
                               ),
                               const SizedBox(height: 20),
 
-                              // EARNINGS + BALANCE
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Expanded(
                                     child: _buildHeaderCard(
-                                      title: "Today's Earnings",
+                                      title: "Today's Income",
                                       amount: dashboardProvider.todayEarnings
                                           .toStringAsFixed(2),
                                       isBalanceVisible: _isEarningsVisible,
@@ -293,7 +372,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
                           ),
                           child: Column(
                             children: [
-                              // MAIN QR DISPLAY AREA
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -382,7 +460,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
                                     const SizedBox(height: 20),
 
-                                    // QR Code Display or Prompt
                                     if (!qrGenerated)
                                       DottedBorder(
                                         color: const Color(0xFFB945AA),
@@ -407,7 +484,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                               Text(
                                                 'No QR Code Generated',
                                                 style: GoogleFonts.manrope(
-                                                  fontSize: 16,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.w600,
                                                   color: Colors.grey[600],
                                                 ),
@@ -462,7 +539,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                                               child: Text(
                                                 'Active QR Code',
                                                 style: GoogleFonts.manrope(
-                                                  fontSize: 14,
+                                                  fontSize: 12,
                                                   fontWeight: FontWeight.w600,
                                                   color: const Color(
                                                     0xFFB945AA,
@@ -476,30 +553,30 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
                                     const SizedBox(height: 20),
 
-                                    // Generate/View QR Button
                                     CustomButton(
                                       text: qrGenerated
                                           ? 'View QR Code'
                                           : 'Generate QR Code',
-                                      onPressed: _navigateToQRGeneration,
+                                      onPressed: () {
+                                        if (widget.onViewQR != null) {
+                                          widget.onViewQR!();
+                                        }
+                                      },
                                       isFilled: true,
                                       textColor: Colors.white,
                                       width: double.infinity,
-                                      height: 50,
+                                      height: 45,
                                       borderRadius: 30,
+                                      fontSize: 14,
                                     ),
                                   ],
                                 ),
                               ),
-
                               const SizedBox(height: 20),
 
-                              // ANALYTICS CARD
+                              // ANALYTICS CARD (backend-driven)
                               _buildAnalyticsCard(dashboardProvider.rating),
-
                               const SizedBox(height: 20),
-
-                              // FEEDBACK CARD
                               _buildFeedbackCard(
                                 dashboardProvider.reportsCount,
                               ),
@@ -535,52 +612,56 @@ class _DriverDashboardState extends State<DriverDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            title,
+            style: GoogleFonts.manrope(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Text(
+                        '₱',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isBalanceVisible ? amount : '•••••',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              IconButton(
-                onPressed: onToggleVisibility,
-                icon: Icon(
-                  isBalanceVisible
-                      ? Icons.visibility_rounded
-                      : Icons.visibility_off_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Text(
-                '₱ ',
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.normal,
                 ),
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  isBalanceVisible ? amount : '•••',
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              InkWell(
+                onTap: onToggleVisibility,
+                borderRadius: BorderRadius.circular(12),
+                child: Icon(
+                  isBalanceVisible
+                      ? Icons.visibility_rounded
+                      : Icons.visibility_off_rounded,
+                  color: Colors.white.withAlpha(200),
+                  size: 20,
                 ),
               ),
             ],
@@ -591,6 +672,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   Widget _buildAnalyticsCard(double rating) {
+    // Build analytics card that includes a line chart driven by backend data
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -612,48 +694,315 @@ class _DriverDashboardState extends State<DriverDashboard> {
             ),
           ),
           const SizedBox(height: 10),
-          Container(height: 60, color: Colors.grey[200]),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, 3),
-                ),
-              ],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ratings',
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.left,
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  alignment: Alignment.center,
-                  child: Text(
-                    rating > 0 ? rating.toStringAsFixed(1) : 'No ratings yet',
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: rating > 0 ? 30 : 18,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
+
+          // Period selector
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _periodButton(
+                label: 'Week',
+                isSelected: _currentPeriod == AnalyticsPeriod.weekly,
+                onTap: () async {
+                  setState(() => _currentPeriod = AnalyticsPeriod.weekly);
+                  await _loadAnalytics();
+                },
+              ),
+              const SizedBox(width: 8),
+              _periodButton(
+                label: 'Month',
+                isSelected: _currentPeriod == AnalyticsPeriod.monthly,
+                onTap: () async {
+                  setState(() => _currentPeriod = AnalyticsPeriod.monthly);
+                  await _loadAnalytics();
+                },
+              ),
+              const SizedBox(width: 8),
+              _periodButton(
+                label: 'Year',
+                isSelected: _currentPeriod == AnalyticsPeriod.yearly,
+                onTap: () async {
+                  setState(() => _currentPeriod = AnalyticsPeriod.yearly);
+                  await _loadAnalytics();
+                },
+              ),
+            ],
           ),
+
+          const SizedBox(height: 12),
+
+          if (_isAnalyticsLoading)
+            Container(height: 200, alignment: Alignment.center, child: const CircularProgressIndicator())
+          else if (_analyticsError != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Error loading analytics: $_analyticsError',
+                style: GoogleFonts.nunito(color: Colors.red),
+              ),
+            )
+          else if (_chartData.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'No analytics data available',
+                style: GoogleFonts.nunito(color: Colors.grey.shade700),
+              ),
+            )
+          else
+            SizedBox(
+              height: 220,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.grey.shade200,
+                      strokeWidth: 1,
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: (_chartData.map((e) => e.count).reduce((a, b) => a > b ? a : b).toDouble() / 4).clamp(1, double.infinity),
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toInt().toString(),
+                            style: GoogleFonts.nunito(fontSize: 10, color: Colors.grey.shade600),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        getTitlesWidget: (value, _) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < _chartData.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                _chartData[index].label,
+                                style: GoogleFonts.nunito(fontSize: 11, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
+                      left: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  minX: 0,
+                  maxX: (_chartData.length - 1).toDouble(),
+                  minY: 0,
+                  maxY: (_chartData.map((e) => e.count).reduce((a, b) => a > b ? a : b).toDouble() * 1.2).clamp(5.0, double.infinity),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _chartData.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.count.toDouble())).toList(),
+                      isCurved: true,
+                      gradient: LinearGradient(colors: [const Color(0xFFB945AA), const Color(0xFF5B53C2)]),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: true),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(colors: [const Color(0xFFB945AA).withAlpha(40), const Color(0xFF5B53C2).withAlpha(40)]),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            spot.y.toStringAsFixed(0),
+                            GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Small reusable period button used by analytics
+  Widget _periodButton({required String label, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF5B53C2) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.purple.shade100),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.nunito(
+            color: isSelected ? Colors.white : Colors.grey.shade800,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shimmerController?.dispose();
+    _shimmerController = null;
+    super.dispose();
+  }
+
+  // Shimmer helper (copied from admin pages for consistent skeletons)
+  Widget _buildShimmer({required Widget child}) {
+    // Lazily create controller if missing (handles hot-reload or unexpected states)
+    final controller = _shimmerController ??= AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, shimmerChild) {
+        final v = controller.value;
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
+              stops: [v - 0.3, v, v + 0.3],
+            ).createShader(bounds);
+          },
+          child: shimmerChild,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Skeleton helper is provided by admin pages; driver uses detailed skeleton builders below.
+
+  // Detailed header skeleton (gradient header with two stat placeholders)
+  Widget _buildHeaderSkeleton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 18, width: 180, color: Colors.white),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: Container(height: 72, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
+              const SizedBox(width: 12),
+              Expanded(child: Container(height: 72, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // QR card skeleton (box with placeholder icon area and button)
+  Widget _buildQrSkeleton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 18, width: 120, color: Colors.grey.shade200),
+          const SizedBox(height: 12),
+          Container(height: 120, width: double.infinity, color: Colors.grey.shade200),
+          const SizedBox(height: 12),
+          Align(alignment: Alignment.center, child: Container(height: 40, width: 200, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(24)))),
+        ],
+      ),
+    );
+  }
+
+  // Analytics skeleton (period buttons + chart area)
+  Widget _buildAnalyticsSkeleton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade50),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(height: 28, width: 60, color: Colors.grey.shade200),
+              const SizedBox(width: 8),
+              Container(height: 28, width: 60, color: Colors.grey.shade200),
+              const SizedBox(width: 8),
+              Container(height: 28, width: 60, color: Colors.grey.shade200),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(height: 160, width: double.infinity, color: Colors.grey.shade200),
+        ],
+      ),
+    );
+  }
+
+  // Feedback / reports skeleton
+  Widget _buildFeedbackSkeleton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade50),
+      ),
+      child: Row(
+        children: [
+          Container(height: 60, width: 60, color: Colors.grey.shade200),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(height: 16, width: 120, color: Colors.grey.shade200), const SizedBox(height: 8), Container(height: 14, width: 80, color: Colors.grey.shade200)])),
+          const SizedBox(width: 12),
+          Container(height: 36, width: 110, color: Colors.grey.shade200),
         ],
       ),
     );
@@ -702,7 +1051,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   'Reports',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.left,
                 ),
@@ -730,7 +1079,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
             width: double.infinity,
             height: 45,
             borderRadius: 30,
-            fontSize: 14,
+            fontSize: 12,
           ),
         ],
       ),

@@ -42,7 +42,7 @@ class AboutPage extends StatelessWidget {
                   Text(
                     "About Us",
                     style: GoogleFonts.manrope(
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -105,7 +105,7 @@ class AboutPage extends StatelessWidget {
             text: start,
             style: GoogleFonts.nunito(
               color: Colors.black87,
-              fontSize: 17,
+              fontSize: 15,
               height: 1.6,
             ),
           ),
@@ -115,7 +115,7 @@ class AboutPage extends StatelessWidget {
               style: GoogleFonts.nunito(
                 color: const Color(0xFF5B53C2), // Komyut purple
                 fontWeight: FontWeight.w600,
-                fontSize: 17,
+                fontSize: 15,
               ),
             ),
           if (end != null)
@@ -123,7 +123,7 @@ class AboutPage extends StatelessWidget {
               text: end,
               style: GoogleFonts.nunito(
                 color: Colors.black87,
-                fontSize: 17,
+                fontSize: 15,
                 height: 1.6,
               ),
             ),

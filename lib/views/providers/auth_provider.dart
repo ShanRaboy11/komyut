@@ -3,26 +3,66 @@ import '../services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService authService = AuthService();
   User? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _userRole; // Cache the user role
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _user != null;
+  String? get userRole => _userRole;
 
   AuthProvider() {
     _init();
   }
 
   void _init() {
-    _user = _authService.currentUser;
-    _authService.authStateChanges.listen((data) {
-      _user = data.session?.user;
-      notifyListeners();
+    _user = authService.currentUser;
+    
+    // Load initial role if user exists
+    if (_user != null) {
+      _loadUserRole();
+    }
+    
+    authService.authStateChanges.listen((data) {
+      final newUser = data.session?.user;
+      
+      // Only update if user actually changed
+      if (newUser?.id != _user?.id) {
+        _user = newUser;
+        
+        if (_user != null) {
+          _loadUserRole();
+        } else {
+          // Critical: Clear role when user logs out
+          _userRole = null;
+        }
+        
+        notifyListeners();
+      }
     });
+  }
+
+  // Load user role from database
+  Future<void> _loadUserRole() async {
+    try {
+      if (_user == null) return;
+      
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', _user!.id)
+          .single();
+      
+      _userRole = response['role'] as String?;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading user role: $e');
+      _userRole = null;
+    }
   }
 
   Future<bool> signUp({
@@ -35,13 +75,19 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _authService.signUp(
+      final response = await authService.signUp(
         email: email,
         password: password,
         metadata: metadata,
       );
 
       _user = response.user;
+      
+      // Load role for new user
+      if (_user != null) {
+        await _loadUserRole();
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -59,12 +105,18 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _authService.signIn(
+      final response = await authService.signIn(
         email: email,
         password: password,
       );
 
       _user = response.user;
+      
+      // Load role immediately after sign in
+      if (_user != null) {
+        await _loadUserRole();
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -77,8 +129,36 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _authService.signOut();
+    try {
+      await authService.signOut();
+      
+      // CRITICAL: Clear all user-related state
+      _user = null;
+      _userRole = null;
+      _errorMessage = null;
+      _isLoading = false;
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error during sign out: $e');
+      // Still clear state even if sign out fails
+      _user = null;
+      _userRole = null;
+      notifyListeners();
+    }
+  }
+
+  // Method to manually refresh user role (call this after profile updates)
+  Future<void> refreshUserRole() async {
+    await _loadUserRole();
+  }
+
+  // Clear all state (useful for debugging or forced logout)
+  void clearState() {
     _user = null;
+    _userRole = null;
+    _errorMessage = null;
+    _isLoading = false;
     notifyListeners();
   }
 }

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../widgets/button.dart';
-import '../widgets/social_button.dart';
 import '../widgets/shake_widget.dart';
 
 import '../providers/auth_provider.dart';
+import '../pages/create_account.dart';
 import '../../utils/toast_utils.dart';
-import 'create_account.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,14 +17,20 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // State for password visibility and checkbox
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  double _sheetHeight = 0;
+  double _sheetOpacity = 0;
+  double _logoOpacity = 0.0;
 
+  // Controllers and FocusNodes for TextFields
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
 
+  // NEW: Create separate keys for each text field to shake them individually
   final _emailShakeKey = GlobalKey<ShakeWidgetState>();
   final _passwordShakeKey = GlobalKey<ShakeWidgetState>();
 
@@ -38,14 +42,36 @@ class _LoginPageState extends State<LoginPage> {
     _emailFocusNode = FocusNode();
     _passwordFocusNode = FocusNode();
 
+    // Add listeners to rebuild the UI when focus or text changes
     _emailFocusNode.addListener(() => setState(() {}));
     _passwordFocusNode.addListener(() => setState(() {}));
     _emailController.addListener(() => setState(() {}));
     _passwordController.addListener(() => setState(() {}));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final screenSize = MediaQuery.of(context).size; // ✅ FIXED
+      setState(() {
+        _sheetHeight = screenSize.height * 0.75;
+        _sheetOpacity = 1.0; // ✅ Now valid
+      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _logoOpacity = 1.0; // fade in logo
+      });
+    });
+  }
+
+  void _collapseSheet() {
+    setState(() {
+      _sheetHeight = 0;
+      _sheetOpacity = 0;
+    });
   }
 
   @override
   void dispose() {
+    // Dispose controllers and focus nodes to prevent memory leaks
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
@@ -53,6 +79,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // Helper method to get the correct home route based on user role
   String _getHomeRouteForRole(String? userRole) {
     if (userRole == null || userRole.isEmpty) {
       debugPrint('⚠️ User role is null or empty, defaulting to commuter');
@@ -74,10 +101,10 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<String?> _fetchUserRole() async {
+  Future<String?> _fetchUserRole({String? userId}) async {
     try {
       final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
+      userId ??= supabase.auth.currentUser?.id;
 
       if (userId == null) {
         debugPrint('⚠️ No authenticated user found');
@@ -86,6 +113,7 @@ class _LoginPageState extends State<LoginPage> {
 
       debugPrint('🔍 Fetching profile for user ID: $userId');
 
+      // Try both 'id' and 'user_id' column names
       try {
         final response = await supabase
             .from('profiles')
@@ -118,6 +146,7 @@ class _LoginPageState extends State<LoginPage> {
         debugPrint('⚠️ Failed to fetch with "user_id" column: $e');
       }
 
+      // Fallback: inspect table structure for diagnostics
       final profileCheck = await supabase
           .from('profiles')
           .select('id, user_id')
@@ -157,9 +186,8 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final userRole = await _fetchUserRole();
+      final userId = authProvider.user?.id;
+      final userRole = await _fetchUserRole(userId: userId);
 
       if (!mounted) return;
 
@@ -183,6 +211,7 @@ class _LoginPageState extends State<LoginPage> {
       _emailShakeKey.currentState?.shake();
       _passwordShakeKey.currentState?.shake();
 
+      // Convert technical error to friendly message
       String errorMsg;
       final error = authProvider.errorMessage?.toLowerCase() ?? '';
 
@@ -213,14 +242,34 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+        leading: AnimatedOpacity(
+          opacity: _logoOpacity,
+          duration: const Duration(milliseconds: 2000),
+          curve: Curves.easeOut,
+          child: IconButton(
+            icon: const Icon(Icons.chevron_left_rounded, color: Colors.black),
+            onPressed: () async {
+              _collapseSheet();
+
+              await Future.delayed(const Duration(milliseconds: 200));
+
+              if (!context.mounted) return;
+
+              Navigator.of(context).pop();
+            },
+          ),
         ),
-        title: Text('Back', style: GoogleFonts.nunito(color: Colors.black)),
+        title: AnimatedOpacity(
+          opacity: _logoOpacity,
+          duration: const Duration(milliseconds: 2000),
+          curve: Curves.easeOut,
+          child: Text(
+            'Back',
+            style: GoogleFonts.nunito(color: Colors.black, fontSize: 16),
+          ),
+        ),
       ),
+
       extendBodyBehindAppBar: true,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -247,337 +296,316 @@ class _LoginPageState extends State<LoginPage> {
                 child: Image.asset("assets/images/Ellipse 3.png"),
               ),
               Positioned(
-                top: screenSize.height * 0.10,
+                top: screenSize.height * 0.12,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Image.asset(
-                    'assets/images/komyut small logo.png',
-                    width: screenSize.width * 0.5,
+                  child: AnimatedOpacity(
+                    opacity: _sheetOpacity,
+                    duration: const Duration(milliseconds: 2000),
+                    curve: Curves.easeOut,
+                    child: Image.asset(
+                      'assets/images/komyut small logo.png',
+                      width: screenSize.width * 0.5,
+                    ),
                   ),
                 ),
               ),
-              Positioned(
+
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: screenSize.height * 0.78,
-                child: Container(
-                  decoration: const ShapeDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment(0.50, 0.00),
-                      end: Alignment(0.50, 1.00),
-                      colors: [
-                        Color(0xFFB945AA),
-                        Color(0xFF8E4CB6),
-                        Color(0xFF5B53C2),
+                height: _sheetHeight,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 600),
+                  opacity: _sheetHeight == 0 ? 0 : 1,
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                    decoration: const ShapeDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(0.50, 0.00),
+                        end: Alignment(0.50, 1.00),
+                        colors: [
+                          Color(0xFFB945AA),
+                          Color(0xFF8E4CB6),
+                          Color(0xFF5B53C2),
+                        ],
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(60),
+                          topRight: Radius.circular(60),
+                        ),
+                      ),
+                      shadows: [
+                        BoxShadow(
+                          color: Color(0x3F000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 4),
+                        ),
                       ],
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(60),
-                        topRight: Radius.circular(60),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        26.0,
+                        50.0,
+                        26.0,
+                        30.0,
                       ),
-                    ),
-                    shadows: [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(26.0, 50.0, 26.0, 30.0),
-                    child: SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: screenSize.height * 0.78 - 80,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Welcome Back",
-                              style: GoogleFonts.manrope(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Column(
-                              children: [
-                                Text(
-                                  'Ready to make your rides smoother and smarter?',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.nunito(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.5,
-                                  ),
-                                ),
-                                Text(
-                                  'Your next trip starts here.',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.nunito(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 30),
-                            ShakeWidget(
-                              key: _emailShakeKey,
-                              child: TextFormField(
-                                controller: _emailController,
-                                focusNode: _emailFocusNode,
-                                style: GoogleFonts.nunito(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: 'Email Address',
-                                  hintStyle: GoogleFonts.nunito(
-                                    color: Colors.white.withAlpha(204),
-                                  ),
-                                  filled: true,
-                                  fillColor: _emailFocusNode.hasFocus
-                                      ? Colors.white.withAlpha(26)
-                                      : Colors.transparent,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 20,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      width: 1,
-                                      color: Color(0xFFC6C7C7),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      width: 1.5,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                      child: SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: screenSize.height * 0.78 - 80,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Welcome Back",
+                                style: GoogleFonts.manrope(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            ShakeWidget(
-                              key: _passwordShakeKey,
-                              child: TextFormField(
-                                controller: _passwordController,
-                                focusNode: _passwordFocusNode,
-                                obscureText: !_isPasswordVisible,
-                                style: GoogleFonts.nunito(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: 'Password',
-                                  hintStyle: GoogleFonts.nunito(
-                                    color: Colors.white.withAlpha(204),
-                                  ),
-                                  filled: true,
-                                  fillColor: _passwordFocusNode.hasFocus
-                                      ? Colors.white.withAlpha(26)
-                                      : Colors.transparent,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 20,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      width: 1,
-                                      color: Color(0xFFC6C7C7),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      width: 1.5,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  suffixIcon: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _isPasswordVisible =
-                                            !_isPasswordVisible;
-                                      });
-                                    },
-                                    child: Icon(
-                                      _isPasswordVisible
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4.0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              const SizedBox(height: 10),
+                              Column(
                                 children: [
-                                  Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Checkbox(
-                                          value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? false;
-                                            });
-                                          },
-                                          activeColor: Colors.white,
-                                          checkColor: const Color(0xFFB945AA),
-                                          side: const BorderSide(
-                                            color: Colors.white,
-                                            width: 1.5,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _rememberMe = !_rememberMe;
-                                          });
-                                        },
-                                        child: Text(
-                                          'Remember me',
-                                          style: GoogleFonts.nunito(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  Text(
+                                    'Ready to make your rides smoother and smarter?',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.nunito(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.5,
+                                    ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: Text(
-                                      'Forgot password?',
-                                      style: GoogleFonts.nunito(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
+                                  Text(
+                                    'Your next trip starts here.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.nunito(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.5,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 30),
-
-                            // Log In Button
-                            CustomButton(
-                              text: "Log In",
-                              isFilled: true,
-                              fillColor: Colors.white,
-                              textColor: const Color(0xFFB945AA),
-                              onPressed: authProvider.isLoading
-                                  ? () {}
-                                  : _handleLogin,
-                              width: screenSize.width * 0.87,
-                              height: 60,
-                            ),
-                            const SizedBox(height: 65),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Divider(
-                                    color: Colors.white.withAlpha(100),
-                                    thickness: 1,
+                              const SizedBox(height: 30),
+                              ShakeWidget(
+                                key: _emailShakeKey,
+                                child: TextFormField(
+                                  controller: _emailController,
+                                  focusNode: _emailFocusNode,
+                                  style: GoogleFonts.nunito(
+                                    color: Colors.white,
+                                    fontSize: 16,
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10.0,
-                                  ),
-                                  child: Text(
-                                    "Sign in with",
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 14,
-                                      color: Colors.white,
+                                  decoration: InputDecoration(
+                                    hintText: 'Email Address',
+                                    hintStyle: GoogleFonts.nunito(
+                                      color: Colors.white.withAlpha(204),
+                                    ),
+                                    filled: true,
+                                    fillColor: _emailFocusNode.hasFocus
+                                        ? Colors.white.withAlpha(26)
+                                        : Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 15,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        width: 1,
+                                        color: Color(0xFFC6C7C7),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        width: 1.5,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
-                                Expanded(
-                                  child: Divider(
-                                    color: Colors.white.withAlpha(100),
-                                    thickness: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SocialButton(
-                                  imagePath: 'assets/images/facebook.png',
-                                  onPressed: () {},
-                                ),
-                                const SizedBox(width: 20),
-                                SocialButton(
-                                  imagePath: 'assets/images/google.png',
-                                  onPressed: () {},
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 40),
-
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const CreateAccountPage(),
-                                  ),
-                                );
-                              },
-                              child: RichText(
-                                text: TextSpan(
-                                  text: "Don't have an account? ",
+                              ),
+                              const SizedBox(height: 12),
+                              ShakeWidget(
+                                key: _passwordShakeKey,
+                                child: TextFormField(
+                                  controller: _passwordController,
+                                  focusNode: _passwordFocusNode,
+                                  obscureText: !_isPasswordVisible,
                                   style: GoogleFonts.nunito(
-                                    fontSize: 14,
-                                    color: Colors.white.withAlpha(204),
+                                    color: Colors.white,
+                                    fontSize: 16,
                                   ),
-                                  children: const [
-                                    TextSpan(
-                                      text: "Sign up",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                  decoration: InputDecoration(
+                                    hintText: 'Password',
+                                    hintStyle: GoogleFonts.nunito(
+                                      color: Colors.white.withAlpha(204),
+                                    ),
+                                    filled: true,
+                                    fillColor: _passwordFocusNode.hasFocus
+                                        ? Colors.white.withAlpha(26)
+                                        : Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 15,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        width: 1,
+                                        color: Color(0xFFC6C7C7),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        width: 1.5,
                                         color: Colors.white,
+                                      ),
+                                    ),
+                                    suffixIcon: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isPasswordVisible =
+                                              !_isPasswordVisible;
+                                        });
+                                      },
+                                      child: Icon(
+                                        _isPasswordVisible
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: Checkbox(
+                                            value: _rememberMe,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _rememberMe = value ?? false;
+                                              });
+                                            },
+                                            activeColor: Colors.white,
+                                            checkColor: const Color(0xFFB945AA),
+                                            side: const BorderSide(
+                                              color: Colors.white,
+                                              width: 1.5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _rememberMe = !_rememberMe;
+                                            });
+                                          },
+                                          child: Text(
+                                            'Remember me',
+                                            style: GoogleFonts.nunito(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {},
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: GoogleFonts.nunito(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 30),
+
+                              // Log In Button
+                              CustomButton(
+                                text: "Log In",
+                                isFilled: true,
+                                fillColor: Colors.white,
+                                textColor: const Color(0xFFB945AA),
+                                onPressed: authProvider.isLoading
+                                    ? () {}
+                                    : _handleLogin,
+                                width: screenSize.width * 0.87,
+                                height: 45,
+                                fontSize: 16,
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const CreateAccountPage(),
+                                    ),
+                                  );
+                                },
+                                child: RichText(
+                                  text: TextSpan(
+                                    text: "Don't have an account? ",
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 14,
+                                      color: Colors.white.withAlpha(204),
+                                    ),
+                                    children: const [
+                                      TextSpan(
+                                        text: "Sign up",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

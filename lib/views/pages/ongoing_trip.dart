@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// 'dart:convert' removed: notifications are now created in the DB trigger
 import './qr_scan.dart';
 
 class OngoingTripScreen extends StatefulWidget {
@@ -90,6 +91,9 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
         _tripDetails = tripResponse;
       });
 
+      // After loading trip details, attempt to recover any failed payout
+      _attemptPayoutRetryIfNeeded();
+
       debugPrint('✅ Trip details loaded: $_tripDetails');
     } catch (e) {
       debugPrint('❌ Error loading trip details: $e');
@@ -137,18 +141,18 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
           .single();
       
       final driverId = tripResponse['driver_id'] as String?;
-      
+
       if (driverId != null) {
         // Calculate average rating for this driver
         final ratingsResponse = await supabase
             .from('ratings')
             .select('overall')
             .eq('driver_id', driverId);
-        
+
         if (ratingsResponse.isNotEmpty) {
           double totalRating = 0;
           int count = 0;
-          
+
           for (var rating in ratingsResponse) {
             final overall = rating['overall'] as int?;
             if (overall != null) {
@@ -156,23 +160,31 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
               count++;
             }
           }
-          
+
           if (count > 0) {
             setState(() {
               _driverRating = totalRating / count;
               _isLoadingRating = false;
             });
             debugPrint('✅ Driver rating loaded: $_driverRating');
-            return;
+          } else {
+            setState(() {
+              _driverRating = null;
+              _isLoadingRating = false;
+            });
           }
+        } else {
+          setState(() {
+            _driverRating = null;
+            _isLoadingRating = false;
+          });
         }
+      } else {
+        setState(() {
+          _driverRating = null;
+          _isLoadingRating = false;
+        });
       }
-      
-      // If no ratings found, set to null
-      setState(() {
-        _driverRating = null;
-        _isLoadingRating = false;
-      });
     } catch (e) {
       debugPrint('❌ Error loading driver rating: $e');
       setState(() {
@@ -236,6 +248,92 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     } catch (e) {
       setState(() => _isLoadingLocation = false);
       debugPrint('Error getting location: $e');
+    }
+  }
+
+  /// If the trip metadata indicates a payout previously failed, attempt RPC retry.
+  Future<void> _attemptPayoutRetryIfNeeded() async {
+    try {
+      if (_tripDetails == null) return;
+      final metadata = _tripDetails!['metadata'] as Map<String, dynamic>?;
+      if (metadata == null) return;
+
+      final bool payoutFailed = metadata['payout_failed'] == true;
+      if (!payoutFailed) return;
+
+      debugPrint('ℹ️ Detected payout_failed for trip ${_tripDetails!['id']}. Attempting retry...');
+
+      final supabase = Supabase.instance.client;
+
+      // Ensure current user is the commuter who created the trip
+      final createdBy = _tripDetails!['created_by_profile_id'] as String?;
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('⚠️ No authenticated user for payout retry');
+        return;
+      }
+
+      final profileRes = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profileRes == null) return;
+      final myProfileId = profileRes['id'] as String;
+
+      if (createdBy != myProfileId) {
+        debugPrint('⚠️ Current user is not the trip owner; skipping payout retry');
+        return;
+      }
+
+      // Determine driver profile id and amount from metadata/trip
+      String? driverProfileId;
+      try {
+        final drivers = _tripDetails!['drivers'];
+        if (drivers != null) driverProfileId = drivers['profile_id'] as String?;
+      } catch (_) {}
+
+      final num? payoutAmountNum = metadata['payout_amount'] as num?;
+      final double payoutAmount = payoutAmountNum != null
+          ? payoutAmountNum.toDouble()
+          : (_tripDetails!['fare_amount'] as num?)?.toDouble() ?? 0.0;
+
+      if (driverProfileId == null || payoutAmount <= 0) {
+        debugPrint('⚠️ Missing driver profile or payout amount; cannot retry payout');
+        return;
+      }
+
+      final rpcParams = {
+        'p_trip_id': _tripDetails!['id'] as String,
+        'p_driver_profile_id': driverProfileId,
+        'p_amount': payoutAmount,
+        'p_commuter_profile_id': myProfileId,
+      };
+
+      try {
+        await supabase.rpc('transfer_trip_fare', params: rpcParams);
+
+        debugPrint('✅ Payout retry succeeded for trip ${_tripDetails!['id']}');
+
+        // Clear metadata flags
+        await supabase
+            .from('trips')
+            .update({
+              'metadata': {
+                ..._tripDetails!['metadata'],
+                'payout_failed': false,
+                'payout_error': null,
+              }
+            })
+            .eq('id', _tripDetails!['id']);
+
+        // Reload trip details to reflect changes
+        await _loadTripDetails();
+      } catch (e) {
+        debugPrint('❌ Payout retry failed: $e');
+      }
+    } catch (e) {
+      debugPrint('❌ Error in payout retry check: $e');
     }
   }
 
@@ -365,98 +463,539 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFB945AA),
-                  Color(0xFF8E4CB6),
-                  Color(0xFF5B53C2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                          color: Colors.black.withAlpha((0.1 * 255).round()),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.all(3),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(21),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success Animation Icon
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF8E4CB6),
+                        Color(0xFFB945AA),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8E4CB6).withAlpha((0.3 * 255).round()),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 60,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Title
+                const Text(
+                  'Trip Confirmed!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Passenger count badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF8E4CB6).withAlpha((0.1 * 255).round()),
+                        const Color(0xFFB945AA).withAlpha((0.1 * 255).round()),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF8E4CB6).withAlpha((0.3 * 255).round()),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.people_rounded,
+                        color: Color(0xFF8E4CB6),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$_passengerCount ${_passengerCount == 1 ? 'Passenger' : 'Passengers'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF8E4CB6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Description
+                Text(
+                  'Your trip has been confirmed. Please scan the QR code again when you reach your destination to complete the trip.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey[700],
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF8E4CB6), Color(0xFFB945AA)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFF8E4CB6),
+                          Color(0xFFB945AA),
+                        ],
                       ),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF8E4CB6).withAlpha((0.4 * 255).round()),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Trip Confirmed!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF8E4CB6),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You\'re traveling with $_passengerCount ${_passengerCount == 1 ? 'passenger' : 'passengers'}.\n\nScan the QR code again when you reach your destination.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        setState(() {
-                          _hasConfirmed = true;
-                        });
+                      onPressed: () async {
+                        // Show loading overlay
+                        final nav = Navigator.of(context);
+                        showDialog(
+                          context: nav.context,
+                          barrierDismissible: false,
+                          builder: (_) => Container(
+                            color: Colors.black.withAlpha((0.5 * 255).round()),
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 50,
+                                      height: 50,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 4,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xFF8E4CB6),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      'Processing payment...',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+
+                        final ok = await _processInitialPayment();
+
+                        // Dismiss loading using captured navigator
+                        if (mounted) nav.pop();
+
+                        if (ok) {
+                          if (!mounted) return;
+                          nav.pop();
+                          setState(() {
+                            _hasConfirmed = true;
+                          });
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF8E4CB6),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSwipeButton() {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+        ),
+        borderRadius: BorderRadius.circular(35),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5B53C2).withAlpha(102),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Text(
+              'Swipe to Proceed',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withAlpha(204),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 4,
+            top: 4,
+            bottom: 4,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _swipeProgress += details.delta.dx;
+                  if (_swipeProgress < 0) _swipeProgress = 0;
+                  if (_swipeProgress > MediaQuery.of(context).size.width - 110) {
+                    _swipeProgress = MediaQuery.of(context).size.width - 110;
+                  }
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                if (_swipeProgress > MediaQuery.of(context).size.width - 150) {
+                  _updatePassengerCount();
+                  _showConfirmationModal();
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                } else {
+                  setState(() {
+                    _swipeProgress = 0;
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.only(left: _swipeProgress),
+                width: 62,
+                height: 62,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Color(0xFF8E4CB6),
+                  size: 30,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Process the initial payment when commuter confirms passenger count.
+  /// Deducts from commuter wallet and creates a pending transaction linked to the trip.
+  Future<bool> _processInitialPayment() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Find current user profile
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        _showSimpleError('Please log in to continue');
+        return false;
+      }
+
+      final profileRes = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (profileRes == null) {
+        _showSimpleError('User profile not found');
+        return false;
+      }
+
+      final profileId = profileRes['id'] as String;
+
+      // Get wallet
+      final walletRes = await supabase
+          .from('wallets')
+          .select('id, balance, owner_profile_id')
+          .eq('owner_profile_id', profileId)
+          .maybeSingle();
+
+      String walletId;
+      double balance;
+
+      if (walletRes == null) {
+        debugPrint('ℹ️ Wallet not found for profile $profileId; creating one');
+        // Create wallet with zero balance; user must top-up to proceed
+        try {
+          final created = await supabase.from('wallets').insert({
+            'owner_profile_id': profileId,
+            'balance': 0,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).select().maybeSingle();
+
+          if (created == null) {
+            _showSimpleError('Failed to create wallet. Please contact support.');
+            return false;
+          }
+
+          walletId = created['id'] as String;
+          balance = (created['balance'] as num).toDouble();
+        } catch (e) {
+          debugPrint('❌ Error creating wallet for profile $profileId: $e');
+          _showSimpleError('Failed to access wallet. Please contact support.');
+          return false;
+        }
+      } else {
+        walletId = walletRes['id'] as String;
+        balance = (walletRes['balance'] as num).toDouble();
+      }
+
+      debugPrint('👜 Commuter wallet: id=$walletId balance=₱${balance.toStringAsFixed(2)}');
+
+      // Calculate total initial payment based on passenger count
+      final totalInitialPayment = widget.initialPayment * _passengerCount;
+
+      if (balance < totalInitialPayment) {
+        _showSimpleError('Insufficient balance. Please top up your wallet.');
+        return false;
+      }
+
+      // Deduct from commuter wallet. Use owner_profile_id filter to align with RLS.
+      // Perform update first, then insert pending transaction. If transaction insert fails,
+      // attempt to revert the wallet update so user funds are not lost.
+      final updatedWallet = await supabase
+          .from('wallets')
+          .update({'balance': balance - totalInitialPayment, 'updated_at': DateTime.now().toIso8601String()})
+          .eq('owner_profile_id', profileId)
+          .select()
+          .maybeSingle();
+
+      if (updatedWallet == null) {
+        debugPrint('❌ Failed to update commuter wallet for profile $profileId');
+        _showSimpleError('Failed to deduct payment from wallet.');
+        return false;
+      }
+
+      final newBalance = (updatedWallet['balance'] as num).toDouble();
+      debugPrint('✅ Deducted ₱${totalInitialPayment.toStringAsFixed(2)} from commuter wallet. New balance: ₱${newBalance.toStringAsFixed(2)}');
+
+      // Create pending transaction linked to the trip
+      final transactionNumber = 'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
+
+      try {
+        final insertedTxn = await supabase.from('transactions').insert({
+          'transaction_number': transactionNumber,
+          'wallet_id': walletId,
+          'initiated_by_profile_id': profileId,
+          'type': 'fare_payment',
+          'amount': totalInitialPayment,
+          'status': 'pending',
+          'related_trip_id': widget.tripId,
+          'processed_at': DateTime.now().toIso8601String(),
+          'metadata': {
+            'payment_type': 'initial_boarding',
+            'initial_payment_per_person': widget.initialPayment,
+            'passengers': _passengerCount,
+          },
+        }).select().maybeSingle();
+
+        debugPrint('🧾 Inserted pending transaction id=${insertedTxn?["id"]} amount=₱${totalInitialPayment.toStringAsFixed(2)}');
+
+        // Notifications are created server-side by a DB trigger on `transactions` inserts.
+        debugPrint('ℹ️ Notification creation delegated to DB trigger for commuter debit');
+
+        // Immediately attempt to transfer the initial payment to the driver via RPC
+        try {
+          // Determine driver_profile_id from trip details (drivers nested or metadata)
+          String? driverProfileId;
+          if (_tripDetails != null) {
+            try {
+              final drivers = _tripDetails!['drivers'];
+              if (drivers != null) driverProfileId = drivers['profile_id'] as String?;
+            } catch (_) {}
+            if (driverProfileId == null) {
+              try {
+                final meta = _tripDetails!['metadata'] as Map<String, dynamic>?;
+                if (meta != null) driverProfileId = meta['driver_profile_id'] as String?;
+              } catch (_) {}
+            }
+          }
+
+          if (driverProfileId != null) {
+            final rpcParams = {
+              'p_trip_id': widget.tripId,
+              'p_driver_profile_id': driverProfileId,
+              'p_amount': totalInitialPayment,
+              'p_commuter_profile_id': profileId,
+            };
+
+            await supabase.rpc('transfer_trip_fare', params: rpcParams);
+            debugPrint('✅ Initial payout RPC succeeded for trip ${widget.tripId} (₱${totalInitialPayment.toStringAsFixed(2)})');
+              // Notifications are created server-side by a DB trigger on `transactions` inserts.
+              debugPrint('ℹ️ Notification creation delegated to DB trigger for driver credit');
+          } else {
+            debugPrint('⚠️ Could not determine driver_profile_id to perform initial payout RPC');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Initial payout RPC failed: $e');
+          try {
+            // Annotate trip metadata so it can be retried later
+            await supabase.from('trips').update({
+              'metadata': {
+                ...?(_tripDetails?['metadata'] as Map<String, dynamic>?),
+                'payout_failed': true,
+                'payout_error': e.toString(),
+                'payout_amount': totalInitialPayment,
+              }
+            }).eq('id', widget.tripId);
+          } catch (e2) {
+            debugPrint('❌ Failed to annotate trip with payout failure: $e2');
+          }
+        }
+      } catch (e) {
+        // Transaction insert failed: attempt to rollback the wallet update
+        debugPrint('❌ Failed to create pending transaction after wallet deduction: $e');
+        try {
+          await supabase
+              .from('wallets')
+              .update({'balance': balance, 'updated_at': DateTime.now().toIso8601String()})
+              .eq('owner_profile_id', profileId);
+          debugPrint('🔄 Rolled back commuter wallet update for profile $profileId');
+        } catch (e2) {
+          debugPrint('❌ Failed to rollback wallet update: $e2');
+        }
+
+        _showSimpleError('Failed to record payment; no funds were deducted.');
+        return false;
+      }
+
+      // Update trip passengers_count and fare_amount
+      try {
+        await supabase.from('trips').update({
+          'passengers_count': _passengerCount,
+          'fare_amount': totalInitialPayment,
+        }).eq('id', widget.tripId);
+      } catch (e) {
+        debugPrint('⚠️ Failed to update trip after initial payment: $e');
+      }
+
+      // Show success to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('₱${totalInitialPayment.toStringAsFixed(2)} charged for boarding.'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      debugPrint('✅ Initial payment processed: ₱$totalInitialPayment');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error processing initial payment: $e');
+      _showSimpleError('Failed to process payment: $e');
+      return false;
+    }
+  }
+
+  void _showSimpleError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -523,7 +1062,13 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
               ),
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (_hasConfirmed) {
+                    Navigator.pushReplacementNamed(context, '/home_commuter');
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
               ),
             ),
           ),
@@ -973,82 +1518,6 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
     );
   }
 
-  Widget _buildSwipeButton() {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
-        ),
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5B53C2).withAlpha(102),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Text(
-              'Swipe to Proceed',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withAlpha(204),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 4,
-            top: 4,
-            bottom: 4,
-            child: GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                setState(() {
-                  _swipeProgress += details.delta.dx;
-                  if (_swipeProgress < 0) _swipeProgress = 0;
-                  if (_swipeProgress > MediaQuery.of(context).size.width - 110) {
-                    _swipeProgress = MediaQuery.of(context).size.width - 110;
-                  }
-                });
-              },
-              onHorizontalDragEnd: (details) {
-                if (_swipeProgress > MediaQuery.of(context).size.width - 150) {
-                  _updatePassengerCount();
-                  _showConfirmationModal();
-                  setState(() {
-                    _swipeProgress = 0;
-                  });
-                } else {
-                  setState(() {
-                    _swipeProgress = 0;
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(left: _swipeProgress),
-                width: 62,
-                height: 62,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.qr_code_scanner,
-                  color: Color(0xFF8E4CB6),
-                  size: 30,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildScanForDepartureButton() {
     return Positioned(

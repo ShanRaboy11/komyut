@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/text_field.dart';
 import '../widgets/background_circles.dart';
 import '../widgets/progress_bar.dart';
@@ -19,7 +20,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -36,9 +38,12 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     super.initState();
     // Load previously entered data if exists
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
+      final registrationProvider = Provider.of<RegistrationProvider>(
+        context,
+        listen: false,
+      );
       final data = registrationProvider.registrationData;
-      
+
       if (data['email'] != null) {
         _emailController.text = data['email'];
       }
@@ -62,10 +67,11 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
 
       String? emailError = _emailController.text.isEmpty
           ? 'Email address is required'
-          : (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                  .hasMatch(_emailController.text)
-              ? 'Invalid email format. Please use a valid email address'
-              : null);
+          : (!RegExp(
+                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                ).hasMatch(_emailController.text)
+                ? 'Invalid email format. Please use a valid email address'
+                : null);
 
       if (emailError != null) {
         errorCount++;
@@ -75,8 +81,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       String? passwordError = _passwordController.text.isEmpty
           ? 'Password is required'
           : (_passwordController.text.length < 8
-              ? 'Password must be at least 8 characters long'
-              : null);
+                ? 'Password must be at least 8 characters long'
+                : null);
 
       if (passwordError != null) {
         errorCount++;
@@ -86,8 +92,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       String? confirmPasswordError = _confirmPasswordController.text.isEmpty
           ? 'Please confirm your password'
           : (_confirmPasswordController.text != _passwordController.text
-              ? 'Passwords do not match. Please try again'
-              : null);
+                ? 'Passwords do not match. Please try again'
+                : null);
 
       if (confirmPasswordError != null) {
         errorCount++;
@@ -104,17 +110,17 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(snackBarMessage),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(snackBarMessage), backgroundColor: Colors.red),
       );
       return;
     }
 
     // Save login info to provider
-    final registrationProvider = Provider.of<RegistrationProvider>(context, listen: false);
-    
+    final registrationProvider = Provider.of<RegistrationProvider>(
+      context,
+      listen: false,
+    );
+
     registrationProvider.saveLoginInfo(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -125,9 +131,8 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
     // Navigate to verification page
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RegistrationVerifyEmail(
-          email: _emailController.text.trim(),
-        ),
+        builder: (_) =>
+            RegistrationVerifyEmail(email: _emailController.text.trim()),
       ),
     );
   }
@@ -168,27 +173,23 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                       const SizedBox(height: 50),
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
-                      const Text(
+                      Text(
                         'Secure Your Account',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.manrope(
                           color: Color.fromRGBO(18, 18, 18, 1),
-                          fontFamily: 'Manrope',
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         'Create your login details to keep\nyour account safe.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.nunito(
                           color: Color.fromRGBO(0, 0, 0, 0.699999988079071),
-                          fontFamily: 'Nunito',
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
-                          height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -196,20 +197,19 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           '*All fields required unless noted.',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
                         ),
                       ),
                       const SizedBox(height: 15),
 
                       // Email Address
-                      const Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Email Address *',
-                          style: TextStyle(
+                          style: GoogleFonts.manrope(
                             color: Color.fromRGBO(18, 18, 18, 1),
-                            fontFamily: 'Manrope',
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -219,16 +219,22 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         labelText: '',
                         controller: _emailController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Email address is required';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
                             return 'Invalid email format';
                           }
                           return null;
@@ -237,14 +243,13 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                       const SizedBox(height: 15),
 
                       // Password
-                      const Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Password *',
-                          style: TextStyle(
+                          style: GoogleFonts.manrope(
                             color: Color.fromRGBO(18, 18, 18, 1),
-                            fontFamily: 'Manrope',
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -254,9 +259,14 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         labelText: '',
                         controller: _passwordController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         obscureText: !_isPasswordVisible,
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -284,14 +294,13 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                       const SizedBox(height: 15),
 
                       // Confirm Password
-                      const Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Confirm Password *',
-                          style: TextStyle(
+                          style: GoogleFonts.manrope(
                             color: Color.fromRGBO(18, 18, 18, 1),
-                            fontFamily: 'Manrope',
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -301,9 +310,14 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                         labelText: '',
                         controller: _confirmPasswordController,
                         width: fieldWidth,
-                        height: 60,
+                        height: 50,
                         borderColor: const Color.fromRGBO(200, 200, 200, 1),
-                        focusedBorderColor: const Color.fromRGBO(185, 69, 170, 1),
+                        focusedBorderColor: const Color.fromRGBO(
+                          185,
+                          69,
+                          170,
+                          1,
+                        ),
                         obscureText: !_isConfirmPasswordVisible,
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -340,7 +354,6 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                             onPressed: _onBackPressed,
                             isFilled: false,
                             width: buttonWidth,
-                            height: 60,
                             borderRadius: 15,
                             strokeColor: const Color.fromRGBO(176, 185, 198, 1),
                             outlinedFillColor: Colors.white,
@@ -351,11 +364,14 @@ class _RegistrationSetLoginState extends State<RegistrationSetLogin> {
                           Opacity(
                             opacity: registrationProvider.isLoading ? 0.5 : 1.0,
                             child: CustomButton(
-                              text: registrationProvider.isLoading ? 'Saving...' : 'Next',
-                              onPressed: registrationProvider.isLoading ? () {} : _onNextPressed,
+                              text: registrationProvider.isLoading
+                                  ? 'Saving...'
+                                  : 'Next',
+                              onPressed: registrationProvider.isLoading
+                                  ? () {}
+                                  : _onNextPressed,
                               isFilled: true,
                               width: buttonWidth,
-                              height: 60,
                               borderRadius: 15,
                               textColor: Colors.white,
                               hasShadow: true,

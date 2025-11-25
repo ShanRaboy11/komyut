@@ -1,0 +1,232 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
+import '../models/driver_trip.dart';
+
+class DriverTripService {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  /// Get trip history for the currently authenticated driver
+  Future<List<DriverTrip>> getDriverTripHistory() async {
+    try {
+      // Get the current user
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Get driver ID from profile
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+      final profileId = profileResponse['id'] as String;
+
+      final driverResponse = await _supabase
+          .from('drivers')
+          .select('id')
+          .eq('profile_id', profileId)
+          .single();
+
+      final driverId = driverResponse['id'] as String;
+
+      // Fetch trips with route, stop, and PASSENGER information
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            id,
+            status,
+            started_at,
+            ended_at,
+            fare_amount,
+            passengers_count,
+            distance_meters,
+            created_by_profile_id,
+            routes!inner(code),
+            origin_stop:route_stops!trips_origin_stop_id_fkey(name),
+            destination_stop:route_stops!trips_destination_stop_id_fkey(name),
+            creator_profile:profiles!trips_created_by_profile_id_fkey(first_name, last_name)
+          ''')
+          .eq('driver_id', driverId)
+          .order('started_at', ascending: false);
+
+      final List<dynamic> data = response as List<dynamic>;
+      
+      return data.map((json) => _mapToDriverTrip(json)).toList();
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getDriverTripHistory: ${e.message}');
+      throw Exception('Database error: ${e.message}');
+    } catch (e) {
+      debugPrint('❌ Error in getDriverTripHistory: $e');
+      throw Exception('Failed to load trip history: $e');
+    }
+  }
+
+  /// Get a single trip by ID
+  Future<DriverTrip?> getTripById(String tripId) async {
+    try {
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            id,
+            status,
+            started_at,
+            ended_at,
+            fare_amount,
+            passengers_count,
+            distance_meters,
+            created_by_profile_id,
+            routes!inner(code),
+            origin_stop:route_stops!trips_origin_stop_id_fkey(name),
+            destination_stop:route_stops!trips_destination_stop_id_fkey(name),
+            creator_profile:profiles!trips_created_by_profile_id_fkey(first_name, last_name)
+          ''')
+          .eq('id', tripId)
+          .single();
+
+      return _mapToDriverTrip(response);
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripById: ${e.message}');
+      throw Exception('Database error: ${e.message}');
+    } catch (e) {
+      debugPrint('❌ Error in getTripById: $e');
+      return null;
+    }
+  }
+
+  /// Fetch route/stops info for a trip (route_id, origin_stop_id, destination_stop_id, route stops list)
+  Future<Map<String, dynamic>?> getTripRouteInfo(String tripId) async {
+    try {
+      final tripRes = await _supabase
+          .from('trips')
+          .select('route_id, origin_stop_id, destination_stop_id')
+          .eq('id', tripId)
+          .single();
+
+      final routeId = tripRes['route_id'] as String?;
+      final originStopId = tripRes['origin_stop_id']?.toString();
+      final destinationStopId = tripRes['destination_stop_id']?.toString();
+
+      List<Map<String, dynamic>>? routeStops;
+      if (routeId != null) {
+        final stopsRes = await _supabase
+            .from('route_stops')
+            .select('id, name, latitude, longitude, sequence')
+            .eq('route_id', routeId)
+            .order('sequence', ascending: true);
+
+        routeStops = (stopsRes as List)
+            .map<Map<String, dynamic>>((r) => Map<String, dynamic>.from(r as Map))
+            .toList();
+      }
+
+      return {
+        'routeStops': routeStops,
+        'originStopId': originStopId,
+        'destinationStopId': destinationStopId,
+      };
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripRouteInfo: ${e.message}');
+      throw Exception('Database error: ${e.message}');
+    } catch (e) {
+      debugPrint('❌ Error in getTripRouteInfo: $e');
+      return null;
+    }
+  }
+
+  /// Get trips filtered by status
+  Future<List<DriverTrip>> getTripsByStatus(String status) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+      final profileId = profileResponse['id'] as String;
+
+      final driverResponse = await _supabase
+          .from('drivers')
+          .select('id')
+          .eq('profile_id', profileId)
+          .single();
+
+      final driverId = driverResponse['id'] as String;
+
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            id,
+            status,
+            started_at,
+            ended_at,
+            fare_amount,
+            passengers_count,
+            distance_meters,
+            created_by_profile_id,
+            routes!inner(code),
+            origin_stop:route_stops!trips_origin_stop_id_fkey(name),
+            destination_stop:route_stops!trips_destination_stop_id_fkey(name),
+            creator_profile:profiles!trips_created_by_profile_id_fkey(first_name, last_name)
+          ''')
+          .eq('driver_id', driverId)
+          .eq('status', status)
+          .order('started_at', ascending: false);
+
+      final List<dynamic> data = response as List<dynamic>;
+      
+      return data.map((json) => _mapToDriverTrip(json)).toList();
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Database error in getTripsByStatus: ${e.message}');
+      throw Exception('Database error: ${e.message}');
+    } catch (e) {
+      debugPrint('❌ Error in getTripsByStatus: $e');
+      throw Exception('Failed to load trips: $e');
+    }
+  }
+
+  /// Helper method to map JSON response to DriverTrip object
+  DriverTrip _mapToDriverTrip(Map<String, dynamic> json) {
+    // Extract passenger name from the creator_profile
+    String passengerName = 'Passenger';
+    
+    if (json['creator_profile'] != null && json['creator_profile'] is Map) {
+      final profile = json['creator_profile'] as Map;
+      final firstName = profile['first_name'] as String?;
+      final lastName = profile['last_name'] as String?;
+      
+      if (firstName != null || lastName != null) {
+        passengerName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+        
+        // If after trimming it's empty, use default
+        if (passengerName.isEmpty) {
+          passengerName = 'Passenger';
+        }
+      }
+    }
+
+    debugPrint('📋 Mapping trip ${json['id']} with passenger: $passengerName');
+
+    final transformedJson = {
+      'id': json['id'],
+      'status': json['status'],
+      'started_at': json['started_at'],
+      'ended_at': json['ended_at'],
+      'fare_amount': json['fare_amount'],
+      'passengers_count': json['passengers_count'],
+      'distance_meters': json['distance_meters'],
+      'route_code': json['routes']?['code'] ?? 'N/A',
+      'origin_name': json['origin_stop']?['name'] ?? 'Unknown',
+      'destination_name': json['destination_stop']?['name'] ?? 'Unknown',
+      'passenger_name': passengerName,
+    };
+    
+    return DriverTrip.fromJson(transformedJson);
+  }
+}

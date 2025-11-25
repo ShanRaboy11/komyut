@@ -2,16 +2,91 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/admin_verification.dart';
+
 import 'personalinfo_commuter.dart';
 import 'personalinfo_driver.dart';
 import 'personalinfo_operator.dart';
 import 'aboutus.dart';
 import 'privacypolicy.dart';
-import 'landingpage.dart';
+
+/// Helper class for authentication operations
+class AuthHelper {
+  /// Logout the current user and navigate to landing page
+  static Future<void> logout(BuildContext context) async {
+    try {
+      debugPrint('🔄 Logging out user...');
+
+      // Sign out from Supabase
+      await Supabase.instance.client.auth.signOut();
+
+      debugPrint('✅ User logged out successfully');
+
+      // Navigate to landing page and remove all previous routes
+      if (context.mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/landing', (route) => false);
+      }
+    } catch (e) {
+      debugPrint('❌ Logout error: $e');
+
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get current user role
+  static Future<String?> getCurrentUserRole() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user == null) {
+        return null;
+      }
+
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+      return response['role'] as String?;
+    } catch (e) {
+      debugPrint('❌ Error fetching user role: $e');
+      return null;
+    }
+  }
+
+  /// Check if current user has a specific role
+  static Future<bool> hasRole(String role) async {
+    final currentRole = await getCurrentUserRole();
+    return currentRole?.toLowerCase() == role.toLowerCase();
+  }
+
+  /// Get current user ID
+  static String? getCurrentUserId() {
+    return Supabase.instance.client.auth.currentUser?.id;
+  }
+
+  /// Check if user is logged in
+  static bool isLoggedIn() {
+    return Supabase.instance.client.auth.currentUser != null;
+  }
+}
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
-  
+
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
@@ -19,6 +94,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
+  bool _isSigningOut = false;
   Map<String, dynamic>? _profileData;
   String? _errorMessage;
 
@@ -71,7 +147,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _getUserId() {
     if (_profileData == null) return '';
-    // You can customize this based on which ID you want to show
     return _profileData!['id']?.toString().substring(0, 8) ?? '';
   }
 
@@ -83,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _getPersonalInfoPage() {
     if (_profileData == null) return const SizedBox();
-    
+
     final role = _profileData!['role'];
     switch (role) {
       case 'commuter':
@@ -98,74 +173,106 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
+    final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Confirm Logout',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: GoogleFonts.nunito(),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Logout',
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2D3436),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Are you sure you want to logout?',
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                color: const Color(0xFF636E72),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.manrope()),
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF636E72),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF5350),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
             child: Text(
               'Logout',
-              style: GoogleFonts.manrope(color: Colors.red),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
           ),
         ],
       ),
     );
 
-    if (confirm == true && mounted) {
-      try {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: CircularProgressIndicator(
-              color: const Color(0xFF8E4CB6),
-            ),
+    if (shouldLogout != true || !mounted) return;
+
+    setState(() {
+      _isSigningOut = true;
+    });
+
+    var signOutSuccess = false;
+    try {
+      await context.read<AuthProvider>().signOut();
+      signOutSuccess = true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
           ),
         );
-
-        // Sign out using Supabase directly
-        await _supabase.auth.signOut();
-
-        if (mounted) {
-          // Close loading dialog
-          Navigator.pop(context);
-          
-          // Navigate to Landing Page and clear navigation stack
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LandingPage(),
-            ),
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          // Close loading dialog if still showing
-          Navigator.pop(context);
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout failed: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningOut = false;
+        });
+      }
+    }
+
+    if (signOutSuccess && mounted) {
+      try {
+        context.read<AdminVerificationProvider>().clearCurrentDetail();
+      } catch (_) {}
+
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/landing', (r) => false);
     }
   }
 
@@ -177,9 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         backgroundColor: const Color(0xFFF7F4FF),
         body: Center(
-          child: CircularProgressIndicator(
-            color: const Color(0xFF8E4CB6),
-          ),
+          child: CircularProgressIndicator(color: const Color(0xFF8E4CB6)),
         ),
       );
     }
@@ -210,10 +315,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadProfileData,
-                child: Text('Retry'),
-              ),
+              ElevatedButton(onPressed: _loadProfileData, child: Text('Retry')),
             ],
           ),
         ),
@@ -225,10 +327,7 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: width * 0.07,
-              vertical: 20,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -237,7 +336,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   "Profile",
                   style: GoogleFonts.manrope(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -271,7 +370,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             _getUserDisplayName(),
                             style: GoogleFonts.manrope(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -279,7 +378,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             _getUserRole(),
                             style: GoogleFonts.manrope(
-                              fontSize: 16,
+                              fontSize: 12,
                               color: const Color(0xFF8E4CB6),
                               fontWeight: FontWeight.w600,
                             ),
@@ -287,7 +386,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             "ID: ${_getUserId()}",
                             style: GoogleFonts.nunito(
-                              fontSize: 14,
+                              fontSize: 10,
                               color: Colors.black38,
                             ),
                           ),
@@ -363,7 +462,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   elevation: 3,
                   shadowColor: Colors.redAccent.withValues(alpha: 0.2),
                 ),
@@ -371,12 +470,24 @@ class _ProfilePageState extends State<ProfilePage> {
                   "Log out",
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 12,
                   ),
                 ),
               ),
             ),
           ),
+          // Signing-out overlay
+          if (_isSigningOut)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black45,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF8E4CB6),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -404,10 +515,10 @@ class _ProfileCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.only(
-          left: 30,
-          right: 30,
-          top: 20,
-          bottom: 20,
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12,
         ),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFF8E4CB6), width: 1),
@@ -437,13 +548,13 @@ class _ProfileCard extends StatelessWidget {
                     title,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w600,
-                      fontSize: 20,
+                      fontSize: 16,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.nunito(
-                      fontSize: 16,
+                      fontSize: 12,
                       color: const Color.fromARGB(212, 0, 0, 0),
                     ),
                   ),

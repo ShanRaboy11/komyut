@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/wallet_provider.dart';
 import 'driver_app.dart';
 
 class RemitPageDriver extends StatefulWidget {
@@ -17,10 +20,6 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   bool _isButtonEnabled = false;
   String? _errorText;
 
-  // dummy data
-  final double _currentBalance = 12540.50;
-  final String _operatorName = 'Nunito Porcalla';
-
   final Color _brandColor = const Color(0xFF8E4CB6);
   final List<Color> _gradientColors = const [
     Color(0xFFB945AA),
@@ -32,9 +31,21 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   void initState() {
     super.initState();
     _amountController.addListener(_validateInput);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DriverWalletProvider>(
+        context,
+        listen: false,
+      ).fetchWalletData();
+    });
   }
 
   void _validateInput() {
+    if (!mounted) return;
+
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+    final currentBalance = provider.totalBalance;
+
     if (_amountController.text.length > 1 &&
         _amountController.text.startsWith('0')) {
       _amountController.text = _amountController.text.substring(1);
@@ -48,7 +59,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
       if (amount <= 0) {
         _isButtonEnabled = false;
         _errorText = null;
-      } else if (amount > _currentBalance) {
+      } else if (amount > currentBalance) {
         _isButtonEnabled = false;
         _errorText = 'Amount exceeds your current balance.';
       } else {
@@ -66,11 +77,14 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
+
+    final provider = Provider.of<DriverWalletProvider>(context, listen: false);
+
     DriverApp.navigatorKey.currentState?.pushNamed(
       '/remit_confirmation',
       arguments: {
         'amount': _amountController.text,
-        'operatorName': _operatorName,
+        'operatorName': provider.operatorName,
       },
     );
   }
@@ -78,62 +92,78 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
-    final amountValue = double.tryParse(_amountController.text) ?? 0;
-    final remainingBalance = _currentBalance - amountValue;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F1FF),
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Remittance',
-          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildInfoCard(
-              'Current Balance',
-              currencyFormat.format(_currentBalance),
-              Symbols.account_balance_wallet_rounded,
+    return Consumer<DriverWalletProvider>(
+      builder: (context, provider, child) {
+        final currentBalance = provider.totalBalance;
+        final operatorName = provider.operatorName;
+
+        final amountValue = double.tryParse(_amountController.text) ?? 0;
+        final remainingBalance = currentBalance - amountValue;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF6F1FF),
+          appBar: AppBar(
+            scrolledUnderElevation: 0,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.black54,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            const SizedBox(height: 16),
-            _buildInfoCard('Recipient', _operatorName, Symbols.person),
-            const SizedBox(height: 40),
-            _buildAmountCard(),
-            const SizedBox(height: 16),
-            Center(
-              child: _errorText != null
-                  ? Text(
-                      _errorText!,
-                      style: GoogleFonts.nunito(
-                        fontSize: 14,
-                        color: Colors.red,
-                      ),
-                    )
-                  : Text(
-                      'Remaining Balance: ${currencyFormat.format(remainingBalance)}',
-                      style: GoogleFonts.nunito(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
+            title: Text(
+              'Remittance',
+              style: GoogleFonts.manrope(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 32),
-            _buildNextButton(),
-          ],
-        ),
-      ),
+            centerTitle: true,
+          ),
+          body: provider.isPageLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildInfoCard(
+                        'Current Balance',
+                        currencyFormat.format(currentBalance),
+                        Symbols.account_balance_wallet_rounded,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoCard('Recipient', operatorName, Symbols.person),
+                      const SizedBox(height: 40),
+                      _buildAmountCard(),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: _errorText != null
+                            ? Text(
+                                _errorText!,
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.red,
+                                ),
+                              )
+                            : Text(
+                                'Remaining Balance: ${currencyFormat.format(remainingBalance)}',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildNextButton(),
+                    ],
+                  ),
+                ),
+        );
+      },
     );
   }
 
@@ -167,25 +197,28 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
             child: Icon(icon, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.nunito(
-                  color: Colors.grey[600],
-                  fontSize: 14,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -241,7 +274,7 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
                           ? "0"
                           : _amountController.text,
                       style: GoogleFonts.manrope(
-                        fontSize: 72,
+                        fontSize: 60,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -291,11 +324,11 @@ class _RemitPageDriverState extends State<RemitPageDriver> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
         child: Text(
           'Next',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 12),
         ),
       ),
     );

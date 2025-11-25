@@ -61,7 +61,7 @@ class DriverCard extends StatelessWidget {
                     name,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.manrope(
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -70,7 +70,7 @@ class DriverCard extends StatelessWidget {
                   Text(
                     "$puvType • $plate",
                     style: GoogleFonts.manrope(
-                      fontSize: 16,
+                      fontSize: 13,
                       color: Colors.black.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),

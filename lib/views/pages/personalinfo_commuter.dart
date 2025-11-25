@@ -75,7 +75,8 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
         return 'Student';
       case 'pwd':
         return 'PWD';
-      case 'regular':
+      case 'discounted':
+        return 'Discounted';
       default:
         return 'Regular';
     }
@@ -195,7 +196,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
                         child: Text(
                           "Personal Info",
                           style: GoogleFonts.manrope(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -370,7 +371,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
         label,
         style: GoogleFonts.manrope(
           fontWeight: FontWeight.w600,
-          fontSize: 14.5,
+          fontSize: 14,
           color: Colors.black87,
         ),
       ),
@@ -407,7 +408,7 @@ class _PersonalInfoCommuterPageState extends State<PersonalInfoCommuterPage> {
           horizontal: 12,
         ),
       ),
-      style: GoogleFonts.nunito(fontSize: 15, color: Colors.black87),
+      style: GoogleFonts.nunito(fontSize: 12, color: Colors.black87),
     );
   }
 }

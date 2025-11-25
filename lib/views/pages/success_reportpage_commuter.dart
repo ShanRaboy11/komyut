@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/background_circles.dart';
 import 'dart:async';
-import 'home_commuter.dart';
+import 'commuter_app.dart';
 
 class SuccessPage extends StatefulWidget {
   final String title;
@@ -15,7 +15,7 @@ class SuccessPage extends StatefulWidget {
     this.title = 'Report Submitted!',
     this.subtitle =
         'Thank you for submitting a report. By letting us know about this issue, you help us make your commute safer and better for everyone.',
-    this.autoCloseDuration = 3,
+    this.autoCloseDuration = 5,
     this.onClose,
   });
 
@@ -57,11 +57,9 @@ class _SuccessPageState extends State<SuccessPage>
         if (widget.onClose != null) {
           widget.onClose!();
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CommuterDashboardNav(),
-            ),
+          CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
           );
         }
       }
@@ -176,7 +174,7 @@ class _SuccessPageState extends State<SuccessPage>
                       Text(
                         widget.title,
                         style: GoogleFonts.manrope(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
@@ -191,7 +189,7 @@ class _SuccessPageState extends State<SuccessPage>
                         child: Text(
                           widget.subtitle,
                           style: GoogleFonts.nunito(
-                            fontSize: 16,
+                            fontSize: 12,
                             color: Colors.grey[600],
                             height: 1.5,
                           ),
