@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/providers/auth_provider.dart';
 import 'views/providers/wallet_provider.dart';
+import 'views/services/notifications.dart';
 import 'views/providers/commuter_dashboard.dart';
 import 'views/providers/driver_dashboard.dart';
 import 'views/providers/operator_dashboard.dart';
@@ -48,11 +49,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RegistrationProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => TripsProvider()),
         ChangeNotifierProvider(create: (_) => DriverTripProvider()),
         ChangeNotifierProvider(create: (_) => AdminVerificationProvider()),
         ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
-        
+
         // Stream provider for auth state
         StreamProvider<User?>(
           create: (_) => Supabase.instance.client.auth.onAuthStateChange.map(
@@ -71,17 +73,17 @@ class MyApp extends StatelessWidget {
           '/landing': (context) => const LandingPage(),
           '/home_admin': (context) => const AdminApp(),
           '/home_commuter': (context) => ChangeNotifierProvider(
-                create: (_) => CommuterDashboardProvider(),
-                child: const CommuterApp(),
-              ),
+            create: (_) => CommuterDashboardProvider(),
+            child: const CommuterApp(),
+          ),
           '/home_driver': (context) => ChangeNotifierProvider(
-                create: (_) => DriverDashboardProvider(),
-                child: const DriverApp(),
-              ),
+            create: (_) => DriverDashboardProvider(),
+            child: const DriverApp(),
+          ),
           '/home_operator': (context) => ChangeNotifierProvider(
-                create: (_) => OperatorDashboardProvider(),
-                child: const OperatorApp(),
-              ),
+            create: (_) => OperatorDashboardProvider(),
+            child: const OperatorApp(),
+          ),
         },
       ),
     );
@@ -105,7 +107,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
   void initState() {
     super.initState();
     _checkAuthState();
-    
+
     // Listen to auth state changes
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
@@ -125,7 +127,7 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
   Future<void> _checkAuthState() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      
+
       if (user == null) {
         if (mounted) {
           setState(() {
@@ -148,7 +150,9 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
           _userRole = response['role'] as String?;
           _isLoading = false;
         });
-        debugPrint('AuthStateHandler: _checkAuthState -> user=${user.id} role=$_userRole');
+        debugPrint(
+          'AuthStateHandler: _checkAuthState -> user=${user.id} role=$_userRole',
+        );
       }
     } catch (e) {
       debugPrint('❌ Error checking auth state: $e');
@@ -156,7 +160,9 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
         setState(() {
           _isLoading = false;
         });
-        debugPrint('AuthStateHandler: _checkAuthState caught, set _isLoading=false');
+        debugPrint(
+          'AuthStateHandler: _checkAuthState caught, set _isLoading=false',
+        );
       }
     }
   }
@@ -164,13 +170,11 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    debugPrint('AuthStateHandler.build -> _isLoading=$_isLoading userRole=$_userRole');
+    debugPrint(
+      'AuthStateHandler.build -> _isLoading=$_isLoading userRole=$_userRole',
+    );
 
     // Not logged in - show landing page
     if (_userRole == null) {

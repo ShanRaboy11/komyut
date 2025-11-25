@@ -306,9 +306,12 @@ class _MapWidgetState extends State<MapWidget> {
       allPoints.add(LatLng(stop['latitude'], stop['longitude']));
     }
 
-    if (widget.boardingLocation != null)
+    if (widget.boardingLocation != null) {
       allPoints.add(widget.boardingLocation!);
-    if (widget.arrivalLocation != null) allPoints.add(widget.arrivalLocation!);
+    }
+    if (widget.arrivalLocation != null) {
+      allPoints.add(widget.arrivalLocation!);
+    }
     if (widget.currentPosition != null) {
       allPoints.add(
         LatLng(
