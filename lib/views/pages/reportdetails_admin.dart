@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../widgets/commutercard_report.dart';
 
-class AdminReportsPage extends StatelessWidget {
+class ReportDetailsPage extends StatelessWidget {
   final String name;
   final String? role;
   final String id;
@@ -11,9 +10,9 @@ class AdminReportsPage extends StatelessWidget {
   final String date;
   final String description;
   final List<String> tags;
-  final String imagePath; // Path to the image attachment
+  final String imagePath;
 
-  const AdminReportsPage({
+  const ReportDetailsPage({
     super.key,
     required this.name,
     this.role,
@@ -25,184 +24,303 @@ class AdminReportsPage extends StatelessWidget {
     required this.imagePath,
   });
 
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return const Color(0xFFFF6B6B);
-      case 'medium':
-        return const Color(0xFFFFB84D);
-      case 'low':
-        return const Color(0xFF6BCB77);
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final originalDate = DateFormat('MM/dd/yy').parse(date);
-    final formattedDate = DateFormat('EEE, d MMM. yyyy').format(originalDate);
+    // Parse Date
+    DateTime originalDate;
+    try {
+      originalDate = DateFormat('MM/dd/yy').parse(date);
+    } catch (e) {
+      originalDate = DateTime.now();
+    }
+    final formattedDate = DateFormat('EEE d MMM yyyy, hh:mma').format(originalDate);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Date and Priority
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Back button (aligned to the left)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(
-                      Icons.chevron_left_rounded,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-
-                // Centered title
-                Text(
-                  "Reports",
-                  style: GoogleFonts.nunito(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-            Text(
-              "Report Details",
-              style: GoogleFonts.manrope(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  formattedDate,
-                  style: GoogleFonts.manrope(
-                    color: Colors.black87,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (priority != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor(
-                        priority!,
-                      ).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      priority!,
-                      style: GoogleFonts.manrope(
-                        color: _getPriorityColor(priority!),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+      backgroundColor: const Color(0xFFFDFDFF), 
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header (Back Button and "Reports")
+              Center(
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Icon(Icons.chevron_left, size: 28, color: Color(0xFF222222)),
                       ),
                     ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Profile Card
-            ProfileCard(name: name, role: role ?? "Unknown", id: id),
-
-            const SizedBox(height: 20),
-
-            // Description Label
-            Text(
-              "Description",
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
+                    Center(
+                      child: Text(
+                        'Reports',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: const Color(0xFF222222),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
 
-            // Description Text
-            Text(
-              description,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
-                height: 1.4,
-                color: Colors.black87.withValues(alpha: 0.8),
+              const SizedBox(height: 30),
+
+              // 2. Report Details Title
+              Text(
+                'Report Details',
+                style: GoogleFonts.manrope(
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-            // Tags
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: tags.map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEBD9FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    tag,
+              // 3. Date and Priority Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    formattedDate,
                     style: GoogleFonts.manrope(
-                      color: const Color(0xFF7A3DB8),
+                      color: Colors.black,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 25),
-
-            // Attachment Label
-            Text(
-              "Attachment",
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
+                  if (priority != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD8D8), // Light Pink bg
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        priority!,
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFFCD0000), // Red text
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
 
-            // Image Attachment
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                imagePath,
+              const SizedBox(height: 20),
+
+              // 4. Profile Card (Specific Styling)
+              Container(
                 width: double.infinity,
-                fit: BoxFit.cover,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: const Color(0xFF8E4CB6), width: 1), // Purple Border
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Avatar
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEADDFF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.person_outline, color: Color(0xFF4F378B), size: 30),
+                    ),
+                    const SizedBox(width: 15),
+                    // Text Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.manrope(
+                              color: Colors.black,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${role ?? "Commuter"} • $id',
+                            style: GoogleFonts.manrope(
+                              color: const Color(0xFF6D6D6D),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 25),
+
+              // 5. Description Label & Text
+              Text(
+                'Description',
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF6D6D6D),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                description,
+                style: GoogleFonts.manrope(
+                  color: Colors.black,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 6. Tags (Vehicle, Lost Item)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: tags.map((tag) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE9C5FF), // Light purple bg
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      tag,
+                      style: GoogleFonts.manrope(
+                        color: const Color(0xFF8E4CB6), // Purple text
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 25),
+
+              // 7. Attachment Section
+              Text(
+                'Attachment',
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF6D6D6D),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Attachment Image Container
+              Container(
+                width: 162,
+                height: 162,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF8E4CB6), width: 1), // Purple border
+                  boxShadow: const [
+                     BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(9),
+                  child: Image.network(
+                    imagePath.startsWith('http') ? imagePath : "https://placehold.co/162x162",
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Use local asset if network fails or provided path is an asset
+                      return Image.asset(
+                        imagePath, 
+                        fit: BoxFit.cover,
+                        errorBuilder: (c,e,s) => Container(
+                          color: Colors.grey[200],
+                          child: const Center(child: Icon(Icons.image, color: Colors.grey)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              // 8. Back to Home Button
+              Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(50),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFB945AA),
+                      Color(0xFF8E4CB6),
+                      Color(0xFF5B53C2),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context, 
+                        '/home_admin', 
+                        (route) => false
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(50),
+                    child: Center(
+                      child: Text(
+                        'Back to Home',
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

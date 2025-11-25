@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/feedback_card.dart';
+import 'reportdetails_admin.dart'; // Assuming your ReportCard is here
 
 class AdminReportsPage extends StatefulWidget {
   const AdminReportsPage({super.key});
@@ -106,7 +107,7 @@ class _AdminReportsPage extends State<AdminReportsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header Row: Title + Sort Dropdown ---
+              // --- Header Row: Title ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -122,10 +123,12 @@ class _AdminReportsPage extends State<AdminReportsPage> {
               ),
 
               const SizedBox(height: 16),
+              
+              // --- Tabs ---
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Color(0xFF9C6BFF).withValues(alpha: 0.08),
+                  color: const Color(0xFF9C6BFF).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -160,18 +163,19 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                       tags: r.tags,
                       showPriority: false,
                       onTap: () {
+                        // Navigate to the Detailed View
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ReportDetailsPage(
                               name: r.name,
-                              role: r.role, // or dynamic later
-                              id: "123456789", // or dynamic later
+                              role: r.role ?? "Commuter", 
+                              id: "123456789", 
                               priority: r.priority,
                               date: r.date,
                               description: r.description,
                               tags: r.tags,
-                              imagePath: "assets/images/sample bottle.png",
+                              imagePath: "assets/images/sample bottle.png", // Placeholder image
                             ),
                           ),
                         );
@@ -202,62 +206,11 @@ class _AdminReportsPage extends State<AdminReportsPage> {
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.manrope(
               fontSize: 16,
-              color: isActive ? Color(0xFF8E4CB6) : Colors.grey[600],
+              color: isActive ? const Color(0xFF8E4CB6) : Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),
             child: Text(label),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Added this class to fix the undefined method error
-class ReportDetailsPage extends StatelessWidget {
-  final String? name;
-  final String? role;
-  final String? id;
-  final String? priority;
-  final String? date;
-  final String? description;
-  final List<String>? tags;
-  final String? imagePath;
-
-  const ReportDetailsPage({
-    super.key,
-    this.name,
-    this.role,
-    this.id,
-    this.priority,
-    this.date,
-    this.description,
-    this.tags,
-    this.imagePath,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // You can replace this with the actual UI for ReportDetailsPage later
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Report Details"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Name: $name",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text("Role: $role"),
-            Text("Priority: $priority"),
-            Text("Date: $date"),
-            const SizedBox(height: 16),
-            const Text("Description:", style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(description ?? "No description"),
-          ],
         ),
       ),
     );
