@@ -32,30 +32,34 @@ class MapWidget extends StatefulWidget {
 }
 
 class _MapWidgetState extends State<MapWidget> {
+  // Brand Colors
+  final Color _startColor = const Color(0xFF5B53C2); // Secondary Purple
+  final Color _endColor = const Color(0xFF8E4CB6); // Primary Purple
+  final Color _intermediateColor = const Color(0xFF9C6BFF);
+
   // Get only the stops the user traveled through
   List<Map<String, dynamic>> _getTraveledStops() {
-    if (widget.routeStops == null || 
+    if (widget.routeStops == null ||
         widget.routeStops!.isEmpty ||
         widget.originStopId == null ||
         widget.destinationStopId == null) {
       return [];
     }
 
-    final originIndex = widget.routeStops!
-        .indexWhere((stop) => stop['id'] == widget.originStopId);
-    final destIndex = widget.routeStops!
-        .indexWhere((stop) => stop['id'] == widget.destinationStopId);
+    final originIndex = widget.routeStops!.indexWhere(
+      (stop) => stop['id'] == widget.originStopId,
+    );
+    final destIndex = widget.routeStops!.indexWhere(
+      (stop) => stop['id'] == widget.destinationStopId,
+    );
 
     if (originIndex == -1 || destIndex == -1) {
       return [];
     }
 
-    // Return stops between origin and destination (inclusive)
     if (originIndex <= destIndex) {
-      // Forward direction
       return widget.routeStops!.sublist(originIndex, destIndex + 1);
     } else {
-      // Backward direction (return trip)
       return widget.routeStops!
           .sublist(destIndex, originIndex + 1)
           .reversed
@@ -63,10 +67,110 @@ class _MapWidgetState extends State<MapWidget> {
     }
   }
 
+  // Styled Pin Builder (Label + Circle Head)
+  Marker _createPin({
+    required LatLng point,
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Marker(
+      point: point,
+      width: 140, // Wide enough for location names
+      height: 90,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Label Box
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Pin Head (Circle with Icon)
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Simple dot for intermediate stops
+  Marker _createIntermediateDot({
+    required LatLng point,
+    required int sequence,
+  }) {
+    return Marker(
+      point: point,
+      width: 24,
+      height: 24,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: _intermediateColor, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 2,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            "$sequence",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: _intermediateColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Marker> _buildMarkers() {
     List<Marker> markers = [];
 
-    // Add current location marker if available
+    // 1. Current User Location (Blue Dot)
     if (widget.currentPosition != null) {
       markers.add(
         Marker(
@@ -74,108 +178,33 @@ class _MapWidgetState extends State<MapWidget> {
             widget.currentPosition!.latitude,
             widget.currentPosition!.longitude,
           ),
-          width: 40,
-          height: 40,
-          child: ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF8E4CB6),
-                Color(0xFFB945AA),
-              ],
-            ).createShader(bounds),
-            child: const Icon(
-              Icons.my_location,
-              color: Colors.white,
-              size: 40,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Add only traveled stops as markers
-    final traveledStops = _getTraveledStops();
-    
-    for (int i = 0; i < traveledStops.length; i++) {
-      final stop = traveledStops[i];
-      final stopId = stop['id'];
-      final isOrigin = stopId == widget.originStopId;
-      final isDestination = stopId == widget.destinationStopId;
-      final sequence = i + 1; // Sequential numbering for traveled stops
-
-      // Determine marker color and size
-      Color markerColor;
-      double markerSize;
-      IconData markerIcon;
-
-      if (isOrigin) {
-        markerColor = Colors.green;
-        markerSize = 45;
-        markerIcon = Icons.location_on;
-      } else if (isDestination) {
-        markerColor = Colors.red;
-        markerSize = 45;
-        markerIcon = Icons.location_on;
-      } else {
-        markerColor = const Color(0xFF8E4CB6);
-        markerSize = 32;
-        markerIcon = Icons.location_on_outlined;
-      }
-
-      markers.add(
-        Marker(
-          point: LatLng(stop['latitude'], stop['longitude']),
-          width: markerSize + 20,
-          height: markerSize + 40,
-          child: Column(
+          width: 50,
+          height: 50,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              // Stop label (only for origin and destination)
-              if (isOrigin || isDestination)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: markerColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    stop['name'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
                 ),
-              const SizedBox(height: 2),
-              // Marker icon with sequence number
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    markerIcon,
-                    color: markerColor,
-                    size: markerSize,
-                  ),
-                  if (!isOrigin && !isDestination)
-                    Positioned(
-                      top: 6,
-                      child: Text(
-                        '$sequence',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              ),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
                     ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -183,48 +212,62 @@ class _MapWidgetState extends State<MapWidget> {
       );
     }
 
-    // Add boarding location marker (user's actual boarding position)
+    // 2. Route Stops
+    final traveledStops = _getTraveledStops();
+
+    for (int i = 0; i < traveledStops.length; i++) {
+      final stop = traveledStops[i];
+      final stopId = stop['id'];
+      final isOrigin = stopId == widget.originStopId;
+      final isDestination = stopId == widget.destinationStopId;
+      final latLng = LatLng(stop['latitude'], stop['longitude']);
+      final locationName = stop['name'] ?? 'Stop';
+
+      if (isOrigin) {
+        // Origin: Target Icon
+        markers.add(
+          _createPin(
+            point: latLng,
+            label: locationName,
+            color: _startColor,
+            icon: Icons.trip_origin_rounded,
+          ),
+        );
+      } else if (isDestination) {
+        // Destination: Pin Icon (As requested)
+        markers.add(
+          _createPin(
+            point: latLng,
+            label: locationName,
+            color: _endColor,
+            icon: Icons.location_on_rounded,
+          ),
+        );
+      } else {
+        // Intermediate: Small Dots
+        markers.add(_createIntermediateDot(point: latLng, sequence: i + 1));
+      }
+    }
+
+    // 3. Actual Boarding/Arrival Locations (Styled pins)
     if (widget.boardingLocation != null) {
       markers.add(
-        Marker(
+        _createPin(
           point: widget.boardingLocation!,
-          width: 40,
-          height: 40,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: const Icon(
-              Icons.person_pin,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
+          label: "Boarded",
+          color: Colors.orange,
+          icon: Icons.hail_rounded,
         ),
       );
     }
 
-    // Add arrival location marker (user's actual arrival position)
     if (widget.arrivalLocation != null) {
       markers.add(
-        Marker(
+        _createPin(
           point: widget.arrivalLocation!,
-          width: 40,
-          height: 40,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.orange,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: const Icon(
-              Icons.person_pin,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
+          label: "Dropped",
+          color: Colors.green,
+          icon: Icons.emoji_people_rounded,
         ),
       );
     }
@@ -233,87 +276,63 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   List<Polyline> _buildPolylines() {
-    List<Polyline> polylines = [];
-
-    // Draw polyline only through traveled stops
     final traveledStops = _getTraveledStops();
-    
+
     if (traveledStops.length > 1) {
       final traveledPoints = traveledStops
           .map((stop) => LatLng(stop['latitude'], stop['longitude']))
           .toList();
 
-      polylines.add(
+      return [
         Polyline(
           points: traveledPoints,
-          color: const Color(0xFF8E4CB6),
+          color: _endColor,
           strokeWidth: 5.0,
-          borderColor: Colors.white,
+          borderColor: Colors.white.withValues(alpha: 0.7),
           borderStrokeWidth: 2.0,
+          strokeCap: StrokeCap.round,
+          strokeJoin: StrokeJoin.round,
         ),
-      );
+      ];
     }
-
-    return polylines;
+    return [];
   }
 
   LatLngBounds? _getBounds() {
     List<LatLng> allPoints = [];
 
-    // Add only traveled stops
     final traveledStops = _getTraveledStops();
     for (var stop in traveledStops) {
       allPoints.add(LatLng(stop['latitude'], stop['longitude']));
     }
 
-    // Add boarding and arrival locations
-    if (widget.boardingLocation != null) {
+    if (widget.boardingLocation != null)
       allPoints.add(widget.boardingLocation!);
-    }
-    if (widget.arrivalLocation != null) {
-      allPoints.add(widget.arrivalLocation!);
+    if (widget.arrivalLocation != null) allPoints.add(widget.arrivalLocation!);
+    if (widget.currentPosition != null) {
+      allPoints.add(
+        LatLng(
+          widget.currentPosition!.latitude,
+          widget.currentPosition!.longitude,
+        ),
+      );
     }
 
     if (allPoints.isEmpty) return null;
 
-    double minLat = allPoints.first.latitude;
-    double maxLat = allPoints.first.latitude;
-    double minLng = allPoints.first.longitude;
-    double maxLng = allPoints.first.longitude;
-
-    for (var point in allPoints) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLng) minLng = point.longitude;
-      if (point.longitude > maxLng) maxLng = point.longitude;
-    }
-
-    // Add padding
-    double latPadding = (maxLat - minLat) * 0.2;
-    double lngPadding = (maxLng - minLng) * 0.2;
-
-    // Ensure minimum padding for very short routes
-    latPadding = latPadding < 0.01 ? 0.01 : latPadding;
-    lngPadding = lngPadding < 0.01 ? 0.01 : lngPadding;
-
-    return LatLngBounds(
-      LatLng(minLat - latPadding, minLng - lngPadding),
-      LatLng(maxLat + latPadding, maxLng + lngPadding),
-    );
+    return LatLngBounds.fromPoints(allPoints);
   }
 
   @override
   void initState() {
     super.initState();
-    
-    // Fit bounds after map is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bounds = _getBounds();
       if (bounds != null && mounted) {
         widget.mapController.fitCamera(
           CameraFit.bounds(
             bounds: bounds,
-            padding: const EdgeInsets.all(50),
+            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 70),
           ),
         );
       }
@@ -324,22 +343,23 @@ class _MapWidgetState extends State<MapWidget> {
   Widget build(BuildContext context) {
     if (widget.isLoading) {
       return Container(
-        color: Colors.grey[300],
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        color: Colors.grey[100],
+        child: Center(child: CircularProgressIndicator(color: _endColor)),
       );
     }
 
     final traveledStops = _getTraveledStops();
     final initialCenter = traveledStops.isNotEmpty
-        ? LatLng(traveledStops.first['latitude'], traveledStops.first['longitude'])
+        ? LatLng(
+            traveledStops.first['latitude'],
+            traveledStops.first['longitude'],
+          )
         : (widget.currentPosition != null
-            ? LatLng(
-                widget.currentPosition!.latitude,
-                widget.currentPosition!.longitude,
-              )
-            : widget.boardingLocation ?? widget.defaultLocation);
+              ? LatLng(
+                  widget.currentPosition!.latitude,
+                  widget.currentPosition!.longitude,
+                )
+              : widget.boardingLocation ?? widget.defaultLocation);
 
     return FlutterMap(
       mapController: widget.mapController,
@@ -348,26 +368,33 @@ class _MapWidgetState extends State<MapWidget> {
         initialZoom: 15.0,
         minZoom: 5.0,
         maxZoom: 18.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+          urlTemplate:
+              'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
           subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'com.example.app',
+          userAgentPackageName: 'com.komyut.app',
           maxZoom: 19,
           retinaMode: RetinaMode.isHighDensity(context),
         ),
-        PolylineLayer(
-          polylines: _buildPolylines(),
-        ),
-        MarkerLayer(
-          markers: _buildMarkers(),
-        ),
+        PolylineLayer(polylines: _buildPolylines()),
+        MarkerLayer(markers: _buildMarkers()),
         RichAttributionWidget(
+          showFlutterMapAttribution: true,
           attributions: [
             TextSourceAttribution(
-              '© OpenStreetMap contributors © CARTO',
+              'OpenStreetMap contributors',
               onTap: () {},
+              textStyle: const TextStyle(color: Colors.grey, fontSize: 10),
+            ),
+            TextSourceAttribution(
+              'CARTO',
+              onTap: () {},
+              textStyle: const TextStyle(color: Colors.grey, fontSize: 10),
             ),
           ],
         ),
