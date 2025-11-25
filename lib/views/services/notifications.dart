@@ -16,7 +16,7 @@ class NotificationProvider extends ChangeNotifier {
     return _notifications;
   }
 
-  // --- STATIC ITEMS (Wallet, etc) ---
+  // --- STATIC ITEMS ---
   final List<NotifItem> _staticItems = [
     NotifItem(
       id: 'w1',
@@ -86,7 +86,7 @@ class NotificationProvider extends ChangeNotifier {
           .single();
       final profileId = profileRes['id'];
 
-      // 2. Fetch Trips (Raw fetch)
+      // 2. Fetch Trips
       final tripsRes = await _supabase
           .from('trips')
           .select('id, started_at, ended_at, status, driver_id')
@@ -95,7 +95,7 @@ class NotificationProvider extends ChangeNotifier {
 
       final List<dynamic> tripsData = tripsRes as List<dynamic>;
 
-      // 3. Fetch Drivers Manually
+      // 3. Fetch Drivers
       final driverIds = tripsData
           .map((t) => t['driver_id'])
           .where((id) => id != null)
@@ -120,7 +120,6 @@ class NotificationProvider extends ChangeNotifier {
           .eq('recipient_profile_id', profileId)
           .eq('type', 'trip');
 
-      // FIX: Explicitly cast to List<Map> to avoid dynamic type errors
       final List<Map<String, dynamic>> notifData =
           List<Map<String, dynamic>>.from(notifRes as List);
 
@@ -128,14 +127,15 @@ class NotificationProvider extends ChangeNotifier {
 
       for (var trip in tripsData) {
         final String tripId = trip['id'];
-        final String status = trip['status'] ?? 'ongoing';
+        final String currentRealStatus =
+            trip['status'] ?? 'ongoing'; // Real-time status
         final String driverId = trip['driver_id'] ?? '';
         final String plate = driverPlates[driverId] ?? 'Unknown Plate';
 
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
         // --- NOTIFICATION 1: STARTED ---
-        // FIX: Use .where().firstOrNull instead of .firstWhere(orElse: null)
+        // We look for a DB row specifically for 'ongoing' to track read status
         final startRow = notifData
             .where(
               (n) =>
@@ -155,8 +155,10 @@ class NotificationProvider extends ChangeNotifier {
             timeOrDate: DateFormat('hh:mm a').format(startedAt),
             isRead: startRow != null ? (startRow['read'] ?? false) : false,
             sortDate: startedAt,
+            // PAYLOAD: We pass 'currentRealStatus' so navigation shows the ACTUAL status (e.g. Completed)
+            // even though this is the "Started" notification.
             payload: {
-              'status': 'ongoing',
+              'status': currentRealStatus,
               'date_str': DateFormat('MMM dd, yyyy').format(startedAt),
               'time_str': DateFormat('hh:mm a').format(startedAt),
             },
@@ -164,10 +166,9 @@ class NotificationProvider extends ChangeNotifier {
         );
 
         // --- NOTIFICATION 2: ENDED ---
-        if (status == 'completed' && trip['ended_at'] != null) {
+        if (currentRealStatus == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
 
-          // FIX: Use .where().firstOrNull
           final endRow = notifData
               .where(
                 (n) =>
@@ -218,7 +219,6 @@ class NotificationProvider extends ChangeNotifier {
     _notifications[index].isRead = true;
     notifyListeners();
 
-    // Skip local static items
     if (item.isLocal) return;
 
     final user = _supabase.auth.currentUser;
@@ -234,9 +234,14 @@ class NotificationProvider extends ChangeNotifier {
             .single();
         final profileId = profileRes['id'];
 
-        final status = item.payload?['status'] ?? 'ongoing';
+        // IMPORTANT: Determine the EVENT type for the DB ('ongoing' or 'completed')
+        // We cannot rely on payload['status'] because that might be 'completed' even for the Start notification.
+        String dbStatus = 'ongoing';
+        if (item.virtualId.startsWith('end_')) {
+          dbStatus = 'completed';
+        }
+
         final tripId = item.tripId;
-        // Use the original sort date as creation time
         final timestamp = item.sortDate.toIso8601String();
 
         await _supabase.from('notifications').insert({
@@ -244,7 +249,8 @@ class NotificationProvider extends ChangeNotifier {
           'type': 'trip',
           'title': 'Trip Notification',
           'message': item.title,
-          'payload': {'trip_id': tripId, 'status': status},
+          // We store the STRICT status ('ongoing' or 'completed') in DB to ensure fetching logic works next time
+          'payload': {'trip_id': tripId, 'status': dbStatus},
           'read': true,
           'created_at': timestamp,
         });
