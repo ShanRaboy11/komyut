@@ -92,7 +92,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Left: Back Button
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
@@ -105,8 +104,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                       padding: EdgeInsets.zero,
                     ),
                   ),
-
-                  // Center: Title
                   Text(
                     'Transaction Receipt',
                     style: GoogleFonts.nunito(
@@ -115,14 +112,10 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                       color: Colors.black87,
                     ),
                   ),
-
-                  // Right: Download Icon (Restored)
                   Align(
                     alignment: Alignment.centerRight,
                     child: IconButton(
-                      onPressed: () {
-                        // Add download/share logic here if needed
-                      },
+                      onPressed: () {},
                       icon: const Icon(
                         Symbols.download,
                         color: Colors.black87,
@@ -209,15 +202,16 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
         _data!['id']?.toString().toUpperCase() ??
         '---';
 
-    // --- FETCH ACTUAL STATUS FROM DB ---
+    // --- STATUS ---
     String status;
     if (isCashIn) {
       status = _data!['status']?.toString() ?? 'pending';
     } else {
+      // Redemptions are usually instant or don't have a status col in points_transactions
       status = _data!['status']?.toString() ?? 'completed';
     }
 
-    // Safely get method name
+    // --- METHOD ---
     String method = 'System';
     if (isCashIn) {
       if (_data!['payment_methods'] != null &&
@@ -227,13 +221,22 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
         method = _data!['method_name'];
       }
     } else {
+      // For redemption, the "Source" is Wallet Balance
       method = 'Wallet Balance';
     }
 
-    // --- FEE LOGIC (5 for Counter, 10 for Others) ---
-    double transactionFee = 10.00;
-    if (isCashIn && method.toLowerCase().contains('counter')) {
-      transactionFee = 5.00;
+    // --- FEE LOGIC (STRICT) ---
+    // Start with 0.0
+    double transactionFee = 0.00;
+
+    // Only apply fee if it is Cash In
+    if (isCashIn) {
+      // Default fee is 10
+      transactionFee = 10.00;
+      // If "counter", fee is 5
+      if (method.toLowerCase().contains('counter')) {
+        transactionFee = 5.00;
+      }
     }
 
     String feeNote = isCashIn
@@ -273,15 +276,11 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Title
             Container(width: 100, height: 14, color: Colors.white),
             const SizedBox(height: 12),
-            // Amount
             Container(width: 150, height: 32, color: Colors.white),
             const SizedBox(height: 16),
-            // Status Pill
             Container(
               width: 80,
               height: 24,
@@ -293,8 +292,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 16),
-
-            // Details
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -310,31 +307,10 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                 Container(width: 80, height: 14, color: Colors.white),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(width: 100, height: 14, color: Colors.white),
-                Container(width: 80, height: 14, color: Colors.white),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(width: 90, height: 14, color: Colors.white),
-                Container(width: 60, height: 14, color: Colors.white),
-              ],
-            ),
-
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 20),
-
-            // Barcode
             Container(width: 200, height: 50, color: Colors.white),
-            const SizedBox(height: 8),
-            Container(width: 120, height: 12, color: Colors.white),
           ],
         ),
       ),

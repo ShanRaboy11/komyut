@@ -102,19 +102,19 @@ class NotificationPageState extends State<NotificationPage> {
           );
         }
       } else if (type == 'cash_in' || type == 'redemption') {
-        // If we have a real transaction ID, fetch from DB
+        // Handle Real DB Transactions
         if (payload['transaction_id'] != null) {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TransactionReceiptPage(
                 id: payload['transaction_id'],
-                type: type!, // 'cash_in'
+                type: type!, // 'cash_in' or 'redemption'
               ),
             ),
           );
         }
-        // Fallback for static
+        // Handle Static Fallback
         else if (payload['data'] != null) {
           final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
               ?.cast<String, dynamic>();

@@ -16,10 +16,8 @@ class NotificationProvider extends ChangeNotifier {
     return _notifications;
   }
 
-  // --- STATIC ITEMS (Fallback/Demo) ---
-  final List<NotifItem> _staticItems = [
-    // You can keep or remove static items here
-  ];
+  // --- STATIC ITEMS (Fallback) ---
+  final List<NotifItem> _staticItems = [];
 
   Future<void> fetchNotifications() async {
     final user = _supabase.auth.currentUser;
@@ -56,10 +54,10 @@ class NotificationProvider extends ChangeNotifier {
           .select('id, started_at, ended_at, status, driver_id')
           .eq('created_by_profile_id', profileId)
           .order('started_at', ascending: false)
-          .limit(500); // Limit to prevent overload
+          .limit(500);
       final List<dynamic> tripsData = tripsRes as List<dynamic>;
 
-      // 2. Fare Transactions (FETCH ALL fare payments as requested)
+      // 2. Fare Transactions
       final transactionsRes = await _supabase
           .from('transactions')
           .select('id, created_at, amount, related_trip_id')
@@ -69,20 +67,40 @@ class NotificationProvider extends ChangeNotifier {
           .limit(1000);
       final List<dynamic> fareData = transactionsRes as List<dynamic>;
 
-      // 3. Rewards
+      // 3. Rewards (Incoming Tokens - Positive Change)
       List<dynamic> rewardsData = [];
+      // 4. Redemptions (Outgoing Tokens - Negative Change)
+      List<dynamic> redemptionData = [];
+
       if (commuterId != null) {
+        // Fetch Rewards
         final rewardsRes = await _supabase
             .from('points_transactions')
             .select('id, change, created_at, reason')
             .eq('commuter_id', commuterId)
-            .gt('change', 0)
+            .gt('change', 0) // Positive = Reward
             .order('created_at', ascending: false)
             .limit(500);
         rewardsData = rewardsRes as List<dynamic>;
+
+        // Fetch Redemptions
+        try {
+          final redemptionRes = await _supabase
+              .from('points_transactions')
+              .select(
+                'id, change, created_at, reason',
+              ) // Assuming status might not exist here, we handle it
+              .eq('commuter_id', commuterId)
+              .lt('change', 0) // Negative = Redemption
+              .order('created_at', ascending: false)
+              .limit(500);
+          redemptionData = redemptionRes as List<dynamic>;
+        } catch (e) {
+          debugPrint("Error fetching redemptions: $e");
+        }
       }
 
-      // 4. Cash In (Wrapped in try-catch to prevent crashing everything)
+      // 5. Cash In (Incoming Wallet)
       List<dynamic> cashInData = [];
       try {
         final cashInRes = await _supabase
@@ -91,16 +109,15 @@ class NotificationProvider extends ChangeNotifier {
               'id, created_at, amount, payment_methods(name), transaction_number',
             )
             .eq('initiated_by_profile_id', profileId)
-            .eq('type', 'cash_in') // Using 'type' ensures we get cash-ins
+            .eq('type', 'cash_in')
             .order('created_at', ascending: false)
             .limit(500);
         cashInData = cashInRes as List<dynamic>;
       } catch (e) {
         debugPrint("Error fetching cash_in: $e");
-        // We continue even if cash-in fails
       }
 
-      // 5. Drivers
+      // 6. Drivers
       final driverIds = tripsData
           .map((t) => t['driver_id'])
           .where((id) => id != null)
@@ -117,7 +134,7 @@ class NotificationProvider extends ChangeNotifier {
         }
       }
 
-      // 6. Read Statuses
+      // 7. Read Statuses
       final notifRes = await _supabase
           .from('notifications')
           .select('id, read, payload, type')
@@ -139,7 +156,6 @@ class NotificationProvider extends ChangeNotifier {
         final String plate = driverPlates[driverId] ?? 'Unknown';
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
-        // Start
         final startRow = notifData
             .where(
               (n) =>
@@ -168,7 +184,6 @@ class NotificationProvider extends ChangeNotifier {
           ),
         );
 
-        // End
         if (status == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
           final endRow = notifData
@@ -198,7 +213,7 @@ class NotificationProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // C. PROCESS FARE PAYMENTS (Your specific logic: Add as 1)
+      // C. PROCESS FARE PAYMENTS
       // ---------------------------------------------------------
       Map<String, List<dynamic>> paymentsByTrip = {};
       for (var t in fareData) {
@@ -236,7 +251,8 @@ class NotificationProvider extends ChangeNotifier {
                 : 'virtual_wallet_trip_$tripId',
             virtualId: 'wallet_trip_$tripId',
             variant: 'wallet',
-            title: "Payment of ₱${totalAmount.toStringAsFixed(2)} successful.",
+            title:
+                "Fare payment of ₱${totalAmount.toStringAsFixed(2)} successful.",
             timeOrDate: DateFormat('MMM dd').format(latestDate),
             isRead: walletRow != null ? (walletRow['read'] ?? false) : false,
             sortDate: latestDate,
@@ -250,7 +266,7 @@ class NotificationProvider extends ChangeNotifier {
       });
 
       // ---------------------------------------------------------
-      // D. PROCESS REWARDS
+      // D. PROCESS REWARDS (EARNED)
       // ---------------------------------------------------------
       for (var reward in rewardsData) {
         final String rewardId = reward['id'];
@@ -285,7 +301,45 @@ class NotificationProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // E. PROCESS CASH IN (REAL BACKEND)
+      // E. PROCESS REDEMPTIONS (SPENT)
+      // ---------------------------------------------------------
+      for (var red in redemptionData) {
+        final String redId = red['id'];
+        final double amount = (red['change'] as num)
+            .toDouble()
+            .abs(); // make positive for display
+        final DateTime createdAt = DateTime.parse(red['created_at']).toLocal();
+
+        // Check if user read this
+        final redRow = notifData
+            .where(
+              (n) =>
+                  n['type'] == 'wallet' &&
+                  n['payload'] != null &&
+                  n['payload']['transaction_id'] == redId,
+            )
+            .firstOrNull;
+
+        generatedList.add(
+          NotifItem(
+            id: redRow != null ? redRow['id'] : 'virtual_red_$redId',
+            virtualId: 'red_$redId',
+            variant: 'wallet', // Shows in Wallet tab
+            title: "You redeemed $amount tokens.",
+            timeOrDate: DateFormat('MMM dd').format(createdAt),
+            isRead: redRow != null ? (redRow['read'] ?? false) : false,
+            sortDate: createdAt,
+            payload: {
+              'type': 'redemption',
+              'transaction_id': redId,
+              'amount': amount,
+            },
+          ),
+        );
+      }
+
+      // ---------------------------------------------------------
+      // F. PROCESS CASH IN (REAL BACKEND)
       // ---------------------------------------------------------
       for (var ci in cashInData) {
         final String id = ci['id'];
@@ -367,10 +421,16 @@ class NotificationProvider extends ChangeNotifier {
           type = 'rewards';
         } else if (item.virtualId.startsWith('wallet_trip_')) {
           type = 'wallet';
-        } else if (item.virtualId.startsWith('ci_')) {
+        } else if (item.virtualId.startsWith('ci_') ||
+            item.virtualId.startsWith('red_')) {
+          // Both Cash In and Redemption go to Wallet type
           type = 'wallet';
           if (!payload.containsKey('transaction_id')) {
-            payload['transaction_id'] = item.virtualId.replaceAll('ci_', '');
+            // Extract ID if missing
+            String cleanId = item.virtualId
+                .replaceAll('ci_', '')
+                .replaceAll('red_', '');
+            payload['transaction_id'] = cleanId;
           }
         } else {
           String status = item.virtualId.startsWith('end_')
