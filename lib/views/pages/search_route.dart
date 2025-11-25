@@ -26,10 +26,11 @@ class _RouteFinderState extends State<RouteFinder> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
 
-  // Validation State
+  // Validation state
   bool _isFromValid = false;
   bool _isToValid = false;
-  bool _isProgrammaticUpdate = false;
+  bool _isProgrammaticUpdate =
+      false;
 
   List<Map<String, String>> _recentDestinations = [];
   List<Map<String, String>> _displayList = [];
@@ -43,20 +44,18 @@ class _RouteFinderState extends State<RouteFinder> {
 
     _fromController.addListener(() {
       if (!_isProgrammaticUpdate && _isFromValid) {
-        setState(() {
-          _isFromValid = false;
-        });
+        _isFromValid = false;
       }
+
       setState(() {});
       if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
     });
 
     _toController.addListener(() {
       if (!_isProgrammaticUpdate && _isToValid) {
-        setState(() {
-          _isToValid = false;
-        });
+        _isToValid = false;
       }
+
       setState(() {});
       if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
     });
@@ -203,6 +202,7 @@ class _RouteFinderState extends State<RouteFinder> {
 
     if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
     if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+
     setState(() {});
   }
 
@@ -334,7 +334,6 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _fromController.clear();
-                                      _isFromValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
@@ -387,7 +386,6 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _toController.clear();
-                                      _isToValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
