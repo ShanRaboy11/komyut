@@ -12,6 +12,10 @@ class ReportDetailsPage extends StatelessWidget {
   final String description;
   final List<String> tags;
   final String imagePath; // Path to the image attachment
+  final String? driverName;
+  final String? vehiclePlate;
+  final String? routeCode;
+  final String? status;
 
   const ReportDetailsPage({
     super.key,
@@ -23,6 +27,10 @@ class ReportDetailsPage extends StatelessWidget {
     required this.description,
     required this.tags,
     required this.imagePath,
+    this.driverName,
+    this.vehiclePlate,
+    this.routeCode,
+    this.status,
   });
 
   Color _getPriorityColor(String priority) {
@@ -181,6 +189,30 @@ class ReportDetailsPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 25),
+
+            if (driverName != null || vehiclePlate != null || routeCode != null || status != null) ...[
+              Text(
+                "Driver Details",
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (driverName != null)
+                Text('Driver: $driverName', style: GoogleFonts.manrope(fontSize: 14)),
+              if (vehiclePlate != null)
+                Text('Vehicle Plate: $vehiclePlate', style: GoogleFonts.manrope(fontSize: 14)),
+              if (routeCode != null)
+                Text('Route: $routeCode', style: GoogleFonts.manrope(fontSize: 14)),
+              if (status != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text('Status: $status', style: GoogleFonts.manrope(fontSize: 14)),
+                ),
+              const SizedBox(height: 16),
+            ],
 
             // Attachment Label
             Text(
