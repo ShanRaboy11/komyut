@@ -91,9 +91,7 @@ class NotificationPageState extends State<NotificationPage> {
     else if (item.variant == 'wallet') {
       final type = payload['type'] as String?;
 
-      // 1. REAL Fare Payment -> Trip Receipt
       if (type == 'fare_payment') {
-        // Ensure we have a valid trip_id from the DB transaction
         final tripId = payload['trip_id']?.toString();
         if (tripId != null && tripId.isNotEmpty) {
           Navigator.push(
@@ -102,28 +100,35 @@ class NotificationPageState extends State<NotificationPage> {
               builder: (context) => TripReceiptPage(tripId: tripId),
             ),
           );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Trip details unavailable")),
+        }
+      } else if (type == 'cash_in' || type == 'redemption') {
+        // If we have a real transaction ID, fetch from DB
+        if (payload['transaction_id'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransactionReceiptPage(
+                id: payload['transaction_id'],
+                type: type!, // 'cash_in'
+              ),
+            ),
           );
         }
-      }
-      // 2. STATIC Cash In / Redemption -> Transaction Receipt
-      else if (type == 'cash_in' || type == 'redemption') {
-        // We treat these as static for now
-        final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
-            ?.cast<String, dynamic>();
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TransactionReceiptPage(
-              id: item.id,
-              type: 'static',
-              staticData: staticMap,
+        // Fallback for static
+        else if (payload['data'] != null) {
+          final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
+              ?.cast<String, dynamic>();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransactionReceiptPage(
+                id: item.id,
+                type: 'static',
+                staticData: staticMap,
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
   }
@@ -136,7 +141,6 @@ class NotificationPageState extends State<NotificationPage> {
     return Consumer<NotificationProvider>(
       builder: (context, provider, child) {
         final all = provider.notifications;
-
         List<NotifItem> filtered;
         if (activeTab == 'Trips') {
           filtered = all.where((n) => n.variant == 'trips').toList();
@@ -208,7 +212,6 @@ class NotificationPageState extends State<NotificationPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -222,7 +225,6 @@ class NotificationPageState extends State<NotificationPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Expanded(
                     child: provider.isLoading && provider.notifications.isEmpty
                         ? Center(
@@ -267,7 +269,6 @@ class NotificationPageState extends State<NotificationPage> {
                                     ),
                                     const SizedBox(height: 18),
                                   ],
-
                                   if (filtered.isEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 50),
@@ -282,7 +283,6 @@ class NotificationPageState extends State<NotificationPage> {
                                         ),
                                       ),
                                     ),
-
                                   const SizedBox(height: 120),
                                 ],
                               ),

@@ -11,6 +11,7 @@ class TransactionReceiptCard extends StatelessWidget {
   final String referenceNumber;
   final bool isRedemption;
   final String? feeNote;
+  final double feeAmount; // Added
 
   const TransactionReceiptCard({
     super.key,
@@ -22,13 +23,13 @@ class TransactionReceiptCard extends StatelessWidget {
     required this.referenceNumber,
     this.isRedemption = false,
     this.feeNote,
+    this.feeAmount = 0.0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -45,7 +46,6 @@ class TransactionReceiptCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Title
           Text(
             title,
             style: GoogleFonts.manrope(
@@ -56,8 +56,6 @@ class TransactionReceiptCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Amount
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -78,10 +76,7 @@ class TransactionReceiptCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // Status Pill
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -97,21 +92,17 @@ class TransactionReceiptCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
           const Divider(height: 1, thickness: 1),
           const SizedBox(height: 12),
-
-          // Details Rows
           _detailRow('Date', date),
           _detailRow('Time', time),
           _detailRow(isRedemption ? 'Source' : 'Payment Method', paymentMethod),
 
-          // Only show fee for cash-in transactions
           if (!isRedemption) ...[
-            _detailRow('Transaction Fee', '₱0.00'),
+            // Dynamic Fee Display
+            _detailRow('Transaction Fee', '₱${feeAmount.toStringAsFixed(2)}'),
             const SizedBox(height: 16),
-            // Fee Note
             Text(
               feeNote ??
                   "A convenience fee has been applied to this transaction.",
@@ -128,8 +119,6 @@ class TransactionReceiptCard extends StatelessWidget {
           const SizedBox(height: 20),
           const Divider(height: 1, thickness: 1),
           const SizedBox(height: 20),
-
-          // Barcode Section
           Center(
             child: Column(
               children: [

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../widgets/button.dart';
-import '../widgets/receipttransaction_card.dart'; // Import the new card widget
+import '../widgets/receipttransaction_card.dart';
 import 'commuter_app.dart';
 
 class TransactionReceiptPage extends StatefulWidget {
@@ -42,29 +40,38 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
   }
 
   Future<void> _loadData() async {
+    setState(() => _loading = true);
     try {
       final supabase = Supabase.instance.client;
+      Map<String, dynamic>? res;
 
+      // Ensure we query the correct table based on type
       if (widget.type == 'cash_in') {
-        final res = await supabase
+        res = await supabase
             .from('transactions')
-            .select('*, payment_methods(name)')
+            .select('*, payment_methods(name)') // Join name
             .eq('id', widget.id)
-            .single();
-        _data = res;
+            .maybeSingle(); // Safer than single()
       } else if (widget.type == 'redemption') {
-        final res = await supabase
+        res = await supabase
             .from('points_transactions')
             .select()
             .eq('id', widget.id)
-            .single();
-        _data = res;
+            .maybeSingle();
+      } else {
+        throw "Unknown transaction type: ${widget.type}";
       }
 
+      if (res == null) {
+        throw "Transaction not found in DB. ID: ${widget.id}";
+      }
+
+      _data = res;
       setState(() => _loading = false);
     } catch (e) {
+      debugPrint("Receipt Error: $e"); // View this in console
       setState(() {
-        _error = 'Failed to load details: $e';
+        _error = 'Failed to load details. \n$e';
         _loading = false;
       });
     }
@@ -103,31 +110,13 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Symbols.download,
-                        color: Colors.black87,
-                        size: 24,
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
                 ],
               ),
             ),
-
-            // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  bottom: MediaQuery.of(context).padding.bottom + 32,
-                ),
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 40),
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
@@ -152,7 +141,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                       ),
 
                     const SizedBox(height: 30),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: CustomButton(
@@ -167,9 +155,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
                         isFilled: true,
                       ),
                     ),
-
-                    // Extra bottom padding
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -184,9 +169,9 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
     final isCashIn =
         widget.type == 'cash_in' ||
         (widget.type == 'static' && _data!['category'] == 'cash_in');
-
     final isRedemption =
-        widget.type == 'redemption' || _data!['category'] == 'redemption';
+        widget.type == 'redemption' ||
+        (widget.type == 'static' && _data!['category'] == 'redemption');
 
     final rawAmount = _data!['amount'] ?? _data!['change'] ?? 0;
     final double amount = (rawAmount is num) ? rawAmount.toDouble().abs() : 0.0;
@@ -202,10 +187,12 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
         _data!['id']?.toString().toUpperCase() ??
         '---';
 
+    // Safely get method name
     String method = 'System';
     if (isCashIn) {
-      if (_data!['payment_methods'] != null) {
-        method = _data!['payment_methods']['name'];
+      if (_data!['payment_methods'] != null &&
+          _data!['payment_methods'] is Map) {
+        method = _data!['payment_methods']['name'] ?? 'Method';
       } else if (_data!['method_name'] != null) {
         method = _data!['method_name'];
       }
@@ -213,7 +200,13 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
       method = 'Wallet Balance';
     }
 
-    String? feeNote = isCashIn
+    // --- FEE LOGIC (5 for Counter, 10 for Others) ---
+    double transactionFee = 10.00;
+    if (isCashIn && method.toLowerCase().contains('counter')) {
+      transactionFee = 5.00;
+    }
+
+    String feeNote = isCashIn
         ? "A convenience fee has been applied to this transaction."
         : "No fees applied for this redemption.";
 
@@ -226,138 +219,17 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
       referenceNumber: ref,
       isRedemption: isRedemption,
       feeNote: feeNote,
+      feeAmount: transactionFee,
     );
   }
 
-  Widget _buildSkeletonLoader() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Status pill skeleton
-              Container(
-                width: 100,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Title skeleton
-              Container(
-                width: 120,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Amount skeleton
-              Container(
-                width: 150,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 16),
-              // Details skeleton
-              ...List.generate(
-                3,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      Container(
-                        width: 100,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 16),
-              // Barcode skeleton
-              Container(
-                width: 200,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            _error!,
-            style: const TextStyle(color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          CustomButton(
-            text: 'Retry',
-            onPressed: _loadData,
-            width: double.infinity,
-            height: 48,
-            isFilled: true,
-            textColor: Colors.white,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildSkeletonLoader() =>
+      const Center(child: CircularProgressIndicator());
+  Widget _buildErrorState() => Center(
+    child: Text(
+      _error ?? "Unknown Error",
+      textAlign: TextAlign.center,
+      style: const TextStyle(color: Colors.red),
+    ),
+  );
 }
