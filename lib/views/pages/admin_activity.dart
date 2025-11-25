@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import '../widgets/button.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import '../providers/transactions.dart';
@@ -25,6 +26,7 @@ class _AdminActivityPage extends State<AdminActivityPage> {
 
   int activeTransaction = 1;
 
+  String? _statusFilter;
   @override
   void initState() {
     super.initState();
@@ -55,7 +57,16 @@ class _AdminActivityPage extends State<AdminActivityPage> {
     return Consumer<TransactionProvider>(
       builder: (context, provider, child) {
         final String selectedType = _getSelectedType();
-        final filteredActivity = provider.getTransactionsByType(selectedType);
+        final filteredActivity = provider
+            .getTransactionsByType(selectedType)
+            .where((r) {
+              if ((selectedType == 'cash_in' || selectedType == 'cash_out') &&
+                  _statusFilter != null) {
+                return r.status == _statusFilter;
+              }
+              return true;
+            })
+            .toList();
 
         return Scaffold(
           backgroundColor: const Color(0xFFF7F4FF),
@@ -150,57 +161,119 @@ class _AdminActivityPage extends State<AdminActivityPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (selectedType == 'cash_in' || selectedType == 'cash_out')
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _statusFilter == "Pending"
+                              ? "Pending Transactions"
+                              : _statusFilter == "Completed"
+                              ? "Completed Transactions"
+                              : _statusFilter == "Rejected"
+                              ? "Rejected Transactions"
+                              : "All Transactions",
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          tooltip: "Filter by Status",
+                          onSelected: (value) {
+                            setState(() => _statusFilter = value);
+                          },
+                          offset: const Offset(0, 45),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'Pending',
+                              child: Text('Pending'),
+                            ),
+                            PopupMenuItem(
+                              value: 'Completed',
+                              child: Text('Completed'),
+                            ),
+                            PopupMenuItem(
+                              value: 'Rejected',
+                              child: Text('Rejected'),
+                            ),
+                            PopupMenuItem(value: null, child: Text('All')),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 207, 206, 206),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              size: 20,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: provider.isLoading
-                      ? _buildActivitySkeleton(context)
-                      : provider.errorMessage != null
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text('Error: ${provider.errorMessage}'),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () => provider.refresh(),
-                                      child: const Text('Retry'),
-                                    ),
-                                  ],
+                        ? _buildActivitySkeleton(context)
+                        : provider.errorMessage != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Error: ${provider.errorMessage}'),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () => provider.refresh(),
+                                  child: const Text('Retry'),
                                 ),
-                              )
-                            : RefreshIndicator(
-                                onRefresh: () => provider.refresh(),
-                                child: filteredActivity.isEmpty
-                                    ? ListView(
-                                        children: [
-                                          SizedBox(
-                                            height: MediaQuery.of(context).size.height * 0.5,
-                                            child: Center(
-                                              child: Text(
-                                                'No transactions found',
-                                                style: GoogleFonts.manrope(
-                                                  fontSize: 14,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () => provider.refresh(),
+                            child: filteredActivity.isEmpty
+                                ? ListView(
+                                    children: [
+                                      SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                            0.5,
+                                        child: Center(
+                                          child: Text(
+                                            'No transactions found',
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 14,
+                                              color: Colors.grey,
                                             ),
                                           ),
-                                        ],
-                                      )
-                                    : ListView.builder(
-                                        itemCount: filteredActivity.length,
-                                        itemBuilder: (context, index) {
-                                          final tx = filteredActivity[index];
-                                          return buildTransactionItem(
-                                            context,
-                                            tx,
-                                            currencyFormat,
-                                            _showTransactionDetailModal,
-                                          );
-                                        },
+                                        ),
                                       ),
-                              ),
+                                    ],
+                                  )
+                                : ListView.builder(
+                                    itemCount: filteredActivity.length,
+                                    itemBuilder: (context, index) {
+                                      final tx = filteredActivity[index];
+                                      return buildTransactionItem(
+                                        context,
+                                        tx,
+                                        currencyFormat,
+                                        _showTransactionDetailModal,
+                                      );
+                                    },
+                                  ),
+                          ),
                   ),
                 ),
               ],
@@ -266,8 +339,8 @@ Widget buildTransactionItem(
   final Color amountColor = (type == 'cash_out')
       ? Colors.red
       : (type == 'cash_in' || type == 'token_redemption')
-          ? Colors.green
-          : const Color(0xFF5B53C2);
+      ? Colors.green
+      : const Color(0xFF5B53C2);
 
   final String date = DateFormat('MMM d, yyyy').format(tx.createdAt);
   final String time = DateFormat('hh:mm a').format(tx.createdAt);
@@ -332,6 +405,9 @@ void _showTransactionDetailModal(
   final String type = transaction.type;
   final double amount = transaction.amount;
   final DateTime createdAt = transaction.createdAt;
+  final bool isPendingCashInOrOut =
+      (transaction.type == 'cash_in' || transaction.type == 'cash_out') &&
+      transaction.status == 'Pending';
 
   // Map type to title
   final String modalTitle = switch (type) {
@@ -360,7 +436,10 @@ void _showTransactionDetailModal(
       details = [
         _buildDetailRow('Date:', DateFormat('MM/dd/yyyy').format(createdAt)),
         _buildDetailRow('Time:', DateFormat('hh:mm a').format(createdAt)),
-        _buildDetailRow('Driver/Operator:', transaction.driverName ?? transaction.initiatorName ?? 'N/A'),
+        _buildDetailRow(
+          'Recipient:',
+          transaction.driverName ?? transaction.initiatorName ?? 'N/A',
+        ),
         _buildDetailRow('Amount:', currencyFormat.format(amount.abs())),
       ];
       break;
@@ -419,6 +498,7 @@ void _showTransactionDetailModal(
           currencyFormat.format(amount.abs()),
           isTotal: true,
         ),
+        showActionButtons: isPendingCashInOrOut,
         transactionCode: transaction.transactionNumber ?? 'N/A',
       );
     },
@@ -431,8 +511,10 @@ Widget _buildDetailModal({
   required List<Widget> details,
   required Widget totalRow,
   required String transactionCode,
+  required bool showActionButtons,
 }) {
   final Color brandColor = const Color(0xFF8E4CB6);
+
   return Dialog(
     backgroundColor: Colors.transparent,
     elevation: 0,
@@ -461,6 +543,8 @@ Widget _buildDetailModal({
               ...details,
               Divider(color: brandColor.withAlpha(128), height: 24),
               totalRow,
+
+              const SizedBox(height: 8),
               if (transactionCode != 'N/A') ...[
                 Divider(color: brandColor.withAlpha(128), height: 24),
                 BarcodeWidget(
@@ -478,12 +562,42 @@ Widget _buildDetailModal({
                   ),
                 ),
               ],
+
+              if (showActionButtons) ...[
+                Divider(color: brandColor.withAlpha(128), height: 24),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: "Reject",
+                        isFilled: false,
+                        strokeColor: const Color(0xFF5B53C2),
+                        outlinedFillColor: Colors.white,
+                        textColor: const Color(0xFF5B53C2),
+                        onPressed: () {},
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: "Accept",
+                        isFilled: true,
+                        textColor: Colors.white,
+                        onPressed: () {},
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
           Positioned(
             top: -12,
             right: -12,
-              child: GestureDetector(
+            child: GestureDetector(
               onTap: () async {
                 // Capture navigator references before awaiting to avoid using BuildContext across async gaps
                 final rootNav = Navigator.of(context, rootNavigator: true);
@@ -581,7 +695,11 @@ Widget _buildActivitySkeleton(BuildContext context) {
                       children: [
                         Container(height: 12, color: Colors.grey[300]),
                         const SizedBox(height: 8),
-                        Container(height: 12, width: width * 0.5, color: Colors.grey[300]),
+                        Container(
+                          height: 12,
+                          width: width * 0.5,
+                          color: Colors.grey[300],
+                        ),
                       ],
                     ),
                   ),
