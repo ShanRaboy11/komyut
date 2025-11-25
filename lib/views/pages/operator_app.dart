@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../widgets/role_navbar_wrapper.dart';
 import '../providers/operator_dashboard.dart';
 import '../providers/wallet_provider.dart';
+import '../providers/transactions.dart';
 
 import './home_operator.dart';
 import './report_operator.dart';
-import './placeholders.dart';
+import './activity_operator.dart';
+// import './placeholders.dart';
 import './profile.dart';
 import './driver_operator.dart';
 
@@ -37,10 +39,13 @@ class OperatorApp extends StatelessWidget {
 
     switch (settings.name) {
       case '/':
-        page = const OperatorNavBarWrapper(
+        page = OperatorNavBarWrapper(
           homePage: OperatorDashboardNav(),
           driversPage: OperatorDriversPage(),
-          transactionsPage: OperatorTransactionsPage(),
+          transactionsPage: ChangeNotifierProvider<TransactionProvider>(
+            create: (_) => TransactionProvider(),
+            child: OperatorRemittancesPage(),
+          ),
           reportsPage: OperatorReportsPage(),
           profilePage: ProfilePage(),
         );
@@ -86,7 +91,7 @@ class OperatorApp extends StatelessWidget {
           child: const OperatorNavBarWrapper(
             homePage: OperatorDashboardNav(),
             driversPage: OperatorDriversPage(),
-            transactionsPage: OperatorTransactionsPage(),
+            transactionsPage: OperatorRemittancesPage(),
             reportsPage: OperatorReportsPage(),
             profilePage: ProfilePage(),
           ),

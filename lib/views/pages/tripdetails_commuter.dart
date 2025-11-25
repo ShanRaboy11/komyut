@@ -11,6 +11,7 @@ import '../pages/tripreceipt_commuter.dart';
 import 'report_commuter.dart';
 import '../services/trips.dart';
 import '../models/trips.dart';
+import 'commuter_rating.dart';
 
 class TripDetailsPage extends StatefulWidget {
   final String tripId;
@@ -402,15 +403,23 @@ class _TripDetailsPageState extends State<TripDetailsPage>
                   hasShadow: false,
                 ),
               ] else if (widget.status.toLowerCase() == "completed") ...[
-                CustomButton(
-                  text: "Rate Your Trip",
-                  onPressed: () {},
-                  icon: Symbols.star_rounded,
-                  width: double.infinity,
-                  height: 50,
-                  textColor: Colors.white,
-                  isFilled: true,
-                ),
+                  CustomButton(
+                    text: "Rate Your Trip",
+                    onPressed: () {
+                      // This navigates to the RateAndReviewScreen class you provided
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RatingPage(),
+                        ),
+                      );
+                    },
+                    icon: Symbols.star_rounded,
+                    width: double.infinity,
+                    height: 50,
+                    textColor: Colors.white,
+                    isFilled: true,
+                  ),
                 const SizedBox(height: 12),
                 CustomButton(
                   text: "View Receipt",

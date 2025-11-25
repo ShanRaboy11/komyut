@@ -37,13 +37,6 @@ class BigCard extends StatelessWidget {
           topLeft: Radius.circular(50),
           topRight: Radius.circular(50),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10,
-            offset: Offset(0, -5),
-          ),
-        ],
       ),
       // The child is now directly placed here
       child: child,
