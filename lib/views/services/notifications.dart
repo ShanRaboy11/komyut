@@ -43,8 +43,12 @@ class NotificationProvider extends ChangeNotifier {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    _isLoading = true;
-    notifyListeners();
+    // CHANGE: Only trigger full-screen loading if we have NO data.
+    // If we have data, we just fetch in background (silent refresh).
+    if (_notifications.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       // 1. Get Profile ID
@@ -55,7 +59,7 @@ class NotificationProvider extends ChangeNotifier {
           .single();
       final profileId = profileRes['id'];
 
-      // 2. Get Commuter ID (For rewards)
+      // 2. Get Commuter ID
       final commuterRes = await _supabase
           .from('commuters')
           .select('id')
@@ -88,7 +92,7 @@ class NotificationProvider extends ChangeNotifier {
         }
       }
 
-      // 5. Fetch Rewards (Points Transactions > 0)
+      // 5. Fetch Rewards
       List<dynamic> rewardsData = [];
       if (commuterId != null) {
         final rewardsRes = await _supabase
@@ -100,7 +104,7 @@ class NotificationProvider extends ChangeNotifier {
         rewardsData = rewardsRes as List<dynamic>;
       }
 
-      // 6. Fetch Read Statuses (For both Trip and Rewards)
+      // 6. Fetch Read Statuses
       final notifRes = await _supabase
           .from('notifications')
           .select('id, read, payload, type')
@@ -202,7 +206,7 @@ class NotificationProvider extends ChangeNotifier {
                 ? rewardRow['id']
                 : 'virtual_reward_$rewardId',
             virtualId: 'reward_$rewardId',
-            variant: 'rewards', // Will be mapped to 'Others' tab in UI
+            variant: 'rewards',
             title: "You earned $amount tokens for your trip!",
             timeOrDate: DateFormat('hh:mm a').format(createdAt),
             isRead: rewardRow != null ? (rewardRow['read'] ?? false) : false,
@@ -212,10 +216,12 @@ class NotificationProvider extends ChangeNotifier {
         );
       }
 
+      // Update the list
       _notifications = [...generatedList, ..._staticItems];
     } catch (e) {
       debugPrint('Error fetching data: $e');
-      _notifications = [..._staticItems];
+      // Keep existing notifications on error or fallback
+      if (_notifications.isEmpty) _notifications = [..._staticItems];
     } finally {
       _isLoading = false;
       notifyListeners();

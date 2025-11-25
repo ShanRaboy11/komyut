@@ -186,7 +186,8 @@ class NotificationPageState extends State<NotificationPage> {
                   const SizedBox(height: 20),
 
                   Expanded(
-                    child: provider.isLoading
+                    // CHANGE: Only show center spinner if loading AND we have no data yet.
+                    child: provider.isLoading && provider.notifications.isEmpty
                         ? Center(
                             child: CircularProgressIndicator(color: primary1),
                           )
@@ -195,6 +196,7 @@ class NotificationPageState extends State<NotificationPage> {
                             color: primary1,
                             child: SingleChildScrollView(
                               key: ValueKey<String>(activeTab),
+                              // AlwaysScrollableScrollPhysics ensures refresh works even if list is short
                               physics: const AlwaysScrollableScrollPhysics(
                                 parent: BouncingScrollPhysics(),
                               ),
@@ -235,7 +237,10 @@ class NotificationPageState extends State<NotificationPage> {
                                       padding: const EdgeInsets.only(top: 50),
                                       child: Center(
                                         child: Text(
-                                          "No notifications",
+                                          // Show appropriate message if loaded but empty
+                                          provider.isLoading
+                                              ? "Checking for updates..."
+                                              : "No notifications",
                                           style: GoogleFonts.nunito(
                                             color: Colors.grey,
                                           ),
@@ -243,7 +248,7 @@ class NotificationPageState extends State<NotificationPage> {
                                       ),
                                     ),
 
-                                  // 3. Add a cushion at the bottom so the last item can scroll ABOVE the navbar
+                                  // Cushion for bottom navbar
                                   const SizedBox(height: 120),
                                 ],
                               ),
