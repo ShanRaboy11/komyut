@@ -332,12 +332,26 @@ class _MapWidgetState extends State<MapWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bounds = _getBounds();
       if (bounds != null && mounted) {
+        // Fit bounds first (computes correct center)
         widget.mapController.fitCamera(
           CameraFit.bounds(
             bounds: bounds,
             padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 70),
           ),
         );
+
+        // Apply zoom-out on the same frame (prevents visible jump)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          final cam = widget.mapController.camera;
+
+          widget.mapController.move(
+            cam.center,
+            cam.zoom - 0.5, // final zoomed-out value
+            id: 'initial-zoom', // prevents animation
+          );
+        });
       }
     });
   }
