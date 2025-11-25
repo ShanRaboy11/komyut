@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
+
 import 'commuter_app.dart';
 import 'profile.dart';
 import 'notification_commuter.dart';
@@ -73,16 +75,13 @@ class HomeTabNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access the provider from parent context
     final provider = context.read<CommuterDashboardProvider>();
 
     return Navigator(
       initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
-        // Use a builder that provides the provider to nested routes
         return MaterialPageRoute(
           builder: (context) {
-            // Provide the existing provider instance to the nested navigator's context
             return ChangeNotifierProvider<CommuterDashboardProvider>.value(
               value: provider,
               child: Builder(
@@ -129,7 +128,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Load data immediately when the widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<CommuterDashboardProvider>().loadDashboardData();
@@ -323,7 +321,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Text(
                   _isBalanceVisible
                       ? '₱ ${provider.balance.toStringAsFixed(2)}'
-                      : '₱•••••',
+                      : '₱ •••••', // Added space here
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 22,
@@ -387,7 +385,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible ? provider.wheelTokens.toString() : '••••',
+                  _isTokensVisible ? provider.wheelTokens.toString() : '•••••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 22,
