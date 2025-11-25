@@ -252,7 +252,7 @@ class _AdminReportsPage extends State<AdminReportsPage> {
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.manrope(
-              fontSize: 14,
+              fontSize: 13,
               color: isActive ? Colors.white : Colors.grey.shade700,
               fontWeight: FontWeight.w600,
             ),
