@@ -26,6 +26,11 @@ class _RouteFinderState extends State<RouteFinder> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
 
+  // Validation State
+  bool _isFromValid = false;
+  bool _isToValid = false;
+  bool _isProgrammaticUpdate = false;
+
   List<Map<String, String>> _recentDestinations = [];
   List<Map<String, String>> _displayList = [];
 
@@ -37,11 +42,21 @@ class _RouteFinderState extends State<RouteFinder> {
     _fetchUserRecentDestinations();
 
     _fromController.addListener(() {
+      if (!_isProgrammaticUpdate && _isFromValid) {
+        setState(() {
+          _isFromValid = false;
+        });
+      }
       setState(() {});
       if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
     });
 
     _toController.addListener(() {
+      if (!_isProgrammaticUpdate && _isToValid) {
+        setState(() {
+          _isToValid = false;
+        });
+      }
       setState(() {});
       if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
     });
@@ -173,11 +188,22 @@ class _RouteFinderState extends State<RouteFinder> {
   }
 
   void _swapLocations() {
-    final temp = _fromController.text;
+    _isProgrammaticUpdate = true;
+
+    final tempText = _fromController.text;
+    final tempValid = _isFromValid;
+
     _fromController.text = _toController.text;
-    _toController.text = temp;
+    _isFromValid = _isToValid;
+
+    _toController.text = tempText;
+    _isToValid = tempValid;
+
+    _isProgrammaticUpdate = false;
+
     if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
     if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+    setState(() {});
   }
 
   @override
@@ -192,8 +218,11 @@ class _RouteFinderState extends State<RouteFinder> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasInput =
-        _fromController.text.isNotEmpty && _toController.text.isNotEmpty;
+    final bool canSearch =
+        _fromController.text.isNotEmpty &&
+        _toController.text.isNotEmpty &&
+        _isFromValid &&
+        _isToValid;
 
     String listTitle = 'Recent destinations';
     if (_fromFocus.hasFocus) {
@@ -305,6 +334,7 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _fromController.clear();
+                                      _isFromValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
@@ -357,6 +387,7 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _toController.clear();
+                                      _isToValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
@@ -396,18 +427,18 @@ class _RouteFinderState extends State<RouteFinder> {
                       child: Container(
                         height: 56,
                         decoration: BoxDecoration(
-                          gradient: hasInput
+                          gradient: canSearch
                               ? LinearGradient(
                                   colors: [_primaryPurple, _secondaryPurple],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 )
                               : null,
-                          color: hasInput
+                          color: canSearch
                               ? null
                               : _primaryPurple.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: hasInput
+                          boxShadow: canSearch
                               ? [
                                   BoxShadow(
                                     color: _secondaryPurple.withValues(
@@ -423,7 +454,7 @@ class _RouteFinderState extends State<RouteFinder> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
-                            onTap: hasInput
+                            onTap: canSearch
                                 ? () {
                                     Navigator.pushNamed(
                                       context,
@@ -442,7 +473,7 @@ class _RouteFinderState extends State<RouteFinder> {
                                 style: GoogleFonts.manrope(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: hasInput
+                                  color: canSearch
                                       ? Colors.white
                                       : _primaryPurple.withValues(alpha: 0.6),
                                 ),
@@ -549,15 +580,23 @@ class _RouteFinderState extends State<RouteFinder> {
       padding: const EdgeInsets.only(bottom: 20),
       child: InkWell(
         onTap: () {
+          _isProgrammaticUpdate = true;
+
           if (_fromFocus.hasFocus) {
             _fromController.text = name;
+            _isFromValid = true;
             _toFocus.requestFocus();
           } else if (_toFocus.hasFocus) {
             _toController.text = name;
+            _isToValid = true;
             FocusScope.of(context).unfocus();
           } else {
             _toController.text = name;
+            _isToValid = true;
           }
+
+          _isProgrammaticUpdate = false;
+          setState(() {});
         },
         borderRadius: BorderRadius.circular(12),
         child: Row(
