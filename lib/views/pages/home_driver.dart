@@ -17,6 +17,7 @@ import '../providers/driver_dashboard.dart';
 
 import 'qr_generate.dart';
 import 'activity_driver.dart';
+import 'report_driver.dart';
 
 class DriverDashboardNav extends StatelessWidget {
   const DriverDashboardNav({super.key});
@@ -1215,7 +1216,14 @@ class _DriverDashboardState extends State<DriverDashboard>
           const SizedBox(height: 10),
           CustomButton(
             text: 'View Reports',
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ReportPage(),
+                ),
+              );
+            },
             isFilled: true,
             textColor: Colors.white,
             width: double.infinity,

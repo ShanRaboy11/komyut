@@ -54,6 +54,12 @@ class _ReportPageState extends State<ReportPage> {
 
   Future<void> _pickImage() async {
     try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Opening image picker...'), duration: Duration(milliseconds: 700)),
+        );
+      }
+
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1920,
@@ -61,15 +67,23 @@ class _ReportPageState extends State<ReportPage> {
         imageQuality: 85,
       );
 
+      if (!mounted) return;
+
       if (image != null) {
         setState(() {
           _selectedImage = File(image.path);
         });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No image selected'), duration: Duration(milliseconds: 900)),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
     }
   }
 
@@ -581,18 +595,21 @@ class _ReportPageState extends State<ReportPage> {
                                 ),
                                 const SizedBox(height: 8),
 
-                                GestureDetector(
-                                  onTap: _pickImage,
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.white38),
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: Colors.white12,
-                                    ),
-                                    child: _selectedImage != null
-                                        ? Stack(
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: _pickImage,
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.white38),
+                                        borderRadius: BorderRadius.circular(10),
+                                        color: Colors.white12,
+                                      ),
+                                      child: _selectedImage != null
+                                          ? Stack(
                                             children: [
                                               ClipRRect(
                                                 borderRadius:
@@ -629,25 +646,26 @@ class _ReportPageState extends State<ReportPage> {
                                               ),
                                             ],
                                           )
-                                        : Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const Icon(
-                                                Icons.add_photo_alternate_outlined,
-                                                color: Colors.white70,
-                                                size: 36,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                "Add photo (optional)",
-                                                style: GoogleFonts.nunito(
-                                                  fontSize: 14,
+                                          : Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons.add_photo_alternate_outlined,
                                                   color: Colors.white70,
+                                                  size: 36,
                                                 ),
-                                              ),
-                                            ],
-                                          ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  "Add photo (optional)",
+                                                  style: GoogleFonts.nunito(
+                                                    fontSize: 14,
+                                                    color: Colors.white70,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                    ),
                                   ),
                                 ),
 

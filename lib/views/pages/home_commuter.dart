@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
+import '../providers/report.dart';
 
 import 'commuter_app.dart';
 import 'profile.dart';
@@ -601,7 +602,12 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             Icons.report_problem_outlined,
             () {
               CommuterApp.navigatorKey.currentState?.push(
-                MaterialPageRoute(builder: (ctx) => const ReportPage()),
+                MaterialPageRoute(
+                  builder: (ctx) => ChangeNotifierProvider(
+                    create: (_) => ReportProvider(),
+                    child: const ReportPage(),
+                  ),
+                ),
               );
             },
           ), 

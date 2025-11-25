@@ -23,6 +23,62 @@ class DriverDashboardService {
     }
   }
 
+  /// Return full report rows assigned to the driver or referencing the driver entity.
+  Future<List<Map<String, dynamic>>> getAssignedReports({int? limit}) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profileResp = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profileResp == null || profileResp['id'] == null) return [];
+      final profileId = profileResp['id'] as String;
+
+      final driverId = await _getCurrentDriverId();
+
+      // Query for assigned reports
+      final assigned = await _supabase
+          .from('reports')
+          .select('id, reporter_profile_id, category, severity, status, description, assigned_to_profile_id, reported_entity_type, reported_entity_id, created_at')
+          .eq('assigned_to_profile_id', profileId)
+          .order('created_at', ascending: false);
+
+      // Query for referenced reports (by driver entity)
+      List<dynamic> referenced = [];
+      if (driverId != null) {
+        referenced = await _supabase
+            .from('reports')
+            .select('id, reporter_profile_id, category, severity, status, description, assigned_to_profile_id, reported_entity_type, reported_entity_id, created_at')
+            .eq('reported_entity_type', 'driver')
+            .eq('reported_entity_id', driverId)
+            .order('created_at', ascending: false);
+      }
+
+      // Merge unique rows by id
+      final Map<String, Map<String, dynamic>> map = {};
+      for (var r in assigned) {
+        final id = r['id'] as String?;
+        if (id != null) map[id] = Map<String, dynamic>.from(r as Map);
+      }
+      for (var r in referenced) {
+        final id = r['id'] as String?;
+        if (id != null) map[id] = Map<String, dynamic>.from(r as Map);
+      }
+
+      final list = map.values.toList()
+        ..sort((a, b) => (b['created_at'] ?? '').toString().compareTo((a['created_at'] ?? '').toString()));
+
+      if (limit != null && list.length > limit) return list.sublist(0, limit);
+      return list;
+    } catch (e) {
+      debugPrint('❌ Error fetching assigned reports: $e');
+      return [];
+    }
+  }
+
   /// Get driver's vehicle and route information
   Future<Map<String, dynamic>> getDriverVehicleInfo() async {
     try {
@@ -88,16 +144,56 @@ class DriverDashboardService {
   /// Get count of reports filed against this driver
   Future<int> getReportsCount() async {
     try {
-      final driverId = await _getCurrentDriverId();
-      if (driverId == null) return 0;
+      // Get current driver's profile id and driver id
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0;
 
-      final reports = await _supabase
-          .from('reports')
+      final profileResp = await _supabase
+          .from('profiles')
           .select('id')
-          .eq('reported_entity_type', 'driver')
-          .eq('reported_entity_id', driverId);
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      return reports.length;
+      if (profileResp == null || profileResp['id'] == null) return 0;
+      final profileId = profileResp['id'] as String;
+
+      final driverId = await _getCurrentDriverId();
+
+      // Fetch reports assigned to this driver's profile
+      // Fetch reports assigned to this driver's profile (include metadata for debugging)
+      final assignedReports = await _supabase
+          .from('reports')
+          .select('id, assigned_to_profile_id, reported_entity_type, reported_entity_id')
+          .eq('assigned_to_profile_id', profileId);
+
+      // Also fetch reports that explicitly reference this driver entity
+      List<dynamic> referencedReports = [];
+      if (driverId != null) {
+        referencedReports = await _supabase
+            .from('reports')
+            .select('id, assigned_to_profile_id, reported_entity_type, reported_entity_id')
+            .eq('reported_entity_type', 'driver')
+            .eq('reported_entity_id', driverId);
+      }
+
+      // Debug: print what we fetched so we can troubleshoot RLS / mismatches
+      debugPrint('🔎 Driver reports debug: profileId=$profileId driverId=$driverId');
+      debugPrint('🔎 Assigned reports count (raw): ${assignedReports.length}');
+      debugPrint('🔎 Referenced reports count (raw): ${referencedReports.length}');
+
+      // Combine unique report ids
+      final ids = <String>{};
+      for (var r in assignedReports) {
+        final id = r['id'] as String?;
+        if (id != null) ids.add(id);
+      }
+      for (var r in referencedReports) {
+        final id = r['id'] as String?;
+        if (id != null) ids.add(id);
+      }
+
+      debugPrint('🔎 Combined unique report ids: ${ids.toList()}');
+      return ids.length;
     } catch (e) {
       debugPrint('❌ Error fetching reports count: $e');
       return 0;

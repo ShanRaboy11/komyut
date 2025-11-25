@@ -40,6 +40,50 @@ class ReportService {
       final List<Report> createdReports = [];
       
       for (final category in categories) {
+        // Determine assigned_to_profile_id: prefer active trip's driver, fallback to most recent trip's driver
+        String? assignedToProfileId;
+        try {
+          // Check for an active/ongoing trip for this commuter
+          final activeTrip = await _supabase
+              .from('trips')
+              .select('id, driver_id')
+              .eq('created_by_profile_id', profileId)
+              .eq('status', 'ongoing')
+              .maybeSingle();
+
+          String? driverId;
+          if (activeTrip != null && activeTrip['driver_id'] != null) {
+            driverId = activeTrip['driver_id'] as String;
+          } else {
+            // No active trip — find the most recent trip with a driver
+            final recentTrip = await _supabase
+              .from('trips')
+              .select('driver_id')
+              .eq('created_by_profile_id', profileId)
+              .order('started_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+
+            if (recentTrip != null && recentTrip['driver_id'] != null) {
+              driverId = recentTrip['driver_id'] as String;
+            }
+          }
+
+          if (driverId != null) {
+            final driverRecord = await _supabase
+                .from('drivers')
+                .select('profile_id')
+                .eq('id', driverId)
+                .maybeSingle();
+
+            if (driverRecord != null && driverRecord['profile_id'] != null) {
+              assignedToProfileId = driverRecord['profile_id'] as String;
+            }
+          }
+        } catch (e) {
+          // If anything goes wrong while resolving driver, proceed without assignment
+        }
+
         final reportData = {
           'reporter_profile_id': profileId,
           'category': category.value,
@@ -49,6 +93,7 @@ class ReportService {
           if (attachmentId != null) 'attachment_id': attachmentId,
           if (reportedEntityType != null) 'reported_entity_type': reportedEntityType,
           if (reportedEntityId != null) 'reported_entity_id': reportedEntityId,
+          if (assignedToProfileId != null) 'assigned_to_profile_id': assignedToProfileId,
         };
 
         final response = await _supabase
