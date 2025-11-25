@@ -106,24 +106,24 @@ class TransactionReceiptCard extends StatelessWidget {
           _detailRow('Date', date),
           _detailRow('Time', time),
           _detailRow(isRedemption ? 'Source' : 'Payment Method', paymentMethod),
-          _detailRow('Transaction Fee', '₱0.00'),
 
-          const SizedBox(height: 16),
-
-          // Fee Note
-          Text(
-            feeNote ??
-                (isRedemption
-                    ? "No fees applied for this redemption."
-                    : "A convenience fee has been applied to this transaction."),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[500],
-              fontStyle: FontStyle.italic,
+          // Only show fee for cash-in transactions
+          if (!isRedemption) ...[
+            _detailRow('Transaction Fee', '₱0.00'),
+            const SizedBox(height: 16),
+            // Fee Note
+            Text(
+              feeNote ??
+                  "A convenience fee has been applied to this transaction.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
+          ],
 
           const SizedBox(height: 20),
           const Divider(height: 1, thickness: 1),
