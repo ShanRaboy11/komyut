@@ -22,42 +22,67 @@ class _RouteFinderState extends State<RouteFinder> {
   final Color _primaryPurple = const Color(0xFF8E4CB6);
   final Color _secondaryPurple = const Color(0xFF5B53C2);
 
+  // Input Colors
+  final Color _defaultInputFill = const Color(0xFFF5F5F5);
+  final Color _errorInputFill = const Color(0xFFFFF5F5);
+  final Color _errorBorder = const Color(0xFFFF5252);
+
   // Backend state
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
+  bool _isValidating = false;
 
   // Validation state
   bool _isFromValid = false;
   bool _isToValid = false;
-  bool _isProgrammaticUpdate =
-      false;
+
+  // Explicit Error States
+  bool _fromHasError = false;
+  bool _toHasError = false;
+
+  bool _isProgrammaticUpdate = false;
 
   List<Map<String, String>> _recentDestinations = [];
   List<Map<String, String>> _displayList = [];
 
-  Timer? _debounce;
+  Timer? _searchDebounce;
+  Timer? _validationDebounce;
 
   @override
   void initState() {
     super.initState();
     _fetchUserRecentDestinations();
 
+    // FROM Listener
     _fromController.addListener(() {
-      if (!_isProgrammaticUpdate && _isFromValid) {
-        _isFromValid = false;
-      }
+      if (!_isProgrammaticUpdate) {
+        setState(() {
+          _isFromValid = false;
+          _fromHasError = false;
+        });
 
-      setState(() {});
-      if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
+        if (_fromFocus.hasFocus) _onSearchChanged(_fromController.text);
+
+        if (_fromController.text.isNotEmpty && _toController.text.isNotEmpty) {
+          _debounceValidation();
+        }
+      }
     });
 
+    // TO Listener
     _toController.addListener(() {
-      if (!_isProgrammaticUpdate && _isToValid) {
-        _isToValid = false;
-      }
+      if (!_isProgrammaticUpdate) {
+        setState(() {
+          _isToValid = false;
+          _toHasError = false;
+        });
 
-      setState(() {});
-      if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+        if (_toFocus.hasFocus) _onSearchChanged(_toController.text);
+
+        if (_fromController.text.isNotEmpty && _toController.text.isNotEmpty) {
+          _debounceValidation();
+        }
+      }
     });
 
     _fromFocus.addListener(() {
@@ -75,6 +100,63 @@ class _RouteFinderState extends State<RouteFinder> {
         setState(() {});
       }
     });
+  }
+
+  void _debounceValidation() {
+    if (_validationDebounce?.isActive ?? false) _validationDebounce!.cancel();
+
+    setState(() => _isValidating = true);
+
+    _validationDebounce = Timer(const Duration(milliseconds: 500), () {
+      _validateInputs();
+    });
+  }
+
+  Future<void> _validateInputs() async {
+    if (!mounted) return;
+
+    if (!_isFromValid && _fromController.text.isNotEmpty) {
+      bool valid = await _checkIfLocationExists(_fromController.text);
+      if (mounted) {
+        setState(() {
+          _isFromValid = valid;
+          _fromHasError = !valid;
+        });
+      }
+    }
+
+    // Check To Field
+    if (!_isToValid && _toController.text.isNotEmpty) {
+      bool valid = await _checkIfLocationExists(_toController.text);
+      if (mounted) {
+        setState(() {
+          _isToValid = valid;
+          _toHasError = !valid;
+        });
+      }
+    }
+
+    if (mounted) setState(() => _isValidating = false);
+  }
+
+  Future<bool> _checkIfLocationExists(String name) async {
+    final inRecents = _recentDestinations.any(
+      (place) => place['name']!.toLowerCase() == name.toLowerCase(),
+    );
+    if (inRecents) return true;
+
+    try {
+      final response = await _supabase
+          .from('route_stops')
+          .select('name')
+          .ilike('name', name)
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      debugPrint('Validation error: $e');
+      return false;
+    }
   }
 
   Future<void> _fetchUserRecentDestinations() async {
@@ -135,7 +217,7 @@ class _RouteFinderState extends State<RouteFinder> {
   }
 
   Future<void> _onSearchChanged(String query) async {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
 
     if (query.isEmpty) {
       setState(() {
@@ -144,7 +226,7 @@ class _RouteFinderState extends State<RouteFinder> {
       return;
     }
 
-    _debounce = Timer(const Duration(milliseconds: 300), () async {
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
       try {
         final List<Map<String, String>> filteredRecents = _recentDestinations
             .where(
@@ -191,12 +273,15 @@ class _RouteFinderState extends State<RouteFinder> {
 
     final tempText = _fromController.text;
     final tempValid = _isFromValid;
+    final tempError = _fromHasError;
 
     _fromController.text = _toController.text;
     _isFromValid = _isToValid;
+    _fromHasError = _toHasError;
 
     _toController.text = tempText;
     _isToValid = tempValid;
+    _toHasError = tempError;
 
     _isProgrammaticUpdate = false;
 
@@ -212,17 +297,22 @@ class _RouteFinderState extends State<RouteFinder> {
     _toController.dispose();
     _fromFocus.dispose();
     _toFocus.dispose();
-    _debounce?.cancel();
+    _searchDebounce?.cancel();
+    _validationDebounce?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool inputsFilled =
+        _fromController.text.isNotEmpty && _toController.text.isNotEmpty;
     final bool canSearch =
-        _fromController.text.isNotEmpty &&
-        _toController.text.isNotEmpty &&
+        inputsFilled &&
         _isFromValid &&
-        _isToValid;
+        _isToValid &&
+        !_isValidating &&
+        !_fromHasError &&
+        !_toHasError;
 
     String listTitle = 'Recent destinations';
     if (_fromFocus.hasFocus) {
@@ -305,10 +395,19 @@ class _RouteFinderState extends State<RouteFinder> {
                   child: Column(
                     children: [
                       // From Field
-                      Container(
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: _fromHasError
+                              ? _errorInputFill
+                              : _defaultInputFill,
                           borderRadius: BorderRadius.circular(16),
+                          border: _fromHasError
+                              ? Border.all(
+                                  color: _errorBorder.withValues(alpha: 0.5),
+                                  width: 1,
+                                )
+                              : Border.all(color: Colors.transparent, width: 1),
                         ),
                         child: TextField(
                           controller: _fromController,
@@ -334,6 +433,8 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _fromController.clear();
+                                      _fromHasError = false;
+                                      _isFromValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
@@ -361,10 +462,19 @@ class _RouteFinderState extends State<RouteFinder> {
                       const SizedBox(height: 12),
 
                       // To Field
-                      Container(
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: _toHasError
+                              ? _errorInputFill
+                              : _defaultInputFill,
                           borderRadius: BorderRadius.circular(16),
+                          border: _toHasError
+                              ? Border.all(
+                                  color: _errorBorder.withValues(alpha: 0.5),
+                                  width: 1,
+                                )
+                              : Border.all(color: Colors.transparent, width: 1),
                         ),
                         child: TextField(
                           controller: _toController,
@@ -386,6 +496,8 @@ class _RouteFinderState extends State<RouteFinder> {
                                 ? GestureDetector(
                                     onTap: () {
                                       _toController.clear();
+                                      _toHasError = false;
+                                      _isToValid = false;
                                       _onSearchChanged('');
                                       setState(() {});
                                     },
@@ -466,16 +578,27 @@ class _RouteFinderState extends State<RouteFinder> {
                                   }
                                 : null,
                             child: Center(
-                              child: Text(
-                                'Search',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: canSearch
-                                      ? Colors.white
-                                      : _primaryPurple.withValues(alpha: 0.6),
-                                ),
-                              ),
+                              child: _isValidating
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: _primaryPurple,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Search',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: canSearch
+                                            ? Colors.white
+                                            : _primaryPurple.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -583,17 +706,26 @@ class _RouteFinderState extends State<RouteFinder> {
           if (_fromFocus.hasFocus) {
             _fromController.text = name;
             _isFromValid = true;
+            _fromHasError = false;
             _toFocus.requestFocus();
           } else if (_toFocus.hasFocus) {
             _toController.text = name;
             _isToValid = true;
+            _toHasError = false;
             FocusScope.of(context).unfocus();
           } else {
             _toController.text = name;
             _isToValid = true;
+            _toHasError = false;
           }
 
           _isProgrammaticUpdate = false;
+
+          if (_fromController.text.isNotEmpty &&
+              _toController.text.isNotEmpty) {
+            _debounceValidation();
+          }
+
           setState(() {});
         },
         borderRadius: BorderRadius.circular(12),
