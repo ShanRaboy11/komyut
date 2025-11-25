@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../widgets/map_route.dart';
 import '../services/route_service.dart';
 
 class JCodeFinder extends StatefulWidget {
@@ -16,7 +19,12 @@ class _JCodeFinderState extends State<JCodeFinder> {
   bool _isLoading = true;
   String _errorMessage = '';
 
-  // Dynamic Data
+  final MapController _mapController = MapController();
+  final LatLng _defaultLocation = const LatLng(10.3157, 123.8854);
+
+  bool _isMapLoading = false;
+  List<Map<String, dynamic>> _currentRouteStops = [];
+
   List<RouteBasic> _availableRoutes = [];
   int _selectedIndex = 0;
 
@@ -53,8 +61,13 @@ class _JCodeFinderState extends State<JCodeFinder> {
         setState(() {
           _availableRoutes = routes;
           _isLoading = false;
-          _selectedIndex = routes.isNotEmpty ? 0 : -1;
         });
+
+        if (routes.isNotEmpty) {
+          _onRouteSelected(0);
+        } else {
+          setState(() => _selectedIndex = -1);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -63,6 +76,28 @@ class _JCodeFinderState extends State<JCodeFinder> {
           _errorMessage = "Failed to load routes. Please try again.";
         });
       }
+    }
+  }
+
+  Future<void> _onRouteSelected(int index) async {
+    setState(() {
+      _selectedIndex = index;
+      _isMapLoading = true;
+    });
+
+    try {
+      final routeId = _availableRoutes[index].id;
+      final stops = await _routeService.getStopsForRoute(routeId);
+
+      if (mounted) {
+        setState(() {
+          _currentRouteStops = stops;
+          _isMapLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading stops: $e");
+      if (mounted) setState(() => _isMapLoading = false);
     }
   }
 
@@ -79,7 +114,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Header with Back Button
             Padding(
               padding: const EdgeInsets.fromLTRB(30, 20, 30, 10),
               child: GestureDetector(
@@ -92,7 +126,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
               ),
             ),
 
-            // 2. Main Content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -156,7 +189,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
                         ),
                       )
                     else ...[
-                      // 3. MAP CONTAINER
                       Container(
                         height: 350,
                         width: double.infinity,
@@ -175,25 +207,13 @@ class _JCodeFinderState extends State<JCodeFinder> {
                           borderRadius: BorderRadius.circular(24),
                           child: Stack(
                             children: [
-                              // Map Image
-                              Image.network(
-                                'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/OpenStreetMap_Logo_2011.svg/1024px-OpenStreetMap_Logo_2011.svg.png',
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                                errorBuilder: (c, o, s) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.map,
-                                      size: 50,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
+                              MapRoute(
+                                mapController: _mapController,
+                                routeStops: _currentRouteStops,
+                                defaultLocation: _defaultLocation,
+                                isLoading: _isMapLoading,
                               ),
 
-                              // RESTORED: Gradient Shadow Overlay (Top)
                               Container(
                                 height: 80,
                                 decoration: BoxDecoration(
@@ -208,7 +228,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
                                 ),
                               ),
 
-                              // Route Info Pill (Top Left)
                               Positioned(
                                 top: 20,
                                 left: 20,
@@ -249,7 +268,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
 
                       const SizedBox(height: 16),
 
-                      // 4. ROUTE PATH UI
                       Container(
                         padding: const EdgeInsets.all(16),
                         width: double.infinity,
@@ -313,7 +331,6 @@ class _JCodeFinderState extends State<JCodeFinder> {
 
                       const SizedBox(height: 24),
 
-                      // 5. Grid of Codes
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.only(bottom: 20),
@@ -332,7 +349,7 @@ class _JCodeFinderState extends State<JCodeFinder> {
 
                             return GestureDetector(
                               onTap: () {
-                                setState(() => _selectedIndex = index);
+                                _onRouteSelected(index);
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),

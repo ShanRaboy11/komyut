@@ -52,11 +52,24 @@ class RouteService {
     }
   }
 
+  /// Get all stops for a specific route ID, ordered by sequence
+  Future<List<Map<String, dynamic>>> getStopsForRoute(String routeId) async {
+    try {
+      final response = await _supabase
+          .from('route_stops')
+          .select('id, name, latitude, longitude, sequence')
+          .eq('route_id', routeId)
+          .order('sequence', ascending: true);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('Error fetching route stops: $e');
+    }
+  }
+
   /// Search routes by place name
-  /// This is the core function for your Route Finder feature
   Future<List<RouteSearchResult>> searchRoutesByPlace(String placeName) async {
     try {
-      // Search for places that match the query
       final response = await _supabase
           .from('route_stops')
           .select('''
@@ -75,7 +88,6 @@ class RouteService {
           .ilike('name', '%$placeName%')
           .order('name', ascending: true);
 
-      // Transform the response into a more usable format
       final results = <RouteSearchResult>[];
       final seenRoutes = <String>{};
 
@@ -84,7 +96,6 @@ class RouteService {
         if (route != null) {
           final routeCode = route['code'];
 
-          // Avoid duplicate routes in results
           if (!seenRoutes.contains(routeCode)) {
             seenRoutes.add(routeCode);
 
