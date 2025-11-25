@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// 'dart:convert' removed: notifications are now created in the DB trigger
 import './qr_scan.dart';
 
 class OngoingTripScreen extends StatefulWidget {
@@ -140,18 +141,18 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
           .single();
       
       final driverId = tripResponse['driver_id'] as String?;
-      
+
       if (driverId != null) {
         // Calculate average rating for this driver
         final ratingsResponse = await supabase
             .from('ratings')
             .select('overall')
             .eq('driver_id', driverId);
-        
+
         if (ratingsResponse.isNotEmpty) {
           double totalRating = 0;
           int count = 0;
-          
+
           for (var rating in ratingsResponse) {
             final overall = rating['overall'] as int?;
             if (overall != null) {
@@ -159,23 +160,31 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
               count++;
             }
           }
-          
+
           if (count > 0) {
             setState(() {
               _driverRating = totalRating / count;
               _isLoadingRating = false;
             });
             debugPrint('✅ Driver rating loaded: $_driverRating');
-            return;
+          } else {
+            setState(() {
+              _driverRating = null;
+              _isLoadingRating = false;
+            });
           }
+        } else {
+          setState(() {
+            _driverRating = null;
+            _isLoadingRating = false;
+          });
         }
+      } else {
+        setState(() {
+          _driverRating = null;
+          _isLoadingRating = false;
+        });
       }
-      
-      // If no ratings found, set to null
-      setState(() {
-        _driverRating = null;
-        _isLoadingRating = false;
-      });
     } catch (e) {
       debugPrint('❌ Error loading driver rating: $e');
       setState(() {
@@ -881,6 +890,9 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
 
         debugPrint('🧾 Inserted pending transaction id=${insertedTxn?["id"]} amount=₱${totalInitialPayment.toStringAsFixed(2)}');
 
+        // Notifications are created server-side by a DB trigger on `transactions` inserts.
+        debugPrint('ℹ️ Notification creation delegated to DB trigger for commuter debit');
+
         // Immediately attempt to transfer the initial payment to the driver via RPC
         try {
           // Determine driver_profile_id from trip details (drivers nested or metadata)
@@ -908,6 +920,8 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
 
             await supabase.rpc('transfer_trip_fare', params: rpcParams);
             debugPrint('✅ Initial payout RPC succeeded for trip ${widget.tripId} (₱${totalInitialPayment.toStringAsFixed(2)})');
+              // Notifications are created server-side by a DB trigger on `transactions` inserts.
+              debugPrint('ℹ️ Notification creation delegated to DB trigger for driver credit');
           } else {
             debugPrint('⚠️ Could not determine driver_profile_id to perform initial payout RPC');
           }
@@ -1048,7 +1062,13 @@ class _OngoingTripScreenState extends State<OngoingTripScreen> {
               ),
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (_hasConfirmed) {
+                    Navigator.pushReplacementNamed(context, '/home_commuter');
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
               ),
             ),
           ),

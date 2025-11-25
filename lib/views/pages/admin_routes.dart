@@ -1285,14 +1285,14 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Manage Routes',
+                              'Routes',
                               style: GoogleFonts.manrope(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'View and organize all routes',
+                              'View and manage all routes',
                               style: GoogleFonts.nunito(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -1527,14 +1527,10 @@ class _RouteCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFB945AA), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFB945AA).withAlpha(26),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(
+            color: Color.fromRGBO(156, 39, 176, 0.5),
+            width: 1.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

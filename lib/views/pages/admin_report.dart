@@ -139,7 +139,7 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                             Text(
                               'Manage reports',
                               style: GoogleFonts.nunito(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: Colors.grey.shade600,
                               ),
                             ),
@@ -148,8 +148,8 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 16,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           gradient: _kGradient,
@@ -252,7 +252,7 @@ class _AdminReportsPage extends State<AdminReportsPage> {
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.manrope(
-              fontSize: 14,
+              fontSize: 13,
               color: isActive ? Colors.white : Colors.grey.shade700,
               fontWeight: FontWeight.w600,
             ),
