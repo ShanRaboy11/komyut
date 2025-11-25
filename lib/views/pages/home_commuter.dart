@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
@@ -11,6 +12,7 @@ import '../providers/commuter_dashboard.dart';
 
 import 'commuter_app.dart';
 import 'profile.dart';
+import 'report_commuter.dart';
 import 'notification_commuter.dart';
 import 'wallet_commuter.dart';
 import 'activity_commuter.dart';
@@ -149,8 +151,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     return Consumer<CommuterDashboardProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          // Show a detailed shimmer skeleton while dashboard data loads
+          return Scaffold(
+            body: SafeArea(
+              child: _buildDashboardSkeleton(context),
+            ),
           );
         }
 
@@ -594,8 +599,12 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           _buildActionButton(
             'Report an issue',
             Icons.report_problem_outlined,
-            null,
-          ),
+            () {
+              CommuterApp.navigatorKey.currentState?.push(
+                MaterialPageRoute(builder: (ctx) => const ReportPage()),
+              );
+            },
+          ), 
         ],
       ),
     );
@@ -619,6 +628,146 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         ),
         leading: Icon(icon, color: Colors.white),
         onTap: onTap ?? () {},
+      ),
+    );
+  }
+
+  // ----------------- Shimmer Skeleton -----------------
+  Widget _buildDashboardSkeleton(BuildContext context) {
+    // width not used, remove to satisfy analyzer
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header skeleton
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(width: 50, height: 50, color: Colors.grey[300]),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(width: 120, height: 16, color: Colors.grey[300]),
+                    const SizedBox(height: 6),
+                    Container(width: 80, height: 12, color: Colors.grey[300]),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Tabs skeleton
+            Row(children: [
+              Expanded(child: Container(height: 40, color: Colors.grey[300])),
+              const SizedBox(width: 8),
+              Expanded(child: Container(height: 40, color: Colors.grey[300])),
+            ]),
+            const SizedBox(height: 16),
+
+            // Wallet / Tokens skeleton
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 140, height: 18, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(width: 180, height: 28, color: Colors.grey[300]),
+                      Container(width: 100, height: 40, color: Colors.grey[300]),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Analytics skeleton
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFF8E4CB6)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 140, height: 18, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          const SizedBox(height: 8),
+                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          const SizedBox(height: 8),
+                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Promo skeleton
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Container(width: 32, height: 32, color: Colors.grey[300]),
+                  const SizedBox(width: 15),
+                  Expanded(child: Container(height: 36, color: Colors.grey[300])),
+                  const SizedBox(width: 12),
+                  Container(width: 70, height: 35, color: Colors.grey[300]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Quick actions skeleton
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                  const SizedBox(height: 10),
+                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
