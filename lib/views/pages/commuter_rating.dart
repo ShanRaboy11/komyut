@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'commuter_ratingdetails.dart';
 
 class RatingPage extends StatefulWidget {
   const RatingPage({super.key});
@@ -14,34 +15,64 @@ class _RateReviewPageState extends State<RatingPage> {
   @override
   void initState() {
     super.initState();
-    // Simple fade-in animation for the logo
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 1. Fade in the logo immediately
       setState(() {
         _logoOpacity = 1.0;
       });
+
+      // 2. Wait 1 second, then animate to CommuterRatingDetails
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          Navigator.of(context).push(
+            _createSlideUpRoute(),
+          );
+        }
+      });
     });
+  }
+
+  // Helper to create a slide-up animation route
+  Route _createSlideUpRoute() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => const RateReviewPage(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0); // Start from bottom
+        const end = Offset.zero;        // End at center
+        const curve = Curves.easeInOutCubic;
+
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var offsetAnimation = animation.drive(tween);
+
+        return SlideTransition(
+          position: offsetAnimation,
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 800),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- Header: Back Button & Title ---
+      // --- Header: Title Only (Back Button Removed) ---
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        title: Text(
-          'Rate and Review',
-          style: GoogleFonts.manrope(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        automaticallyImplyLeading: false, // Ensures no default back button appears
+        // Added 20 space above the text
+        title: Padding(
+          padding: const EdgeInsets.only(top: 20.0),
+          child: Text(
+            'Rate and Review',
+            style: GoogleFonts.manrope(
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
