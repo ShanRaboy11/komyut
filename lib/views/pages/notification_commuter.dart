@@ -96,16 +96,13 @@ class NotificationPageState extends State<NotificationPage> {
       builder: (context, provider, child) {
         final all = provider.notifications;
 
-        // --- STRICT FILTERING LOGIC ---
+        // --- FILTERING ---
         List<NotifItem> filtered;
         if (activeTab == 'Trips') {
-          // Only Trips from DB
           filtered = all.where((n) => n.variant == 'trips').toList();
         } else if (activeTab == 'Wallet') {
-          // Only Static Wallet Items
           filtered = all.where((n) => n.variant == 'wallet').toList();
         } else {
-          // 'Others' = Rewards (From DB)
           filtered = all.where((n) => n.variant == 'rewards').toList();
         }
 
@@ -155,9 +152,12 @@ class NotificationPageState extends State<NotificationPage> {
                   ),
                 )
               : null,
+          // 1. Set bottom: false to allow content to flow behind the bottom navbar
           body: SafeArea(
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+              // 2. Remove vertical padding, apply only top and sides.
+              padding: const EdgeInsets.only(left: 30, right: 30, top: 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -229,7 +229,7 @@ class NotificationPageState extends State<NotificationPage> {
                                     ),
                                     const SizedBox(height: 18),
                                   ],
-                                  const SizedBox(height: 50),
+
                                   if (filtered.isEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 50),
@@ -242,6 +242,9 @@ class NotificationPageState extends State<NotificationPage> {
                                         ),
                                       ),
                                     ),
+
+                                  // 3. Add a cushion at the bottom so the last item can scroll ABOVE the navbar
+                                  const SizedBox(height: 120),
                                 ],
                               ),
                             ),
