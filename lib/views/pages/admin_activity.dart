@@ -484,7 +484,14 @@ Widget _buildDetailModal({
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(context, rootNavigator: true).pop(),
+              onTap: () async {
+                // First try popping the root navigator where the dialog was shown.
+                final poppedRoot = await Navigator.of(context, rootNavigator: true).maybePop();
+                if (!poppedRoot) {
+                  // Fallback: try to pop the nearest navigator in case dialog was presented on a nested navigator.
+                  await Navigator.of(context).maybePop();
+                }
+              },
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(

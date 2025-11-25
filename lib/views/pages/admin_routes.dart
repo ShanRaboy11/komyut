@@ -1285,14 +1285,14 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Manage Routes',
+                              'Routes',
                               style: GoogleFonts.manrope(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'View and organize all routes',
+                              'View and manage all routes',
                               style: GoogleFonts.nunito(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
