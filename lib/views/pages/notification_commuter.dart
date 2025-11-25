@@ -8,6 +8,8 @@ import '../services/notifications.dart';
 import '../models/notification.dart';
 
 import 'tripdetails_commuter.dart';
+import 'tripreceipt_commuter.dart';
+import 'transactionreceipt_commuter.dart';
 import 'wallet_commuter.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -52,7 +54,6 @@ class NotificationPageState extends State<NotificationPage> {
   }
 
   void _onTapNotif(NotifItem item) async {
-    // 1. Mark Read
     if (!item.isRead) {
       Provider.of<NotificationProvider>(
         context,
@@ -60,17 +61,18 @@ class NotificationPageState extends State<NotificationPage> {
       ).markAsRead(item.id);
     }
 
-    // 2. Navigation
-    if (item.variant == 'trips' && item.payload != null) {
-      final p = item.payload!;
+    final payload = item.payload ?? {};
+
+    // --- TRIPS ---
+    if (item.variant == 'trips') {
       await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => TripDetailsPage(
             tripId: item.tripId,
-            date: p['date_str'] ?? '',
-            time: p['time_str'] ?? '',
-            status: p['status'] ?? 'ongoing',
+            date: payload['date_str'] ?? '',
+            time: payload['time_str'] ?? '',
+            status: payload['status'] ?? 'ongoing',
             from: "Loading...",
             to: "...",
             tripCode: "...",
@@ -78,12 +80,51 @@ class NotificationPageState extends State<NotificationPage> {
         ),
       );
     }
-    // Rewards go to Wallet Page
+    // --- REWARDS ---
     else if (item.variant == 'rewards') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const WalletPage()),
       );
+    }
+    // --- WALLET ---
+    else if (item.variant == 'wallet') {
+      final type = payload['type'] as String?;
+
+      // 1. REAL Fare Payment -> Trip Receipt
+      if (type == 'fare_payment') {
+        // Ensure we have a valid trip_id from the DB transaction
+        final tripId = payload['trip_id']?.toString();
+        if (tripId != null && tripId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TripReceiptPage(tripId: tripId),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Trip details unavailable")),
+          );
+        }
+      }
+      // 2. STATIC Cash In / Redemption -> Transaction Receipt
+      else if (type == 'cash_in' || type == 'redemption') {
+        // We treat these as static for now
+        final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
+            ?.cast<String, dynamic>();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TransactionReceiptPage(
+              id: item.id,
+              type: 'static',
+              staticData: staticMap,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -96,7 +137,6 @@ class NotificationPageState extends State<NotificationPage> {
       builder: (context, provider, child) {
         final all = provider.notifications;
 
-        // --- FILTERING ---
         List<NotifItem> filtered;
         if (activeTab == 'Trips') {
           filtered = all.where((n) => n.variant == 'trips').toList();
@@ -152,11 +192,9 @@ class NotificationPageState extends State<NotificationPage> {
                   ),
                 )
               : null,
-          // 1. Set bottom: false to allow content to flow behind the bottom navbar
           body: SafeArea(
             bottom: false,
             child: Padding(
-              // 2. Remove vertical padding, apply only top and sides.
               padding: const EdgeInsets.only(left: 30, right: 30, top: 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +224,6 @@ class NotificationPageState extends State<NotificationPage> {
                   const SizedBox(height: 20),
 
                   Expanded(
-                    // CHANGE: Only show center spinner if loading AND we have no data yet.
                     child: provider.isLoading && provider.notifications.isEmpty
                         ? Center(
                             child: CircularProgressIndicator(color: primary1),
@@ -196,7 +233,6 @@ class NotificationPageState extends State<NotificationPage> {
                             color: primary1,
                             child: SingleChildScrollView(
                               key: ValueKey<String>(activeTab),
-                              // AlwaysScrollableScrollPhysics ensures refresh works even if list is short
                               physics: const AlwaysScrollableScrollPhysics(
                                 parent: BouncingScrollPhysics(),
                               ),
@@ -237,9 +273,8 @@ class NotificationPageState extends State<NotificationPage> {
                                       padding: const EdgeInsets.only(top: 50),
                                       child: Center(
                                         child: Text(
-                                          // Show appropriate message if loaded but empty
                                           provider.isLoading
-                                              ? "Checking for updates..."
+                                              ? "Checking..."
                                               : "No notifications",
                                           style: GoogleFonts.nunito(
                                             color: Colors.grey,
@@ -248,7 +283,6 @@ class NotificationPageState extends State<NotificationPage> {
                                       ),
                                     ),
 
-                                  // Cushion for bottom navbar
                                   const SizedBox(height: 120),
                                 ],
                               ),
@@ -312,7 +346,6 @@ class NotificationPageState extends State<NotificationPage> {
           key: ValueKey(n.virtualId),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: NotificationCard(
-            // Map "rewards" to generic if your card widget doesn't have specific styling for rewards
             variant: n.variant == 'rewards' ? 'rewards' : n.variant,
             description: n.title,
             timeOrDate: _getDisplayTime(n, section),
