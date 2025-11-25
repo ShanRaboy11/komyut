@@ -11,7 +11,8 @@ class TransactionReceiptCard extends StatelessWidget {
   final String referenceNumber;
   final bool isRedemption;
   final String? feeNote;
-  final double feeAmount; // Added
+  final double feeAmount;
+  final String status;
 
   const TransactionReceiptCard({
     super.key,
@@ -24,10 +25,14 @@ class TransactionReceiptCard extends StatelessWidget {
     this.isRedemption = false,
     this.feeNote,
     this.feeAmount = 0.0,
+    this.status = 'completed',
   });
 
   @override
   Widget build(BuildContext context) {
+    // Calculate total
+    final double total = amount + feeAmount;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -56,6 +61,8 @@ class TransactionReceiptCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+
+          // Main Amount Display
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -76,32 +83,30 @@ class TransactionReceiptCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9F8E8),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Completed',
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: Colors.green[700],
-              ),
-            ),
-          ),
+
+          // Status Pill
+          _buildStatusPill(status),
+
           const SizedBox(height: 20),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1, thickness: 1), // Consistent Divider
           const SizedBox(height: 12),
+
           _detailRow('Date', date),
           _detailRow('Time', time),
           _detailRow(isRedemption ? 'Source' : 'Payment Method', paymentMethod),
 
           if (!isRedemption) ...[
-            // Dynamic Fee Display
             _detailRow('Transaction Fee', '₱${feeAmount.toStringAsFixed(2)}'),
+
+            // --- TOTAL ROW ---
+            const SizedBox(height: 12),
+            const Divider(height: 1, thickness: 1), // Consistent Divider
+            const SizedBox(height: 12),
+
+            _detailRow('Total', '₱${total.toStringAsFixed(2)}', isTotal: true),
+
             const SizedBox(height: 16),
             Text(
               feeNote ??
@@ -117,8 +122,10 @@ class TransactionReceiptCard extends StatelessWidget {
           ],
 
           const SizedBox(height: 20),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1, thickness: 1), // Consistent Divider
           const SizedBox(height: 20),
+
+          // Barcode Section
           Center(
             child: Column(
               children: [
@@ -146,7 +153,56 @@ class TransactionReceiptCard extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _buildStatusPill(String status) {
+    Color bgColor;
+    Color textColor;
+    String text = status;
+    if (status.isNotEmpty) {
+      text = status[0].toUpperCase() + status.substring(1);
+    }
+
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'paid':
+      case 'success':
+        bgColor = const Color(0xFFE9F8E8);
+        textColor = Colors.green[700]!;
+        break;
+      case 'pending':
+      case 'processing':
+      case 'created':
+        bgColor = const Color(0xFFFFF4E5);
+        textColor = Colors.orange[800]!;
+        break;
+      case 'failed':
+      case 'cancelled':
+      case 'expired':
+        bgColor = const Color(0xFFFFECEC);
+        textColor = Colors.red[700]!;
+        break;
+      default:
+        bgColor = Colors.grey[200]!;
+        textColor = Colors.grey[700]!;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.manrope(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -156,9 +212,9 @@ class TransactionReceiptCard extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: Colors.black87,
+                fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+                fontSize: isTotal ? 16 : 14,
+                color: isTotal ? const Color(0xFF8E4CB6) : Colors.black87,
               ),
             ),
           ),
@@ -167,9 +223,9 @@ class TransactionReceiptCard extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: GoogleFonts.manrope(
-              fontSize: 13,
+              fontSize: isTotal ? 16 : 13,
               fontWeight: FontWeight.w800,
-              color: Colors.black87,
+              color: isTotal ? const Color(0xFF8E4CB6) : Colors.black87,
             ),
           ),
         ],
