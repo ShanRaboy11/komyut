@@ -212,7 +212,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
 
               const SizedBox(height: 16),
 
-              // Passenger card (show only passenger name)
+              // Passenger card
               if (_loading)
                 _buildLoadingDriverCard()
               else if (_details != null)
@@ -222,86 +222,132 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
 
               const SizedBox(height: 16),
 
-              // Map or fallback card
+              // Map Section (New UI)
               if (_loading)
                 _buildLoadingMap()
-              else if (hasRouteData) ...[
-                SizedBox(
-                  height: 260,
-                  child: MapWidget(
-                    mapController: _mapController,
-                    currentPosition: null,
-                    defaultLocation: defaultLocation,
-                    isLoading: false,
-                    boardingLocation: null,
-                    arrivalLocation: null,
-                    routeStops: _routeStops,
-                    originStopId: _originStopId,
-                    destinationStopId: _destinationStopId,
+              else if (hasRouteData)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Row(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Distance',
-                              style: GoogleFonts.nunito(
-                                color: Colors.grey[700],
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _details != null
-                                  ? '${((_details!.distanceMeters ?? 0) / 1000.0).toStringAsFixed(1)} km'
-                                  : '—',
-                              style: GoogleFonts.manrope(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      // Map
+                      SizedBox(
+                        height: 240,
+                        child: MapWidget(
+                          mapController: _mapController,
+                          currentPosition: null,
+                          defaultLocation: defaultLocation,
+                          isLoading: false,
+                          boardingLocation: null,
+                          arrivalLocation: null,
+                          routeStops: _routeStops,
+                          originStopId: _originStopId,
+                          destinationStopId: _destinationStopId,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Column(
+
+                      // Details Footer
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        color: Colors.white,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                              'Passengers',
-                              style: GoogleFonts.nunito(
-                                color: Colors.grey[700],
-                                fontSize: 13,
-                              ),
+                            // Distance (Left)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.directions_car_filled_rounded,
+                                      size: 16,
+                                      color: Colors.grey[500],
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Distance',
+                                      style: GoogleFonts.nunito(
+                                        color: Colors.grey[600],
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _details != null
+                                      ? '${((_details!.distanceMeters ?? 0) / 1000.0).toStringAsFixed(1)} km'
+                                      : '—',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _details != null
-                                  ? '${_details!.passengersCount}'
-                                  : '—',
-                              style: GoogleFonts.manrope(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF9C6BFF),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+
+                            // Passengers (Right)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Passengers',
+                                  style: GoogleFonts.nunito(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFF3E5F5,
+                                    ), // Light purple bg
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _details != null
+                                        ? '${_details!.passengersCount}'
+                                        : '—',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF8E4CB6),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-              ] else
+                )
+              else
                 _buildFallbackDetailsCard(),
 
               const SizedBox(height: 20),
@@ -380,7 +426,7 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     );
   }
 
-  // Shimmer helper (copied from commuter details for consistent skeleton)
+  // Shimmer helper
   Widget _buildShimmer({required Widget child}) {
     return AnimatedBuilder(
       animation: _shimmerController,
@@ -406,9 +452,8 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     );
   }
 
-  // Passenger name card (only displays name)
+  // Passenger name card
   Widget _buildPassengerNameCard(String name) {
-    // Compute initials from the provided name
     String initials = 'P';
     try {
       final parts = name
@@ -443,7 +488,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
       ),
       child: Row(
         children: [
-          // Initials avatar (light background, purple initials)
           Container(
             height: 50,
             width: 50,
@@ -477,7 +521,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     );
   }
 
-  // Enhanced loading state for driver card (uses commuter shimmer)
   Widget _buildLoadingDriverCard() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
@@ -543,115 +586,42 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     );
   }
 
-  // Enhanced loading state for map (copied from commuter)
+  // Enhanced loading state for map (Matches new UI structure)
   Widget _buildLoadingMap() {
-    return Column(
-      children: [
-        Container(
-          height: 260,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
           ),
-          child: Stack(
-            children: [
-              // Base map background
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.grey[100]!,
-                      Colors.grey[200]!,
-                      Colors.grey[100]!,
-                    ],
-                  ),
-                ),
-              ),
-              // Animated road lines
-              Positioned(
-                left: 40,
-                top: 60,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 120,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 50,
-                top: 100,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 60,
-                bottom: 80,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 100,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              // Pin markers
-              Positioned(
-                left: 40,
-                top: 40,
-                child: _buildShimmer(
-                  child: Icon(
-                    Icons.location_on,
-                    size: 32,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 40,
-                bottom: 60,
-                child: _buildShimmer(
-                  child: Icon(
-                    Icons.location_on,
-                    size: 32,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ),
-              // Center loading indicator
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Map Placeholder
+          SizedBox(
+            height: 240,
+            child: Stack(
+              children: [
+                Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.grey[100]!,
+                        Colors.grey[200]!,
+                        Colors.grey[100]!,
+                      ],
+                    ),
                   ),
+                ),
+                Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -677,18 +647,17 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        // Distance and Route Code skeleton
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
+          // Details Footer Placeholder
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Distance Shimmer
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildShimmer(
@@ -714,44 +683,41 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
+                // Passengers Shimmer
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _buildShimmer(
                       child: Container(
-                        width: 80,
-                        height: 13,
+                        width: 70,
+                        height: 12,
                         decoration: BoxDecoration(
                           color: Colors.grey[300],
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     _buildShimmer(
                       child: Container(
-                        width: 60,
-                        height: 20,
+                        width: 50,
+                        height: 26,
                         decoration: BoxDecoration(
                           color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // Loading state for action buttons (shimmer)
   Widget _buildLoadingButtons(double screenWidth) {
     return Column(
       children: [
@@ -780,7 +746,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     );
   }
 
-  // Fallback details card for driver (shows distance, passengers, and stops)
   Widget _buildFallbackDetailsCard() {
     final distanceText = _details != null
         ? '${((_details!.distanceMeters ?? 0) / 1000.0).toStringAsFixed(1)} kilometers'
@@ -788,8 +753,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
     final passengersText = _details != null
         ? '${_details!.passengersCount}'
         : '—';
-
-    // (no local gradient needed here)
 
     return Container(
       decoration: BoxDecoration(
@@ -807,7 +770,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
       ),
       child: Column(
         children: [
-          // Map image
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Image.asset(
@@ -818,7 +780,6 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
             ),
           ),
           const SizedBox(height: 15),
-          // Distance + Passengers
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -874,14 +835,10 @@ class _DriverTripDetailsPageState extends State<DriverTripDetailsPage>
               ],
             ),
           ),
-
-          // Divider
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Divider(color: Colors.grey[300], height: 1, thickness: 1),
           ),
-
-          // Route/stops
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
             child: Column(
