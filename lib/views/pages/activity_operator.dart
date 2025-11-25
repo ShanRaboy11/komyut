@@ -82,7 +82,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    // width previously unused; removed to satisfy analyzer
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 
     return Consumer<TransactionProvider>(
@@ -128,7 +128,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF5B53C2).withOpacity(0.3),
+                        color: const Color(0xFF5B53C2).withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -163,7 +163,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -181,7 +181,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -252,7 +252,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF5B53C2).withOpacity(0.3),
+                                color: const Color(0xFF5B53C2).withValues(alpha: 0.3),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -435,7 +435,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF5B53C2).withOpacity(0.2),
+            color: const Color(0xFF5B53C2).withValues(alpha: 0.2),
             width: 1,
           ),
           boxShadow: [
@@ -472,7 +472,7 @@ class _OperatorRemittancesPageState extends State<OperatorRemittancesPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5B53C2).withOpacity(0.1),
+                            color: const Color(0xFF5B53C2).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(

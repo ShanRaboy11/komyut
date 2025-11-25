@@ -483,13 +483,17 @@ Widget _buildDetailModal({
           Positioned(
             top: -12,
             right: -12,
-            child: GestureDetector(
+              child: GestureDetector(
               onTap: () async {
+                // Capture navigator references before awaiting to avoid using BuildContext across async gaps
+                final rootNav = Navigator.of(context, rootNavigator: true);
+                final localNav = Navigator.of(context);
+
                 // First try popping the root navigator where the dialog was shown.
-                final poppedRoot = await Navigator.of(context, rootNavigator: true).maybePop();
+                final poppedRoot = await rootNav.maybePop();
                 if (!poppedRoot) {
                   // Fallback: try to pop the nearest navigator in case dialog was presented on a nested navigator.
-                  await Navigator.of(context).maybePop();
+                  await localNav.maybePop();
                 }
               },
               child: Container(
