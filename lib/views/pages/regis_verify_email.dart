@@ -8,6 +8,7 @@ import '../widgets/progress_bar.dart';
 import '../widgets/button.dart';
 import '../pages/success_page.dart';
 import '../providers/registration_provider.dart';
+// Removed unused import of main.dart
 
 class RegistrationVerifyEmail extends StatefulWidget {
   final String email;
@@ -305,8 +306,15 @@ class _RegistrationVerifyEmailState extends State<RegistrationVerifyEmail>
 
             if (!mounted) return;
 
-            // Replace current route with role-specific dashboard
-            Navigator.pushReplacementNamed(context, homeRoute);
+            // Navigate to the appropriate role dashboard route and remove all
+            // previous routes so the dashboard becomes the app root. We use
+            // named routes that are now wrapped with their providers in
+            // `main.dart`, ensuring the required providers exist for the
+            // dashboard without instantiating a second `AuthStateHandler`.
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              homeRoute,
+              (route) => false,
+            );
           } else {
             // Registration failed
             ScaffoldMessenger.of(context).showSnackBar(

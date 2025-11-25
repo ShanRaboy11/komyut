@@ -138,11 +138,40 @@ class AdminVerificationService {
           }
         }
 
+        // Try to read license attachment id from driver metadata (if available)
+        String? licenseAttachmentId;
+        try {
+          final metadata = driver['metadata'] as Map<String, dynamic>?;
+          licenseAttachmentId = metadata != null ? (metadata['license_attachment_id'] as String?) : null;
+        } catch (_) {
+          licenseAttachmentId = null;
+        }
+
+        String? licenseUrl;
+        final List<Map<String, dynamic>> attachments = [];
+        if (licenseAttachmentId != null) {
+          try {
+            final attRow = await _supabase
+                .from('attachments')
+                .select('id, url, path, content_type')
+                .eq('id', licenseAttachmentId)
+                .maybeSingle();
+            if (attRow != null) {
+              licenseUrl = attRow['url'] as String?;
+              attachments.add({'type': 'Driver License', 'id': licenseAttachmentId, 'url': licenseUrl});
+            }
+          } catch (e) {
+            debugPrint('❌ Error fetching driver attachment: $e');
+          }
+        }
+
         return {
           'license_number': driver['license_number'],
           'vehicle_plate': driver['vehicle_plate'],
           'puv_type': driver['puv_type'],
           'operator_name': operatorName ?? 'Not assigned',
+          'license_image_url': licenseUrl,
+          'attachments': attachments,
         };
       }
       return null;
@@ -179,11 +208,58 @@ class AdminVerificationService {
     try {
       final operator = await _supabase
           .from('operators')
-          .select('id, company_name, company_address, contact_email')
+          .select('id, company_name, company_address, contact_email, lto_cr_attachment_id, ltfrb_franchise_attachment_id, government_id_attachment_id')
           .eq('profile_id', profileId)
           .maybeSingle();
 
-      return operator;
+      if (operator == null) return null;
+
+      // Collect attachment ids
+      final List<String> attachmentIds = [];
+      final ltoId = operator['lto_cr_attachment_id'] as String?;
+      final ltfrbId = operator['ltfrb_franchise_attachment_id'] as String?;
+      final govId = operator['government_id_attachment_id'] as String?;
+      if (ltoId != null) attachmentIds.add(ltoId);
+      if (ltfrbId != null) attachmentIds.add(ltfrbId);
+      if (govId != null) attachmentIds.add(govId);
+
+      List<Map<String, dynamic>> attachments = [];
+      if (attachmentIds.isNotEmpty) {
+        for (final aid in attachmentIds) {
+          try {
+            final attRow = await _supabase
+                .from('attachments')
+                .select('id, url, path, content_type')
+                .eq('id', aid)
+                .maybeSingle();
+            if (attRow != null) attachments.add(Map<String, dynamic>.from(attRow));
+          } catch (_) {}
+        }
+      }
+
+      // Build typed attachments list preserving order and type
+      final List<Map<String, dynamic>> typed = [];
+      if (ltoId != null) {
+        final row = attachments.firstWhere((a) => a['id'] == ltoId, orElse: () => {});
+        typed.add({'type': 'LTO CR', 'id': ltoId, 'url': row['url']});
+      }
+      if (ltfrbId != null) {
+        final row = attachments.firstWhere((a) => a['id'] == ltfrbId, orElse: () => {});
+        typed.add({'type': 'LTFRB Franchise', 'id': ltfrbId, 'url': row['url']});
+      }
+      if (govId != null) {
+        final row = attachments.firstWhere((a) => a['id'] == govId, orElse: () => {});
+        // Label government ID attachment clearly for operator UI
+        typed.add({'type': 'Government ID', 'id': govId, 'url': row['url']});
+      }
+
+      return {
+        'id': operator['id'],
+        'company_name': operator['company_name'],
+        'company_address': operator['company_address'],
+        'contact_email': operator['contact_email'],
+        'attachments': typed,
+      };
     } catch (e) {
       debugPrint('❌ Error fetching operator data: $e');
       return null;
@@ -263,6 +339,20 @@ class AdminVerificationService {
       debugPrint('✅ Approved verification: $verificationId');
     } catch (e) {
       debugPrint('❌ Error approving verification: $e');
+      rethrow;
+    }
+  }
+
+  /// Update commuter category for a profile (e.g., senior, student, pwd, regular)
+  Future<void> updateCommuterCategory(String profileId, String category) async {
+    try {
+      await _supabase
+          .from('commuters')
+          .update({'category': category})
+          .eq('profile_id', profileId);
+      debugPrint('✅ Updated commuter category for $profileId -> $category');
+    } catch (e) {
+      debugPrint('❌ Error updating commuter category: $e');
       rethrow;
     }
   }

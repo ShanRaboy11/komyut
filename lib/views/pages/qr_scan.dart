@@ -440,38 +440,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
 
     try {
-      // Step 3: Check wallet balance for initial payment (10 pesos per passenger)
+      // Step 3: initial payment will be handled when the commuter confirms passenger count
       const double initialPaymentPerPerson = 10.00;
-
-      final walletResponse = await supabase
-          .from('wallets')
-          .select('id, balance')
-          .eq('owner_profile_id', profileId)
-          .maybeSingle();
-
-      if (walletResponse == null) {
-        _showError('Wallet not found. Please contact support.');
-        _resetScanner();
-        return;
-      }
-
-      final walletId = walletResponse['id'] as String;
-      final balance = (walletResponse['balance'] as num).toDouble();
-
-      // Calculate initial payment based on default 1 passenger (will be updated after confirmation)
-      final initialPayment = initialPaymentPerPerson;
-
-      // Step 4: Check if there's enough balance
-      if (balance < initialPayment) {
-        _showError(
-          'Insufficient balance!\n\n'
-          'Current balance: ₱${balance.toStringAsFixed(2)}\n'
-          'Required: ₱${initialPayment.toStringAsFixed(2)}\n\n'
-          'Please top up your wallet.',
-        );
-        _resetScanner();
-        return;
-      }
 
       // Step 5: Get current location
       final position = await _getCurrentPosition();
@@ -510,14 +480,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       debugPrint('📍 Boarding at stop: ${originStop['name']}');
 
-      // Deduct initial payment from wallet
-      await supabase
-          .from('wallets')
-          .update({'balance': balance - initialPayment})
-          .eq('id', walletId);
-
-      // Create initial transaction for boarding AFTER trip is created
-      // (transaction will be created and linked to the trip immediately after trip insert)
+        // NOTE: initial payment deduction and transaction creation moved to the
+        // commuter confirmation flow in `OngoingTripScreen` so the user can
+        // confirm passenger count before funds are captured.
 
       // ==========================================
       // FETCH DRIVER INFO WITH PROFILE
@@ -599,14 +564,14 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             'origin_stop_id': originStop['id'],
             'created_by_profile_id': profileId,
             'status': 'ongoing',
-            'fare_amount': initialPayment,
+            'fare_amount': 0.0,
             'passengers_count':
                 1, // Default, will be updated when user confirms
             'started_at': DateTime.now().toIso8601String(),
             'metadata': {
               'takeoff_qr': qrCode,
               'boarding_location': boardingLocation,
-              'initial_payment': initialPayment,
+              'initial_payment': 0.0,
               'initial_payment_per_person': initialPaymentPerPerson,
               'puv_type': puvType,
               'driver_name': driverName,
@@ -621,41 +586,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final tripId = result['id'] as String;
 
-      // Create initial transaction for boarding and link to the created trip
-      final transactionNumber =
-          'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
-
-      final transactionResponse = await supabase
-          .from('transactions')
-          .insert({
-            'transaction_number': transactionNumber,
-            'wallet_id': walletId,
-            'initiated_by_profile_id': profileId,
-            'type': 'fare_payment',
-            'amount': initialPayment,
-            'status': 'pending',
-            'related_trip_id': tripId,
-            'processed_at': DateTime.now().toIso8601String(),
-            'metadata': {
-              'payment_type': 'initial_boarding',
-              'puv_type': puvType,
-              'initial_payment_per_person': initialPaymentPerPerson,
-            },
-          })
-          .select()
-          .single();
-
-      // transaction created and linked to trip; id available in `transactionResponse`
-      try {
-        final txnId = transactionResponse['id'] as String?;
-        debugPrint('💳 Initial transaction created and linked: $txnId');
-      } catch (_) {}
-
       debugPrint('✅ Trip created successfully: $tripId');
-      debugPrint('💰 Initial payment: ₱$initialPayment');
-      debugPrint(
-        '📍 Boarding location: ${position.latitude}, ${position.longitude}',
-      );
+      debugPrint('📍 Boarding location: ${position.latitude}, ${position.longitude}');
       debugPrint('🚏 Origin stop: ${originStop['name']}');
       debugPrint('👤 Driver name stored: "$driverName"');
 
@@ -883,26 +815,43 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final driverProfileId = driverProfileResponse['profile_id'] as String;
 
-      // Step 12: Transfer payment to driver's wallet
-      final driverWalletResponse = await supabase
-          .from('wallets')
-          .select('id, balance')
-          .eq('owner_profile_id', driverProfileId)
-          .maybeSingle();
+      // Step 12: Transfer only the additional fare (total - initial) to driver via DB function (RPC)
+      final double rpcAmount = additionalFare;
+      if (rpcAmount > 0) {
+        try {
+          final rpcParams = {
+            'p_trip_id': tripId,
+            'p_driver_profile_id': driverProfileId,
+            'p_amount': rpcAmount,
+            'p_commuter_profile_id': profileId,
+          };
 
-      if (driverWalletResponse != null) {
-        final driverWalletId = driverWalletResponse['id'] as String;
-        final driverBalance = (driverWalletResponse['balance'] as num)
-            .toDouble();
+          await supabase.rpc('transfer_trip_fare', params: rpcParams);
 
-        await supabase
-            .from('wallets')
-            .update({'balance': driverBalance + totalFare})
-            .eq('id', driverWalletId);
-
-        debugPrint(
-          '✅ Transferred ₱${totalFare.toStringAsFixed(2)} to driver wallet',
-        );
+          debugPrint('✅ Called transfer_trip_fare RPC for trip $tripId (additional ₱${rpcAmount.toStringAsFixed(2)})');
+        } catch (e) {
+          debugPrint('⚠️ transfer_trip_fare RPC failed: $e');
+          // Record failure into trip metadata so it can be reviewed/processed later
+          try {
+            await supabase
+                .from('trips')
+                .update({
+                  'metadata': {
+                    ...tripMetadata,
+                    'payout_failed': true,
+                    'payout_error': e.toString(),
+                    'payout_amount': rpcAmount,
+                    'payout_driver_profile_id': driverProfileId,
+                  }
+                })
+                .eq('id', tripId);
+            debugPrint('ℹ️ Marked trip $tripId metadata with payout failure info');
+          } catch (e2) {
+            debugPrint('❌ Failed to record payout failure on trip $tripId: $e2');
+          }
+        }
+      } else {
+        debugPrint('ℹ️ No additional fare to transfer for trip $tripId (initial payment already transferred)');
       }
 
       // Step 13: Update trip as completed with discount information

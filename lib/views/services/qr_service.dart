@@ -19,10 +19,10 @@ class QRService {
 
       debugPrint('✅ User authenticated: ${user.id}');
 
-      // Get driver's profile
-      final profileResponse = await _supabase
+        // Get driver's profile (include verification flag)
+        final profileResponse = await _supabase
           .from('profiles')
-          .select('id, first_name, last_name, role')
+          .select('id, first_name, last_name, role, is_verified')
           .eq('user_id', user.id)
           .single();
 
@@ -36,7 +36,16 @@ class QRService {
         };
       }
 
-      debugPrint('✅ Profile found: $profileId');
+      // Enforce that the profile must be verified before generating QR
+      final isVerified = profileResponse['is_verified'] as bool? ?? false;
+      if (!isVerified) {
+        return {
+          'success': false,
+          'message': 'Your account must be verified by an administrator before generating QR codes.',
+        };
+      }
+
+      debugPrint('✅ Profile found: $profileId (verified: $isVerified)');
 
       // ✅ UPDATED: Get driver record with route details using FK
       final driverResponse = await _supabase
@@ -114,10 +123,10 @@ class QRService {
         return {'success': false, 'message': 'No authenticated user found'};
       }
 
-      // Get driver's profile
-      final profileResponse = await _supabase
+        // Get driver's profile (include verification flag)
+        final profileResponse = await _supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, is_verified')
           .eq('user_id', user.id)
           .single();
 
@@ -142,10 +151,13 @@ class QRService {
 
       final qrCode = driverResponse['current_qr'];
 
+      final isVerified = profileResponse['is_verified'] as bool? ?? false;
+
       if (qrCode == null || qrCode.isEmpty) {
         return {
           'success': false,
           'hasQR': false,
+          'isVerified': isVerified,
           'message': 'No QR code generated yet',
         };
       }
@@ -164,6 +176,7 @@ class QRService {
         'success': true,
         'hasQR': true,
         'qrCode': qrCode,
+        'isVerified': isVerified,
         'data': {
           'driverId': driverResponse['id'],
           'driverName':
@@ -171,10 +184,11 @@ class QRService {
           'licenseNumber': driverResponse['license_number'],
           'plateNumber':
               driverResponse['vehicle_plate'] ??
-              'N/A', // ✅ Changed to plateNumber
-          'routeNumber': routeCode, // ✅ Changed to routeNumber
-          'routeName': routeName, // ✅ Added routeName
+              'N/A',
+          'routeNumber': routeCode,
+          'routeName': routeName,
           'lastGenerated': driverResponse['updated_at'],
+          'isVerified': isVerified,
         },
       };
     } catch (e) {
