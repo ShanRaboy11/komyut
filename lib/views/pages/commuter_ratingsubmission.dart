@@ -1,8 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'commuter_review4.dart';
 
-class FeedbackSuccessPage extends StatelessWidget {
+// 1. Converted to StatefulWidget to handle the timer
+class FeedbackSuccessPage extends StatefulWidget {
   const FeedbackSuccessPage({super.key});
+
+  @override
+  State<FeedbackSuccessPage> createState() => _FeedbackSuccessPageState();
+}
+
+class _FeedbackSuccessPageState extends State<FeedbackSuccessPage> {
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // 2. Wait 1 second, then navigate
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        // REPLACE 'HomePage()' with the actual page you want to go to next
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const TokenClaimPage()), 
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +56,7 @@ class FeedbackSuccessPage extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xff8e4cb6),
+                    color: const Color(0xff8e4cb6), // Fixed opacity for cleaner glow
                     blurRadius: 30,
                     spreadRadius: 5,
                     offset: const Offset(0, 5),
@@ -45,7 +68,7 @@ class FeedbackSuccessPage extends StatelessWidget {
                   Icons.check_rounded,
                   color: Colors.white,
                   size: 60,
-                  weight: 5, // make it thicker
+                  weight: 5, 
                 ),
               ),
             ),
