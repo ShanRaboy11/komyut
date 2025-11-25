@@ -30,6 +30,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   String? _qrCode;
   Map<String, dynamic>? _driverData;
   String? _errorMessage;
+  bool _isVerified = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -59,6 +60,14 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
   Future<void> _checkExistingQR() async {
     final result = await _qrService.getCurrentQRCode();
+    // always capture verification status if returned
+    final isVerified = result['isVerified'] as bool? ?? result['data']?['isVerified'] as bool? ?? false;
+    if (mounted) {
+      setState(() {
+        _isVerified = isVerified;
+      });
+    }
+
     if (result['success'] && result['hasQR']) {
       setState(() {
         _qrGenerated = true;
@@ -369,7 +378,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
         const SizedBox(height: 40),
 
         ElevatedButton(
-          onPressed: _generateQRCode,
+          onPressed: _isVerified ? _generateQRCode : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF8E4CB6),
             foregroundColor: Colors.white,
@@ -394,6 +403,31 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             ],
           ),
         ),
+
+        // If driver isn't verified, show an informational message
+        if (!_isVerified) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.yellow[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.yellow[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange[700]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your account must be verified by an administrator before you can generate a QR code.',
+                    style: GoogleFonts.nunito(fontSize: 14, color: Colors.orange[800]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         if (_errorMessage != null) ...[
           const SizedBox(height: 20),

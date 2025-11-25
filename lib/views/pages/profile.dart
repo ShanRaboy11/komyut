@@ -94,6 +94,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
+  bool _isSigningOut = false;
   Map<String, dynamic>? _profileData;
   String? _errorMessage;
 
@@ -238,22 +239,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (shouldLogout != true || !mounted) return;
 
-    // Show blocking progress dialog (use root navigator)
-    showDialog<void>(
-      context: context,
-      useRootNavigator: true,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const CircularProgressIndicator(),
-        ),
-      ),
-    );
+    setState(() {
+      _isSigningOut = true;
+    });
 
     var signOutSuccess = false;
     try {
@@ -272,11 +260,10 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     } finally {
-      // Dismiss the progress dialog before navigation
       if (mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
+        setState(() {
+          _isSigningOut = false;
+        });
       }
     }
 
@@ -489,6 +476,18 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
+          // Signing-out overlay
+          if (_isSigningOut)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black45,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF8E4CB6),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

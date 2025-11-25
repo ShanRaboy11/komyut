@@ -1,8 +1,12 @@
+// Intentionally allow using captured Navigator/BuildContext objects across
+// async gaps in this file where the code captures Navigator/ScaffoldMessenger
+// before awaiting. Suppress the lint to avoid noisy analyzer info here.
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_verification.dart';
+import '../services/admin_verification.dart';
 
 /// Enhanced Admin Verification Details Page
 class AdminPending extends StatefulWidget {
@@ -590,6 +594,8 @@ class _EnhancedUserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Operator attachments (if any) are accessible via verification.roleSpecificData when needed
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -790,6 +796,11 @@ class _EnhancedDocumentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Prepare operator attachments (if any) for rendering below
+    final opAttachments = (verification.roleSpecificData != null && verification.roleSpecificData!['attachments'] != null)
+        ? List<Map<String, dynamic>>.from(verification.roleSpecificData!['attachments'] as List)
+        : <Map<String, dynamic>>[];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -822,7 +833,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Documents',
+                'Document',
                 style: GoogleFonts.manrope(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -831,8 +842,180 @@ class _EnhancedDocumentsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          if (verification.imageUrl != null) ...[
+            const SizedBox(height: 20),
+
+            if (opAttachments.isNotEmpty) ...[
+            // Render each operator attachment as a tappable card
+            for (final att in opAttachments) ...[
+              GestureDetector(
+                onTap: () {
+                  final url = att['url'] as String?;
+                  if (url == null) return;
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.black,
+                      insetPadding: const EdgeInsets.all(20),
+                      child: Stack(
+                        children: [
+                          InteractiveViewer(
+                            child: Center(
+                              child: Image.network(
+                                url,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          size: 24,
+                          color: Color(0xFFFF6B9A),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              att['type'] as String? ?? 'Document',
+                              style: GoogleFonts.manrope(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap to view full image',
+                              style: GoogleFonts.manrope(
+                                color: Colors.white.withAlpha((0.9 * 255).round()),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha((0.2 * 255).round()),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.visibility,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            // Show thumbnails grid
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[200]!, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: opAttachments.map((att) {
+                    final url = att['url'] as String?;
+                    return GestureDetector(
+                      onTap: () {
+                        if (url == null) return;
+                        showDialog(
+                          context: context,
+                          builder: (context) => Dialog(
+                            backgroundColor: Colors.black,
+                            insetPadding: const EdgeInsets.all(20),
+                            child: InteractiveViewer(
+                              child: Image.network(url, fit: BoxFit.contain),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 120,
+                        height: 80,
+                        color: Colors.grey[100],
+                        child: url != null
+                            ? Image.network(url, fit: BoxFit.cover)
+                            : Center(child: Icon(Icons.broken_image, color: Colors.grey[400])),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ] else if (verification.imageUrl != null) ...[
+            // Single verification image (drivers and other roles)
             GestureDetector(
               onTap: () {
                 showDialog(
@@ -849,11 +1032,7 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Center(
-                                  child: Icon(
-                                    Icons.error_outline,
-                                    size: 48,
-                                    color: Colors.white,
-                                  ),
+                                  child: Icon(Icons.error_outline, size: 48, color: Colors.white),
                                 );
                               },
                             ),
@@ -882,117 +1061,36 @@ class _EnhancedDocumentsCard extends StatelessWidget {
                   ),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[200]!, width: 2),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFF6A1B9A).withAlpha((0.3 * 255).round()),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.image,
-                        size: 24,
-                        color: Color(0xFFFF6B9A),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            verification.verificationType,
-                            style: GoogleFonts.manrope(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                  child: Image.network(
+                    verification.imageUrl!,
+                    height: 240,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 240,
+                        color: Colors.grey[100],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 12),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap to view full image',
-                            style: GoogleFonts.manrope(
-                              color: Colors.white.withAlpha(
-                                (0.9 * 255).round(),
-                              ),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((0.2 * 255).round()),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.visibility,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[200]!, width: 2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Image.network(
-                  verification.imageUrl!,
-                  height: 240,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 240,
-                      color: Colors.grey[100],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Failed to load image',
-                            style: GoogleFonts.manrope(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1059,22 +1157,72 @@ class _EnhancedActionButtons extends StatelessWidget {
 
     bool success = false;
 
-    // Show progress dialog on root navigator so it can be popped reliably
-    showDialog(
-      context: rootNavigator.context,
-      useRootNavigator: true,
-      barrierDismissible: false,
-      builder: (dialogCtx) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+    // If approving a commuter who isn't regular, prompt for category first
+    if (action == 'approve' && verification.role == 'commuter' &&
+        (verification.commuterCategory == null ||
+            verification.commuterCategory!.toLowerCase() != 'regular')) {
+      final selected = await _showCommuterCategoryDialog(navigator.context);
+      if (selected == null) return; // user cancelled
+
+      // Show progress dialog on root navigator so it can be popped reliably
+      showDialog(
+        context: rootNavigator.context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (dialogCtx) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const CircularProgressIndicator(),
           ),
-          child: const CircularProgressIndicator(),
         ),
-      ),
-    );
+      );
+
+      try {
+        // Update commuter category before approving
+        await AdminVerificationService()
+            .updateCommuterCategory(verification.profileId, selected);
+      } catch (e) {
+        try {
+          rootNavigator.pop();
+        } catch (_) {}
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update commuter category: $e',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        return;
+      }
+    } else {
+      // Show progress dialog on root navigator so it can be popped reliably
+      showDialog(
+        context: rootNavigator.context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (dialogCtx) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
 
     try {
       switch (action) {
@@ -1370,6 +1518,146 @@ class _EnhancedActionButtons extends StatelessWidget {
     );
   }
 
+  Future<String?> _showCommuterCategoryDialog(BuildContext context) async {
+    String? selected;
+
+    // Use the app's purple -> pink gradient and green confirm color
+    const gradientColors = [Color(0xFF5B53C2), Color(0xFF8E4CB6), Color(0xFFB945AA)];
+    const confirmColor = Color(0xFF66BB6A);
+
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with gradient
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    gradient: const LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha((0.12 * 255).round()),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.category, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Select Commuter Category',
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CategoryOption(
+                        label: 'Senior Citizen',
+                        value: 'senior',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                      const SizedBox(height: 12),
+                      _CategoryOption(
+                        label: 'PWD',
+                        value: 'pwd',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                      const SizedBox(height: 12),
+                      _CategoryOption(
+                        label: 'Student',
+                        value: 'student',
+                        selected: selected,
+                        onTap: (v) => setState(() => selected = v),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey[700],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text('Cancel', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (selected == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Please select a category', style: GoogleFonts.manrope()),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+                            Navigator.pop(context, selected);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: confirmColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text('Confirm', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (verification.status.toLowerCase() != 'pending') {
@@ -1551,6 +1839,76 @@ class _ActionButton extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Small option card for commuter categories
+class _CategoryOption extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? selected;
+  final void Function(String) onTap;
+
+  const _CategoryOption({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSelected = selected == value;
+
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF5B53C2).withAlpha((0.08 * 255).round()) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF5B53C2) : Colors.grey[200]!,
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: [
+              BoxShadow(
+              color: Colors.black.withAlpha(((isSelected ? 0.04 : 0.02) * 255).round()),
+              blurRadius: isSelected ? 8 : 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D3436),
+                ),
+              ),
+            ),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? const Color(0xFF5B53C2) : Colors.white,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF5B53C2) : Colors.grey[300]!,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 18, color: Colors.white)
+                  : null,
+            ),
+          ],
         ),
       ),
     );
