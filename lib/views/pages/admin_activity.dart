@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import '../widgets/button.dart';
 
 class AdminActivityPage extends StatefulWidget {
   const AdminActivityPage({super.key});
@@ -15,12 +16,14 @@ class AdminTransaction {
   final String date; // e.g. "Nov 22"
   final String time; // e.g. "07:10 PM"
   final double amount;
+  final String? status;
 
   AdminTransaction({
     required this.transactionType,
     required this.date,
     required this.time,
     required this.amount,
+    this.status,
   });
 }
 
@@ -45,31 +48,37 @@ class _AdminActivityPage extends State<AdminActivityPage> {
       date: "Nov 20",
       time: "11:42 AM",
       amount: 150.00,
+      status: "Pending",
     ),
     AdminTransaction(
       transactionType: "Cash In",
       date: "Nov 19",
       time: "09:10 AM",
       amount: 200.00,
+      status: "Completed",
     ),
+
     // 🔹 Cash Out
     AdminTransaction(
       transactionType: "Cash Out",
       date: "Nov 18",
       time: "05:25 PM",
       amount: -80.00,
+      status: "Rejected",
     ),
     AdminTransaction(
       transactionType: "Cash Out",
       date: "Nov 17",
       time: "02:18 PM",
       amount: -120.00,
+      status: "Completed",
     ),
     AdminTransaction(
       transactionType: "Cash Out",
       date: "Nov 17",
       time: "02:30 PM",
       amount: -520.00,
+      status: "Pending",
     ),
     // 🔹 Remittance
     AdminTransaction(
@@ -109,6 +118,8 @@ class _AdminActivityPage extends State<AdminActivityPage> {
 
   int activeTransaction = 1;
 
+  String? _statusFilter;
+
   static const LinearGradient _kGradient = LinearGradient(
     colors: [Color(0xFF5B53C2), Color(0xFFB945AA)],
     begin: Alignment.centerLeft,
@@ -124,9 +135,17 @@ class _AdminActivityPage extends State<AdminActivityPage> {
       (t) => t["value"] == activeTransaction,
     )["label"];
 
-    final filteredActivity = adminActivities
-        .where((r) => r.transactionType == selectedType)
-        .toList();
+    final filteredActivity = adminActivities.where((r) {
+      if (r.transactionType != selectedType) return false;
+
+      // Only filter status for Cash In / Cash Out
+      if ((selectedType == 'Cash In' || selectedType == 'Cash Out') &&
+          _statusFilter != null) {
+        return r.status == _statusFilter;
+      }
+
+      return true;
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
@@ -221,6 +240,69 @@ class _AdminActivityPage extends State<AdminActivityPage> {
               ),
             ),
             const SizedBox(height: 16),
+            if (selectedType == 'Cash In' || selectedType == 'Cash Out')
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _statusFilter == "Pending"
+                          ? "Pending Transactions"
+                          : _statusFilter == "Completed"
+                          ? "Completed Transactions"
+                          : _statusFilter == "Rejected"
+                          ? "Rejected Transactions"
+                          : "All Transactions",
+                      style: GoogleFonts.manrope(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: "Filter by Status",
+                      onSelected: (value) {
+                        setState(() {
+                          _statusFilter =
+                              value; // <-- create this variable in your state
+                        });
+                      },
+                      offset: const Offset(0, 45),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: 'Pending', child: Text('Pending')),
+                        PopupMenuItem(
+                          value: 'Completed',
+                          child: Text('Completed'),
+                        ),
+                        PopupMenuItem(
+                          value: 'Rejected',
+                          child: Text('Rejected'),
+                        ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _statusFilter == null
+                              ? const Color.fromARGB(255, 207, 206, 206)
+                              : const Color.fromARGB(255, 207, 206, 206),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          size: 20,
+                          color: _statusFilter == null
+                              ? Colors.grey.shade700
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -236,6 +318,7 @@ class _AdminActivityPage extends State<AdminActivityPage> {
                       'amount': tx.amount,
                       'created_at': DateTime.now().toIso8601String(),
                       'transaction_number': 'TXN${index + 1000}',
+                      'status': tx.status, // ✅ now included
                     };
                     return buildTransactionItem(
                       context,
@@ -379,6 +462,9 @@ void _showTransactionDetailModal(
   final String type = transaction['type'] ?? 'fare_payment';
   final double amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
   final DateTime createdAt = DateTime.parse(transaction['created_at']);
+  final bool isPendingCashInOrOut =
+      (transaction['type'] == 'cash_in' || transaction['type'] == 'cash_out') &&
+      transaction['status'] == 'Pending';
 
   // Map type to title
   final String modalTitle = switch (type) {
@@ -464,6 +550,7 @@ void _showTransactionDetailModal(
           currencyFormat.format(amount.abs()),
           isTotal: true,
         ),
+        showActionButtons: isPendingCashInOrOut,
         transactionCode: transaction['transaction_number'] ?? 'N/A',
       );
     },
@@ -476,8 +563,10 @@ Widget _buildDetailModal({
   required List<Widget> details,
   required Widget totalRow,
   required String transactionCode,
+  required bool showActionButtons,
 }) {
   final Color brandColor = const Color(0xFF8E4CB6);
+
   return Dialog(
     backgroundColor: Colors.transparent,
     elevation: 0,
@@ -506,6 +595,8 @@ Widget _buildDetailModal({
               ...details,
               Divider(color: brandColor.withAlpha(128), height: 24),
               totalRow,
+
+              const SizedBox(height: 8),
               if (transactionCode != 'N/A') ...[
                 Divider(color: brandColor.withAlpha(128), height: 24),
                 BarcodeWidget(
@@ -521,6 +612,36 @@ Widget _buildDetailModal({
                     fontSize: 11,
                     color: Colors.black54,
                   ),
+                ),
+              ],
+
+              if (showActionButtons) ...[
+                Divider(color: brandColor.withAlpha(128), height: 24),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: "Reject",
+                        isFilled: false,
+                        strokeColor: const Color(0xFF5B53C2),
+                        outlinedFillColor: Colors.white,
+                        textColor: const Color(0xFF5B53C2),
+                        onPressed: () {},
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: "Accept",
+                        isFilled: true,
+                        textColor: Colors.white,
+                        onPressed: () {},
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
