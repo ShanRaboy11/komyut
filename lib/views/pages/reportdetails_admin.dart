@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+
+import '../models/admin_report.dart';
+import '../providers/admin_report.dart';
+import '../widgets/role_navbar_wrapper.dart';
+import 'home_admin.dart';
+import 'admin_activity.dart';
+import 'admin_report.dart';
+import 'admin_verification.dart';
+import 'admin_routes.dart';
 
 class ReportDetailsPage extends StatefulWidget {
   final String name;
@@ -41,41 +51,62 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
     setState(() => _isUpdating = true);
 
     try {
-      final client = Supabase.instance.client;
+      // Use the typed provider if available to update status
+      bool success = false;
+      try {
+        final provider = context.read<ReportProvider>();
+        success = await provider.updateReportStatus(widget.reportId, ReportStatus.resolved);
+      } catch (_) {
+        success = false;
+      }
 
-      // 1. Update the report status in the database
-      await client
-          .from('reports')
-          .update({
-            'status': 'resolved', // or 'closed' depending on your workflow
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', widget.reportId);
+      if (!success) {
+        // Fallback: directly update via Supabase
+        final client = Supabase.instance.client;
+        await client
+            .from('reports')
+            .update({
+              'status': 'resolved',
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', widget.reportId);
+        success = true;
+      }
 
       if (mounted) {
         // 2. Show Success Dialog
         await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
+          builder: (dialogCtx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             title: Text('Success', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
             content: Text('The report has been marked as resolved.', style: GoogleFonts.manrope()),
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  // 3. Navigate back to Home Admin
-                  Navigator.pushNamedAndRemoveUntil(
-                    context, 
-                    '/home_admin', 
-                    (route) => false
-                  );
+                  Navigator.pop(dialogCtx); // Close dialog
                 },
                 child: Text('OK', style: GoogleFonts.manrope(color: const Color(0xFF8E4CB6))),
               ),
             ],
           ),
+        );
+
+        if (!mounted) return;
+
+        // 3. Redirect to Admin nav-wrapped reports page so navbar persists
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (ctx) => AdminNavBarWrapper(
+              homePage: AdminDashboardNav(),
+              verifiedPage: AdminVerifiedPage(),
+              activityPage: const AdminActivityPage(),
+              reportsPage: AdminReportsPage(),
+              routePage: AdminRoutesPage(),
+            ),
+          ),
+          (route) => false,
         );
       }
     } catch (e) {

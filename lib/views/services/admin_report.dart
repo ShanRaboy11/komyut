@@ -12,7 +12,7 @@ class ReportService {
     ReportStatus? status,
   }) async {
     try {
-      var query = _supabase
+        dynamic query = _supabase
           .from('reports')
           .select('''
             *,
@@ -161,14 +161,14 @@ class ReportService {
       final response = await _supabase
           .from('reports')
           .select('status')
-          .execute();
+          .order('created_at', ascending: false);
 
       final counts = <String, int>{};
       for (final status in ReportStatus.values) {
         counts[status.value] = 0;
       }
 
-      for (final item in response.data as List) {
+      for (final item in (response as List)) {
         final status = item['status'] as String;
         counts[status] = (counts[status] ?? 0) + 1;
       }
