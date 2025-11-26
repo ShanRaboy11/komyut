@@ -53,11 +53,13 @@ class NotificationDriverProvider extends ChangeNotifier {
       // A. FETCH RAW DATA
       // ---------------------------------------------------------
 
-      // 1. Trips (Using driver_id)
+      // 1. Trips
+      // FIX: We use .or() to check if the trip is linked via driver_id OR created_by_profile_id.
+      // This ensures new trips (created by profile) show up immediately, even if driver_id isn't set yet.
       final tripsRes = await _supabase
           .from('trips')
           .select('id, started_at, ended_at, status, passengers_count')
-          .eq('driver_id', driverId)
+          .or('driver_id.eq.$driverId,created_by_profile_id.eq.$profileId')
           .order('started_at', ascending: false)
           .limit(200);
 
@@ -81,6 +83,7 @@ class NotificationDriverProvider extends ChangeNotifier {
       // ---------------------------------------------------------
       for (var trip in tripsData) {
         final String tripId = trip['id'];
+        // Get REAL status from DB row
         final String status = trip['status'] ?? 'ongoing';
         final int passengerCount = trip['passengers_count'] ?? 0;
 
@@ -110,7 +113,8 @@ class NotificationDriverProvider extends ChangeNotifier {
             sortDate: startedAt,
             isLocal: false,
             payload: {
-              'status': 'ongoing',
+              'status':
+                  status, // Uses the real status from DB (ongoing/completed)
               'trip_id': tripId,
               'date_str': DateFormat('MMM dd, yyyy').format(startedAt),
               'time_str': DateFormat('hh:mm a').format(startedAt),
@@ -150,7 +154,7 @@ class NotificationDriverProvider extends ChangeNotifier {
 
       _notifications = generatedList;
     } catch (e) {
-      // Handle error silently or log to analytics in production
+      debugPrint("Error fetching notifications: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -184,8 +188,12 @@ class NotificationDriverProvider extends ChangeNotifier {
         String type = 'trip';
         Map<String, dynamic> payload = item.payload ?? {};
 
+        // EXACT STATUS LOGIC PRESERVED
         if (item.virtualId.startsWith('start_')) {
-          payload = {'trip_id': item.tripId, 'status': 'ongoing'};
+          payload = {
+            'trip_id': item.tripId,
+            'status': item.payload?['status'] ?? 'ongoing',
+          };
         } else if (item.virtualId.startsWith('end_')) {
           payload = {'trip_id': item.tripId, 'status': 'completed'};
         }
@@ -206,7 +214,7 @@ class NotificationDriverProvider extends ChangeNotifier {
             .eq('id', notifId);
       }
     } catch (e) {
-      // Handle sync error
+      debugPrint("DB Sync Error: $e");
     }
   }
 
