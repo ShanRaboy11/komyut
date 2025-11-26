@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../widgets/navbar.dart';
-import '../pages/qr_scan.dart'; 
+import '../pages/qr_scan.dart';
 
 // ============= COMMUTER NAVBAR WRAPPER =============
 class CommuterNavBarWrapper extends StatefulWidget {
@@ -39,12 +39,12 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
   void _handleQRScan() async {
     // Store the current index BEFORE opening scanner
     final previousIndex = _currentIndex;
-    
+
     // Mark that QR scanner is open
     setState(() {
       _isQRScannerOpen = true;
     });
-    
+
     // Open QR scanner and wait for it to close
     await Navigator.push(
       context,
@@ -62,7 +62,7 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
         ),
       ),
     );
-    
+
     // After QR scanner closes, restore previous index
     if (mounted) {
       setState(() {
@@ -76,11 +76,7 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
   Widget build(BuildContext context) {
     // Don't show navbar content if QR scanner is open
     if (_isQRScannerOpen) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return AnimatedBottomNavBar(
@@ -104,7 +100,7 @@ class _CommuterNavBarWrapperState extends State<CommuterNavBarWrapper> {
           _handleQRScan();
           return;
         }
-        
+
         setState(() {
           _currentIndex = index;
         });
@@ -210,14 +206,14 @@ class _OperatorNavBarWrapperState extends State<OperatorNavBarWrapper> {
       pages: [
         widget.homePage,
         widget.driversPage,
-        widget.transactionsPage,
+        // widget.transactionsPage,
         widget.reportsPage,
         widget.profilePage,
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
         NavItem(icon: Symbols.group, label: 'Drivers'),
-        NavItem(icon: Symbols.receipt_long, label: 'Transactions'),
+        //NavItem(icon: Symbols.receipt_long, label: 'Transactions'),
         NavItem(icon: Symbols.assessment, label: 'Reports'),
         NavItem(icon: Icons.person_rounded, label: 'Profile'),
       ],

@@ -47,14 +47,14 @@ class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
               ? OperatorWalletPage(onBack: _closeWallet)
               : OperatorDashboard(onViewWallet: _openWallet),
           const Center(child: Text("📋 Drivers")),
-          const Center(child: Text("✍️ Transactions")),
+          //const Center(child: Text("✍️ Transactions")),
           const Center(child: Text("🔔 Reports")),
           const Center(child: Text("👤 Profile")),
         ],
         items: const [
           NavItem(icon: Icons.home_rounded, label: 'Home'),
           NavItem(icon: Symbols.group, label: 'Drivers'),
-          NavItem(icon: Symbols.overview_rounded, label: 'Transactions'),
+          //NavItem(icon: Symbols.overview_rounded, label: 'Transactions'),
           NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
           NavItem(icon: Icons.person_rounded, label: 'Profile'),
         ],
