@@ -875,30 +875,62 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION handle_trip_notification()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_driver_profile_id uuid;
+  v_plate text;
 BEGIN
+  SELECT profile_id, vehicle_plate 
+  INTO v_driver_profile_id, v_plate
+  FROM drivers
+  WHERE id = NEW.driver_id;
+
   IF (TG_OP = 'INSERT' AND NEW.status = 'ongoing') OR 
      (TG_OP = 'UPDATE' AND OLD.status != 'ongoing' AND NEW.status = 'ongoing') THEN
      
-    INSERT INTO notifications (recipient_profile_id, type, payload, read, created_at)
-    VALUES (
-      NEW.created_by_profile_id, 
-      'trip', 
-      jsonb_build_object('trip_id', NEW.id, 'status', 'ongoing'), 
-      false,
-      NEW.started_at
-    );
+    IF v_driver_profile_id IS NOT NULL THEN
+        INSERT INTO notifications (
+            recipient_profile_id, 
+            type, 
+            title, 
+            message, 
+            payload, 
+            read, 
+            created_at
+        )
+        VALUES (
+          v_driver_profile_id, 
+          'trip', 
+          'Trip Started',
+          'Your trip with vehicle ' || COALESCE(v_plate, 'Jeep') || ' has started.',
+          jsonb_build_object('trip_id', NEW.id, 'status', 'ongoing'), 
+          false,
+          NEW.started_at
+        );
+    END IF;
   END IF;
 
   IF (TG_OP = 'UPDATE' AND OLD.status != 'completed' AND NEW.status = 'completed') THEN
     
-    INSERT INTO notifications (recipient_profile_id, type, payload, read, created_at)
-    VALUES (
-      NEW.created_by_profile_id, 
-      'trip', 
-      jsonb_build_object('trip_id', NEW.id, 'status', 'completed'), 
-      false,
-      NEW.ended_at
-    );
+    IF v_driver_profile_id IS NOT NULL THEN
+        INSERT INTO notifications (
+            recipient_profile_id, 
+            type, 
+            title, 
+            message, 
+            payload, 
+            read, 
+            created_at
+        )
+        VALUES (
+          v_driver_profile_id, 
+          'trip', 
+          'Trip Ended',
+          'Trip ended. Total passengers: ' || NEW.passengers_count,
+          jsonb_build_object('trip_id', NEW.id, 'status', 'completed'), 
+          false,
+          NEW.ended_at
+        );
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -906,6 +938,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_trip_notifications ON trips;
+
 CREATE TRIGGER trg_trip_notifications
 AFTER INSERT OR UPDATE ON trips
 FOR EACH ROW

@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'views/providers/registration_provider.dart';
 import 'views/providers/auth_provider.dart';
 import 'views/providers/wallet_provider.dart';
-import 'views/services/notifications.dart';
+import 'views/services/commuter_notifications.dart';
 import 'views/providers/commuter_dashboard.dart';
 import 'views/providers/driver_dashboard.dart';
 import 'views/providers/operator_dashboard.dart';

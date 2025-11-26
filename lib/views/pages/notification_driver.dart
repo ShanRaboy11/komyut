@@ -3,22 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../widgets/notification.dart';
-import '../services/commuter_notifications.dart';
+
+import '../services/driver_notifications.dart';
 import '../models/notification.dart';
+import 'trips_driver.dart';
 
-import 'tripdetails_commuter.dart';
-import 'tripreceipt_commuter.dart';
-import 'transactionreceipt_commuter.dart';
-import 'wallet_commuter.dart';
-
-class NotificationPage extends StatefulWidget {
-  const NotificationPage({super.key});
+class NotificationDriverPage extends StatefulWidget {
+  const NotificationDriverPage({super.key});
 
   @override
-  State<NotificationPage> createState() => NotificationPageState();
+  State<NotificationDriverPage> createState() => NotificationDriverPageState();
 }
 
-class NotificationPageState extends State<NotificationPage> {
+class NotificationDriverPageState extends State<NotificationDriverPage> {
   final Color primary1 = const Color(0xFF9C6BFF);
   final List<String> tabs = ['Trips', 'Wallet', 'Others'];
   String activeTab = 'Trips';
@@ -26,11 +23,28 @@ class NotificationPageState extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
+    debugPrint("🚀 NotificationDriverPage: initState called");
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<NotificationProvider>(
-        context,
-        listen: false,
-      ).fetchNotifications();
+      debugPrint(
+        "🚀 NotificationDriverPage: postFrameCallback - about to call fetchNotifications",
+      );
+      try {
+        // Use the correct Driver Provider
+        final provider = Provider.of<NotificationDriverProvider>(
+          context,
+          listen: false,
+        );
+        debugPrint(
+          "🚀 NotificationDriverPage: Provider obtained: ${provider.runtimeType}",
+        );
+        provider.fetchNotifications();
+        debugPrint("🚀 NotificationDriverPage: fetchNotifications called");
+      } catch (e, stackTrace) {
+        debugPrint(
+          "❌ NotificationDriverPage: Error calling fetchNotifications: $e",
+        );
+        debugPrint("❌ Stack trace: $stackTrace");
+      }
     });
   }
 
@@ -53,82 +67,25 @@ class NotificationPageState extends State<NotificationPage> {
   }
 
   void _onTapNotif(NotifItem item) async {
+    debugPrint("NotificationDriverPage: Tapped notification: ${item.id}");
     if (!item.isRead) {
-      Provider.of<NotificationProvider>(
+      Provider.of<NotificationDriverProvider>(
         context,
         listen: false,
       ).markAsRead(item.id);
     }
 
-    final payload = item.payload ?? {};
-
     // --- TRIPS ---
     if (item.variant == 'trips') {
+      // Redirect to the Driver's Trip History Page
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => TripDetailsPage(
-            tripId: item.tripId,
-            date: payload['date_str'] ?? '',
-            time: payload['time_str'] ?? '',
-            status: payload['status'] ?? 'ongoing',
-            from: "Loading...",
-            to: "...",
-            tripCode: "...",
-          ),
-        ),
+        MaterialPageRoute(builder: (context) => const DriverTripHistoryPage()),
       );
     }
-    // --- REWARDS ---
-    else if (item.variant == 'rewards') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const WalletPage()),
-      );
-    }
-    // --- WALLET ---
+    // --- WALLET & OTHERS ---
     else if (item.variant == 'wallet') {
-      final type = payload['type'] as String?;
-
-      if (type == 'fare_payment') {
-        final tripId = payload['trip_id']?.toString();
-        if (tripId != null && tripId.isNotEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TripReceiptPage(tripId: tripId),
-            ),
-          );
-        }
-      } else if (type == 'cash_in' || type == 'redemption') {
-        // Handle Real DB Transactions
-        if (payload['transaction_id'] != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionReceiptPage(
-                id: payload['transaction_id'],
-                type: type!, // 'cash_in' or 'redemption'
-              ),
-            ),
-          );
-        }
-        // Handle Static Fallback
-        else if (payload['data'] != null) {
-          final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
-              ?.cast<String, dynamic>();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionReceiptPage(
-                id: item.id,
-                type: 'static',
-                staticData: staticMap,
-              ),
-            ),
-          );
-        }
-      }
+      // Future implementation for driver wallet
     }
   }
 
@@ -137,17 +94,31 @@ class NotificationPageState extends State<NotificationPage> {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
 
-    return Consumer<NotificationProvider>(
+    debugPrint("NotificationDriverPage: build() called");
+
+    return Consumer<NotificationDriverProvider>(
       builder: (context, provider, child) {
+        debugPrint(
+          "NotificationDriverPage: Consumer rebuild - notifications count: ${provider.notifications.length}, isLoading: ${provider.isLoading}",
+        );
+
         final all = provider.notifications;
         List<NotifItem> filtered;
+
+        // Filter logic
         if (activeTab == 'Trips') {
           filtered = all.where((n) => n.variant == 'trips').toList();
         } else if (activeTab == 'Wallet') {
           filtered = all.where((n) => n.variant == 'wallet').toList();
         } else {
-          filtered = all.where((n) => n.variant == 'rewards').toList();
+          filtered = all
+              .where((n) => n.variant != 'trips' && n.variant != 'wallet')
+              .toList();
         }
+
+        debugPrint(
+          "NotificationDriverPage: Active tab: $activeTab, Filtered count: ${filtered.length}",
+        );
 
         final Map<String, List<NotifItem>> grouped = {};
         for (var n in filtered) {
@@ -167,6 +138,10 @@ class NotificationPageState extends State<NotificationPage> {
           }
           grouped.putIfAbsent(section, () => []).add(n);
         }
+
+        debugPrint(
+          "NotificationDriverPage: Grouped sections: ${grouped.keys.join(', ')}",
+        );
 
         final hasUnread = filtered.any((n) => !n.isRead);
 
@@ -203,7 +178,7 @@ class NotificationPageState extends State<NotificationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Notification',
+                    'Notifications',
                     style: GoogleFonts.manrope(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -227,10 +202,25 @@ class NotificationPageState extends State<NotificationPage> {
                   Expanded(
                     child: provider.isLoading && provider.notifications.isEmpty
                         ? Center(
-                            child: CircularProgressIndicator(color: primary1),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: primary1),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Loading notifications...",
+                                  style: GoogleFonts.nunito(color: Colors.grey),
+                                ),
+                              ],
+                            ),
                           )
                         : RefreshIndicator(
-                            onRefresh: provider.fetchNotifications,
+                            onRefresh: () {
+                              debugPrint(
+                                "NotificationDriverPage: Manual refresh triggered",
+                              );
+                              return provider.fetchNotifications();
+                            },
                             color: primary1,
                             child: SingleChildScrollView(
                               key: ValueKey<String>(activeTab),
@@ -272,13 +262,24 @@ class NotificationPageState extends State<NotificationPage> {
                                     Padding(
                                       padding: const EdgeInsets.only(top: 50),
                                       child: Center(
-                                        child: Text(
-                                          provider.isLoading
-                                              ? "Checking..."
-                                              : "No notifications",
-                                          style: GoogleFonts.nunito(
-                                            color: Colors.grey,
-                                          ),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.notifications_none_rounded,
+                                              size: 64,
+                                              color: Colors.grey[300],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              provider.isLoading
+                                                  ? "Checking..."
+                                                  : "No notifications",
+                                              style: GoogleFonts.nunito(
+                                                color: Colors.grey,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -300,7 +301,10 @@ class NotificationPageState extends State<NotificationPage> {
   Widget _buildPillTab(String title, bool active, bool isSmall) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => activeTab = title),
+        onTap: () {
+          debugPrint("NotificationDriverPage: Tab changed to: $title");
+          setState(() => activeTab = title);
+        },
         child: Container(
           padding: EdgeInsets.symmetric(vertical: isSmall ? 10 : 12),
           decoration: BoxDecoration(
@@ -345,7 +349,7 @@ class NotificationPageState extends State<NotificationPage> {
           key: ValueKey(n.virtualId),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: NotificationCard(
-            variant: n.variant == 'rewards' ? 'rewards' : n.variant,
+            variant: n.variant,
             description: n.title,
             timeOrDate: _getDisplayTime(n, section),
             isRead: n.isRead,

@@ -108,10 +108,11 @@ class NotificationProvider extends ChangeNotifier {
       // 4. Cash In (Incoming Wallet)
       List<dynamic> cashInData = [];
       try {
+        // Added updated_at to the select query to track status changes
         final cashInRes = await _supabase
             .from('transactions')
             .select(
-              'id, created_at, amount, payment_methods(name), transaction_number, status',
+              'id, created_at, updated_at, amount, payment_methods(name), transaction_number, status',
             )
             .eq('initiated_by_profile_id', profileId)
             .eq('type', 'cash_in')
@@ -359,6 +360,12 @@ class NotificationProvider extends ChangeNotifier {
         final String id = ci['id'];
         final double amount = (ci['amount'] as num).toDouble().abs();
         final DateTime createdAt = DateTime.parse(ci['created_at']).toLocal();
+        final String status = ci['status'] ?? 'pending';
+
+        DateTime? updatedAt;
+        if (ci['updated_at'] != null) {
+          updatedAt = DateTime.parse(ci['updated_at']).toLocal();
+        }
 
         final String txCode = ci['transaction_number'] ?? id;
 
@@ -368,23 +375,30 @@ class NotificationProvider extends ChangeNotifier {
           method = ci['payment_methods']['name'];
         }
 
-        final ciRow = notifData
+        // --- Notification 1: Pending/Initiated ---
+        final ciPendingRow = notifData
             .where(
               (n) =>
                   n['type'] == 'wallet' &&
                   n['payload'] != null &&
-                  n['payload']['transaction_id'] == id,
+                  n['payload']['transaction_id'] == id &&
+                  n['payload']['status'] == 'pending',
             )
             .firstOrNull;
 
         generatedList.add(
           NotifItem(
-            id: ciRow != null ? ciRow['id'] : 'virtual_ci_$id',
-            virtualId: 'ci_$id',
+            id: ciPendingRow != null
+                ? ciPendingRow['id']
+                : 'virtual_ci_pending_$id',
+            virtualId: 'ci_pending_$id',
             variant: 'wallet',
-            title: "₱${amount.toStringAsFixed(2)} credited via $method.",
+            title:
+                "Cash in of ₱${amount.toStringAsFixed(2)} initiated via $method.",
             timeOrDate: DateFormat('MMM dd').format(createdAt),
-            isRead: ciRow != null ? (ciRow['read'] ?? false) : false,
+            isRead: ciPendingRow != null
+                ? (ciPendingRow['read'] ?? false)
+                : false,
             sortDate: createdAt,
             payload: {
               'type': 'cash_in',
@@ -392,9 +406,49 @@ class NotificationProvider extends ChangeNotifier {
               'amount': amount,
               'method': method,
               'transaction_number': txCode,
+              'status': 'pending',
             },
           ),
         );
+
+        // --- Notification 2: Completed/Success (NEW) ---
+        if (status == 'completed' || status == 'success' || status == 'paid') {
+          final ciCompleteRow = notifData
+              .where(
+                (n) =>
+                    n['type'] == 'wallet' &&
+                    n['payload'] != null &&
+                    n['payload']['transaction_id'] == id &&
+                    (n['payload']['status'] == 'completed' ||
+                        n['payload']['status'] == null),
+                // Note: 'status' == null check handles legacy notifications created before this change
+              )
+              .firstOrNull;
+
+          generatedList.add(
+            NotifItem(
+              id: ciCompleteRow != null
+                  ? ciCompleteRow['id']
+                  : 'virtual_ci_complete_$id',
+              virtualId: 'ci_complete_$id',
+              variant: 'wallet',
+              title: "₱${amount.toStringAsFixed(2)} credited via $method.",
+              timeOrDate: DateFormat('MMM dd').format(updatedAt ?? createdAt),
+              isRead: ciCompleteRow != null
+                  ? (ciCompleteRow['read'] ?? false)
+                  : false,
+              sortDate: updatedAt ?? createdAt,
+              payload: {
+                'type': 'cash_in',
+                'transaction_id': id,
+                'amount': amount,
+                'method': method,
+                'transaction_number': txCode,
+                'status': 'completed',
+              },
+            ),
+          );
+        }
       }
 
       _notifications = [...generatedList, ..._staticItems];
@@ -441,10 +495,24 @@ class NotificationProvider extends ChangeNotifier {
         } else if (item.virtualId.startsWith('ci_') ||
             item.virtualId.startsWith('red_')) {
           type = 'wallet';
+
+          String cleanId = item.virtualId;
+
+          if (cleanId.startsWith('ci_pending_')) {
+            cleanId = cleanId.replaceAll('ci_pending_', '');
+            payload['status'] = 'pending';
+          } else if (cleanId.startsWith('ci_complete_')) {
+            cleanId = cleanId.replaceAll('ci_complete_', '');
+            payload['status'] = 'completed';
+          } else if (cleanId.startsWith('ci_')) {
+            // Fallback for any legacy IDs
+            cleanId = cleanId.replaceAll('ci_', '');
+            payload['status'] = 'completed';
+          } else if (cleanId.startsWith('red_')) {
+            cleanId = cleanId.replaceAll('red_', '');
+          }
+
           if (!payload.containsKey('transaction_id')) {
-            String cleanId = item.virtualId
-                .replaceAll('ci_', '')
-                .replaceAll('red_', '');
             payload['transaction_id'] = cleanId;
           }
         } else {
@@ -452,6 +520,213 @@ class NotificationProvider extends ChangeNotifier {
               ? 'completed'
               : 'ongoing';
           payload = {'trip_id': item.tripId, 'status': status};
+        }
+
+        await _supabase.from('notifications').insert({
+          'recipient_profile_id': profileId,
+          'type': type,
+          'title': item.title,
+          'message': item.title,
+          'payload': payload,
+          'read': true,
+          'created_at': item.sortDate.toIso8601String(),
+        });
+      } else {
+        await _supabase
+            .from('notifications')
+            .update({'read': true})
+            .eq('id', notifId);
+      }
+    } catch (e) {
+      debugPrint("DB Sync Error: $e");
+    }
+  }
+
+  Future<void> markAllAsRead(List<NotifItem> targets) async {
+    for (var t in targets) {
+      if (!t.isRead) await markAsRead(t.id);
+    }
+  }
+}
+
+class NotificationDriverProvider extends ChangeNotifier {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  List<NotifItem> _notifications = [];
+
+  List<NotifItem> get notifications {
+    // Sort by Date Descending
+    _notifications.sort((a, b) => b.sortDate.compareTo(a.sortDate));
+    return _notifications;
+  }
+
+  Future<void> fetchNotifications() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    if (_notifications.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      // 1. Get Profile ID
+      final profileRes = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+      final profileId = profileRes['id'];
+
+      // 2. Get Driver ID
+      final driverRes = await _supabase
+          .from('drivers')
+          .select('id, vehicle_plate')
+          .eq('profile_id', profileId)
+          .maybeSingle();
+      
+      // If user is not a driver, stop here
+      if (driverRes == null) {
+        _notifications = [];
+        return;
+      }
+      
+      final String driverId = driverRes['id'];
+      final String plate = driverRes['vehicle_plate'] ?? 'Vehicle';
+
+      // ---------------------------------------------------------
+      // A. FETCH RAW DATA
+      // ---------------------------------------------------------
+
+      // 1. Trips (Where driver_id matches the current user)
+      final tripsRes = await _supabase
+          .from('trips')
+          .select('id, started_at, ended_at, status, passengers_count')
+          .eq('driver_id', driverId)
+          .order('started_at', ascending: false)
+          .limit(200);
+      final List<dynamic> tripsData = tripsRes as List<dynamic>;
+
+      // 2. Read Statuses (from notifications table)
+      final notifRes = await _supabase
+          .from('notifications')
+          .select('id, read, payload, type')
+          .eq('recipient_profile_id', profileId)
+          .eq('type', 'trip') // Only trips for now
+          .limit(500);
+      final List<Map<String, dynamic>> notifData =
+          List<Map<String, dynamic>>.from(notifRes as List);
+
+      final List<NotifItem> generatedList = [];
+
+      // ---------------------------------------------------------
+      // B. PROCESS TRIPS
+      // ---------------------------------------------------------
+      for (var trip in tripsData) {
+        final String tripId = trip['id'];
+        final String status = trip['status'] ?? 'ongoing';
+        final int passengerCount = trip['passengers_count'] ?? 0;
+        final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
+
+        // --- Trip Start Notification ---
+        final startRow = notifData
+            .where(
+              (n) =>
+                  n['payload'] != null &&
+                  n['payload']['trip_id'] == tripId &&
+                  n['payload']['status'] == 'ongoing',
+            )
+            .firstOrNull;
+
+        generatedList.add(
+          NotifItem(
+            id: startRow != null ? startRow['id'] : 'virtual_start_$tripId',
+            virtualId: 'start_$tripId',
+            tripId: tripId,
+            variant: 'trips',
+            title: "Trip Started: $plate is now active on route.",
+            timeOrDate: DateFormat('hh:mm a').format(startedAt),
+            isRead: startRow != null ? (startRow['read'] ?? false) : false,
+            sortDate: startedAt,
+            payload: {
+              'status': 'ongoing',
+              'date_str': DateFormat('MMM dd, yyyy').format(startedAt),
+              'time_str': DateFormat('hh:mm a').format(startedAt),
+            },
+          ),
+        );
+
+        // --- Trip End Notification ---
+        if (status == 'completed' && trip['ended_at'] != null) {
+          final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
+          final endRow = notifData
+              .where(
+                (n) =>
+                    n['payload'] != null &&
+                    n['payload']['trip_id'] == tripId &&
+                    n['payload']['status'] == 'completed',
+              )
+              .firstOrNull;
+
+          generatedList.add(
+            NotifItem(
+              id: endRow != null ? endRow['id'] : 'virtual_end_$tripId',
+              virtualId: 'end_$tripId',
+              tripId: tripId,
+              variant: 'trips',
+              title: "Trip Ended. Total passengers served: $passengerCount",
+              timeOrDate: DateFormat('hh:mm a').format(endedAt),
+              isRead: endRow != null ? (endRow['read'] ?? false) : false,
+              sortDate: endedAt,
+              payload: {'status': 'completed'},
+            ),
+          );
+        }
+      }
+
+      _notifications = generatedList;
+    } catch (e) {
+      debugPrint('Error fetching driver notifications: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> markAsRead(String notifId) async {
+    final index = _notifications.indexWhere((n) => n.id == notifId);
+    if (index == -1) return;
+
+    final item = _notifications[index];
+    if (item.isRead) return;
+
+    _notifications[index].isRead = true;
+    notifyListeners();
+
+    if (item.isLocal) return;
+
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      if (notifId.startsWith('virtual_')) {
+        final profileRes = await _supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+        final profileId = profileRes['id'];
+
+        String type = 'trip';
+        Map<String, dynamic> payload = item.payload ?? {};
+
+        // Populate status based on virtual ID for consistency with DB
+        if (item.virtualId.startsWith('start_')) {
+          payload = {'trip_id': item.tripId, 'status': 'ongoing'};
+        } else if (item.virtualId.startsWith('end_')) {
+          payload = {'trip_id': item.tripId, 'status': 'completed'};
         }
 
         await _supabase.from('notifications').insert({

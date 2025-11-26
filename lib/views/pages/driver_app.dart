@@ -4,11 +4,12 @@ import '../widgets/role_navbar_wrapper.dart';
 import 'home_driver.dart';
 import 'activity_driver.dart';
 import 'profile.dart';
-import 'notification_commuter.dart';
+import 'notification_driver.dart'; 
 import 'feedback_driver.dart';
 
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import '../services/driver_notifications.dart';
 
 import 'wallet_history_driver.dart';
 import 'remit_driver.dart';
@@ -28,8 +29,11 @@ class DriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DriverWalletProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DriverWalletProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationDriverProvider()),
+      ],
       child: Navigator(
         key: navigatorKey,
         initialRoute: '/',
@@ -47,7 +51,8 @@ class DriverApp extends StatelessWidget {
           homePage: DriverDashboardNav(),
           activityPage: DriverActivityPage(),
           feedbackPage: DriverFeedbackPage(),
-          notificationsPage: NotificationPage(),
+          notificationsPage:
+              NotificationDriverPage(),
           profilePage: ProfilePage(),
         );
         break;
@@ -95,7 +100,8 @@ class DriverApp extends StatelessWidget {
           homePage: DriverDashboardNav(),
           activityPage: DriverActivityPage(),
           feedbackPage: DriverFeedbackPage(),
-          notificationsPage: NotificationPage(),
+          notificationsPage:
+              NotificationDriverPage(),
           profilePage: ProfilePage(),
         );
         break;
