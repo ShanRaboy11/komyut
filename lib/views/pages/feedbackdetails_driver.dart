@@ -11,7 +11,8 @@ class ReportDetailsPage extends StatelessWidget {
   final String date;
   final String description;
   final List<String> tags;
-  final String imagePath;
+  final String? imagePath;
+  final String? attachmentId;
 
   const ReportDetailsPage({
     super.key,
@@ -22,7 +23,8 @@ class ReportDetailsPage extends StatelessWidget {
     required this.date,
     required this.description,
     required this.tags,
-    required this.imagePath,
+    this.imagePath,
+    this.attachmentId,
   });
 
   Color _getPriorityColor(String priority) {
@@ -194,14 +196,35 @@ class ReportDetailsPage extends StatelessWidget {
             const SizedBox(height: 10),
 
             // Image Attachment
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                imagePath,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            if (imagePath != null && imagePath!.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  imagePath!,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
+            ] else ...[
+              Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.image_not_supported, size: 36, color: Colors.grey[600]),
+                      const SizedBox(height: 8),
+                      Text('No attachment', style: GoogleFonts.manrope(color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

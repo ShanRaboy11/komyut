@@ -64,7 +64,7 @@ class ProfileCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "$role • $id",
+                role,
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   color: Colors.black54,

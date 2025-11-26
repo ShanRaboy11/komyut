@@ -220,7 +220,7 @@ class _AdminReportsPage extends State<AdminReportsPage> {
                               date: r.date,
                               description: r.description,
                               tags: r.tags,
-                              imagePath: "assets/images/sample bottle.png",
+                              attachmentId: null,
                             ),
                           ),
                         );
@@ -274,6 +274,7 @@ class ReportDetailsPage extends StatelessWidget {
   final String? description;
   final List<String>? tags;
   final String? imagePath;
+  final String? attachmentId;
 
   const ReportDetailsPage({
     super.key,
@@ -285,6 +286,7 @@ class ReportDetailsPage extends StatelessWidget {
     this.description,
     this.tags,
     this.imagePath,
+    this.attachmentId,
   });
 
   @override

@@ -197,7 +197,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                               date: r.date,
                               description: r.description,
                               tags: r.tags,
-                              imagePath: "assets/images/sample bottle.png",
+                              attachmentId: null,
                             ),
                           ),
                         );

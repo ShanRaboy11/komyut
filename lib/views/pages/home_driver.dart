@@ -17,7 +17,7 @@ import '../providers/driver_dashboard.dart';
 
 import 'qr_generate.dart';
 import 'activity_driver.dart';
-import 'report_driver.dart';
+import 'feedback_driver.dart';
 
 class DriverDashboardNav extends StatelessWidget {
   const DriverDashboardNav({super.key});
@@ -1220,7 +1220,7 @@ class _DriverDashboardState extends State<DriverDashboard>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ReportPage(),
+                  builder: (context) => const DriverFeedbackPage(),
                 ),
               );
             },
