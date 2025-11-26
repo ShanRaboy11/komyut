@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+ 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,7 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
   ];
 
   int activePriority = 1;
+  int activeStatusTab = 0; // 0 = Pending, 1 = Closed
 
   ReportSeverity _getSeverityFromValue(int value) {
     switch (value) {
@@ -43,6 +45,10 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<OperatorReportProvider>();
       provider.fetchReports(severity: _getSeverityFromValue(activePriority));
+      // if we started on Closed (not default) we'd fetch closed here
+      if (activeStatusTab == 1) {
+        provider.fetchReports(status: ReportStatus.resolved, severity: _getSeverityFromValue(activePriority));
+      }
     });
   }
 
@@ -59,17 +65,45 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header Row: Title + Sort Dropdown ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              
+               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Pushes items to edges
+                crossAxisAlignment: CrossAxisAlignment.center,     // Vertically centers items
                 children: [
-                  Text(
-                    "Reports",
-                    style: GoogleFonts.manrope(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  Expanded(
+                    child: Text(
+                      "Reports",
+                      style: GoogleFonts.manrope(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
+                  ),
+                  
+                  ToggleButtons(
+                    isSelected: [activeStatusTab == 0, activeStatusTab == 1],
+                    onPressed: (index) {
+                      setState(() {
+                        activeStatusTab = index;
+                      });
+                      if (index == 0) {
+                        context.read<OperatorReportProvider>().fetchReports(severity: _getSeverityFromValue(activePriority));
+                      } else {
+                        // Use 'closed' as the resolved/closed server-side status
+                            context.read<OperatorReportProvider>().fetchReports(status: ReportStatus.resolved, severity: _getSeverityFromValue(activePriority));
+                      }
+                    },
+                    borderColor: const Color(0xFF7A3DB8),
+                    selectedBorderColor: const Color(0xFF7A3DB8),
+                    fillColor: const Color(0xFF7A3DB8),
+                    selectedColor: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    constraints: const BoxConstraints(minHeight: 30, minWidth: 80),
+                    children: [
+                      Text('Pending', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('Resolved', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                    ],
                   ),
                 ],
               ),
@@ -95,6 +129,10 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+
+
               const SizedBox(height: 16),
 
               // --- Reports List ---
@@ -107,7 +145,7 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                     }
 
                     // Get filtered reports based on active priority
-                    final filteredReports = provider.reports
+                    var filteredReports = provider.reports
                         .where((operatorReport) {
                           final severity = operatorReport.report.severity;
                           return (severity == ReportSeverity.low && activePriority == 1) ||
@@ -115,6 +153,16 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                                  (severity == ReportSeverity.high && activePriority == 3);
                         })
                         .toList();
+
+                    // Apply status tab filtering: Pending => open or inReview; Closed => closed
+                    if (activeStatusTab == 0) {
+                      filteredReports = filteredReports.where((r) {
+                        final s = r.report.status;
+                        return s == ReportStatus.open || s == ReportStatus.inReview;
+                      }).toList();
+                    } else if (activeStatusTab == 1) {
+                      filteredReports = filteredReports.where((r) => r.report.status == ReportStatus.resolved).toList();
+                    }
 
                     // Show empty state if no reports
                     if (filteredReports.isEmpty) {
@@ -158,28 +206,33 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                           description: report.description,
                           tags: tags,
                           showPriority: false,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReportDetailsPage(
-                                  name: reporter?.fullName ?? 'Unknown Reporter',
-                                  role: reporter?.role.toUpperCase() ?? 'COMMUTER',
-                                  id: report.id ?? '123456789',
-                                  priority: report.severity.displayName,
-                                  date: formattedDate,
-                                  description: report.description,
-                                  tags: tags,
-                                  attachmentId: operatorReport.attachment?.id,
-                                  initialAttachmentUrl: operatorReport.attachment?.url,
-                                  driverName: driver?.fullName,
-                                  vehiclePlate: driver?.driverDetails?.vehiclePlate,
-                                  routeCode: driver?.driverDetails?.routeCode,
-                                  status: report.status.displayName,
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReportDetailsPage(
+                                    name: reporter?.fullName ?? 'Unknown Reporter',
+                                    role: reporter?.role.toUpperCase() ?? 'COMMUTER',
+                                    id: report.id ?? '123456789',
+                                    priority: report.severity.displayName,
+                                    date: formattedDate,
+                                    description: report.description,
+                                    tags: tags,
+                                    attachmentId: operatorReport.attachment?.id,
+                                    initialAttachmentUrl: operatorReport.attachment?.url,
+                                    driverName: driver?.fullName,
+                                    vehiclePlate: driver?.driverDetails?.vehiclePlate,
+                                    routeCode: driver?.driverDetails?.routeCode,
+                                    status: report.status.displayName,
+                                    onResolved: () async {
+                                      try {
+                                        await context.read<OperatorReportProvider>().refresh();
+                                      } catch (_) {}
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
                         );
                       },
                     );

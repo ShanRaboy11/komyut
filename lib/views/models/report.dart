@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Report {
   final String? id;
   final String? reporterProfileId;
@@ -12,6 +14,11 @@ class Report {
   final String? resolutionNotes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  // Mutable helper fields populated by services when performing joined selects
+  // (reporter name and resolved attachment URL). These are intentionally
+  // non-final so service layers can assign them after constructing the model.
+  String? reporterName;
+  String? attachmentUrl;
 
   Report({
     this.id,
@@ -293,4 +300,19 @@ enum ReportStatus {
         return ReportStatus.open;
     }
   }
+
+    Color get color {
+      switch (this) {
+        case ReportStatus.open:
+          return Colors.blue;
+        case ReportStatus.inReview:
+          return Colors.orange;
+        case ReportStatus.resolved:
+          return Colors.green;
+        case ReportStatus.dismissed:
+          return Colors.grey;
+        case ReportStatus.closed:
+          return Colors.grey;
+      }
+    }
 }

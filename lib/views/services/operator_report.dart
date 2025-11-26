@@ -93,7 +93,7 @@ class OperatorReportService {
         return false;
       }).toList();
 
-      // Apply optional severity/status filters on the client side (workaround for postgrest builder differences)
+      // Apply optional severity/status filters on the client side
       if (filterBySeverity != null) {
         filteredReports = filteredReports.where((r) => (r['severity'] as String?) == filterBySeverity.value).toList();
       }
@@ -230,22 +230,35 @@ class OperatorReportService {
   }
 
   /// Update report status (operator can update status)
+  /// UPDATED: This now correctly sets the status to whatever is passed (e.g., Resolved)
   Future<OperatorReport> updateReportStatus(
     String reportId,
     ReportStatus newStatus, {
     String? resolutionNotes,
   }) async {
     try {
+      // Create the update payload
       final updateData = {
-        'status': newStatus.value,
+        'status': newStatus.value, // Directly use the value passed (e.g. 'resolved')
         if (resolutionNotes != null) 'resolution_notes': resolutionNotes,
+        // Optional: Update 'updated_at' to current time if your DB doesn't do it automatically
+        'updated_at': DateTime.now().toIso8601String(), 
       };
 
-      await _supabase
+      // Perform the update and ensure PostgREST returned a row. If RLS blocks
+      // the update this will return null and we can surface a helpful error.
+      final updateResponse = await _supabase
           .from('reports')
           .update(updateData)
-          .eq('id', reportId);
+          .eq('id', reportId)
+          .select()
+          .maybeSingle();
 
+      if (updateResponse == null) {
+        throw Exception('Failed to update report (no rows returned). Possible RLS/permission issue.');
+      }
+
+      // Re-fetch full report with relations to return consistent OperatorReport
       final updatedReport = await getReportById(reportId);
       if (updatedReport == null) {
         throw Exception('Report not found after update');
