@@ -6,7 +6,8 @@ import '../widgets/notification.dart';
 
 import '../services/driver_notifications.dart';
 import '../models/notification.dart';
-import 'tripdetails_driver.dart'; // UPDATED IMPORT
+import 'tripdetails_driver.dart';
+import 'wallet_driver.dart';
 
 class NotificationDriverPage extends StatefulWidget {
   const NotificationDriverPage({super.key});
@@ -23,20 +24,11 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   @override
   void initState() {
     super.initState();
-    debugPrint("🚀 NotificationDriverPage: initState called");
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint("🚀 NotificationDriverPage: fetching notifications...");
-      try {
-        Provider.of<NotificationDriverProvider>(
-          context,
-          listen: false,
-        ).fetchNotifications();
-      } catch (e, stackTrace) {
-        debugPrint(
-          "❌ NotificationDriverPage: Error calling fetchNotifications: $e",
-        );
-        debugPrint("❌ Stack trace: $stackTrace");
-      }
+      Provider.of<NotificationDriverProvider>(
+        context,
+        listen: false,
+      ).fetchNotifications();
     });
   }
 
@@ -59,8 +51,6 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   }
 
   void _onTapNotif(NotifItem item) async {
-    debugPrint("NotificationDriverPage: Tapped notification: ${item.id}");
-
     // Mark as read
     if (!item.isRead) {
       Provider.of<NotificationDriverProvider>(
@@ -73,18 +63,14 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
 
     // --- TRIPS ---
     if (item.variant == 'trips') {
-      // Extract details for the specific trip page
       final String tripId = item.tripId;
       final String status = payload['status'] ?? 'ongoing';
-
-      // Format date/time from the sortDate if missing in payload
       final String dateStr =
           payload['date_str'] ??
           DateFormat('MMM dd, yyyy').format(item.sortDate);
       final String timeStr =
           payload['time_str'] ?? DateFormat('hh:mm a').format(item.sortDate);
 
-      // Navigate to DriverTripDetailsPage
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -92,18 +78,21 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
             tripId: tripId,
             date: dateStr,
             time: timeStr,
-            // These might be placeholders until the details page fetches real data
             from: "Loading...",
             to: "...",
-            tripCode: "Trip #$tripId", // Or generate a code if you have one
+            tripCode: "Trip #$tripId",
             status: status,
           ),
         ),
       );
     }
-    // --- WALLET & OTHERS ---
+    // --- WALLET ---
     else if (item.variant == 'wallet') {
-      // Future wallet navigation logic
+      // UPDATED: Redirect directly to the Driver Wallet Page
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DriverWalletPage()),
+      );
     }
   }
 
@@ -205,17 +194,7 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
                   Expanded(
                     child: provider.isLoading && provider.notifications.isEmpty
                         ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(color: primary1),
-                                const SizedBox(height: 16),
-                                Text(
-                                  "Loading notifications...",
-                                  style: GoogleFonts.nunito(color: Colors.grey),
-                                ),
-                              ],
-                            ),
+                            child: CircularProgressIndicator(color: primary1),
                           )
                         : RefreshIndicator(
                             onRefresh: () => provider.fetchNotifications(),
