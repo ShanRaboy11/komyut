@@ -539,7 +539,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                                     _driverData?['plateNumber'] ?? 'ABC-1234',
                                     Icons.directions_bus_rounded,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 10),
                                   _buildInfoChip(
                                     _driverData?['routeNumber'] ?? 'Route 101',
                                     Icons.route_rounded,
@@ -675,7 +675,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
   Widget _buildInfoChip(String text, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Color(0xFF8E4CB6).withAlpha(51),
         borderRadius: BorderRadius.circular(20),
