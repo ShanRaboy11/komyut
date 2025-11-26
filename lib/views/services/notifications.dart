@@ -67,31 +67,36 @@ class NotificationProvider extends ChangeNotifier {
           .limit(1000);
       final List<dynamic> fareData = transactionsRes as List<dynamic>;
 
-      // 3. Rewards (Incoming Tokens - Positive Change)
+      // 3. Rewards & Redemptions
       List<dynamic> rewardsData = [];
-      // 4. Redemptions (Outgoing Tokens - Negative Change)
       List<dynamic> redemptionData = [];
 
       if (commuterId != null) {
-        // Fetch Rewards
+        // Fetch Rewards (Incoming)
         final rewardsRes = await _supabase
             .from('points_transactions')
             .select('id, change, created_at, reason')
             .eq('commuter_id', commuterId)
-            .gt('change', 0) // Positive = Reward
+            .gt('change', 0)
             .order('created_at', ascending: false)
             .limit(500);
         rewardsData = rewardsRes as List<dynamic>;
 
-        // Fetch Redemptions
+        // Fetch Redemptions (Outgoing)
         try {
           final redemptionRes = await _supabase
               .from('points_transactions')
-              .select(
-                'id, change, created_at, reason',
-              ) // Assuming status might not exist here, we handle it
+              .select('''
+                id,
+                change,
+                created_at,
+                related_transaction_id,
+                transactions!related_transaction_id (
+                  transaction_number
+                )
+              ''')
               .eq('commuter_id', commuterId)
-              .lt('change', 0) // Negative = Redemption
+              .lt('change', 0)
               .order('created_at', ascending: false)
               .limit(500);
           redemptionData = redemptionRes as List<dynamic>;
@@ -100,13 +105,13 @@ class NotificationProvider extends ChangeNotifier {
         }
       }
 
-      // 5. Cash In (Incoming Wallet)
+      // 4. Cash In (Incoming Wallet)
       List<dynamic> cashInData = [];
       try {
         final cashInRes = await _supabase
             .from('transactions')
             .select(
-              'id, created_at, amount, payment_methods(name), transaction_number',
+              'id, created_at, amount, payment_methods(name), transaction_number, status',
             )
             .eq('initiated_by_profile_id', profileId)
             .eq('type', 'cash_in')
@@ -117,7 +122,7 @@ class NotificationProvider extends ChangeNotifier {
         debugPrint("Error fetching cash_in: $e");
       }
 
-      // 6. Drivers
+      // 5. Drivers
       final driverIds = tripsData
           .map((t) => t['driver_id'])
           .where((id) => id != null)
@@ -134,7 +139,7 @@ class NotificationProvider extends ChangeNotifier {
         }
       }
 
-      // 7. Read Statuses
+      // 6. Read Statuses
       final notifRes = await _supabase
           .from('notifications')
           .select('id, read, payload, type')
@@ -266,7 +271,7 @@ class NotificationProvider extends ChangeNotifier {
       });
 
       // ---------------------------------------------------------
-      // D. PROCESS REWARDS (EARNED)
+      // D. PROCESS REWARDS
       // ---------------------------------------------------------
       for (var reward in rewardsData) {
         final String rewardId = reward['id'];
@@ -301,16 +306,24 @@ class NotificationProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // E. PROCESS REDEMPTIONS (SPENT)
+      // E. PROCESS REDEMPTIONS (Real DB)
       // ---------------------------------------------------------
       for (var red in redemptionData) {
         final String redId = red['id'];
-        final double amount = (red['change'] as num)
-            .toDouble()
-            .abs(); // make positive for display
+        final double amount = (red['change'] as num).toDouble().abs();
         final DateTime createdAt = DateTime.parse(red['created_at']).toLocal();
 
-        // Check if user read this
+        // Get transaction_number from the joined transactions table
+        String txCode = redId; // fallback to points_transaction id
+
+        if (red['transactions'] != null) {
+          final transactionData = red['transactions'];
+          if (transactionData is Map<String, dynamic> &&
+              transactionData['transaction_number'] != null) {
+            txCode = transactionData['transaction_number'];
+          }
+        }
+
         final redRow = notifData
             .where(
               (n) =>
@@ -324,7 +337,7 @@ class NotificationProvider extends ChangeNotifier {
           NotifItem(
             id: redRow != null ? redRow['id'] : 'virtual_red_$redId',
             virtualId: 'red_$redId',
-            variant: 'wallet', // Shows in Wallet tab
+            variant: 'wallet',
             title: "You redeemed $amount tokens.",
             timeOrDate: DateFormat('MMM dd').format(createdAt),
             isRead: redRow != null ? (redRow['read'] ?? false) : false,
@@ -333,18 +346,21 @@ class NotificationProvider extends ChangeNotifier {
               'type': 'redemption',
               'transaction_id': redId,
               'amount': amount,
+              'transaction_number': txCode,
             },
           ),
         );
       }
 
       // ---------------------------------------------------------
-      // F. PROCESS CASH IN (REAL BACKEND)
+      // F. PROCESS CASH IN (Real DB)
       // ---------------------------------------------------------
       for (var ci in cashInData) {
         final String id = ci['id'];
         final double amount = (ci['amount'] as num).toDouble().abs();
         final DateTime createdAt = DateTime.parse(ci['created_at']).toLocal();
+
+        final String txCode = ci['transaction_number'] ?? id;
 
         String method = "Counter";
         if (ci['payment_methods'] != null &&
@@ -375,6 +391,7 @@ class NotificationProvider extends ChangeNotifier {
               'transaction_id': id,
               'amount': amount,
               'method': method,
+              'transaction_number': txCode,
             },
           ),
         );
@@ -423,10 +440,8 @@ class NotificationProvider extends ChangeNotifier {
           type = 'wallet';
         } else if (item.virtualId.startsWith('ci_') ||
             item.virtualId.startsWith('red_')) {
-          // Both Cash In and Redemption go to Wallet type
           type = 'wallet';
           if (!payload.containsKey('transaction_id')) {
-            // Extract ID if missing
             String cleanId = item.virtualId
                 .replaceAll('ci_', '')
                 .replaceAll('red_', '');

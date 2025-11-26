@@ -47,7 +47,7 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
       final supabase = Supabase.instance.client;
       Map<String, dynamic>? res;
 
-      // Fetch all columns including 'status'
+      // Fetch all columns
       if (widget.type == 'cash_in') {
         res = await supabase
             .from('transactions')
@@ -55,11 +55,28 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
             .eq('id', widget.id)
             .maybeSingle();
       } else if (widget.type == 'redemption') {
+        // For redemptions, fetch from points_transactions with JOIN to transactions table
         res = await supabase
             .from('points_transactions')
-            .select()
+            .select('''
+              id,
+              change,
+              created_at,
+              related_transaction_id,
+              transactions!related_transaction_id (
+                transaction_number,
+                status
+              )
+            ''')
             .eq('id', widget.id)
             .maybeSingle();
+
+        // Flatten the nested transaction data for easier access
+        if (res != null && res['transactions'] != null) {
+          final transData = res['transactions'] as Map<String, dynamic>;
+          res['transaction_number'] = transData['transaction_number'];
+          res['status'] = transData['status'] ?? 'completed';
+        }
       } else {
         throw "Unknown transaction type: ${widget.type}";
       }
@@ -197,8 +214,10 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
     final timeFormatted = DateFormat('HH:mm').format(dt);
 
     String title = isCashIn ? 'Cash In' : 'Token Redemption';
+
+    // --- FETCH ACTUAL TRANSACTION CODE ---
     String ref =
-        _data!['transaction_number'] ??
+        _data!['transaction_number']?.toString() ??
         _data!['id']?.toString().toUpperCase() ??
         '---';
 
@@ -207,7 +226,6 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
     if (isCashIn) {
       status = _data!['status']?.toString() ?? 'pending';
     } else {
-      // Redemptions are usually instant or don't have a status col in points_transactions
       status = _data!['status']?.toString() ?? 'completed';
     }
 
@@ -221,19 +239,13 @@ class _TransactionReceiptPageState extends State<TransactionReceiptPage> {
         method = _data!['method_name'];
       }
     } else {
-      // For redemption, the "Source" is Wallet Balance
       method = 'Wallet Balance';
     }
 
     // --- FEE LOGIC (STRICT) ---
-    // Start with 0.0
     double transactionFee = 0.00;
-
-    // Only apply fee if it is Cash In
     if (isCashIn) {
-      // Default fee is 10
       transactionFee = 10.00;
-      // If "counter", fee is 5
       if (method.toLowerCase().contains('counter')) {
         transactionFee = 5.00;
       }
