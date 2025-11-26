@@ -65,9 +65,8 @@ class NotificationDriverProvider extends ChangeNotifier {
           .limit(200);
       final List<dynamic> tripsData = tripsRes as List<dynamic>;
 
-      // 2. Transactions (Wallet: Fare Payments, Remittances, Cash Outs)
-      // Note: Fare payments are 'incoming' (to driver's wallet), others are outgoing/incoming depending on logic
-      // Usually driver wallet owns the transaction.
+      // 2. Transactions (Wallet) - Based on DriverDashboardService logic
+      List<dynamic> transactionsData = [];
 
       // First, get Wallet ID for this profile
       final walletRes = await _supabase
@@ -76,18 +75,26 @@ class NotificationDriverProvider extends ChangeNotifier {
           .eq('owner_profile_id', profileId)
           .maybeSingle();
 
-      List<dynamic> transactionsData = [];
       if (walletRes != null) {
         final walletId = walletRes['id'];
+
+        // Fetch transactions matching the wallet ID and specific types
         final txRes = await _supabase
             .from('transactions')
             .select(
               'id, created_at, type, amount, status, transaction_number, related_trip_id',
             )
             .eq('wallet_id', walletId)
-            .inFilter('type', ['fare_payment', 'remittance', 'cash_out'])
+            .inFilter('type', [
+              'fare_payment',
+              'operator_payout',
+              'driver_payout',
+              'remittance',
+              'cash_out',
+            ])
             .order('created_at', ascending: false)
             .limit(300);
+
         transactionsData = txRes as List<dynamic>;
       }
 
@@ -118,7 +125,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         if (trip['started_at'] == null) continue;
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
-        // --- 1. Trip Start ---
+        // --- Trip Start ---
         final startRow = notifData
             .where(
               (n) =>
@@ -149,7 +156,7 @@ class NotificationDriverProvider extends ChangeNotifier {
           ),
         );
 
-        // --- 2. Trip End ---
+        // --- Trip End ---
         if (currentStatus == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
           final endRow = notifData
@@ -191,6 +198,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         final double amount = (tx['amount'] as num).toDouble().abs();
         final DateTime createdAt = DateTime.parse(tx['created_at']).toLocal();
         final String txNumber = tx['transaction_number'] ?? '---';
+        final String status = tx['status'] ?? 'completed';
 
         // Find existing notification record
         final txRow = notifData
@@ -204,21 +212,33 @@ class NotificationDriverProvider extends ChangeNotifier {
 
         String title = "Transaction processed.";
 
-        if (type == 'fare_payment') {
-          // Group fare payments? Or show individually? Usually drivers get individual pings.
-          // "Received ₱20.00 fare payment."
-          title = "Received ₱${amount.toStringAsFixed(2)} fare payment.";
-        } else if (type == 'remittance') {
-          title = "Remitted ₱${amount.toStringAsFixed(2)} to operator.";
-        } else if (type == 'cash_out') {
-          title = "Cash out of ₱${amount.toStringAsFixed(2)} processed.";
+        switch (type) {
+          case 'fare_payment':
+            title = "Received ₱${amount.toStringAsFixed(2)} fare payment.";
+            break;
+          case 'remittance':
+            title = "Remitted ₱${amount.toStringAsFixed(2)} to operator.";
+            break;
+          case 'cash_out':
+            title = "Cash out of ₱${amount.toStringAsFixed(2)} processed.";
+            break;
+          case 'operator_payout':
+            title =
+                "Operator Payout of ₱${amount.toStringAsFixed(2)} received.";
+            break;
+          case 'driver_payout':
+            title = "Payout of ₱${amount.toStringAsFixed(2)} received.";
+            break;
+          default:
+            title =
+                "${type.replaceAll('_', ' ').toUpperCase()} of ₱${amount.toStringAsFixed(2)}";
         }
 
         generatedList.add(
           NotifItem(
             id: txRow != null ? txRow['id'] : 'virtual_wallet_$txId',
             virtualId: 'wallet_$txId',
-            tripId: tx['related_trip_id'] ?? '', // Optional link
+            tripId: tx['related_trip_id'] ?? '',
             variant: 'wallet',
             title: title,
             timeOrDate: DateFormat('hh:mm a').format(createdAt),
@@ -229,8 +249,7 @@ class NotificationDriverProvider extends ChangeNotifier {
               'transaction_id': txId,
               'amount': amount,
               'transaction_number': txNumber,
-              // Pass status if relevant (e.g. pending vs completed)
-              'status': tx['status'] ?? 'completed',
+              'status': status,
             },
           ),
         );
@@ -275,7 +294,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         // Check variant to determine DB 'type'
         if (item.variant == 'wallet') {
           type = 'wallet';
-          // Clean up virtual ID for storage if needed, but payload usually has the real ID
+          // Payload already has transaction_id from the fetch loop
         } else {
           // Trip Logic
           if (item.virtualId.startsWith('start_')) {

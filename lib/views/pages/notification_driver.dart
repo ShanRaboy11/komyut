@@ -7,7 +7,7 @@ import '../widgets/notification.dart';
 import '../services/driver_notifications.dart';
 import '../models/notification.dart';
 import 'tripdetails_driver.dart';
-import 'wallet_driver.dart';
+import 'wallet_driver.dart'; // 1. IMPORT THE WALLET PAGE
 
 class NotificationDriverPage extends StatefulWidget {
   const NotificationDriverPage({super.key});
@@ -24,11 +24,18 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   @override
   void initState() {
     super.initState();
+    debugPrint("🚀 NotificationDriverPage: initState called");
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<NotificationDriverProvider>(
-        context,
-        listen: false,
-      ).fetchNotifications();
+      debugPrint("🚀 NotificationDriverPage: fetching notifications...");
+      try {
+        Provider.of<NotificationDriverProvider>(
+          context,
+          listen: false,
+        ).fetchNotifications();
+      } catch (e, stackTrace) {
+        debugPrint("❌ Error calling fetchNotifications: $e");
+        debugPrint("❌ Stack trace: $stackTrace");
+      }
     });
   }
 
@@ -51,6 +58,8 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   }
 
   void _onTapNotif(NotifItem item) async {
+    debugPrint("NotificationDriverPage: Tapped notification: ${item.id}");
+
     // Mark as read
     if (!item.isRead) {
       Provider.of<NotificationDriverProvider>(
@@ -88,7 +97,7 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
     }
     // --- WALLET ---
     else if (item.variant == 'wallet') {
-      // UPDATED: Redirect directly to the Driver Wallet Page
+      // 2. REDIRECT TO DRIVER WALLET PAGE
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const DriverWalletPage()),
@@ -275,6 +284,7 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
     );
   }
 
+  // ... (Rest of the widget methods: _buildPillTab, _sectionTitle, _buildSectionList remain unchanged)
   Widget _buildPillTab(String title, bool active, bool isSmall) {
     return Expanded(
       child: GestureDetector(
