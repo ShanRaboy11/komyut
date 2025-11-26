@@ -237,68 +237,109 @@ class OperatorDashboardService {
   }
 
   /// Get recent reports related to operator's drivers/vehicles
+  /// THIS METHOD IS NOW FIXED TO MATCH THE WORKING ONE IN OperatorReportService
   Future<List<Map<String, dynamic>>> getRecentReports({int limit = 10}) async {
     try {
-      final operatorId = await _getOperatorId();
-      if (operatorId == null) return [];
-
-      // Get all drivers for this operator
-      final drivers = await _supabase
-          .from('drivers')
-          .select('id, vehicle_plate')
-          .eq('operator_id', operatorId);
-
-      if (drivers.isEmpty) return [];
-
-      final driverIds = drivers.map((d) => d['id'] as String).toList();
-
-      // Create a map for quick vehicle plate lookup
-      final driverPlateMap = <String, String>{};
-      for (var driver in drivers) {
-        driverPlateMap[driver['id']] = driver['vehicle_plate'] ?? 'N/A';
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('❌ No authenticated user');
+        return [];
       }
 
-      // Get reports related to these drivers
-      final reports = await _supabase
+      // Get operator's profile ID
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('role', 'operator')
+          .maybeSingle();
+
+      if (profileResponse == null) {
+        debugPrint('❌ No operator profile found');
+        return [];
+      }
+
+      final profileId = profileResponse['id'] as String;
+
+      // Get operator record
+      final operatorResponse = await _supabase
+          .from('operators')
+          .select('id')
+          .eq('profile_id', profileId)
+          .maybeSingle();
+
+      if (operatorResponse == null) {
+        debugPrint('❌ No operator record found');
+        return [];
+      }
+
+      final operatorId = operatorResponse['id'] as String;
+      debugPrint('🔍 Fetching reports for operator ID: $operatorId');
+
+      // Get all driver profile IDs for this operator
+      final driversResponse = await _supabase
+          .from('drivers')
+          .select('profile_id')
+          .eq('operator_id', operatorId);
+
+      if (driversResponse.isEmpty) {
+        debugPrint('❌ No drivers found for operator');
+        return [];
+      }
+
+      final driverProfileIds = driversResponse
+          .map((d) => d['profile_id'] as String)
+          .toList();
+
+      debugPrint('🔍 Found ${driverProfileIds.length} driver profiles');
+
+      // Get reports assigned to these driver profiles
+      final reportsResponse = await _supabase
           .from('reports')
           .select('''
             id,
-            reported_entity_type,
-            reported_entity_id,
             category,
             severity,
             status,
             description,
-            created_at
+            created_at,
+            assigned_to_profile_id
           ''')
-          .inFilter('reported_entity_id', driverIds)
+          .inFilter('assigned_to_profile_id', driverProfileIds)
           .order('created_at', ascending: false)
           .limit(limit);
 
-      // Format reports with vehicle plate numbers
-      final formattedReports = reports.map((report) {
-        final entityId = report['reported_entity_id'] as String?;
-        final plate = entityId != null
-            ? (driverPlateMap[entityId] ?? 'N/A')
-            : 'N/A';
+      debugPrint('✅ Recent reports fetched: ${reportsResponse.length} reports');
 
-        return {
+      // Get driver details for the vehicle plates
+      final reports = <Map<String, dynamic>>[];
+      
+      for (var report in reportsResponse) {
+        final driverProfileId = report['assigned_to_profile_id'];
+        
+        // Get driver details
+        final driverData = await _supabase
+            .from('drivers')
+            .select('vehicle_plate')
+            .eq('profile_id', driverProfileId)
+            .maybeSingle();
+
+        reports.add({
           'id': report['id'],
           'title': _getReportTitle(report['category']),
-          'plate': plate,
+          'plate': driverData?['vehicle_plate'] ?? 'N/A',
           'status': report['status'] ?? 'open',
           'severity': report['severity'] ?? 'medium',
           'description': report['description'],
           'created_at': report['created_at'],
-        };
-      }).toList();
+          'category': report['category'],
+        });
+      }
 
-      debugPrint(
-        '✅ Recent reports fetched: ${formattedReports.length} reports',
-      );
-      return formattedReports;
+      return reports;
     } catch (e) {
       debugPrint('❌ Error fetching recent reports: $e');
+      debugPrint('❌ Stack trace: ${StackTrace.current}');
       return [];
     }
   }
@@ -391,7 +432,7 @@ class OperatorDashboardService {
       final totalDrivers = await getTotalDriversCount();
       final activeTrips = await getActiveTripsCount();
       final driverPerformance = await getDriverPerformance(limit: 5);
-      final recentReports = await getRecentReports(limit: 5);
+      final recentReports = await getRecentReports(limit: 3);
 
       debugPrint('✅ All operator dashboard data fetched successfully');
 

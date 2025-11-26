@@ -1,81 +1,40 @@
+// lib/pages/admin_reports_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../models/admin_report.dart';
+import '../providers/admin_report.dart';
 import '../widgets/feedback_card.dart';
-import 'reportdetails_admin.dart'; 
+import 'reportdetails_admin.dart';
 
 class AdminReportsPage extends StatefulWidget {
   const AdminReportsPage({super.key});
 
   @override
-  State<AdminReportsPage> createState() => _AdminReportsPage();
+  State<AdminReportsPage> createState() => _AdminReportsPageState();
 }
 
-class _AdminReportsPage extends State<AdminReportsPage> {
-  // --- Data ---
-  final List<ReportCard> reports = [
-    ReportCard(
-      name: "Aileen Grace B. Santos",
-      role: "Commuter",
-      priority: "Low",
-      date: "09/14/25",
-      description: "Passenger reported a minor delay at the jeepney stop due to traffic.",
-      tags: ["Delay", "Traffic"],
-      showPriority: false,
-    ),
-    ReportCard(
-      name: "John Erik D. Bautista",
-      role: "Commuter",
-      priority: "Medium",
-      date: "09/10/25",
-      description: "A wallet was found and turned over to the terminal personnel.",
-      tags: ["Lost Item"],
-      showPriority: false,
-    ),
-    ReportCard(
-      name: "Maricel P. Torres",
-      role: "Driver",
-      priority: "High",
-      date: "09/09/25",
-      description: "Driver was seen using the phone while driving. Needs investigation.",
-      tags: ["Driver Conduct", "Safety"],
-      showPriority: false,
-    ),
-    ReportCard(
-      name: "Rafael D. Mendoza",
-      role: "Commuter",
-      priority: "Low",
-      date: "09/05/25",
-      description: "Passenger reported an overly loud radio that caused discomfort.",
-      tags: ["Noise", "Comfort"],
-      showPriority: false,
-    ),
-    ReportCard(
-      name: "Christine Mae S. Villanueva",
-      role: "Driver",
-      priority: "Medium",
-      date: "09/03/25",
-      description: "Driver assisted a commuter with a disability boarding the jeep.",
-      tags: ["Good Conduct", "Service"],
-      showPriority: false,
-    ),
-  ];
-
+class _AdminReportsPageState extends State<AdminReportsPage> {
   // --- State & Logic ---
   final List<Map<String, dynamic>> priorityTabs = [
-    {"label": "Low", "value": 1},
-    {"label": "Medium", "value": 2},
-    {"label": "High", "value": 3},
+    {"label": "Low", "value": ReportSeverity.low},
+    {"label": "Medium", "value": ReportSeverity.medium},
+    {"label": "High", "value": ReportSeverity.high},
   ];
 
-  int activePriority = 1;
+  ReportSeverity activePriority = ReportSeverity.low;
 
-  int _priorityValue(String? priority) {
-    switch (priority?.toLowerCase()) {
-      case "low": return 1;
-      case "medium": return 2;
-      case "high": return 3;
-      default: return 0;
-    }
+  // Status tabs: 0 = Pending (open/in_review), 1 = Resolved (resolved/closed/dismissed)
+  int activeStatusTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load reports on page initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportProvider>().loadReports();
+    });
   }
 
   // Gradient for active state
@@ -85,160 +44,304 @@ class _AdminReportsPage extends State<AdminReportsPage> {
     end: Alignment.bottomRight,
   );
 
+  /// Determine if a report status is "pending" for UI purposes
+  bool _isPendingStatus(ReportStatus status) {
+    return status == ReportStatus.open || status == ReportStatus.inReview;
+  }
+
+  /// Determine if a report status is "resolved" for UI purposes
+  bool _isResolvedStatus(ReportStatus status) {
+    return status == ReportStatus.resolved ||
+        status == ReportStatus.closed ||
+        status == ReportStatus.dismissed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
-    
-    // Filter logic
-    final filteredReports = reports
-        .where((r) => _priorityValue(r.priority) == activePriority)
-        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
-        child: Column(
-          children: [
-            // --- Header Section ---
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+        child: Consumer<ReportProvider>(
+          builder: (context, reportProvider, child) {
+            // Filter logic: first by severity, then by status tab
+            final filteredReports = reportProvider.reports
+                .where((r) => r.severity == activePriority)
+                .where((r) {
+                  if (activeStatusTab == 0) {
+                    return _isPendingStatus(r.status);
+                  } else {
+                    return _isResolvedStatus(r.status);
+                  }
+                })
+                .toList();
+
+            return Column(
+              children: [
+                // --- Header Section ---
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
                   ),
-                ],
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Title and Count
-                  Row(
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Reports',
+                      // Title and Count
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Reports',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Manage feedback',
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Count Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: _kGradient,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${filteredReports.length} Items',
                               style: GoogleFonts.manrope(
-                                fontSize: 24,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Colors.white,
                               ),
                             ),
-                            Text(
-                              'Manage feedback',
-                              style: GoogleFonts.nunito(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
+                          ),
+                          // (status toggle moved below priority tabs)
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Priority Tabs
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F0FA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: priorityTabs
+                              .map(
+                                (tab) => _buildPillTab(
+                                  tab["label"] as String,
+                                  tab["value"] as ReportSeverity,
+                                  activePriority == tab["value"],
+                                  isSmall,
+                                ),
+                              )
+                              .toList(),
                         ),
                       ),
-                      // Count Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: _kGradient,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${filteredReports.length} Items',
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      const SizedBox(height: 12),
+
+                      // Status Toggle (Pending / Resolved) placed below priority pills,
+                      // right-aligned to match header layout.
+                      Row(
+                        children: [
+                          const Spacer(),
+                          ToggleButtons(
+                            isSelected: [activeStatusTab == 0, activeStatusTab == 1],
+                            onPressed: (index) {
+                              setState(() => activeStatusTab = index);
+                            },
+                            borderColor: const Color(0xFF7A3DB8),
+                            selectedBorderColor: const Color(0xFF7A3DB8),
+                            fillColor: const Color(0xFF7A3DB8),
+                            selectedColor: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            constraints: const BoxConstraints(minHeight: 30, minWidth: 78),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
+                                child: Text('Pending', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
+                                child: Text('Resolved', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Tabs
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F0FA),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: priorityTabs
-                          .map(
-                            (tab) => _buildPillTab(
-                              tab["label"],
-                              tab["value"],
-                              activePriority == tab["value"],
-                              isSmall,
+                ),
+
+                const SizedBox(height: 16),
+
+                // --- Reports List ---
+                Expanded(
+                  child: reportProvider.isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF7A3DB8),
+                          ),
+                        )
+                      : reportProvider.error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Failed to load reports',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () {
+                                  reportProvider.loadReports();
+                                },
+                                child: Text(
+                                  'Retry',
+                                  style: GoogleFonts.manrope(
+                                    color: const Color(0xFF7A3DB8),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : filteredReports.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No reports found',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () => reportProvider.loadReports(),
+                          color: const Color(0xFF7A3DB8),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
                             ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                            itemCount: filteredReports.length,
+                            itemBuilder: (context, index) {
+                              final report = filteredReports[index];
 
-            const SizedBox(height: 16),
+                              return ReportCard(
+                                name: report.reporterName ?? 'Unknown',
+                                priority: report.severity.displayName,
+                                role: report.reporterRole ?? 'Commuter',
+                                date: _formatDate(report.createdAt),
+                                description: report.description,
+                                tags: report.tags,
+                                showPriority: false,
+                                onTap: () async {
+                                  // Make this async to wait for the result
+                                  final bool? result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReportDetailsPage(
+                                        name: report.reporterName ?? 'Unknown',
+                                        role: report.reporterRole ?? 'Commuter',
+                                        reportId: report.id,
+                                        reporterId: report.reporterProfileId,
+                                        priority: report.severity.displayName,
+                                        date: _formatDate(report.createdAt),
+                                        description: report.description,
+                                        tags: report.tags,
+                                        imagePath: report.attachmentUrl ?? '',
+                                      ),
+                                    ),
+                                  );
 
-            // --- Reports List ---
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                itemCount: filteredReports.length,
-                itemBuilder: (context, index) {
-                  final r = filteredReports[index];
-
-                  return ReportCard(
-                    name: r.name,
-                    priority: r.priority,
-                    role: r.role,
-                    date: r.date,
-                    description: r.description,
-                    tags: r.tags,
-                    showPriority: false,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ReportDetailsPage(
-                            name: r.name,
-                            role: r.role ?? "Commuter",
-                            id: "123456789", // Fixed duplicate/static ID
-                            priority: r.priority,
-                            date: r.date,
-                            description: r.description,
-                            tags: r.tags,
-                            imagePath: "assets/images/sample bottle.png",
+                                  // Refresh if update happened
+                                  if (result == true && context.mounted) {
+                                    context
+                                        .read<ReportProvider>()
+                                        .loadReports();
+                                  }
+                                },
+                              );
+                            },
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
+  /// Format DateTime to MM/DD/YY
+  String _formatDate(DateTime date) {
+    return '${date.month.toString().padLeft(2, '0')}/'
+        '${date.day.toString().padLeft(2, '0')}/'
+        '${date.year.toString().substring(2)}';
+  }
+
   // --- Tab Builder ---
-  Widget _buildPillTab(String label, int value, bool isActive, bool isSmall) {
+  Widget _buildPillTab(
+    String label,
+    ReportSeverity value,
+    bool isActive,
+    bool isSmall,
+  ) {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => activePriority = value),

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+ 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:provider/provider.dart';
 import '../widgets/feedback_card.dart';
 import '../pages/reportdetails_operator.dart';
+import '../providers/operator_report.dart';
+import '../models/report.dart';
 
 class OperatorReportsPage extends StatefulWidget {
   const OperatorReportsPage({super.key});
@@ -11,65 +16,6 @@ class OperatorReportsPage extends StatefulWidget {
 }
 
 class _OperatorReportsPageState extends State<OperatorReportsPage> {
-  final List<ReportCard> reports = [
-    ReportCard(
-      name: "Aileen Grace B. Santos",
-      role: "Commuter",
-      priority: "Low",
-      date: "09/14/25",
-      description:
-          "Passenger reported a minor delay at the jeepney stop due to traffic.",
-      tags: ["Delay", "Traffic"],
-      showPriority: false,
-    ),
-
-    ReportCard(
-      name: "John Erik D. Bautista",
-      role: "Commuter",
-      priority: "Medium",
-      date: "09/10/25",
-      description:
-          "A wallet was found and turned over to the terminal personnel.",
-      tags: ["Lost Item"],
-      showPriority: false,
-    ),
-
-    ReportCard(
-      name: "Maricel P. Torres",
-      role: "Driver",
-      priority: "High",
-      date: "09/09/25",
-      description:
-          "Driver was seen using the phone while driving. Needs investigation.",
-      tags: ["Driver Conduct", "Safety"],
-      showPriority: false,
-    ),
-
-    ReportCard(
-      name: "Rafael D. Mendoza",
-      role: "Commuter",
-      priority: "Low",
-      date: "09/05/25",
-      description:
-          "Passenger reported an overly loud radio that caused discomfort.",
-      tags: ["Noise", "Comfort"],
-      showPriority: false,
-    ),
-
-    ReportCard(
-      name: "Christine Mae S. Villanueva",
-      role: "Driver",
-      priority: "Medium",
-      date: "09/03/25",
-      description:
-          "Driver assisted a commuter with a disability boarding the jeep.",
-      tags: ["Good Conduct", "Service"],
-      showPriority: false,
-    ),
-  ];
-
-  String selectedFilter = "Date";
-
   final List<Map<String, dynamic>> priorityTabs = [
     {"label": "Low", "value": 1},
     {"label": "Medium", "value": 2},
@@ -77,47 +23,87 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
   ];
 
   int activePriority = 1;
-  int _priorityValue(String? priority) {
-    switch (priority?.toLowerCase()) {
-      case "low":
-        return 1;
-      case "medium":
-        return 2;
-      case "high":
-        return 3;
+  int activeStatusTab = 0; // 0 = Pending, 1 = Closed
+
+  ReportSeverity _getSeverityFromValue(int value) {
+    switch (value) {
+      case 1:
+        return ReportSeverity.low;
+      case 2:
+        return ReportSeverity.medium;
+      case 3:
+        return ReportSeverity.high;
       default:
-        return 0; // no priority
+        return ReportSeverity.low;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch reports when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<OperatorReportProvider>();
+      provider.fetchReports(severity: _getSeverityFromValue(activePriority));
+      // if we started on Closed (not default) we'd fetch closed here
+      if (activeStatusTab == 1) {
+        provider.fetchReports(status: ReportStatus.resolved, severity: _getSeverityFromValue(activePriority));
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
-    final filteredReports = reports
-        .where((r) => _priorityValue(r.priority) == activePriority)
-        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header Row: Title + Sort Dropdown ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              
+               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Pushes items to edges
+                crossAxisAlignment: CrossAxisAlignment.center,     // Vertically centers items
                 children: [
-                  Text(
-                    "Reports",
-                    style: GoogleFonts.manrope(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  Expanded(
+                    child: Text(
+                      "Reports",
+                      style: GoogleFonts.manrope(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
+                  ),
+                  
+                  ToggleButtons(
+                    isSelected: [activeStatusTab == 0, activeStatusTab == 1],
+                    onPressed: (index) {
+                      setState(() {
+                        activeStatusTab = index;
+                      });
+                      if (index == 0) {
+                        context.read<OperatorReportProvider>().fetchReports(severity: _getSeverityFromValue(activePriority));
+                      } else {
+                        // Use 'closed' as the resolved/closed server-side status
+                            context.read<OperatorReportProvider>().fetchReports(status: ReportStatus.resolved, severity: _getSeverityFromValue(activePriority));
+                      }
+                    },
+                    borderColor: const Color(0xFF7A3DB8),
+                    selectedBorderColor: const Color(0xFF7A3DB8),
+                    fillColor: const Color(0xFF7A3DB8),
+                    selectedColor: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    constraints: const BoxConstraints(minHeight: 30, minWidth: 80),
+                    children: [
+                      Text('Pending', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('Resolved', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                    ],
                   ),
                 ],
               ),
@@ -143,38 +129,110 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+
+
               const SizedBox(height: 16),
 
               // --- Reports List ---
               Expanded(
-                child: ListView.builder(
-                  itemCount: filteredReports.length,
-                  itemBuilder: (context, index) {
-                    final r = filteredReports[index];
+                child: Consumer<OperatorReportProvider>(
+                  builder: (context, provider, child) {
+                    // Show shimmer skeleton while loading and no data yet
+                    if (provider.isLoading && provider.reports.isEmpty) {
+                      return _buildShimmerSkeleton(isSmall);
+                    }
 
-                    return ReportCard(
-                      name: r.name,
-                      priority: r.priority,
-                      role: r.role,
-                      date: r.date,
-                      description: r.description,
-                      tags: r.tags,
-                      showPriority: false,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ReportDetailsPage(
-                              name: r.name,
-                              role: r.role, // or dynamic later
-                              id: "123456789", // or dynamic later
-                              priority: r.priority,
-                              date: r.date,
-                              description: r.description,
-                              tags: r.tags,
-                              imagePath: "assets/images/sample bottle.png",
-                            ),
+                    // Get filtered reports based on active priority
+                    var filteredReports = provider.reports
+                        .where((operatorReport) {
+                          final severity = operatorReport.report.severity;
+                          return (severity == ReportSeverity.low && activePriority == 1) ||
+                                 (severity == ReportSeverity.medium && activePriority == 2) ||
+                                 (severity == ReportSeverity.high && activePriority == 3);
+                        })
+                        .toList();
+
+                    // Apply status tab filtering: Pending => open or inReview; Closed => closed
+                    if (activeStatusTab == 0) {
+                      filteredReports = filteredReports.where((r) {
+                        final s = r.report.status;
+                        return s == ReportStatus.open || s == ReportStatus.inReview;
+                      }).toList();
+                    } else if (activeStatusTab == 1) {
+                      filteredReports = filteredReports.where((r) => r.report.status == ReportStatus.resolved).toList();
+                    }
+
+                    // Show empty state if no reports
+                    if (filteredReports.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No reports found',
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            color: Colors.grey[600],
                           ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: filteredReports.length,
+                      itemBuilder: (context, index) {
+                        final operatorReport = filteredReports[index];
+                        final report = operatorReport.report;
+                        final reporter = operatorReport.reporter;
+                        final driver = operatorReport.assignedDriver;
+
+                        // Format date
+                        String formattedDate = 'Unknown';
+                        if (report.createdAt != null) {
+                          final date = report.createdAt!;
+                          formattedDate = '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+                        }
+
+                        // Build tags
+                        List<String> tags = [report.category.displayName];
+                        if (driver?.driverDetails?.vehiclePlate != null) {
+                          tags.add('Plate: ${driver!.driverDetails!.vehiclePlate}');
+                        }
+
+                        return ReportCard(
+                          name: reporter?.fullName ?? 'Unknown Reporter',
+                          priority: report.severity.displayName,
+                          role: reporter?.role.toUpperCase() ?? 'COMMUTER',
+                          date: formattedDate,
+                          description: report.description,
+                          tags: tags,
+                          showPriority: false,
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReportDetailsPage(
+                                    name: reporter?.fullName ?? 'Unknown Reporter',
+                                    role: reporter?.role.toUpperCase() ?? 'COMMUTER',
+                                    id: report.id ?? '123456789',
+                                    priority: report.severity.displayName,
+                                    date: formattedDate,
+                                    description: report.description,
+                                    tags: tags,
+                                    attachmentId: operatorReport.attachment?.id,
+                                    initialAttachmentUrl: operatorReport.attachment?.url,
+                                    driverName: driver?.fullName,
+                                    vehiclePlate: driver?.driverDetails?.vehiclePlate,
+                                    routeCode: driver?.driverDetails?.routeCode,
+                                    status: report.status.displayName,
+                                    onResolved: () async {
+                                      try {
+                                        await context.read<OperatorReportProvider>().refresh();
+                                      } catch (_) {}
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
                         );
                       },
                     );
@@ -191,7 +249,13 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
   Widget _buildPillTab(String label, int value, bool isActive, bool isSmall) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => activePriority = value),
+        onTap: () {
+          setState(() => activePriority = value);
+          // Fetch reports for the selected severity
+          context.read<OperatorReportProvider>().fetchReports(
+            severity: _getSeverityFromValue(value),
+          );
+        },
         child: Container(
           padding: EdgeInsets.symmetric(vertical: isSmall ? 10 : 12),
           decoration: BoxDecoration(
@@ -209,6 +273,116 @@ class _OperatorReportsPageState extends State<OperatorReportsPage> {
             child: Text(label),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerSkeleton(bool isSmall) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Pill tabs skeleton
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: List.generate(3, (i) {
+                return Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    height: isSmall ? 36 : 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // List skeleton
+          Expanded(
+            child: ListView.separated(
+              itemCount: 6,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // avatar placeholder
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 14,
+                              width: double.infinity,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 12,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  height: 10,
+                                  width: 60,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  height: 10,
+                                  width: 40,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

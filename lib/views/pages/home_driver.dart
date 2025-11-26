@@ -17,6 +17,7 @@ import '../providers/driver_dashboard.dart';
 
 import 'qr_generate.dart';
 import 'activity_driver.dart';
+import 'feedback_driver.dart';
 
 class DriverDashboardNav extends StatelessWidget {
   const DriverDashboardNav({super.key});
@@ -178,7 +179,7 @@ class _DriverDashboardState extends State<DriverDashboard>
     return Consumer<DriverDashboardProvider>(
       builder: (context, dashboardProvider, child) {
         if (dashboardProvider.isLoading) {
-          // Show enhanced shimmer skeletons while provider is loading
+          // Show enhanced, more detailed shimmer skeletons while provider is loading
           return Scaffold(
             body: SafeArea(
               child: SingleChildScrollView(
@@ -187,19 +188,27 @@ class _DriverDashboardState extends State<DriverDashboard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header gradient skeleton with two stat cards
-                    _buildShimmer(child: _buildHeaderSkeleton()),
+                    _buildHeaderSkeleton(),
                     const SizedBox(height: 16),
 
                     // QR Card skeleton
-                    _buildShimmer(child: _buildQrSkeleton()),
+                    _buildQrSkeleton(),
+                    const SizedBox(height: 16),
+
+                    // Quick actions (buttons) skeleton
+                    _buildQuickActionsSkeleton(),
                     const SizedBox(height: 16),
 
                     // Analytics skeleton (period buttons + chart)
-                    _buildShimmer(child: _buildAnalyticsSkeleton()),
+                    _buildAnalyticsSkeleton(),
                     const SizedBox(height: 16),
 
                     // Feedback / Reports skeleton
-                    _buildShimmer(child: _buildFeedbackSkeleton()),
+                    _buildFeedbackSkeleton(),
+                    const SizedBox(height: 16),
+
+                    // Recent trips skeleton list
+                    _buildRecentTripsSkeleton(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -905,105 +914,239 @@ class _DriverDashboardState extends State<DriverDashboard>
 
   // Detailed header skeleton (gradient header with two stat placeholders)
   Widget _buildHeaderSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(height: 18, width: 180, color: Colors.white),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: Container(height: 72, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
-              const SizedBox(width: 12),
-              Expanded(child: Container(height: 72, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
-            ],
+    return _buildShimmer(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFB945AA), Color(0xFF8E4CB6), Color(0xFF5B53C2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(height: 56, width: 56, decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 16, width: 180, color: Colors.white),
+                      const SizedBox(height: 8),
+                      Container(height: 12, width: 140, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // QR card skeleton (box with placeholder icon area and button)
   Widget _buildQrSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(height: 18, width: 120, color: Colors.grey.shade200),
-          const SizedBox(height: 12),
-          Container(height: 120, width: double.infinity, color: Colors.grey.shade200),
-          const SizedBox(height: 12),
-          Align(alignment: Alignment.center, child: Container(height: 40, width: 200, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(24)))),
-        ],
+    return _buildShimmer(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(height: 18, width: 120, color: Colors.grey.shade200),
+                const Spacer(),
+                Container(height: 12, width: 40, color: Colors.grey.shade200),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(height: 140, width: double.infinity, color: Colors.grey.shade200),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(height: 40, width: 120, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(24))),
+                const SizedBox(width: 12),
+                Container(height: 40, width: 80, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(24))),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // Analytics skeleton (period buttons + chart area)
   Widget _buildAnalyticsSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.shade50),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(height: 28, width: 60, color: Colors.grey.shade200),
-              const SizedBox(width: 8),
-              Container(height: 28, width: 60, color: Colors.grey.shade200),
-              const SizedBox(width: 8),
-              Container(height: 28, width: 60, color: Colors.grey.shade200),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(height: 160, width: double.infinity, color: Colors.grey.shade200),
-        ],
+    return _buildShimmer(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple.shade50),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(height: 28, width: 60, color: Colors.grey.shade200),
+                const SizedBox(width: 8),
+                Container(height: 28, width: 60, color: Colors.grey.shade200),
+                const SizedBox(width: 8),
+                Container(height: 28, width: 60, color: Colors.grey.shade200),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 140,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(8, (i) => Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Container(height: 40.0 + (i % 4) * 18, color: Colors.grey.shade200),
+                  ),
+                )),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // Feedback / reports skeleton
   Widget _buildFeedbackSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.shade50),
+    return _buildShimmer(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple.shade50),
+        ),
+        child: Column(
+          children: List.generate(3, (index) => Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Row(
+              children: [
+                Container(height: 56, width: 56, color: Colors.grey.shade200),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 14, width: double.infinity, color: Colors.grey.shade200),
+                      const SizedBox(height: 8),
+                      Container(height: 12, width: 120, color: Colors.grey.shade200),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(height: 36, width: 90, color: Colors.grey.shade200),
+              ],
+            ),
+          )),
+        ),
       ),
-      child: Row(
-        children: [
-          Container(height: 60, width: 60, color: Colors.grey.shade200),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(height: 16, width: 120, color: Colors.grey.shade200), const SizedBox(height: 8), Container(height: 14, width: 80, color: Colors.grey.shade200)])),
-          const SizedBox(width: 12),
-          Container(height: 36, width: 110, color: Colors.grey.shade200),
-        ],
+    );
+  }
+
+  // Quick action buttons skeleton (e.g., Start Trip, End Trip, Scan)
+  Widget _buildQuickActionsSkeleton() {
+    return _buildShimmer(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Container(height: 44, margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)))),
+            Expanded(child: Container(height: 44, margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)))),
+            Expanded(child: Container(height: 44, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Recent trips list skeleton
+  Widget _buildRecentTripsSkeleton() {
+    return _buildShimmer(
+      child: Column(
+        children: List.generate(3, (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 4)],
+            ),
+            child: Row(
+              children: [
+                Container(height: 56, width: 56, color: Colors.grey.shade200),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 14, width: double.infinity, color: Colors.grey.shade200),
+                      const SizedBox(height: 8),
+                      Container(height: 12, width: 140, color: Colors.grey.shade200),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(height: 14, width: 60, color: Colors.grey.shade200),
+                    const SizedBox(height: 8),
+                    Container(height: 12, width: 40, color: Colors.grey.shade200),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        )),
       ),
     );
   }
@@ -1073,7 +1216,14 @@ class _DriverDashboardState extends State<DriverDashboard>
           const SizedBox(height: 10),
           CustomButton(
             text: 'View Reports',
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DriverFeedbackPage(),
+                ),
+              );
+            },
             isFilled: true,
             textColor: Colors.white,
             width: double.infinity,

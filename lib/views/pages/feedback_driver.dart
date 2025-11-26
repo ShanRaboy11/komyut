@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../widgets/feedback_card.dart';
 import '../pages/feedbackdetails_driver.dart';
+import '../services/driver_report.dart';
+import '../models/report.dart';
 import 'report_driver.dart';
 
 class DriverFeedbackPage extends StatefulWidget {
@@ -12,55 +15,98 @@ class DriverFeedbackPage extends StatefulWidget {
 }
 
 class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
-  void _sortByDate() {
-    reports.sort((a, b) {
-      final da = DateTime.parse(
-        "20${a.date.substring(6)}-${a.date.substring(0, 2)}-${a.date.substring(3, 5)}",
-      );
-      final db = DateTime.parse(
-        "20${b.date.substring(6)}-${b.date.substring(0, 2)}-${b.date.substring(3, 5)}",
-      );
-      return db.compareTo(da); // latest first
+  final DriverReportService _reportService = DriverReportService();
+  List<Report> _reports = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+  String selectedFilter = "Date";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReports();
+  }
+
+  Future<void> _loadReports() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
     });
-    setState(() {});
+
+    try {
+      final reports = await _reportService.getAssignedReports();
+      setState(() {
+        _reports = reports;
+        _isLoading = false;
+      });
+      _applySorting();
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _applySorting() {
+    if (selectedFilter == "Date") {
+      _sortByDate();
+    } else if (selectedFilter == "Priority") {
+      _sortByPriority();
+    }
+  }
+
+  void _sortByDate() {
+    setState(() {
+      _reports.sort((a, b) =>
+          (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+              .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
+    });
   }
 
   void _sortByPriority() {
-    const priorityOrder = {"High": 3, "Medium": 2, "Low": 1};
+    const priorityOrder = {
+      ReportSeverity.high: 3,
+      ReportSeverity.medium: 2,
+      ReportSeverity.low: 1,
+    };
 
-    reports.sort((a, b) {
-      return priorityOrder[b.priority]!.compareTo(priorityOrder[a.priority]!);
+    setState(() {
+      _reports.sort((a, b) {
+        return priorityOrder[b.severity]!.compareTo(priorityOrder[a.severity]!);
+      });
     });
-    setState(() {});
   }
 
-  final List<ReportCard> reports = [
-    ReportCard(
-      name: "Aileen Grace B. Santos",
-      priority: "Low",
-      date: "09/14/25",
-      description:
-          "Passenger reported a minor delay at the jeepney stop due to traffic.",
-      tags: ["Delay", "Traffic"],
-    ),
-    ReportCard(
-      name: "John Erik D. Bautista",
-      priority: "Medium",
-      date: "09/10/25",
-      description:
-          "A wallet was found and turned over to the terminal personnel.",
-      tags: ["Lost Item"],
-    ),
-    ReportCard(
-      name: "Maricel P. Torres",
-      priority: "High",
-      date: "09/09/25",
-      description:
-          "Driver was seen using the phone while driving. Needs investigation.",
-      tags: ["Driver Conduct", "Safety"],
-    ),
-  ];
-  String selectedFilter = "Date";
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    return DateFormat('MM/dd/yy').format(date);
+  }
+
+  String _mapSeverityToPriority(ReportSeverity severity) {
+    switch (severity) {
+      case ReportSeverity.high:
+        return "High";
+      case ReportSeverity.medium:
+        return "Medium";
+      case ReportSeverity.low:
+        return "Low";
+    }
+  }
+
+  List<String> _generateTags(Report report) {
+    final tags = <String>[];
+    
+    // Add category as tag
+    tags.add(report.category.displayName);
+    
+    // Add status if not open
+    if (report.status != ReportStatus.open) {
+      tags.add(report.status.displayName);
+    }
+    
+    return tags;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +140,6 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
           ),
           child: IconButton(
             onPressed: () {
-              // TODO: Navigate to your Add Report page
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ReportPage()),
@@ -104,7 +149,6 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
           ),
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
@@ -157,12 +201,7 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                           if (value == null) return;
 
                           setState(() => selectedFilter = value);
-
-                          if (value == "Date") {
-                            _sortByDate();
-                          } else {
-                            _sortByPriority();
-                          }
+                          _applySorting();
                         },
                       ),
                     ),
@@ -174,37 +213,110 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
 
               // --- Reports List ---
               Expanded(
-                child: ListView.builder(
-                  itemCount: reports.length,
-                  itemBuilder: (context, index) {
-                    final r = reports[index];
-
-                    return ReportCard(
-                      name: r.name,
-                      priority: r.priority,
-                      date: r.date,
-                      description: r.description,
-                      tags: r.tags,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ReportDetailsPage(
-                              name: r.name,
-                              role: "Commuter", // or dynamic later
-                              id: "123456789", // or dynamic later
-                              priority: r.priority,
-                              date: r.date,
-                              description: r.description,
-                              tags: r.tags,
-                              imagePath: "assets/images/sample bottle.png",
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF8E4CB6),
+                        ),
+                      )
+                    : _errorMessage != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Error loading reports',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                                  child: Text(
+                                    _errorMessage!,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _loadReports,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF8E4CB6),
+                                  ),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          )
+                        : _reports.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.inbox_outlined,
+                                      size: 48,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No feedback reports yet',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: _loadReports,
+                                child: ListView.builder(
+                                  itemCount: _reports.length,
+                                  itemBuilder: (context, index) {
+                                    final r = _reports[index];
+
+                                    return ReportCard(
+                                      name: r.reporterName ?? 'Unknown Reporter',
+                                      priority: _mapSeverityToPriority(r.severity),
+                                      date: _formatDate(r.createdAt),
+                                      description: r.description,
+                                      tags: _generateTags(r),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ReportDetailsPage(
+                                              name: r.reporterName ?? 'Unknown Reporter',
+                                              role: "Commuter",
+                                              reporterId: r.reporterProfileId ?? '',
+                                              reportId: r.id ?? '',
+                                              priority: _mapSeverityToPriority(r.severity),
+                                              date: _formatDate(r.createdAt),
+                                              description: r.description,
+                                              tags: _generateTags(r),
+                                              imagePath: r.attachmentUrl ?? "assets/images/sample bottle.png",
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
               ),
             ],
           ),
