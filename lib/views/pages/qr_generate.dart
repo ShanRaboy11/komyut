@@ -61,7 +61,10 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   Future<void> _checkExistingQR() async {
     final result = await _qrService.getCurrentQRCode();
     // always capture verification status if returned
-    final isVerified = result['isVerified'] as bool? ?? result['data']?['isVerified'] as bool? ?? false;
+    final isVerified =
+        result['isVerified'] as bool? ??
+        result['data']?['isVerified'] as bool? ??
+        false;
     if (mounted) {
       setState(() {
         _isVerified = isVerified;
@@ -230,17 +233,19 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     ),
                   ),
                   child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: isTablet ? 500 : double.infinity,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(30),
-                        child: _isLoading
-                            ? _buildLoadingState()
-                            : _qrGenerated
-                            ? _buildQRDisplay()
-                            : _buildInitialState(),
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isTablet ? 500 : double.infinity,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(30),
+                          child: _isLoading
+                              ? _buildLoadingState()
+                              : _qrGenerated
+                              ? _buildQRDisplay()
+                              : _buildInitialState(),
+                        ),
                       ),
                     ),
                   ),
@@ -354,7 +359,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
         Text(
           'No QR Code Yet',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1F2937),
           ),
@@ -368,14 +373,14 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             'Generate a QR code for passengers to scan and pay their fare',
             textAlign: TextAlign.center,
             style: GoogleFonts.nunito(
-              fontSize: 16,
+              fontSize: 12,
               color: Colors.grey[600],
               height: 1.5,
             ),
           ),
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 20),
 
         ElevatedButton(
           onPressed: _isVerified ? _generateQRCode : null,
@@ -396,7 +401,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
               Text(
                 'Generate QR Code',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -421,7 +426,10 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                 Expanded(
                   child: Text(
                     'Your account must be verified by an administrator before you can generate a QR code.',
-                    style: GoogleFonts.nunito(fontSize: 14, color: Colors.orange[800]),
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      color: Colors.orange[800],
+                    ),
                   ),
                 ),
               ],
@@ -508,7 +516,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                           child: const Icon(
                             Icons.person_rounded,
                             color: Colors.white,
-                            size: 32,
+                            size: 25,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -520,7 +528,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                                 _driverData?['driverName'] ?? 'Juan Dela Cruz',
                                 style: GoogleFonts.manrope(
                                   color: Color(0xFF5B53C2),
-                                  fontSize: 18,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -681,7 +689,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             text,
             style: GoogleFonts.nunito(
               color: Color(0xFF5B53C2),
-              fontSize: 13,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),

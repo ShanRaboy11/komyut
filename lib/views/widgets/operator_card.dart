@@ -30,8 +30,6 @@ class _OperatorCardState extends State<OperatorCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isSmall = MediaQuery.of(context).size.width < 380;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -58,7 +56,7 @@ class _OperatorCardState extends State<OperatorCard> {
               Text(
                 widget.operatorName,
                 style: GoogleFonts.manrope(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -66,7 +64,7 @@ class _OperatorCardState extends State<OperatorCard> {
               Text(
                 "${widget.activeDrivers} Active Drivers",
                 style: GoogleFonts.nunito(
-                  fontSize: isSmall ? 12 : 13,
+                  fontSize: 10,
                   color: Colors.grey[600],
                 ),
               ),
@@ -91,7 +89,7 @@ class _OperatorCardState extends State<OperatorCard> {
                       Text(
                         widget.routeStart,
                         style: GoogleFonts.manrope(
-                          fontSize: 15,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
@@ -106,7 +104,7 @@ class _OperatorCardState extends State<OperatorCard> {
                       Text(
                         widget.routeEnd,
                         style: GoogleFonts.manrope(
-                          fontSize: 15,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
