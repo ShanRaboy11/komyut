@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../widgets/commutercard_report.dart';
@@ -383,14 +384,58 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
 
             // Attachment: fetched from attachments table using attachmentId
             if (_loadingAttachment) ...[
-              Container(
-                width: double.infinity,
-                height: 180,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(16),
+              // Detailed shimmer skeleton for the attachment area
+              Shimmer.fromColors(
+                baseColor: Colors.grey.shade300,
+                highlightColor: Colors.grey.shade100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image placeholder with border shape matching final UI
+                    Container(
+                      width: (MediaQuery.of(context).size.width * 0.86).clamp(0, 420),
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.grey.shade300, width: 2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // small metadata lines
+                    Container(
+                      width: 140,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 220,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: List.generate(3, (i) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Container(
+                          width: 70,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      )),
+                    )
+                  ],
                 ),
-                child: const Center(child: CircularProgressIndicator()),
               ),
             ] else if (_attachmentUrl != null && _attachmentUrl!.isNotEmpty) ...[
               if (_isImage()) ...[

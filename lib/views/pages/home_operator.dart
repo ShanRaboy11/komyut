@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
@@ -106,8 +107,122 @@ class _OperatorDashboardState extends State<OperatorDashboard>
         child: Consumer<OperatorDashboardProvider>(
           builder: (context, provider, child) {
             if (provider.isLoading) {
-              return Center(
-                child: CircularProgressIndicator(color: gradientColors[0]),
+              // Detailed shimmer skeleton that mirrors the dashboard layout
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header gradient placeholder
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: gradientColors),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(0),
+                            bottomLeft: Radius.circular(25),
+                            topRight: Radius.circular(0),
+                            bottomRight: Radius.circular(25),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // logo circle
+                            Container(width: 70, height: 70, decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(10))),
+                            const SizedBox(height: 24),
+                            // small line
+                            Container(width: 120, height: 14, color: Colors.white.withAlpha(30)),
+                            const SizedBox(height: 8),
+                            // big amount line
+                            Container(width: 220, height: 30, color: Colors.white),
+                            const SizedBox(height: 24),
+                            // wallet pill
+                            Container(width: 140, height: 44, decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(30))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
+                        child: Column(
+                          children: [
+                            // Stat cards row
+                            Row(
+                              children: [
+                                Expanded(child: Container(height: 110, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)))) ,
+                                const SizedBox(width: 12),
+                                Expanded(child: Container(height: 110, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)))) ,
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Driver performance header
+                            Container(width: 160, height: 18, color: Colors.white),
+                            const SizedBox(height: 10),
+
+                            // Driver list skeletons
+                            Column(children: List.generate(3, (_) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Container(
+                                height: 64,
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(width: 32, height: 32, decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(width: 120, height: 12, color: Colors.white),
+                                          const SizedBox(height: 6),
+                                          Container(width: 180, height: 10, color: Colors.white),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(width: 60, height: 28, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20))),
+                                  ],
+                                ),
+                              ),
+                            ))),
+
+                            const SizedBox(height: 20),
+                            // Reports header
+                            Container(width: 120, height: 18, color: Colors.white),
+                            const SizedBox(height: 10),
+
+                            // Reports list skeletons
+                            Column(children: List.generate(3, (_) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Container(
+                                height: 80,
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(width: 180, height: 12, color: Colors.white),
+                                    const SizedBox(height: 8),
+                                    Row(children: [Container(width: 160, height: 10, color: Colors.white), const Spacer(), Container(width: 70, height: 28, color: Colors.white)]),
+                                  ],
+                                ),
+                              ),
+                            ))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
               );
             }
 
