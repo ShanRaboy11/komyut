@@ -266,8 +266,11 @@ class _OperatorDashboardState extends State<OperatorDashboard>
 
             return RefreshIndicator(
               onRefresh: () async {
+                // Capture the other provider before awaiting to avoid using
+                // BuildContext across async gaps (use_build_context_synchronously).
+                final reportsProvider = context.read<OperatorReportProvider>();
                 await provider.loadDashboardData();
-                await context.read<OperatorReportProvider>().fetchReports();
+                await reportsProvider.fetchReports();
               },
               color: gradientColors[0],
               child: SingleChildScrollView(

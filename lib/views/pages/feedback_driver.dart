@@ -302,7 +302,8 @@ class _DriverFeedbackPageState extends State<DriverFeedbackPage> {
                                             builder: (context) => ReportDetailsPage(
                                               name: r.reporterName ?? 'Unknown Reporter',
                                               role: "Commuter",
-                                              id: r.reporterProfileId ?? '',
+                                              reporterId: r.reporterProfileId ?? '',
+                                              reportId: r.id ?? '',
                                               priority: _mapSeverityToPriority(r.severity),
                                               date: _formatDate(r.createdAt),
                                               description: r.description,
