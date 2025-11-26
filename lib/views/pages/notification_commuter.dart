@@ -1,7 +1,16 @@
 // ignore_for_file: library_private_types_in_public_api
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../widgets/notification.dart';
+import '../services/notifications.dart';
+import '../models/notification.dart';
+
+import 'tripdetails_commuter.dart';
+import 'tripreceipt_commuter.dart';
+import 'transactionreceipt_commuter.dart';
+import 'wallet_commuter.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -10,247 +19,282 @@ class NotificationPage extends StatefulWidget {
   State<NotificationPage> createState() => NotificationPageState();
 }
 
-class NotificationPageState extends State<NotificationPage>
-    with SingleTickerProviderStateMixin {
-  void resetToDefault() {
-    setState(() {
-      activeTab = 'Trips';
-      for (var n in allNotifications) {
-        n.isRead = n.isRead;
-      }
+class NotificationPageState extends State<NotificationPage> {
+  final Color primary1 = const Color(0xFF9C6BFF);
+  final List<String> tabs = ['Trips', 'Wallet', 'Others'];
+  String activeTab = 'Trips';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      ).fetchNotifications();
     });
   }
 
-  final Color primary1 = const Color(0xFF9C6BFF);
-  final List<String> tabs = ['Trips', 'Wallet', 'Others'];
+  String _getSection(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final check = DateTime(date.year, date.month, date.day);
 
-  String activeTab = 'Trips';
+    if (check == today) return 'Today';
+    if (check == yesterday) return 'Yesterday';
+    return 'Older';
+  }
 
-  final List<_NotifItem> allNotifications = [
-    _NotifItem(
-      'trips',
-      'Your jeepney with Plate ABC-123 has started its trip.',
-      '11:00 AM',
-      'Today',
-      false,
-    ),
-    _NotifItem('trips', 'Trip ended. :)', '11:00 AM', 'Today', true),
-    _NotifItem(
-      'trips',
-      'Your jeepney with Plate ABC-123 has started its trip.',
-      '09:30 AM',
-      'Today',
-      false,
-    ),
-    _NotifItem(
-      'trips',
-      'Driver has arrived at your stop.',
-      'Yesterday',
-      'Yesterday',
-      true,
-    ),
-    _NotifItem(
-      'trips',
-      'Trip started for Plate ABC-200.',
-      'Yesterday',
-      'Yesterday',
-      true,
-    ),
-    _NotifItem(
-      'trips',
-      'Route updated for Line 5.',
-      'Oct 10, 2025',
-      'Older',
-      true,
-    ),
-    _NotifItem(
-      'wallet',
-      '₱50 credited to your wallet.',
-      '10:45 AM',
-      'Today',
-      false,
-    ),
-    _NotifItem(
-      'wallet',
-      'Payment successful for trip ABC-123.',
-      'Oct 12, 2025',
-      'Older',
-      true,
-    ),
-    _NotifItem(
-      'rewards',
-      'You earned 10 reward points!',
-      'Oct 06, 2025',
-      'Older',
-      true,
-    ),
-    _NotifItem(
-      'alert',
-      'Service update scheduled tomorrow.',
-      'Oct 08, 2025',
-      'Older',
-      false,
-    ),
-    _NotifItem(
-      'general',
-      'New terms & conditions posted.',
-      'Oct 05, 2025',
-      'Older',
-      true,
-    ),
-  ];
+  String _getDisplayTime(NotifItem item, String section) {
+    if (item.isLocal) return item.timeOrDate;
+    if (section == 'Today') return DateFormat('hh:mm a').format(item.sortDate);
+    if (section == 'Yesterday') return 'Yesterday';
+    return DateFormat('MMM dd, yyyy').format(item.sortDate);
+  }
+
+  void _onTapNotif(NotifItem item) async {
+    if (!item.isRead) {
+      Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      ).markAsRead(item.id);
+    }
+
+    final payload = item.payload ?? {};
+
+    // --- TRIPS ---
+    if (item.variant == 'trips') {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TripDetailsPage(
+            tripId: item.tripId,
+            date: payload['date_str'] ?? '',
+            time: payload['time_str'] ?? '',
+            status: payload['status'] ?? 'ongoing',
+            from: "Loading...",
+            to: "...",
+            tripCode: "...",
+          ),
+        ),
+      );
+    }
+    // --- REWARDS ---
+    else if (item.variant == 'rewards') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const WalletPage()),
+      );
+    }
+    // --- WALLET ---
+    else if (item.variant == 'wallet') {
+      final type = payload['type'] as String?;
+
+      if (type == 'fare_payment') {
+        final tripId = payload['trip_id']?.toString();
+        if (tripId != null && tripId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TripReceiptPage(tripId: tripId),
+            ),
+          );
+        }
+      } else if (type == 'cash_in' || type == 'redemption') {
+        // Handle Real DB Transactions
+        if (payload['transaction_id'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransactionReceiptPage(
+                id: payload['transaction_id'],
+                type: type!, // 'cash_in' or 'redemption'
+              ),
+            ),
+          );
+        }
+        // Handle Static Fallback
+        else if (payload['data'] != null) {
+          final Map<String, dynamic>? staticMap = (payload['data'] as Map?)
+              ?.cast<String, dynamic>();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransactionReceiptPage(
+                id: item.id,
+                type: 'static',
+                staticData: staticMap,
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 420;
 
-    // Filter based on active tab
-    List<_NotifItem> filtered;
-    if (activeTab == 'Trips') {
-      filtered = allNotifications.where((n) => n.variant == 'trips').toList();
-    } else if (activeTab == 'Wallet') {
-      filtered = allNotifications.where((n) => n.variant == 'wallet').toList();
-    } else {
-      filtered = allNotifications
-          .where((n) => n.variant != 'trips' && n.variant != 'wallet')
-          .toList();
-    }
+    return Consumer<NotificationProvider>(
+      builder: (context, provider, child) {
+        final all = provider.notifications;
+        List<NotifItem> filtered;
+        if (activeTab == 'Trips') {
+          filtered = all.where((n) => n.variant == 'trips').toList();
+        } else if (activeTab == 'Wallet') {
+          filtered = all.where((n) => n.variant == 'wallet').toList();
+        } else {
+          filtered = all.where((n) => n.variant == 'rewards').toList();
+        }
 
-    final Map<String, List<_NotifItem>> grouped = {};
-    for (var n in filtered) {
-      grouped.putIfAbsent(n.section, () => []).add(n);
-    }
+        final Map<String, List<NotifItem>> grouped = {};
+        for (var n in filtered) {
+          String section;
+          if (n.isLocal) {
+            if (n.timeOrDate.contains('Today') ||
+                n.timeOrDate.contains('AM') ||
+                n.timeOrDate.contains('PM')) {
+              section = 'Today';
+            } else if (n.timeOrDate.contains('Yesterday')) {
+              section = 'Yesterday';
+            } else {
+              section = 'Older';
+            }
+          } else {
+            section = _getSection(n.sortDate);
+          }
+          grouped.putIfAbsent(section, () => []).add(n);
+        }
 
-    final hasUnread = filtered.any((n) => !n.isRead);
+        final hasUnread = filtered.any((n) => !n.isRead);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
-      floatingActionButton: hasUnread
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 100),
-              child: FloatingActionButton.extended(
-                backgroundColor: primary1,
-                onPressed: () {
-                  setState(() {
-                    for (var n in filtered) {
-                      n.isRead = true;
-                    }
-                  });
-                },
-                label: Row(
-                  children: [
-                    const Icon(Icons.done_all_rounded, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      "Mark all as read",
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : null,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Text(
-                'Notification',
-                style: GoogleFonts.manrope(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Tabs with animated selection
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: primary1.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: tabs
-                      .map((t) => _buildPillTab(t, activeTab == t, isSmall))
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // AnimatedSwitcher for smooth tab change
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeInOut,
-                  switchOutCurve: Curves.easeInOut,
-                  layoutBuilder:
-                      (Widget? currentChild, List<Widget> previousChildren) {
-                        // This ensures widgets stack from top instead of center during switch
-                        return Stack(
-                          alignment: Alignment.topCenter,
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        );
-                      },
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.1, 0),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                  child: SingleChildScrollView(
-                    key: ValueKey<String>(activeTab),
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        return Scaffold(
+          backgroundColor: const Color(0xFFF7F4FF),
+          floatingActionButton: hasUnread
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  child: FloatingActionButton.extended(
+                    backgroundColor: primary1,
+                    onPressed: () => provider.markAllAsRead(filtered),
+                    label: Row(
                       children: [
-                        if (grouped.containsKey('Today')) ...[
-                          _sectionTitle('TODAY'),
-                          const SizedBox(height: 5),
-                          _buildSectionList(grouped['Today']!),
-                          const SizedBox(height: 18),
-                        ],
-                        if (grouped.containsKey('Yesterday')) ...[
-                          _sectionTitle('YESTERDAY'),
-                          const SizedBox(height: 5),
-                          _buildSectionList(grouped['Yesterday']!),
-                          const SizedBox(height: 18),
-                        ],
-                        if (grouped.containsKey('Older')) ...[
-                          _sectionTitle('OLDER'),
-                          const SizedBox(height: 5),
-                          _buildSectionList(grouped['Older']!, olderMode: true),
-                          const SizedBox(height: 18),
-                        ],
-                        const SizedBox(height: 50),
+                        const Icon(Icons.done_all_rounded, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Mark all as read",
+                          style: GoogleFonts.nunito(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
+                )
+              : null,
+          body: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 30, right: 30, top: 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Notification',
+                    style: GoogleFonts.manrope(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: primary1.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: tabs
+                          .map((t) => _buildPillTab(t, activeTab == t, isSmall))
+                          .toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: provider.isLoading && provider.notifications.isEmpty
+                        ? Center(
+                            child: CircularProgressIndicator(color: primary1),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: provider.fetchNotifications,
+                            color: primary1,
+                            child: SingleChildScrollView(
+                              key: ValueKey<String>(activeTab),
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics(),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (grouped.containsKey('Today')) ...[
+                                    _sectionTitle('TODAY'),
+                                    const SizedBox(height: 5),
+                                    _buildSectionList(
+                                      grouped['Today']!,
+                                      'Today',
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
+                                  if (grouped.containsKey('Yesterday')) ...[
+                                    _sectionTitle('YESTERDAY'),
+                                    const SizedBox(height: 5),
+                                    _buildSectionList(
+                                      grouped['Yesterday']!,
+                                      'Yesterday',
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
+                                  if (grouped.containsKey('Older')) ...[
+                                    _sectionTitle('OLDER'),
+                                    const SizedBox(height: 5),
+                                    _buildSectionList(
+                                      grouped['Older']!,
+                                      'Older',
+                                      olderMode: true,
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
+                                  if (filtered.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 50),
+                                      child: Center(
+                                        child: Text(
+                                          provider.isLoading
+                                              ? "Checking..."
+                                              : "No notifications",
+                                          style: GoogleFonts.nunito(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 120),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -291,44 +335,25 @@ class NotificationPageState extends State<NotificationPage>
     );
   }
 
-  Widget _buildSectionList(List<_NotifItem> items, {bool olderMode = false}) {
+  Widget _buildSectionList(
+    List<NotifItem> items,
+    String section, {
+    bool olderMode = false,
+  }) {
     return Column(
       children: items.map((n) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          transitionBuilder: (child, anim) =>
-              FadeTransition(opacity: anim, child: child),
-          child: Padding(
-            key: ValueKey(n.isRead),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: NotificationCard(
-              variant: n.variant,
-              description: n.description,
-              timeOrDate: n.timeOrDate,
-              isRead: n.isRead,
-              onTap: () {
-                setState(() => n.isRead = !n.isRead);
-              },
-            ),
+        return Padding(
+          key: ValueKey(n.virtualId),
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: NotificationCard(
+            variant: n.variant == 'rewards' ? 'rewards' : n.variant,
+            description: n.title,
+            timeOrDate: _getDisplayTime(n, section),
+            isRead: n.isRead,
+            onTap: () => _onTapNotif(n),
           ),
         );
       }).toList(),
     );
   }
-}
-
-class _NotifItem {
-  final String variant;
-  final String description;
-  final String timeOrDate;
-  final String section;
-  bool isRead;
-
-  _NotifItem(
-    this.variant,
-    this.description,
-    this.timeOrDate,
-    this.section,
-    this.isRead,
-  );
 }

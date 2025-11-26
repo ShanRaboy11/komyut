@@ -173,17 +173,19 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          'Welcome back!',
+                          'Welcome back,',
                           style: GoogleFonts.manrope(
                             color: const Color(0xFF8E4CB6),
                             fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${provider.firstName.isEmpty ? "User" : provider.firstName}!',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            height: 1.2,
                           ),
                         ),
                       ],
@@ -321,7 +323,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Text(
                   _isBalanceVisible
                       ? '₱ ${provider.balance.toStringAsFixed(2)}'
-                      : '₱ •••••', // Added space here
+                      : '₱ •••••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
                     fontSize: 22,
