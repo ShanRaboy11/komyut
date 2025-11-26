@@ -11,6 +11,15 @@ import '../providers/operator_report.dart';
 import '../models/report.dart';
 import 'report_operator.dart';
 
+// Navbar wrapper + related pages/providers used when redirecting back to
+// the operator reports list so the bottom navbar is preserved.
+import '../widgets/role_navbar_wrapper.dart';
+import 'home_operator.dart';
+import 'driver_operator.dart';
+import 'activity_operator.dart';
+import 'profile.dart';
+import '../providers/transactions.dart';
+
 class ReportDetailsPage extends StatefulWidget {
   final String name;
   final String? role;
@@ -185,7 +194,21 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
                       p.fetchStatusCounts();
                       return p;
                     },
-                    child: OperatorReportsPage(),
+                    // Wrap the reports page inside the OperatorNavBarWrapper so
+                    // the bottom navigation is preserved after redirect.
+                    child: OperatorNavBarWrapper(
+                      homePage: OperatorDashboardNav(),
+                      driversPage: OperatorDriversPage(),
+                      transactionsPage: ChangeNotifierProvider<TransactionProvider>(
+                        create: (_) => TransactionProvider(),
+                        child: const OperatorRemittancesPage(),
+                      ),
+                      reportsPage: ChangeNotifierProvider<OperatorReportProvider>(
+                        create: (_) => OperatorReportProvider(),
+                        child: OperatorReportsPage(),
+                      ),
+                      profilePage: ProfilePage(),
+                    ),
                   ),
                 ),
                 (route) => false,
