@@ -215,84 +215,128 @@ class _TripDetailsPageState extends State<TripDetailsPage>
               // Dynamic Map or Fallback
               if (_loading)
                 _buildLoadingMap()
-              else if (hasRouteData) ...[
-                // Dynamic map with route visualization
-                SizedBox(
-                  height: 260,
-                  child: MapWidget(
-                    mapController: _mapController,
-                    currentPosition: null,
-                    defaultLocation: defaultLocation,
-                    isLoading: false,
-                    boardingLocation: null,
-                    arrivalLocation: null,
-                    routeStops: _details!.routeStops,
-                    originStopId: _details!.originStopId,
-                    destinationStopId: _details!.destinationStopId,
+              else if (hasRouteData)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Distance + Route Code row under the map
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Row(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Distance',
-                              style: GoogleFonts.nunito(
-                                color: Colors.grey[700],
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${_details!.distanceKm.toStringAsFixed(1)} km',
-                              style: GoogleFonts.manrope(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      // Map Section
+                      SizedBox(
+                        height: 240,
+                        child: MapWidget(
+                          mapController: _mapController,
+                          currentPosition: null,
+                          defaultLocation: defaultLocation,
+                          isLoading: false,
+                          boardingLocation: null,
+                          arrivalLocation: null,
+                          routeStops: _details!.routeStops,
+                          originStopId: _details!.originStopId,
+                          destinationStopId: _details!.destinationStopId,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Column(
+
+                      // Details Section (Distance & Code)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        color: Colors.white,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                              'Route Code',
-                              style: GoogleFonts.nunito(
-                                color: Colors.grey[700],
-                                fontSize: 13,
-                              ),
+                            // Left Side: Distance
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.directions_car_filled_rounded,
+                                      size: 16,
+                                      color: Colors.grey[500],
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Distance',
+                                      style: GoogleFonts.nunito(
+                                        color: Colors.grey[600],
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_details!.distanceKm.toStringAsFixed(1)} km',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _details!.tripCode.isNotEmpty
-                                  ? _details!.tripCode
-                                  : widget.tripCode,
-                              style: GoogleFonts.manrope(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF9C6BFF),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+
+                            // Right Side: Route Code
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Route Code',
+                                  style: GoogleFonts.nunito(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFF3E5F5,
+                                    ), // Light purple bg
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _details!.tripCode.isNotEmpty
+                                        ? _details!.tripCode
+                                        : widget.tripCode,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF8E4CB6),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-              ] else
-                // Fallback to static card
+                )
+              else
+                // Fallback to static card (Keeping similar logic for consistency)
                 TripDetailsCard(
                   mapImage: 'assets/images/map.png',
                   distance: _details != null
@@ -577,115 +621,43 @@ class _TripDetailsPageState extends State<TripDetailsPage>
     );
   }
 
-  // Enhanced loading state for map with animated elements
+  // Enhanced loading state for map with animated elements - MATCHES NEW UI
   Widget _buildLoadingMap() {
-    return Column(
-      children: [
-        Container(
-          height: 260,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
           ),
-          child: Stack(
-            children: [
-              // Base map background
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.grey[100]!,
-                      Colors.grey[200]!,
-                      Colors.grey[100]!,
-                    ],
-                  ),
-                ),
-              ),
-              // Animated road lines
-              Positioned(
-                left: 40,
-                top: 60,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 120,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 50,
-                top: 100,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 60,
-                bottom: 80,
-                child: _buildShimmer(
-                  child: Container(
-                    width: 100,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              // Pin markers
-              Positioned(
-                left: 40,
-                top: 40,
-                child: _buildShimmer(
-                  child: Icon(
-                    Icons.location_on,
-                    size: 32,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 40,
-                bottom: 60,
-                child: _buildShimmer(
-                  child: Icon(
-                    Icons.location_on,
-                    size: 32,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ),
-              // Center loading indicator
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Map area
+          SizedBox(
+            height: 240,
+            child: Stack(
+              children: [
+                Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.grey[100]!,
+                        Colors.grey[200]!,
+                        Colors.grey[100]!,
+                      ],
+                    ),
                   ),
+                ),
+                // Center loading indicator
+                Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -711,18 +683,16 @@ class _TripDetailsPageState extends State<TripDetailsPage>
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        // Distance and Route Code skeleton
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
+          // Details Footer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildShimmer(
@@ -748,40 +718,37 @@ class _TripDetailsPageState extends State<TripDetailsPage>
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _buildShimmer(
                       child: Container(
-                        width: 80,
-                        height: 13,
+                        width: 70,
+                        height: 12,
                         decoration: BoxDecoration(
                           color: Colors.grey[300],
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     _buildShimmer(
                       child: Container(
                         width: 60,
-                        height: 20,
+                        height: 26,
                         decoration: BoxDecoration(
                           color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
