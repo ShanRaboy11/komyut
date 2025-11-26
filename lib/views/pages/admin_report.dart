@@ -143,44 +143,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                               ),
                             ),
                           ),
-                          // Status Toggle (Pending / Resolved)
-                          const SizedBox(width: 12),
-                          ToggleButtons(
-                            isSelected: [
-                              activeStatusTab == 0,
-                              activeStatusTab == 1,
-                            ],
-                            onPressed: (index) {
-                              setState(() {
-                                activeStatusTab = index;
-                              });
-                            },
-                            borderColor: const Color(0xFF7A3DB8),
-                            selectedBorderColor: const Color(0xFF7A3DB8),
-                            fillColor: const Color(0xFF7A3DB8),
-                            selectedColor: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            constraints: const BoxConstraints(
-                              minHeight: 30,
-                              minWidth: 90,
-                            ),
-                            children: [
-                              Text(
-                                'Pending',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                'Resolved',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                          // (status toggle moved below priority tabs)
                         ],
                       ),
 
@@ -205,6 +168,37 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                               )
                               .toList(),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Status Toggle (Pending / Resolved) placed below priority pills,
+                      // right-aligned to match header layout.
+                      Row(
+                        children: [
+                          const Spacer(),
+                          ToggleButtons(
+                            isSelected: [activeStatusTab == 0, activeStatusTab == 1],
+                            onPressed: (index) {
+                              setState(() => activeStatusTab = index);
+                            },
+                            borderColor: const Color(0xFF7A3DB8),
+                            selectedBorderColor: const Color(0xFF7A3DB8),
+                            fillColor: const Color(0xFF7A3DB8),
+                            selectedColor: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            constraints: const BoxConstraints(minHeight: 30, minWidth: 78),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
+                                child: Text('Pending', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
+                                child: Text('Resolved', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
