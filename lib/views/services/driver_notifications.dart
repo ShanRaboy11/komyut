@@ -34,9 +34,11 @@ class NotificationDriverProvider extends ChangeNotifier {
           .single();
       final profileId = profileRes['id'];
 
-      // 2. Get Driver Info (Optional)
+      // 2. Get Driver Info & Wallet Info
       String plate = 'Your Jeepney';
       String driverId = '';
+      String? walletId;
+
       try {
         final driverRes = await _supabase
             .from('drivers')
@@ -50,64 +52,79 @@ class NotificationDriverProvider extends ChangeNotifier {
             plate = driverRes['vehicle_plate'];
           }
         }
+
+        final walletRes = await _supabase
+            .from('wallets')
+            .select('id')
+            .eq('owner_profile_id', profileId)
+            .maybeSingle();
+
+        if (walletRes != null) {
+          walletId = walletRes['id'];
+        }
       } catch (_) {}
 
       // ---------------------------------------------------------
       // A. FETCH RAW DATA
       // ---------------------------------------------------------
 
-      // 1. Trips (Created by Profile OR Driver ID)
+      // 1. Trips (For "Trip Started" / "Trip Ended" notifications)
       final tripsRes = await _supabase
           .from('trips')
           .select('id, started_at, ended_at, status, passengers_count')
           .or('driver_id.eq.$driverId,created_by_profile_id.eq.$profileId')
           .order('started_at', ascending: false)
-          .limit(200);
+          .limit(50); // Limit trip notifications
       final List<dynamic> tripsData = tripsRes as List<dynamic>;
 
-      // 2. Transactions (Wallet) - Based on DriverDashboardService logic
-      List<dynamic> transactionsData = [];
+      // 2. Transactions (Wallet & Earnings)
+      List<dynamic> combinedTransactions = [];
 
-      // First, get Wallet ID for this profile
-      final walletRes = await _supabase
-          .from('wallets')
-          .select('id')
-          .eq('owner_profile_id', profileId)
-          .maybeSingle();
-
-      if (walletRes != null) {
-        final walletId = walletRes['id'];
-
-        // Fetch transactions matching the wallet ID and specific types
-        final txRes = await _supabase
+      if (walletId != null) {
+        // 2a. Fetch General Wallet Transactions (Cash Out, Remittance, Payouts)
+        // These are linked directly to the wallet_id
+        final walletTxRes = await _supabase
             .from('transactions')
             .select(
               'id, created_at, type, amount, status, transaction_number, related_trip_id',
             )
             .eq('wallet_id', walletId)
             .inFilter('type', [
-              'fare_payment',
               'operator_payout',
               'driver_payout',
               'remittance',
               'cash_out',
             ])
             .order('created_at', ascending: false)
-            .limit(300);
+            .limit(50);
 
-        transactionsData = txRes as List<dynamic>;
+        combinedTransactions.addAll(walletTxRes as List<dynamic>);
       }
 
-      // 3. Read Statuses (Existing notifications in DB)
+      if (driverId.isNotEmpty) {
+        // 2b. Fetch Trip Earnings (Fare Payments)
+        // These are linked to the TRIP, which is linked to the DRIVER
+        final tripEarningsRes = await _supabase
+            .from('transactions')
+            .select('''
+              id, created_at, type, amount, status, transaction_number, related_trip_id,
+              trip:trips!inner(driver_id)
+            ''')
+            .eq('trip.driver_id', driverId)
+            .eq('type', 'fare_payment')
+            .order('created_at', ascending: false)
+            .limit(50);
+
+        combinedTransactions.addAll(tripEarningsRes as List<dynamic>);
+      }
+
+      // 3. Get "Read" Statuses from DB
       final notifRes = await _supabase
           .from('notifications')
           .select('id, read, payload, type')
           .eq('recipient_profile_id', profileId)
-          .inFilter('type', [
-            'trip',
-            'wallet',
-          ]) // Fetch both trip and wallet types
-          .limit(500);
+          .inFilter('type', ['trip', 'wallet'])
+          .limit(200);
 
       final List<Map<String, dynamic>> notifData =
           List<Map<String, dynamic>>.from(notifRes as List);
@@ -115,7 +132,7 @@ class NotificationDriverProvider extends ChangeNotifier {
       final List<NotifItem> generatedList = [];
 
       // ---------------------------------------------------------
-      // B. PROCESS TRIPS
+      // B. PROCESS TRIPS (Start/End Events)
       // ---------------------------------------------------------
       for (var trip in tripsData) {
         final String tripId = trip['id'];
@@ -125,7 +142,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         if (trip['started_at'] == null) continue;
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
-        // --- Trip Start ---
+        // --- Trip Start Notification ---
         final startRow = notifData
             .where(
               (n) =>
@@ -156,7 +173,7 @@ class NotificationDriverProvider extends ChangeNotifier {
           ),
         );
 
-        // --- Trip End ---
+        // --- Trip End Notification ---
         if (currentStatus == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
           final endRow = notifData
@@ -190,9 +207,9 @@ class NotificationDriverProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // C. PROCESS WALLET TRANSACTIONS
+      // C. PROCESS TRANSACTIONS (Wallet + Earnings)
       // ---------------------------------------------------------
-      for (var tx in transactionsData) {
+      for (var tx in combinedTransactions) {
         final String txId = tx['id'];
         final String type = tx['type'];
         final double amount = (tx['amount'] as num).toDouble().abs();
@@ -200,7 +217,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         final String txNumber = tx['transaction_number'] ?? '---';
         final String status = tx['status'] ?? 'completed';
 
-        // Find existing notification record
+        // Check if DB has a record for this transaction notification
         final txRow = notifData
             .where(
               (n) =>
@@ -214,7 +231,8 @@ class NotificationDriverProvider extends ChangeNotifier {
 
         switch (type) {
           case 'fare_payment':
-            title = "Received ₱${amount.toStringAsFixed(2)} fare payment.";
+            // THIS IS THE TRIP EARNING
+            title = "You earned ₱${amount.toStringAsFixed(2)} from your trip.";
             break;
           case 'remittance':
             title = "Remitted ₱${amount.toStringAsFixed(2)} to operator.";
@@ -239,7 +257,8 @@ class NotificationDriverProvider extends ChangeNotifier {
             id: txRow != null ? txRow['id'] : 'virtual_wallet_$txId',
             virtualId: 'wallet_$txId',
             tripId: tx['related_trip_id'] ?? '',
-            variant: 'wallet',
+            variant:
+                'wallet', // Keeping this as wallet so clicking it goes to wallet page
             title: title,
             timeOrDate: DateFormat('hh:mm a').format(createdAt),
             isRead: txRow != null ? (txRow['read'] ?? false) : false,
@@ -264,6 +283,7 @@ class NotificationDriverProvider extends ChangeNotifier {
     }
   }
 
+  // Marks a notification as read (syncs with DB if it's virtual)
   Future<void> markAsRead(String notifId) async {
     final index = _notifications.indexWhere((n) => n.id == notifId);
     if (index == -1) return;
@@ -271,6 +291,7 @@ class NotificationDriverProvider extends ChangeNotifier {
     final item = _notifications[index];
     if (item.isRead) return;
 
+    // Optimistic UI update
     _notifications[index].isRead = true;
     notifyListeners();
 
@@ -281,6 +302,7 @@ class NotificationDriverProvider extends ChangeNotifier {
 
     try {
       if (notifId.startsWith('virtual_')) {
+        // Create new record in notifications table
         final profileRes = await _supabase
             .from('profiles')
             .select('id')
@@ -291,12 +313,10 @@ class NotificationDriverProvider extends ChangeNotifier {
         String type = 'trip'; // Default
         Map<String, dynamic> payload = Map.from(item.payload ?? {});
 
-        // Check variant to determine DB 'type'
         if (item.variant == 'wallet') {
           type = 'wallet';
-          // Payload already has transaction_id from the fetch loop
         } else {
-          // Trip Logic
+          // Trip logic
           if (item.virtualId.startsWith('start_')) {
             payload['status'] = 'ongoing';
             payload['event'] = 'start';
@@ -316,6 +336,7 @@ class NotificationDriverProvider extends ChangeNotifier {
           'created_at': item.sortDate.toIso8601String(),
         });
       } else {
+        // Update existing record
         await _supabase
             .from('notifications')
             .update({'read': true})
