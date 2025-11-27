@@ -585,18 +585,25 @@ Widget _buildDetailModal({
                     Future<void> handleUpdate(String newStatus) async {
                       if (isSubmitting) return;
                       setState(() => isSubmitting = true);
+                      // Capture navigator and messenger before awaiting to avoid using context across async gaps
+                      final rootNav = Navigator.of(ctx, rootNavigator: true);
+                      final messenger = ScaffoldMessenger.of(ctx);
                       try {
                         await provider.updateTransactionStatus(
                           transactionId,
                           newStatus,
                         );
-                        Navigator.of(ctx, rootNavigator: true).maybePop();
+                        // Use captured navigator
+                        rootNav.maybePop();
                       } catch (e) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
+                        // Use captured messenger
+                        messenger.showSnackBar(
                           SnackBar(content: Text('Failed to update: $e')),
                         );
                       } finally {
-                        setState(() => isSubmitting = false);
+                        if (ctx.mounted) {
+                          setState(() => isSubmitting = false);
+                        }
                       }
                     }
 
