@@ -257,8 +257,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
                 const SizedBox(height: 20),
                 _buildAnalyticsSection(isSmallScreen, provider),
-                const SizedBox(height: 20),
-                _buildPromoCard(),
+                //const SizedBox(height: 20),
+                //_buildPromoCard(),
                 const SizedBox(height: 20),
                 _buildQuickActions(),
               ],
@@ -462,24 +462,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   ),
                 ],
               ),
-              IconButton(
-                onPressed: () {},
-                icon: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-              ),
             ],
           ),
           const Divider(),
@@ -490,7 +472,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Icons.directions_bus,
                 'Trips',
                 '${provider.totalTripsCount} trips',
-                subtitle: '12.6 mi',
+                //subtitle: '12.6 mi',
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
@@ -592,12 +574,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           _buildActionButton('Find Route', Icons.route, () {
             CommuterApp.navigatorKey.currentState?.pushNamed('/route_finder');
           }),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Report an issue',
-            Icons.report_problem_outlined,
-            null,
-          ),
         ],
       ),
     );

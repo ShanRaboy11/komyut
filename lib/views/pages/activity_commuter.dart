@@ -146,7 +146,7 @@ class _TripsPageState extends State<TripsPage>
                               iconEnabledColor: Colors.white,
                               style: GoogleFonts.nunito(
                                 color: Colors.white,
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                               items:

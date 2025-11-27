@@ -15,7 +15,7 @@ class _RateReviewPageState extends State<RatingPage> {
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 1. Fade in the logo immediately
       setState(() {
@@ -24,11 +24,9 @@ class _RateReviewPageState extends State<RatingPage> {
 
       // 2. Wait 1 second, then animate to CommuterRatingDetails
       Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          Navigator.of(context).push(
-            _createSlideUpRoute(),
-          );
-        }
+        if (!mounted) return;
+
+        Navigator.of(context).pushReplacement(_createSlideUpRoute());
       });
     });
   }
@@ -36,19 +34,20 @@ class _RateReviewPageState extends State<RatingPage> {
   // Helper to create a slide-up animation route
   Route _createSlideUpRoute() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const RateReviewPage(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const RateReviewPage(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(0.0, 1.0); // Start from bottom
-        const end = Offset.zero;        // End at center
+        const end = Offset.zero; // End at center
         const curve = Curves.easeInOutCubic;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
         var offsetAnimation = animation.drive(tween);
 
-        return SlideTransition(
-          position: offsetAnimation,
-          child: child,
-        );
+        return SlideTransition(position: offsetAnimation, child: child);
       },
       transitionDuration: const Duration(milliseconds: 800),
     );
@@ -62,7 +61,8 @@ class _RateReviewPageState extends State<RatingPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false, // Ensures no default back button appears
+        automaticallyImplyLeading:
+            false, // Ensures no default back button appears
         // Added 20 space above the text
         title: Padding(
           padding: const EdgeInsets.only(top: 20.0),
@@ -94,26 +94,34 @@ class _RateReviewPageState extends State<RatingPage> {
             Positioned(
               top: 39,
               left: 172,
-              child: Image.asset("assets/images/Ellipse 1.png", 
-                errorBuilder: (c,e,s) => const SizedBox()),
+              child: Image.asset(
+                "assets/images/Ellipse 1.png",
+                errorBuilder: (c, e, s) => const SizedBox(),
+              ),
             ),
             Positioned(
               top: -134,
               left: 22,
-              child: Image.asset("assets/images/Ellipse 3.png", 
-                errorBuilder: (c,e,s) => const SizedBox()),
+              child: Image.asset(
+                "assets/images/Ellipse 3.png",
+                errorBuilder: (c, e, s) => const SizedBox(),
+              ),
             ),
             Positioned(
               top: 672,
               left: -94,
-              child: Image.asset("assets/images/Ellipse 2.png", 
-                errorBuilder: (c,e,s) => const SizedBox()),
+              child: Image.asset(
+                "assets/images/Ellipse 2.png",
+                errorBuilder: (c, e, s) => const SizedBox(),
+              ),
             ),
-             Positioned(
+            Positioned(
               top: 454,
               left: -293,
-              child: Image.asset("assets/images/Ellipse 4.png",
-               errorBuilder: (c,e,s) => const SizedBox()),
+              child: Image.asset(
+                "assets/images/Ellipse 4.png",
+                errorBuilder: (c, e, s) => const SizedBox(),
+              ),
             ),
 
             // --- Center Content (Logo) ---
@@ -126,20 +134,25 @@ class _RateReviewPageState extends State<RatingPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/Vector.png', 
+                      'assets/images/Vector.png',
                       width: 150,
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback if image is missing
                         return Column(
                           children: [
-                            const Icon(Icons.settings, size: 80, color: Color(0xFF8E4CB6)),
-                            Text("komyut", 
+                            const Icon(
+                              Icons.settings,
+                              size: 80,
+                              color: Color(0xFF8E4CB6),
+                            ),
+                            Text(
+                              "komyut",
                               style: GoogleFonts.manrope(
-                                fontSize: 30, 
-                                fontWeight: FontWeight.bold, 
-                                color: const Color(0xFF8E4CB6)
-                              )
-                            )
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF8E4CB6),
+                              ),
+                            ),
                           ],
                         );
                       },
