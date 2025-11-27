@@ -23,6 +23,62 @@ class DriverDashboardService {
     }
   }
 
+  /// Return full report rows assigned to the driver or referencing the driver entity.
+  Future<List<Map<String, dynamic>>> getAssignedReports({int? limit}) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final profileResp = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (profileResp == null || profileResp['id'] == null) return [];
+      final profileId = profileResp['id'] as String;
+
+      final driverId = await _getCurrentDriverId();
+
+      // Query for assigned reports
+      final assigned = await _supabase
+          .from('reports')
+          .select('id, reporter_profile_id, category, severity, status, description, assigned_to_profile_id, reported_entity_type, reported_entity_id, created_at')
+          .eq('assigned_to_profile_id', profileId)
+          .order('created_at', ascending: false);
+
+      // Query for referenced reports (by driver entity)
+      List<dynamic> referenced = [];
+      if (driverId != null) {
+        referenced = await _supabase
+            .from('reports')
+            .select('id, reporter_profile_id, category, severity, status, description, assigned_to_profile_id, reported_entity_type, reported_entity_id, created_at')
+            .eq('reported_entity_type', 'driver')
+            .eq('reported_entity_id', driverId)
+            .order('created_at', ascending: false);
+      }
+
+      // Merge unique rows by id
+      final Map<String, Map<String, dynamic>> map = {};
+      for (var r in assigned) {
+        final id = r['id'] as String?;
+        if (id != null) map[id] = Map<String, dynamic>.from(r as Map);
+      }
+      for (var r in referenced) {
+        final id = r['id'] as String?;
+        if (id != null) map[id] = Map<String, dynamic>.from(r as Map);
+      }
+
+      final list = map.values.toList()
+        ..sort((a, b) => (b['created_at'] ?? '').toString().compareTo((a['created_at'] ?? '').toString()));
+
+      if (limit != null && list.length > limit) return list.sublist(0, limit);
+      return list;
+    } catch (e) {
+      debugPrint('❌ Error fetching assigned reports: $e');
+      return [];
+    }
+  }
+
   /// Get driver's vehicle and route information
   Future<Map<String, dynamic>> getDriverVehicleInfo() async {
     try {
