@@ -57,12 +57,15 @@ class _AdminActivityPage extends State<AdminActivityPage> {
     return Consumer<TransactionProvider>(
       builder: (context, provider, child) {
         final String selectedType = _getSelectedType();
+        // Normalize status filter to backend values (lowercase)
+        final String? normalizedStatusFilter = _statusFilter?.toLowerCase();
+
         final filteredActivity = provider
             .getTransactionsByType(selectedType)
             .where((r) {
               if ((selectedType == 'cash_in' || selectedType == 'cash_out') &&
-                  _statusFilter != null) {
-                return r.status == _statusFilter;
+                  normalizedStatusFilter != null) {
+                return (r.status.toLowerCase()) == normalizedStatusFilter;
               }
               return true;
             })
@@ -168,11 +171,11 @@ class _AdminActivityPage extends State<AdminActivityPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          _statusFilter == "Pending"
+                          normalizedStatusFilter == "pending"
                               ? "Pending Transactions"
-                              : _statusFilter == "Completed"
+                              : normalizedStatusFilter == "completed"
                               ? "Completed Transactions"
-                              : _statusFilter == "Rejected"
+                              : normalizedStatusFilter == "rejected"
                               ? "Rejected Transactions"
                               : "All Transactions",
                           style: GoogleFonts.manrope(
@@ -180,7 +183,7 @@ class _AdminActivityPage extends State<AdminActivityPage> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        PopupMenuButton<String>(
+                        PopupMenuButton<String?>(
                           tooltip: "Filter by Status",
                           onSelected: (value) {
                             setState(() => _statusFilter = value);
@@ -191,15 +194,15 @@ class _AdminActivityPage extends State<AdminActivityPage> {
                           ),
                           itemBuilder: (context) => const [
                             PopupMenuItem(
-                              value: 'Pending',
+                              value: 'pending',
                               child: Text('Pending'),
                             ),
                             PopupMenuItem(
-                              value: 'Completed',
+                              value: 'completed',
                               child: Text('Completed'),
                             ),
                             PopupMenuItem(
-                              value: 'Rejected',
+                              value: 'rejected',
                               child: Text('Rejected'),
                             ),
                             PopupMenuItem(value: null, child: Text('All')),
@@ -286,7 +289,11 @@ class _AdminActivityPage extends State<AdminActivityPage> {
 
   Widget _buildPillTab(String label, int value, bool isActive, bool isSmall) {
     return GestureDetector(
-      onTap: () => setState(() => activeTransaction = value),
+      onTap: () => setState(() {
+        // Switch tab and clear any lingering status filter
+        activeTransaction = value;
+        _statusFilter = null;
+      }),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),
         padding: EdgeInsets.symmetric(
@@ -407,7 +414,7 @@ void _showTransactionDetailModal(
   final DateTime createdAt = transaction.createdAt;
   final bool isPendingCashInOrOut =
       (transaction.type == 'cash_in' || transaction.type == 'cash_out') &&
-      transaction.status == 'Pending';
+      transaction.status.toLowerCase() == 'pending';
 
   // Map type to title
   final String modalTitle = switch (type) {
@@ -500,6 +507,7 @@ void _showTransactionDetailModal(
         ),
         showActionButtons: isPendingCashInOrOut,
         transactionCode: transaction.transactionNumber ?? 'N/A',
+        transactionId: transaction.id,
       );
     },
   );
@@ -512,6 +520,7 @@ Widget _buildDetailModal({
   required Widget totalRow,
   required String transactionCode,
   required bool showActionButtons,
+  required String transactionId,
 }) {
   final Color brandColor = const Color(0xFF8E4CB6);
 
@@ -575,7 +584,26 @@ Widget _buildDetailModal({
                         strokeColor: const Color(0xFF5B53C2),
                         outlinedFillColor: Colors.white,
                         textColor: const Color(0xFF5B53C2),
-                        onPressed: () {},
+                        onPressed: () async {
+                          final provider = Provider.of<TransactionProvider>(
+                            context,
+                            listen: false,
+                          );
+                          try {
+                            await provider.updateTransactionStatus(
+                              transactionId,
+                              'rejected',
+                            );
+                            Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            ).maybePop();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to reject: $e')),
+                            );
+                          }
+                        },
                         fontSize: 14,
                       ),
                     ),
@@ -585,7 +613,26 @@ Widget _buildDetailModal({
                         text: "Accept",
                         isFilled: true,
                         textColor: Colors.white,
-                        onPressed: () {},
+                        onPressed: () async {
+                          final provider = Provider.of<TransactionProvider>(
+                            context,
+                            listen: false,
+                          );
+                          try {
+                            await provider.updateTransactionStatus(
+                              transactionId,
+                              'completed',
+                            );
+                            Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            ).maybePop();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to accept: $e')),
+                            );
+                          }
+                        },
                         fontSize: 14,
                       ),
                     ),
