@@ -192,7 +192,7 @@ class OperatorDashboardProvider extends ChangeNotifier {
   /// Refresh reports only
   Future<void> refreshReports() async {
     try {
-      _recentReports = await _dashboardService.getRecentReports(limit: 5);
+      _recentReports = await _dashboardService.getRecentReports(limit: 3);
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Error refreshing reports: $e');

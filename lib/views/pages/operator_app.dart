@@ -5,6 +5,7 @@ import '../widgets/role_navbar_wrapper.dart';
 import '../providers/operator_dashboard.dart';
 import '../providers/wallet_provider.dart';
 import '../providers/transactions.dart';
+import '../providers/operator_report.dart';
 
 import './home_operator.dart';
 import './report_operator.dart';
@@ -46,7 +47,10 @@ class OperatorApp extends StatelessWidget {
             create: (_) => TransactionProvider(),
             child: OperatorRemittancesPage(),
           ),
-          reportsPage: OperatorReportsPage(),
+          reportsPage: ChangeNotifierProvider(
+            create: (_) => OperatorReportProvider(),
+            child: OperatorReportsPage(),
+          ),
           profilePage: ProfilePage(),
         );
         break;
@@ -88,11 +92,14 @@ class OperatorApp extends StatelessWidget {
       default:
         page = ChangeNotifierProvider(
           create: (_) => OperatorDashboardProvider(),
-          child: const OperatorNavBarWrapper(
+          child: OperatorNavBarWrapper(
             homePage: OperatorDashboardNav(),
             driversPage: OperatorDriversPage(),
             transactionsPage: OperatorRemittancesPage(),
-            reportsPage: OperatorReportsPage(),
+            reportsPage: ChangeNotifierProvider(
+              create: (_) => OperatorReportProvider(),
+              child: OperatorReportsPage(),
+            ),
             profilePage: ProfilePage(),
           ),
         );

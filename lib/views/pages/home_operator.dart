@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
+import 'report_operator.dart';
+import 'reportdetails_operator.dart';
 
 import '../providers/operator_dashboard.dart';
 import '../providers/wallet_provider.dart';
+import '../providers/operator_report.dart';
+import '../widgets/role_navbar_wrapper.dart';
+import 'driver_operator.dart';
+import 'activity_operator.dart';
+import 'profile.dart';
 import 'wallet_operator.dart';
 
 class OperatorDashboardNav extends StatefulWidget {
@@ -40,6 +48,7 @@ class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
         ChangeNotifierProvider(
           create: (_) => OperatorWalletProvider()..loadWalletDashboard(),
         ),
+        ChangeNotifierProvider(create: (_) => OperatorReportProvider()),
       ],
       child: AnimatedBottomNavBar(
         pages: [
@@ -47,15 +56,13 @@ class _OperatorDashboardNavState extends State<OperatorDashboardNav> {
               ? OperatorWalletPage(onBack: _closeWallet)
               : OperatorDashboard(onViewWallet: _openWallet),
           const Center(child: Text("📋 Drivers")),
-          //const Center(child: Text("✍️ Transactions")),
-          const Center(child: Text("🔔 Reports")),
+          const OperatorReportsPage(),
           const Center(child: Text("👤 Profile")),
         ],
         items: const [
           NavItem(icon: Icons.home_rounded, label: 'Home'),
           NavItem(icon: Symbols.group, label: 'Drivers'),
-          //NavItem(icon: Symbols.overview_rounded, label: 'Transactions'),
-          NavItem(icon: Symbols.chat_info_rounded, label: 'Reports'),
+          NavItem(icon: Symbols.assessment, label: 'Reports'),
           NavItem(icon: Icons.person_rounded, label: 'Profile'),
         ],
       ),
@@ -93,6 +100,12 @@ class _OperatorDashboardState extends State<OperatorDashboard>
           provider.todaysRevenue == 0) {
         provider.loadDashboardData();
       }
+      
+      // Fetch reports after dashboard loads
+      final reportProvider = context.read<OperatorReportProvider>();
+      if (reportProvider.reports.isEmpty && !reportProvider.isLoading) {
+        reportProvider.fetchReports();
+      }
     });
   }
 
@@ -106,8 +119,111 @@ class _OperatorDashboardState extends State<OperatorDashboard>
         child: Consumer<OperatorDashboardProvider>(
           builder: (context, provider, child) {
             if (provider.isLoading) {
-              return Center(
-                child: CircularProgressIndicator(color: gradientColors[0]),
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: gradientColors),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(0),
+                            bottomLeft: Radius.circular(25),
+                            topRight: Radius.circular(0),
+                            bottomRight: Radius.circular(25),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(width: 70, height: 70, decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(10))),
+                            const SizedBox(height: 24),
+                            Container(width: 120, height: 14, color: Colors.white.withAlpha(30)),
+                            const SizedBox(height: 8),
+                            Container(width: 220, height: 30, color: Colors.white),
+                            const SizedBox(height: 24),
+                            Container(width: 140, height: 44, decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(30))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(child: Container(height: 110, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)))) ,
+                                const SizedBox(width: 12),
+                                Expanded(child: Container(height: 110, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)))) ,
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            Container(width: 160, height: 18, color: Colors.white),
+                            const SizedBox(height: 10),
+
+                            Column(children: List.generate(3, (_) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Container(
+                                height: 64,
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(width: 32, height: 32, decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(width: 120, height: 12, color: Colors.white),
+                                          const SizedBox(height: 6),
+                                          Container(width: 180, height: 10, color: Colors.white),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(width: 60, height: 28, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20))),
+                                  ],
+                                ),
+                              ),
+                            ))),
+
+                            const SizedBox(height: 20),
+                            Container(width: 120, height: 18, color: Colors.white),
+                            const SizedBox(height: 10),
+
+                            Column(children: List.generate(3, (_) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Container(
+                                height: 80,
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(width: 180, height: 12, color: Colors.white),
+                                    const SizedBox(height: 8),
+                                    Row(children: [Container(width: 160, height: 10, color: Colors.white), const Spacer(), Container(width: 70, height: 28, color: Colors.white)]),
+                                  ],
+                                ),
+                              ),
+                            ))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
               );
             }
 
@@ -149,7 +265,13 @@ class _OperatorDashboardState extends State<OperatorDashboard>
             }
 
             return RefreshIndicator(
-              onRefresh: () => provider.loadDashboardData(),
+              onRefresh: () async {
+                // Capture the other provider before awaiting to avoid using
+                // BuildContext across async gaps (use_build_context_synchronously).
+                final reportsProvider = context.read<OperatorReportProvider>();
+                await provider.loadDashboardData();
+                await reportsProvider.fetchReports();
+              },
               color: gradientColors[0],
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -310,41 +432,161 @@ class _OperatorDashboardState extends State<OperatorDashboard>
                             ),
                           const SizedBox(height: 20),
 
-                          _buildSectionHeader("Reports", actionText: "See all"),
+                          _buildSectionHeader(
+                            "Reports",
+                            actionText: "See all",
+                            onAction: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => OperatorNavBarWrapper(
+                                    homePage: OperatorDashboardNav(),
+                                    driversPage: OperatorDriversPage(),
+                                    transactionsPage: const OperatorRemittancesPage(),
+                                    reportsPage: ChangeNotifierProvider(
+                                      create: (_) => OperatorReportProvider()..fetchReports(),
+                                      child: const OperatorReportsPage(),
+                                    ),
+                                    profilePage: ProfilePage(),
+                                    initialIndex: 2,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                           const SizedBox(height: 10),
-                          ...provider.recentReports.map((report) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _buildReportCard(
-                                title: report['title'] ?? 'Unknown Report',
-                                plate: report['plate'] ?? 'N/A',
-                                status: provider.getReportStatusDisplay(
-                                  report['status'] ?? 'open',
-                                ),
-                                statusColor: _getStatusColor(
-                                  provider.getReportStatusColor(
-                                    report['status'] ?? 'open',
+                          Consumer<OperatorReportProvider>(
+                            builder: (context, reportProvider, child) {
+                              // Take only the first 3 reports
+                              final limitedReports = reportProvider.reports.take(3).toList();
+
+                              if (reportProvider.isLoading && limitedReports.isEmpty) {
+                                // Show shimmer for reports section
+                                return Column(
+                                  children: List.generate(3, (_) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: Shimmer.fromColors(
+                                      baseColor: Colors.grey.shade300,
+                                      highlightColor: Colors.grey.shade100,
+                                      child: Container(
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.grey.shade300),
+                                        ),
+                                      ),
+                                    ),
+                                  )),
+                                );
+                              }
+
+                              if (reportProvider.errorMessage != null) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.red, size: 32),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Error loading reports',
+                                          style: GoogleFonts.manrope(
+                                            fontSize: 13,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          reportProvider.errorMessage!,
+                                          style: GoogleFonts.nunito(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TextButton(
+                                          onPressed: () => reportProvider.fetchReports(),
+                                          child: const Text('Retry'),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                buttonText: provider.getReportButtonText(
-                                  report['status'] ?? 'open',
-                                ),
-                              ),
-                            );
-                          }),
-                          if (provider.recentReports.isEmpty)
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Text(
-                                  'No reports available',
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 13,
-                                    color: Colors.grey,
+                                );
+                              }
+
+                              if (limitedReports.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Text(
+                                      'No reports available',
+                                      style: GoogleFonts.nunito(
+                                        fontSize: 13,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
+                                );
+                              }
+
+                              return Column(
+                                children: limitedReports.map((operatorReport) {
+                                  final report = operatorReport.report;
+                                  final reporter = operatorReport.reporter;
+                                  final driver = operatorReport.assignedDriver;
+
+                                  // Format date
+                                  String formattedDate = 'Unknown';
+                                  if (report.createdAt != null) {
+                                    final date = report.createdAt!;
+                                    formattedDate = '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+                                  }
+
+                                  // Build tags
+                                  List<String> tags = [report.category.displayName];
+                                  if (driver?.driverDetails?.vehiclePlate != null) {
+                                    tags.add('Plate: ${driver!.driverDetails!.vehiclePlate}');
+                                  }
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: _buildReportCard(
+                                      title: report.category.displayName,
+                                      plate: driver?.driverDetails?.vehiclePlate ?? 'N/A',
+                                      status: report.status.displayName,
+                                      statusColor: report.status.color,
+                                      buttonText: _getReportButtonText(report.status.value),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ReportDetailsPage(
+                                              name: reporter?.fullName ?? 'Unknown Reporter',
+                                              role: reporter?.role.toUpperCase() ?? 'COMMUTER',
+                                              id: report.id ?? '123456789',
+                                              priority: report.severity.displayName,
+                                              date: formattedDate,
+                                              description: report.description,
+                                              tags: tags,
+                                              attachmentId: operatorReport.attachment?.id,
+                                              initialAttachmentUrl: operatorReport.attachment?.url,
+                                              driverName: driver?.fullName,
+                                              vehiclePlate: driver?.driverDetails?.vehiclePlate,
+                                              routeCode: driver?.driverDetails?.routeCode,
+                                              status: report.status.displayName,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -359,20 +601,19 @@ class _OperatorDashboardState extends State<OperatorDashboard>
     );
   }
 
-  Color _getStatusColor(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'orange':
-        return Colors.orange;
-      case 'green':
-        return Colors.green;
-      case 'blue':
-        return Colors.blue;
-      case 'grey':
-        return Colors.grey;
-      case 'red':
-        return Colors.red;
+  String _getReportButtonText(String status) {
+    switch (status.toLowerCase()) {
+      case 'resolved':
+      case 'closed':
+      case 'dismissed':
+        return 'Details';
+      case 'in_review':
+      case 'in progress':
+        return 'Track';
+      case 'open':
+        return 'Review';
       default:
-        return Colors.blue;
+        return 'View';
     }
   }
 
@@ -428,7 +669,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
     );
   }
 
-  Widget _buildSectionHeader(String title, {String? actionText}) {
+  Widget _buildSectionHeader(String title, {String? actionText, VoidCallback? onAction}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -442,7 +683,7 @@ class _OperatorDashboardState extends State<OperatorDashboard>
         ),
         if (actionText != null)
           TextButton(
-            onPressed: () {},
+            onPressed: onAction ?? () {},
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey[700],
               textStyle: GoogleFonts.manrope(
@@ -515,50 +756,48 @@ class _OperatorDashboardState extends State<OperatorDashboard>
     required String status,
     required Color statusColor,
     required String buttonText,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.purple.shade100),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.purple.shade100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Plate No. $plate • Status: $status',
-                style: GoogleFonts.nunito(
-                  fontSize: 12,
-                  color: const Color.fromARGB(255, 123, 123, 123),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Plate No. $plate • Status: $status',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      color: const Color.fromARGB(255, 123, 123, 123),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              CustomButton(
-                text: buttonText,
-                onPressed: () {},
-                isFilled: true,
-                fillColor: statusColor,
-                textColor: Colors.white,
-                width: 70,
-                height: 28,
-                borderRadius: 20,
-                fontSize: 12,
-                hasShadow: false,
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                // Removed inline action button so the entire card is tappable.
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
