@@ -62,12 +62,13 @@ class TransactionService {
 
       return data.map((json) {
         final Map<String, dynamic> txData = Map<String, dynamic>.from(json);
-        
+
         // Extract initiator name
         String? initiatorName;
         if (txData['initiator'] != null) {
           final initiator = txData['initiator'] as Map<String, dynamic>;
-          initiatorName = '${initiator['first_name']} ${initiator['last_name']}';
+          initiatorName =
+              '${initiator['first_name']} ${initiator['last_name']}';
         }
 
         // Extract trip-related data
@@ -80,12 +81,12 @@ class TransactionService {
         if (txData['trip'] != null) {
           final trip = txData['trip'] as Map<String, dynamic>;
           numPassengers = trip['passengers_count'] as int?;
-          
+
           if (trip['driver'] != null) {
             final driver = trip['driver'] as Map<String, dynamic>;
             plateNumber = driver['vehicle_plate'] as String?;
             operatorName = driver['operator_name'] as String?;
-            
+
             if (driver['profile'] != null) {
               final profile = driver['profile'] as Map<String, dynamic>;
               driverName = '${profile['first_name']} ${profile['last_name']}';
@@ -111,8 +112,8 @@ class TransactionService {
           externalReference: txData['external_reference'],
           metadata: txData['metadata'] as Map<String, dynamic>?,
           createdAt: DateTime.parse(txData['created_at']),
-          processedAt: txData['processed_at'] != null 
-              ? DateTime.parse(txData['processed_at']) 
+          processedAt: txData['processed_at'] != null
+              ? DateTime.parse(txData['processed_at'])
               : null,
           initiatorName: initiatorName,
           driverName: driverName,
@@ -131,9 +132,9 @@ class TransactionService {
   /// Fetch a single transaction by ID with full details
   Future<TransactionModel?> fetchTransactionById(String id) async {
     try {
-          final response = await _supabase
-            .from('transactions')
-            .select('''
+      final response = await _supabase
+          .from('transactions')
+          .select('''
             id,
             transaction_number,
             wallet_id,
@@ -160,17 +161,20 @@ class TransactionService {
               route:routes(code)
             )
           ''')
-            .order('created_at', ascending: false)
-            .limit(1000);
+          .order('created_at', ascending: false)
+          .limit(1000);
 
-          final List<dynamic> rows = response as List;
-          if (rows.isEmpty) return null;
+      final List<dynamic> rows = response as List;
+      if (rows.isEmpty) return null;
 
-          final matched = rows.firstWhere((r) => (r['id'] as String?) == id, orElse: () => null);
-          if (matched == null) return null;
+      final matched = rows.firstWhere(
+        (r) => (r['id'] as String?) == id,
+        orElse: () => null,
+      );
+      if (matched == null) return null;
 
-          final Map<String, dynamic> txData = Map<String, dynamic>.from(matched);
-      
+      final Map<String, dynamic> txData = Map<String, dynamic>.from(matched);
+
       // Extract initiator name
       String? initiatorName;
       if (txData['initiator'] != null) {
@@ -188,12 +192,12 @@ class TransactionService {
       if (txData['trip'] != null) {
         final trip = txData['trip'] as Map<String, dynamic>;
         numPassengers = trip['passengers_count'] as int?;
-        
+
         if (trip['driver'] != null) {
           final driver = trip['driver'] as Map<String, dynamic>;
           plateNumber = driver['vehicle_plate'] as String?;
           operatorName = driver['operator_name'] as String?;
-          
+
           if (driver['profile'] != null) {
             final profile = driver['profile'] as Map<String, dynamic>;
             driverName = '${profile['first_name']} ${profile['last_name']}';
@@ -219,8 +223,8 @@ class TransactionService {
         externalReference: txData['external_reference'],
         metadata: txData['metadata'] as Map<String, dynamic>?,
         createdAt: DateTime.parse(txData['created_at']),
-        processedAt: txData['processed_at'] != null 
-            ? DateTime.parse(txData['processed_at']) 
+        processedAt: txData['processed_at'] != null
+            ? DateTime.parse(txData['processed_at'])
             : null,
         initiatorName: initiatorName,
         driverName: driverName,
@@ -255,6 +259,18 @@ class TransactionService {
       return counts;
     } catch (e) {
       throw Exception('Failed to get transaction counts: $e');
+    }
+  }
+
+  /// Update transaction status (e.g., pending -> completed/rejected)
+  Future<void> updateTransactionStatus(String id, String status) async {
+    try {
+      await _supabase
+          .from('transactions')
+          .update({'status': status})
+          .eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to update transaction status: $e');
     }
   }
 }
