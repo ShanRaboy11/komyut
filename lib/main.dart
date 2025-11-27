@@ -16,6 +16,7 @@ import 'views/providers/driver_trip.dart';
 import 'views/providers/admin_verification.dart';
 import 'views/providers/operator_report.dart';
 import 'views/providers/admin_report.dart';
+import 'views/providers/operator_drivers.dart';
 
 import 'views/pages/landingpage.dart';
 import 'views/pages/admin_app.dart';
@@ -58,6 +59,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
         ChangeNotifierProvider(create: (_) => OperatorReportProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
+        ChangeNotifierProvider(create: (_) => OperatorProvider()),
         
         // Stream provider for auth state
         StreamProvider<User?>(
