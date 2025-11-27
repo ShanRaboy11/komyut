@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/report.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import '../widgets/commutercard_report.dart';
 import '../providers/driver_reports.dart';
 import '../services/driver_report.dart';
@@ -66,10 +67,16 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
     if (!mounted) return;
     setState(() => _isUpdating = true);
     try {
-      final provider = Provider.of<DriverReportProvider>(context, listen: false);
+      final provider = Provider.of<DriverReportProvider>(
+        context,
+        listen: false,
+      );
       bool success = false;
       try {
-        success = await provider.updateReportStatus(widget.reportId, ReportStatus.resolved);
+        success = await provider.updateReportStatus(
+          widget.reportId,
+          ReportStatus.resolved,
+        );
       } catch (_) {
         success = false;
       }
@@ -85,40 +92,68 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
         await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (dialogCtx) => AlertDialog(
-            title: const Text('Success'),
-            content: const Text('Report marked as resolved.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const Text('OK'),
+          builder:
+              (dialogCtx) => AlertDialog(
+                title: const Text('Success'),
+                content: const Text('Report marked as resolved.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
 
         if (!mounted) return;
 
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (ctx) => const DriverNavBarWrapper(
-              homePage: DriverDashboardNav(),
-              activityPage: DriverActivityPage(),
-              feedbackPage: DriverFeedbackPage(),
-              notificationsPage: NotificationPage(),
-              profilePage: ProfilePage(),
-            ),
+            builder:
+                (ctx) => const DriverNavBarWrapper(
+                  homePage: DriverDashboardNav(),
+                  activityPage: DriverActivityPage(),
+                  feedbackPage: DriverFeedbackPage(),
+                  notificationsPage: NotificationPage(),
+                  profilePage: ProfilePage(),
+                ),
           ),
           (route) => false,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update report: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update report: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
+  }
+
+  late final Future<String?> _attachmentUrlFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _attachmentUrlFuture = _resolveAttachmentUrl();
+  }
+
+  Future<String?> _resolveAttachmentUrl() async {
+    if (widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+      return widget.imagePath!;
+    }
+    if (widget.attachmentId != null && widget.attachmentId!.isNotEmpty) {
+      try {
+        final svc = DriverReportService();
+        final report = await svc.getReportById(widget.reportId);
+        return report?.attachmentUrl;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   @override
@@ -210,7 +245,11 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
             const SizedBox(height: 16),
 
             // Profile Card
-            ProfileCard(name: widget.name, role: widget.role, id: widget.reporterId),
+            ProfileCard(
+              name: widget.name,
+              role: widget.role,
+              id: widget.reporterId,
+            ),
 
             const SizedBox(height: 20),
 
@@ -241,26 +280,27 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children: widget.tags.map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEBD9FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                    child: Text(
-                    tag,
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF7A3DB8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              }).toList(),
+              children:
+                  widget.tags.map((tag) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEBD9FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        tag,
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF7A3DB8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
             ),
 
             const SizedBox(height: 25),
@@ -276,68 +316,226 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            // Image Attachment
-            if (widget.imagePath != null && widget.imagePath!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  widget.imagePath!,
+            // Image Attachment (resolved via imagePath or attachmentId)
+            FutureBuilder<String?>(
+              future: _attachmentUrlFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                    width: double.infinity,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF8E4CB6),
+                      ),
+                    ),
+                  );
+                }
+
+                final path = snapshot.data;
+                if (path != null && path.isNotEmpty) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 220,
+                      child: Builder(
+                        builder: (ctx) {
+                          if (path.startsWith('http')) {
+                            return Image.network(
+                              path,
+                              width: double.infinity,
+                              height: 220,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF8E4CB6),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image,
+                                        size: 96,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Unable to load image',
+                                        style: GoogleFonts.manrope(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          } else if (path.startsWith('/') ||
+                              path.startsWith('file:')) {
+                            try {
+                              final filePath =
+                                  path.startsWith('file://')
+                                      ? path.replaceFirst('file://', '')
+                                      : path;
+                              return Image.file(
+                                File(filePath),
+                                width: double.infinity,
+                                height: 220,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image,
+                                          size: 96,
+                                          color: Colors.grey[600],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Unable to load image',
+                                          style: GoogleFonts.manrope(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            } catch (e) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 96,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Unable to load image',
+                                      style: GoogleFonts.manrope(
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          } else {
+                            return Image.asset(
+                              path,
+                              width: double.infinity,
+                              height: 220,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image,
+                                        size: 96,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Unable to load image',
+                                        style: GoogleFonts.manrope(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                }
+
+                return Container(
                   width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ] else ...[
-              Container(
-                width: double.infinity,
-                height: 180,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.image_not_supported, size: 36, color: Colors.grey[600]),
-                      const SizedBox(height: 8),
-                      Text('No attachment', style: GoogleFonts.manrope(color: Colors.grey[600])),
-                    ],
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported,
+                          size: 96,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No attachment',
+                          style: GoogleFonts.manrope(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 35),
 
             // Mark as Resolved Button
-            if (_isUpdating)
-              const Center(child: CircularProgressIndicator(color: Color(0xFF8E4CB6)))
-            else
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5B53C2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isUpdating ? null : _markAsResolved,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8E4CB6),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Confirm'),
-                        content: const Text('Are you sure you want to mark this report as resolved?'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Yes')),
-                        ],
-                      ),
-                    );
-
-                    if (confirm == true) await _markAsResolved();
-                  },
-                  child: Text('Mark as Resolved', style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
+                child:
+                    _isUpdating
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text(
+                          "Mark as Resolved",
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
               ),
+            ),
           ],
         ),
       ),
