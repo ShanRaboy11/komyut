@@ -154,9 +154,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         if (provider.isLoading) {
           // Show a detailed shimmer skeleton while dashboard data loads
           return Scaffold(
-            body: SafeArea(
-              child: _buildDashboardSkeleton(context),
-            ),
+            body: SafeArea(child: _buildDashboardSkeleton(context)),
           );
         }
 
@@ -263,8 +261,8 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
 
                 const SizedBox(height: 20),
                 _buildAnalyticsSection(isSmallScreen, provider),
-                const SizedBox(height: 20),
-                _buildPromoCard(),
+                //const SizedBox(height: 20),
+                //_buildPromoCard(),
                 const SizedBox(height: 20),
                 _buildQuickActions(),
               ],
@@ -468,24 +466,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   ),
                 ],
               ),
-              IconButton(
-                onPressed: () {},
-                icon: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8E4CB6), Color(0xFF5B53C2)],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-              ),
             ],
           ),
           const Divider(),
@@ -496,7 +476,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 Icons.directions_bus,
                 'Trips',
                 '${provider.totalTripsCount} trips',
-                subtitle: '12.6 mi',
+                //subtitle: '12.6 mi',
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
@@ -545,7 +525,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildPromoCard() {
+  /*Widget _buildPromoCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -583,7 +563,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         ],
       ),
     );
-  }
+  }*/
 
   Widget _buildQuickActions() {
     return Container(
@@ -612,7 +592,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 ),
               );
             },
-          ), 
+          ),
         ],
       ),
     );
@@ -669,11 +649,13 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
             const SizedBox(height: 20),
 
             // Tabs skeleton
-            Row(children: [
-              Expanded(child: Container(height: 40, color: Colors.grey[300])),
-              const SizedBox(width: 8),
-              Expanded(child: Container(height: 40, color: Colors.grey[300])),
-            ]),
+            Row(
+              children: [
+                Expanded(child: Container(height: 40, color: Colors.grey[300])),
+                const SizedBox(width: 8),
+                Expanded(child: Container(height: 40, color: Colors.grey[300])),
+              ],
+            ),
             const SizedBox(height: 16),
 
             // Wallet / Tokens skeleton
@@ -692,8 +674,16 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(width: 180, height: 28, color: Colors.grey[300]),
-                      Container(width: 100, height: 40, color: Colors.grey[300]),
+                      Container(
+                        width: 180,
+                        height: 28,
+                        color: Colors.grey[300],
+                      ),
+                      Container(
+                        width: 100,
+                        height: 40,
+                        color: Colors.grey[300],
+                      ),
                     ],
                   ),
                 ],
@@ -720,17 +710,33 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          Container(
+                            width: 80,
+                            height: 12,
+                            color: Colors.grey[300],
+                          ),
                           const SizedBox(height: 8),
-                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                          Container(
+                            width: 100,
+                            height: 12,
+                            color: Colors.grey[300],
+                          ),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          Container(
+                            width: 80,
+                            height: 12,
+                            color: Colors.grey[300],
+                          ),
                           const SizedBox(height: 8),
-                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                          Container(
+                            width: 100,
+                            height: 12,
+                            color: Colors.grey[300],
+                          ),
                         ],
                       ),
                     ],
@@ -751,7 +757,9 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                 children: [
                   Container(width: 32, height: 32, color: Colors.grey[300]),
                   const SizedBox(width: 15),
-                  Expanded(child: Container(height: 36, color: Colors.grey[300])),
+                  Expanded(
+                    child: Container(height: 36, color: Colors.grey[300]),
+                  ),
                   const SizedBox(width: 12),
                   Container(width: 70, height: 35, color: Colors.grey[300]),
                 ],
@@ -768,9 +776,17 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               ),
               child: Column(
                 children: [
-                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                  Container(
+                    width: double.infinity,
+                    height: 44,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 10),
-                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                  Container(
+                    width: double.infinity,
+                    height: 44,
+                    color: Colors.grey[300],
+                  ),
                 ],
               ),
             ),

@@ -17,7 +17,7 @@ class _RateReviewPageState extends State<RateReviewPage> {
 
   // Rating State
   final TextEditingController _reviewController = TextEditingController();
-  
+
   // Store ratings for each category
   final Map<String, int> _ratings = {
     "Driver Courtesy": 0,
@@ -30,13 +30,13 @@ class _RateReviewPageState extends State<RateReviewPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Trigger Animations
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenSize = MediaQuery.of(context).size;
       setState(() {
         // Adjusted height to prevent covering the logo (0.75 instead of 0.80)
-        _sheetHeight = screenSize.height * 0.75; 
+        _sheetHeight = screenSize.height * 0.75;
         _sheetOpacity = 1.0;
         _logoOpacity = 1.0;
       });
@@ -71,7 +71,11 @@ class _RateReviewPageState extends State<RateReviewPage> {
           opacity: _logoOpacity,
           duration: const Duration(milliseconds: 1000),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
             onPressed: () async {
               _collapseSheet();
               await Future.delayed(const Duration(milliseconds: 200));
@@ -86,15 +90,15 @@ class _RateReviewPageState extends State<RateReviewPage> {
           child: Text(
             'Rate and Review',
             style: GoogleFonts.manrope(
-              color: Colors.black, 
-              fontSize: 18, 
-              fontWeight: FontWeight.bold
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
       ),
       extendBodyBehindAppBar: true,
-      
+
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
@@ -113,18 +117,24 @@ class _RateReviewPageState extends State<RateReviewPage> {
               Positioned(
                 top: 39,
                 left: 172,
-                child: Image.asset("assets/images/Ellipse 1.png", errorBuilder: (c,e,s) => const SizedBox()),
+                child: Image.asset(
+                  "assets/images/Ellipse 1.png",
+                  errorBuilder: (c, e, s) => const SizedBox(),
+                ),
               ),
               Positioned(
                 top: -134,
                 left: 22,
-                child: Image.asset("assets/images/Ellipse 3.png", errorBuilder: (c,e,s) => const SizedBox()),
+                child: Image.asset(
+                  "assets/images/Ellipse 3.png",
+                  errorBuilder: (c, e, s) => const SizedBox(),
+                ),
               ),
 
               // 3. Center Logo
               // Moved UP to 0.10 (10% from top) so it clears the sheet
               Positioned(
-                top: screenSize.height * 0.10, 
+                top: screenSize.height * 0.13,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -133,14 +143,25 @@ class _RateReviewPageState extends State<RateReviewPage> {
                     duration: const Duration(milliseconds: 1000),
                     curve: Curves.easeOut,
                     child: Image.asset(
-                      'assets/images/komyut small logo.png', 
+                      'assets/images/komyut small logo.png',
                       width: 150,
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback UI
                         return Column(
                           children: [
-                            const Icon(Icons.settings, size: 60, color: Color(0xFF8E4CB6)),
-                            Text("komyut", style: GoogleFonts.manrope(fontSize: 30, fontWeight: FontWeight.bold, color: const Color(0xFF8E4CB6)))
+                            const Icon(
+                              Icons.settings,
+                              size: 60,
+                              color: Color(0xFF8E4CB6),
+                            ),
+                            Text(
+                              "komyut",
+                              style: GoogleFonts.manrope(
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF8E4CB6),
+                              ),
+                            ),
                           ],
                         );
                       },
@@ -189,7 +210,8 @@ class _RateReviewPageState extends State<RateReviewPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(26.0, 30.0, 26.0, 0),
                       child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(), // Reduced bounce for "no scrolling" feel
+                        physics:
+                            const ClampingScrollPhysics(), // Reduced bounce for "no scrolling" feel
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -213,7 +235,7 @@ class _RateReviewPageState extends State<RateReviewPage> {
                                 height: 1.4,
                               ),
                             ),
-                            
+
                             const SizedBox(height: 25),
 
                             // Rating Section Header
@@ -252,7 +274,7 @@ class _RateReviewPageState extends State<RateReviewPage> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            
+
                             // Text Input Box
                             Container(
                               height: 100,
@@ -261,7 +283,9 @@ class _RateReviewPageState extends State<RateReviewPage> {
                                 borderRadius: BorderRadius.circular(15),
                                 border: Border.all(color: Colors.white),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 15),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                              ),
                               child: TextField(
                                 controller: _reviewController,
                                 // FIXED: Text color set to black
@@ -290,7 +314,10 @@ class _RateReviewPageState extends State<RateReviewPage> {
                                   // Navigate to the Success Page
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => const FeedbackSuccessPage()),
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const FeedbackSuccessPage(),
+                                    ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -338,7 +365,7 @@ class _RateReviewPageState extends State<RateReviewPage> {
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 30), // Bottom padding
                           ],
                         ),
@@ -379,14 +406,16 @@ class _RateReviewPageState extends State<RateReviewPage> {
                     int tapRating = index + 1;
                     // FIXED: If tapping the same star count, reset to 0
                     if (_ratings[label] == tapRating) {
-                      _ratings[label] = 0; 
+                      _ratings[label] = 0;
                     } else {
                       _ratings[label] = tapRating;
                     }
                   });
                 },
                 child: Icon(
-                  index < currentRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                  index < currentRating
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
                   color: const Color(0xFFFFD700), // Gold color
                   size: 26,
                 ),

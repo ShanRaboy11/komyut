@@ -216,24 +216,28 @@ class TripDetailsCard extends StatelessWidget {
         const SizedBox(width: 20),
 
         // Text
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            Text(
-              time,
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: const Color.fromRGBO(0, 0, 0, 0.6),
+              Text(
+                time,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  color: const Color.fromRGBO(0, 0, 0, 0.6),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

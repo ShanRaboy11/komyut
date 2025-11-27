@@ -25,7 +25,7 @@ class _ReportPageState extends State<ReportPage> {
   double _logoOpacity = 0.0;
   final List<String> selectedCategories = [];
   String severity = 'High';
-  
+
   // Form controllers
   final TextEditingController _descriptionController = TextEditingController();
   File? _selectedImage;
@@ -56,7 +56,10 @@ class _ReportPageState extends State<ReportPage> {
     try {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Opening image picker...'), duration: Duration(milliseconds: 700)),
+          const SnackBar(
+            content: Text('Opening image picker...'),
+            duration: Duration(milliseconds: 700),
+          ),
         );
       }
 
@@ -75,14 +78,17 @@ class _ReportPageState extends State<ReportPage> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No image selected'), duration: Duration(milliseconds: 900)),
+          const SnackBar(
+            content: Text('No image selected'),
+            duration: Duration(milliseconds: 900),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
       }
     }
   }
@@ -126,9 +132,7 @@ class _ReportPageState extends State<ReportPage> {
     if (success) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const SuccessPage(),
-        ),
+        MaterialPageRoute(builder: (context) => const SuccessPage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -361,9 +365,8 @@ class _ReportPageState extends State<ReportPage> {
                                               color: selected
                                                   ? Colors.white
                                                   : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(
-                                                10,
-                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                               border: Border.all(
                                                 color: Colors.white70,
                                               ),
@@ -407,7 +410,9 @@ class _ReportPageState extends State<ReportPage> {
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
-                                  children: ["Low", "Medium", "High"].map((level) {
+                                  children: ["Low", "Medium", "High"].map((
+                                    level,
+                                  ) {
                                     final bool isSelected = severity == level;
                                     return ChoiceChip(
                                       selected: isSelected,
@@ -421,15 +426,27 @@ class _ReportPageState extends State<ReportPage> {
                                       label: Text(
                                         level,
                                         style: GoogleFonts.nunito(
-                                          color: isSelected ? const Color(0xFF5B53C2) : Colors.white,
+                                          color: isSelected
+                                              ? const Color(0xFF5B53C2)
+                                              : Color.fromARGB(
+                                                  255,
+                                                  160,
+                                                  155,
+                                                  225,
+                                                ),
                                           fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
                                         ),
                                       ),
                                       backgroundColor: Colors.transparent,
                                       selectedColor: Colors.white,
                                       elevation: 0,
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 6,
+                                      ),
                                     );
                                   }).toList(),
                                 ),
@@ -437,17 +454,22 @@ class _ReportPageState extends State<ReportPage> {
                                 const SizedBox(height: 40),
 
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
-                                        foregroundColor: const Color(0xFF5B53C2),
+                                        foregroundColor: const Color(
+                                          0xFF5B53C2,
+                                        ),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
                                         ),
                                       ),
                                       onPressed: () {
@@ -603,54 +625,60 @@ class _ReportPageState extends State<ReportPage> {
                                       width: double.infinity,
                                       height: 120,
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.white38),
+                                        border: Border.all(
+                                          color: Colors.white38,
+                                        ),
                                         borderRadius: BorderRadius.circular(10),
                                         color: Colors.white12,
                                       ),
                                       child: _selectedImage != null
                                           ? Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: Image.file(
-                                                  _selectedImage!,
-                                                  width: double.infinity,
-                                                  height: 120,
-                                                  fit: BoxFit.cover,
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  child: Image.file(
+                                                    _selectedImage!,
+                                                    width: double.infinity,
+                                                    height: 120,
+                                                    fit: BoxFit.cover,
+                                                  ),
                                                 ),
-                                              ),
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      _selectedImage = null;
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    padding: const EdgeInsets.all(4),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black54,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.close,
-                                                      color: Colors.white,
-                                                      size: 16,
+                                                Positioned(
+                                                  top: 4,
+                                                  right: 4,
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _selectedImage = null;
+                                                      });
+                                                    },
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black54,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.close,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          )
+                                              ],
+                                            )
                                           : Column(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
                                                 const Icon(
-                                                  Icons.add_photo_alternate_outlined,
+                                                  Icons
+                                                      .add_photo_alternate_outlined,
                                                   color: Colors.white70,
                                                   size: 36,
                                                 ),
@@ -671,17 +699,22 @@ class _ReportPageState extends State<ReportPage> {
                                 const SizedBox(height: 40),
 
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
-                                        foregroundColor: const Color(0xFF5B53C2),
+                                        foregroundColor: const Color(
+                                          0xFF5B53C2,
+                                        ),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
                                         ),
                                       ),
                                       onPressed: reportProvider.isLoading
@@ -694,9 +727,9 @@ class _ReportPageState extends State<ReportPage> {
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                                 valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                  Color(0xFF5B53C2),
-                                                ),
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Color(0xFF5B53C2)),
                                               ),
                                             )
                                           : Text(
