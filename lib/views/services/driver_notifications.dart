@@ -110,7 +110,7 @@ class NotificationDriverProvider extends ChangeNotifier {
             .limit(50);
       }
 
-      // 4. Verifications (NEW)
+      // 4. Verifications
       final verificationsFuture = _supabase
           .from('verifications')
           .select('id, status, reviewer_notes, reviewed_at')
@@ -119,27 +119,36 @@ class NotificationDriverProvider extends ChangeNotifier {
           .order('reviewed_at', ascending: false)
           .limit(10);
 
-      // 5. Reports (NEW)
+      // 5. Reports (UPDATED to match RLS 'reports_assigned_or_driver')
+
       // A. My Reports (Updates)
+      // Note: This requires an RLS allowing 'reporter_profile_id = auth.uid()'
       final myReportsFuture = _supabase
           .from('reports')
           .select('id, category, status, updated_at, resolution_notes')
           .eq('reporter_profile_id', profileId)
-          .neq('status', 'open')
+          .neq('status', 'open') // Only updates
           .order('updated_at', ascending: false)
           .limit(20);
 
-      // B. Reports Against Me (Feedback)
-      Future<List<dynamic>> reportsAgainstFuture = Future.value([]);
+      // B. Relevant Reports (Assigned to Me OR Against My Driver Profile)
+      // This matches your RLS policy exactly using .or()
+      Future<List<dynamic>> reportsRelevantFuture = Future.value([]);
+
+      String filterString = 'assigned_to_profile_id.eq.$profileId';
       if (driverId.isNotEmpty) {
-        reportsAgainstFuture = _supabase
-            .from('reports')
-            .select('id, category, severity, created_at')
-            .eq('reported_entity_type', 'driver')
-            .eq('reported_entity_id', driverId)
-            .order('created_at', ascending: false)
-            .limit(20);
+        filterString +=
+            ',and(reported_entity_type.eq.driver,reported_entity_id.eq.$driverId)';
       }
+
+      reportsRelevantFuture = _supabase
+          .from('reports')
+          .select(
+            'id, category, severity, description, status, created_at, assigned_to_profile_id, reported_entity_type',
+          )
+          .or(filterString)
+          .order('created_at', ascending: false)
+          .limit(20);
 
       // 6. Notifications Table (Read Status)
       final notifTableFuture = _supabase
@@ -156,17 +165,16 @@ class NotificationDriverProvider extends ChangeNotifier {
         earningsFuture, // 2
         verificationsFuture, // 3
         myReportsFuture, // 4
-        reportsAgainstFuture, // 5
+        reportsRelevantFuture, // 5 (Combined Assigned + Against)
         notifTableFuture, // 6
       ]);
 
-      // Removed explicit casts 'as List<dynamic>' to fix linter warnings
       final tripsData = results[0];
       final walletTxData = results[1];
       final earningsData = results[2];
       final verificationsData = results[3];
       final myReportsData = results[4];
-      final reportsAgainstData = results[5];
+      final reportsRelevantData = results[5];
       final notifData = results[6];
 
       final List<NotifItem> generatedList = [];
@@ -182,7 +190,6 @@ class NotificationDriverProvider extends ChangeNotifier {
         if (trip['started_at'] == null) continue;
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
-        // --- Trip Start ---
         final startRow = notifData
             .where(
               (n) =>
@@ -213,7 +220,6 @@ class NotificationDriverProvider extends ChangeNotifier {
           ),
         );
 
-        // --- Trip End ---
         if (currentStatus == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
           final endRow = notifData
@@ -314,7 +320,7 @@ class NotificationDriverProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // D. PROCESS VERIFICATIONS (NEW)
+      // D. PROCESS VERIFICATIONS
       // ---------------------------------------------------------
       for (var verif in verificationsData) {
         if (verif['reviewed_at'] == null) continue;
@@ -360,11 +366,16 @@ class NotificationDriverProvider extends ChangeNotifier {
       // ---------------------------------------------------------
       // E. PROCESS REPORTS (NEW)
       // ---------------------------------------------------------
-      // E1. My Reports Resolved
+
+      // helper
+      String cap(String s) =>
+          s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+      // E1. My Reports Resolved (Updates)
       for (var rep in myReportsData) {
         final String rId = rep['id'];
         final DateTime updatedAt = DateTime.parse(rep['updated_at']).toLocal();
-        final String category = rep['category'];
+        final String category = cap(rep['category']);
         final String status = rep['status'];
         final String notes = rep['resolution_notes'] ?? '';
 
@@ -383,40 +394,56 @@ class NotificationDriverProvider extends ChangeNotifier {
             virtualId: 'myreport_$rId',
             tripId: '',
             variant: 'report',
-            title: "Report Resolved ($category): $notes",
+            title: "Report Resolved ($category)",
             timeOrDate: DateFormat('MMM dd').format(updatedAt),
             isRead: repRow != null ? (repRow['read'] ?? false) : false,
             sortDate: updatedAt,
-            payload: {'report_id': rId, 'action': 'resolved', 'status': status},
+            payload: {
+              'report_id': rId,
+              'action': 'resolved',
+              'status': status,
+              'notes': notes,
+              'category': category,
+            },
           ),
         );
       }
 
-      // E2. Reports Against Me (Feedback)
-      for (var rep in reportsAgainstData) {
+      // E2. Relevant Reports (Assigned or Against Me)
+      for (var rep in reportsRelevantData) {
         final String rId = rep['id'];
         final DateTime createdAt = DateTime.parse(rep['created_at']).toLocal();
-        final String category = rep['category'];
+        final String category = cap(rep['category']);
         final String severity = rep['severity'];
+        final String description = rep['description'] ?? '';
+        final String assignedTo = rep['assigned_to_profile_id'] ?? '';
+        final String reportedType = rep['reported_entity_type'] ?? '';
 
         final repRow = notifData
             .where(
               (n) =>
                   n['type'] == 'report' &&
                   n['payload']?['report_id'] == rId &&
-                  n['payload']?['action'] == 'feedback',
+                  n['payload']?['action'] == 'relevant',
             )
             .firstOrNull;
 
-        String title = "New Feedback Received ($category)";
-        if (severity == 'high') {
-          title = "High Severity Report Received ($category)";
+        String title = "Report Update";
+        String actionType = 'relevant';
+
+        if (assignedTo == profileId) {
+          title = "New Report Received ($category)";
+        } else if (reportedType == 'driver') {
+          title = "New Feedback Received ($category)";
+          if (severity == 'high') {
+            title = "High Severity Report Received ($category)";
+          }
         }
 
         generatedList.add(
           NotifItem(
-            id: repRow != null ? repRow['id'] : 'virtual_feedback_$rId',
-            virtualId: 'feedback_$rId',
+            id: repRow != null ? repRow['id'] : 'virtual_relevant_$rId',
+            virtualId: 'relevant_$rId',
             tripId: '',
             variant: 'report',
             title: title,
@@ -425,8 +452,10 @@ class NotificationDriverProvider extends ChangeNotifier {
             sortDate: createdAt,
             payload: {
               'report_id': rId,
-              'action': 'feedback',
+              'action': actionType,
               'severity': severity,
+              'description': description,
+              'category': category,
             },
           ),
         );
@@ -467,7 +496,6 @@ class NotificationDriverProvider extends ChangeNotifier {
 
         String type = 'trip';
 
-        // Added curly braces to fix linter errors
         if (item.variant == 'wallet') {
           type = 'wallet';
         } else if (item.variant == 'verification') {

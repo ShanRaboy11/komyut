@@ -93,51 +93,8 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
     }
     // Verification taps fall through here (do nothing except mark as read)
     else if (item.variant == 'report') {
-      String body = "";
-      if (payload['action'] == 'feedback') {
-        body =
-            "Severity: ${payload['severity']}\nThis is a report filed regarding your vehicle/service.";
-      } else {
-        body =
-            "Status: ${payload['status']}\nResolution Notes: ${payload['notes'] ?? 'None'}";
-      }
-      _showDetailDialog(context, "Report Info", item.title, body);
+      // Do nothing (no modal), just mark as read
     }
-  }
-
-  void _showDetailDialog(
-    BuildContext context,
-    String title,
-    String subtitle,
-    String body,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          title,
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              subtitle,
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            Text(body, style: GoogleFonts.nunito()),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text("Close", style: GoogleFonts.manrope(color: primary1)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
