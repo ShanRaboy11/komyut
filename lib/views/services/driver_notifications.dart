@@ -65,25 +65,21 @@ class NotificationDriverProvider extends ChangeNotifier {
       } catch (_) {}
 
       // ---------------------------------------------------------
-      // A. FETCH RAW DATA
+      // A. FETCH RAW DATA (FUTURES)
       // ---------------------------------------------------------
 
-      // 1. Trips (For "Trip Started" / "Trip Ended" notifications)
-      final tripsRes = await _supabase
+      // 1. Trips
+      final tripsFuture = _supabase
           .from('trips')
           .select('id, started_at, ended_at, status, passengers_count')
           .or('driver_id.eq.$driverId,created_by_profile_id.eq.$profileId')
           .order('started_at', ascending: false)
-          .limit(50); // Limit trip notifications
-      final List<dynamic> tripsData = tripsRes as List<dynamic>;
+          .limit(50);
 
-      // 2. Transactions (Wallet & Earnings)
-      List<dynamic> combinedTransactions = [];
-
+      // 2. Wallet Transactions
+      Future<List<dynamic>> walletTxFuture = Future.value([]);
       if (walletId != null) {
-        // 2a. Fetch General Wallet Transactions (Cash Out, Remittance, Payouts)
-        // These are linked directly to the wallet_id
-        final walletTxRes = await _supabase
+        walletTxFuture = _supabase
             .from('transactions')
             .select(
               'id, created_at, type, amount, status, transaction_number, related_trip_id',
@@ -97,14 +93,12 @@ class NotificationDriverProvider extends ChangeNotifier {
             ])
             .order('created_at', ascending: false)
             .limit(50);
-
-        combinedTransactions.addAll(walletTxRes as List<dynamic>);
       }
 
+      // 3. Trip Earnings
+      Future<List<dynamic>> earningsFuture = Future.value([]);
       if (driverId.isNotEmpty) {
-        // 2b. Fetch Trip Earnings (Fare Payments)
-        // These are linked to the TRIP, which is linked to the DRIVER
-        final tripEarningsRes = await _supabase
+        earningsFuture = _supabase
             .from('transactions')
             .select('''
               id, created_at, type, amount, status, transaction_number, related_trip_id,
@@ -114,25 +108,71 @@ class NotificationDriverProvider extends ChangeNotifier {
             .eq('type', 'fare_payment')
             .order('created_at', ascending: false)
             .limit(50);
-
-        combinedTransactions.addAll(tripEarningsRes as List<dynamic>);
       }
 
-      // 3. Get "Read" Statuses from DB
-      final notifRes = await _supabase
+      // 4. Verifications (NEW)
+      final verificationsFuture = _supabase
+          .from('verifications')
+          .select('id, status, reviewer_notes, reviewed_at')
+          .eq('profile_id', profileId)
+          .neq('status', 'pending')
+          .order('reviewed_at', ascending: false)
+          .limit(10);
+
+      // 5. Reports (NEW)
+      // A. My Reports (Updates)
+      final myReportsFuture = _supabase
+          .from('reports')
+          .select('id, category, status, updated_at, resolution_notes')
+          .eq('reporter_profile_id', profileId)
+          .neq('status', 'open')
+          .order('updated_at', ascending: false)
+          .limit(20);
+
+      // B. Reports Against Me (Feedback)
+      Future<List<dynamic>> reportsAgainstFuture = Future.value([]);
+      if (driverId.isNotEmpty) {
+        reportsAgainstFuture = _supabase
+            .from('reports')
+            .select('id, category, severity, created_at')
+            .eq('reported_entity_type', 'driver')
+            .eq('reported_entity_id', driverId)
+            .order('created_at', ascending: false)
+            .limit(20);
+      }
+
+      // 6. Notifications Table (Read Status)
+      final notifTableFuture = _supabase
           .from('notifications')
           .select('id, read, payload, type')
           .eq('recipient_profile_id', profileId)
-          .inFilter('type', ['trip', 'wallet'])
-          .limit(200);
+          .inFilter('type', ['trip', 'wallet', 'verification', 'report'])
+          .limit(300);
 
-      final List<Map<String, dynamic>> notifData =
-          List<Map<String, dynamic>>.from(notifRes as List);
+      // --- AWAIT ALL ---
+      final results = await Future.wait([
+        tripsFuture, // 0
+        walletTxFuture, // 1
+        earningsFuture, // 2
+        verificationsFuture, // 3
+        myReportsFuture, // 4
+        reportsAgainstFuture, // 5
+        notifTableFuture, // 6
+      ]);
+
+      // Removed explicit casts 'as List<dynamic>' to fix linter warnings
+      final tripsData = results[0];
+      final walletTxData = results[1];
+      final earningsData = results[2];
+      final verificationsData = results[3];
+      final myReportsData = results[4];
+      final reportsAgainstData = results[5];
+      final notifData = results[6];
 
       final List<NotifItem> generatedList = [];
 
       // ---------------------------------------------------------
-      // B. PROCESS TRIPS (Start/End Events)
+      // B. PROCESS TRIPS
       // ---------------------------------------------------------
       for (var trip in tripsData) {
         final String tripId = trip['id'];
@@ -142,7 +182,7 @@ class NotificationDriverProvider extends ChangeNotifier {
         if (trip['started_at'] == null) continue;
         final DateTime startedAt = DateTime.parse(trip['started_at']).toLocal();
 
-        // --- Trip Start Notification ---
+        // --- Trip Start ---
         final startRow = notifData
             .where(
               (n) =>
@@ -173,7 +213,7 @@ class NotificationDriverProvider extends ChangeNotifier {
           ),
         );
 
-        // --- Trip End Notification ---
+        // --- Trip End ---
         if (currentStatus == 'completed' && trip['ended_at'] != null) {
           final DateTime endedAt = DateTime.parse(trip['ended_at']).toLocal();
           final endRow = notifData
@@ -207,8 +247,10 @@ class NotificationDriverProvider extends ChangeNotifier {
       }
 
       // ---------------------------------------------------------
-      // C. PROCESS TRANSACTIONS (Wallet + Earnings)
+      // C. PROCESS TRANSACTIONS (Combined)
       // ---------------------------------------------------------
+      final combinedTransactions = [...walletTxData, ...earningsData];
+
       for (var tx in combinedTransactions) {
         final String txId = tx['id'];
         final String type = tx['type'];
@@ -217,7 +259,6 @@ class NotificationDriverProvider extends ChangeNotifier {
         final String txNumber = tx['transaction_number'] ?? '---';
         final String status = tx['status'] ?? 'completed';
 
-        // Check if DB has a record for this transaction notification
         final txRow = notifData
             .where(
               (n) =>
@@ -231,7 +272,6 @@ class NotificationDriverProvider extends ChangeNotifier {
 
         switch (type) {
           case 'fare_payment':
-            // THIS IS THE TRIP EARNING
             title = "You earned ₱${amount.toStringAsFixed(2)} from your trip.";
             break;
           case 'remittance':
@@ -257,8 +297,7 @@ class NotificationDriverProvider extends ChangeNotifier {
             id: txRow != null ? txRow['id'] : 'virtual_wallet_$txId',
             virtualId: 'wallet_$txId',
             tripId: tx['related_trip_id'] ?? '',
-            variant:
-                'wallet', // Keeping this as wallet so clicking it goes to wallet page
+            variant: 'wallet',
             title: title,
             timeOrDate: DateFormat('hh:mm a').format(createdAt),
             isRead: txRow != null ? (txRow['read'] ?? false) : false,
@@ -274,6 +313,125 @@ class NotificationDriverProvider extends ChangeNotifier {
         );
       }
 
+      // ---------------------------------------------------------
+      // D. PROCESS VERIFICATIONS (NEW)
+      // ---------------------------------------------------------
+      for (var verif in verificationsData) {
+        if (verif['reviewed_at'] == null) continue;
+        final String vId = verif['id'];
+        final DateTime reviewedAt = DateTime.parse(
+          verif['reviewed_at'],
+        ).toLocal();
+        final String status = verif['status'];
+        final String notes = verif['reviewer_notes'] ?? '';
+
+        final verifRow = notifData
+            .where(
+              (n) =>
+                  n['type'] == 'verification' &&
+                  n['payload']?['verification_id'] == vId,
+            )
+            .firstOrNull;
+
+        String title = "Verification Update";
+        if (status == 'approved') {
+          title = "You are now a Verified Driver";
+        } else if (status == 'rejected') {
+          title = "Verification Rejected: $notes";
+        } else if (status == 'lacking') {
+          title = "Additional Documents Required";
+        }
+
+        generatedList.add(
+          NotifItem(
+            id: verifRow != null ? verifRow['id'] : 'virtual_verif_$vId',
+            virtualId: 'verif_$vId',
+            tripId: '',
+            variant: 'verification',
+            title: title,
+            timeOrDate: DateFormat('MMM dd').format(reviewedAt),
+            isRead: verifRow != null ? (verifRow['read'] ?? false) : false,
+            sortDate: reviewedAt,
+            payload: {'verification_id': vId, 'status': status, 'notes': notes},
+          ),
+        );
+      }
+
+      // ---------------------------------------------------------
+      // E. PROCESS REPORTS (NEW)
+      // ---------------------------------------------------------
+      // E1. My Reports Resolved
+      for (var rep in myReportsData) {
+        final String rId = rep['id'];
+        final DateTime updatedAt = DateTime.parse(rep['updated_at']).toLocal();
+        final String category = rep['category'];
+        final String status = rep['status'];
+        final String notes = rep['resolution_notes'] ?? '';
+
+        final repRow = notifData
+            .where(
+              (n) =>
+                  n['type'] == 'report' &&
+                  n['payload']?['report_id'] == rId &&
+                  n['payload']?['action'] == 'resolved',
+            )
+            .firstOrNull;
+
+        generatedList.add(
+          NotifItem(
+            id: repRow != null ? repRow['id'] : 'virtual_myreport_$rId',
+            virtualId: 'myreport_$rId',
+            tripId: '',
+            variant: 'report',
+            title: "Report Resolved ($category): $notes",
+            timeOrDate: DateFormat('MMM dd').format(updatedAt),
+            isRead: repRow != null ? (repRow['read'] ?? false) : false,
+            sortDate: updatedAt,
+            payload: {'report_id': rId, 'action': 'resolved', 'status': status},
+          ),
+        );
+      }
+
+      // E2. Reports Against Me (Feedback)
+      for (var rep in reportsAgainstData) {
+        final String rId = rep['id'];
+        final DateTime createdAt = DateTime.parse(rep['created_at']).toLocal();
+        final String category = rep['category'];
+        final String severity = rep['severity'];
+
+        final repRow = notifData
+            .where(
+              (n) =>
+                  n['type'] == 'report' &&
+                  n['payload']?['report_id'] == rId &&
+                  n['payload']?['action'] == 'feedback',
+            )
+            .firstOrNull;
+
+        String title = "New Feedback Received ($category)";
+        if (severity == 'high') {
+          title = "High Severity Report Received ($category)";
+        }
+
+        generatedList.add(
+          NotifItem(
+            id: repRow != null ? repRow['id'] : 'virtual_feedback_$rId',
+            virtualId: 'feedback_$rId',
+            tripId: '',
+            variant: 'report',
+            title: title,
+            timeOrDate: DateFormat('MMM dd').format(createdAt),
+            isRead: repRow != null ? (repRow['read'] ?? false) : false,
+            sortDate: createdAt,
+            payload: {
+              'report_id': rId,
+              'action': 'feedback',
+              'severity': severity,
+            },
+          ),
+        );
+      }
+
       _notifications = generatedList;
     } catch (e) {
       debugPrint('Error fetching driver notifications: $e');
@@ -283,7 +441,6 @@ class NotificationDriverProvider extends ChangeNotifier {
     }
   }
 
-  // Marks a notification as read (syncs with DB if it's virtual)
   Future<void> markAsRead(String notifId) async {
     final index = _notifications.indexWhere((n) => n.id == notifId);
     if (index == -1) return;
@@ -291,7 +448,6 @@ class NotificationDriverProvider extends ChangeNotifier {
     final item = _notifications[index];
     if (item.isRead) return;
 
-    // Optimistic UI update
     _notifications[index].isRead = true;
     notifyListeners();
 
@@ -302,7 +458,6 @@ class NotificationDriverProvider extends ChangeNotifier {
 
     try {
       if (notifId.startsWith('virtual_')) {
-        // Create new record in notifications table
         final profileRes = await _supabase
             .from('profiles')
             .select('id')
@@ -310,13 +465,20 @@ class NotificationDriverProvider extends ChangeNotifier {
             .single();
         final profileId = profileRes['id'];
 
-        String type = 'trip'; // Default
-        Map<String, dynamic> payload = Map.from(item.payload ?? {});
+        String type = 'trip';
 
+        // Added curly braces to fix linter errors
         if (item.variant == 'wallet') {
           type = 'wallet';
-        } else {
-          // Trip logic
+        } else if (item.variant == 'verification') {
+          type = 'verification';
+        } else if (item.variant == 'report') {
+          type = 'report';
+        }
+
+        Map<String, dynamic> payload = Map.from(item.payload ?? {});
+
+        if (item.variant == 'trips') {
           if (item.virtualId.startsWith('start_')) {
             payload['status'] = 'ongoing';
             payload['event'] = 'start';
@@ -336,7 +498,6 @@ class NotificationDriverProvider extends ChangeNotifier {
           'created_at': item.sortDate.toIso8601String(),
         });
       } else {
-        // Update existing record
         await _supabase
             .from('notifications')
             .update({'read': true})

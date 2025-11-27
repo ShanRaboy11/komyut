@@ -7,7 +7,7 @@ import '../widgets/notification.dart';
 import '../services/driver_notifications.dart';
 import '../models/notification.dart';
 import 'tripdetails_driver.dart';
-import 'wallet_driver.dart'; // 1. IMPORT THE WALLET PAGE
+import 'wallet_driver.dart';
 
 class NotificationDriverPage extends StatefulWidget {
   const NotificationDriverPage({super.key});
@@ -24,18 +24,11 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   @override
   void initState() {
     super.initState();
-    debugPrint("🚀 NotificationDriverPage: initState called");
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint("🚀 NotificationDriverPage: fetching notifications...");
-      try {
-        Provider.of<NotificationDriverProvider>(
-          context,
-          listen: false,
-        ).fetchNotifications();
-      } catch (e, stackTrace) {
-        debugPrint("❌ Error calling fetchNotifications: $e");
-        debugPrint("❌ Stack trace: $stackTrace");
-      }
+      Provider.of<NotificationDriverProvider>(
+        context,
+        listen: false,
+      ).fetchNotifications();
     });
   }
 
@@ -58,9 +51,7 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
   }
 
   void _onTapNotif(NotifItem item) async {
-    debugPrint("NotificationDriverPage: Tapped notification: ${item.id}");
-
-    // Mark as read
+    // 1. Mark as read immediately
     if (!item.isRead) {
       Provider.of<NotificationDriverProvider>(
         context,
@@ -70,7 +61,7 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
 
     final payload = item.payload ?? {};
 
-    // --- TRIPS ---
+    // 2. Handle Navigation based on Variant
     if (item.variant == 'trips') {
       final String tripId = item.tripId;
       final String status = payload['status'] ?? 'ongoing';
@@ -94,15 +85,59 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
           ),
         ),
       );
-    }
-    // --- WALLET ---
-    else if (item.variant == 'wallet') {
-      // 2. REDIRECT TO DRIVER WALLET PAGE
+    } else if (item.variant == 'wallet') {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const DriverWalletPage()),
       );
     }
+    // Verification taps fall through here (do nothing except mark as read)
+    else if (item.variant == 'report') {
+      String body = "";
+      if (payload['action'] == 'feedback') {
+        body =
+            "Severity: ${payload['severity']}\nThis is a report filed regarding your vehicle/service.";
+      } else {
+        body =
+            "Status: ${payload['status']}\nResolution Notes: ${payload['notes'] ?? 'None'}";
+      }
+      _showDetailDialog(context, "Report Info", item.title, body);
+    }
+  }
+
+  void _showDetailDialog(
+    BuildContext context,
+    String title,
+    String subtitle,
+    String body,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          title,
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              subtitle,
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
+            Text(body, style: GoogleFonts.nunito()),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("Close", style: GoogleFonts.manrope(color: primary1)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -115,11 +150,13 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
         final all = provider.notifications;
         List<NotifItem> filtered;
 
+        // Filter Logic
         if (activeTab == 'Trips') {
           filtered = all.where((n) => n.variant == 'trips').toList();
         } else if (activeTab == 'Wallet') {
           filtered = all.where((n) => n.variant == 'wallet').toList();
         } else {
+          // Others includes Verification and Reports
           filtered = all
               .where((n) => n.variant != 'trips' && n.variant != 'wallet')
               .toList();
@@ -284,13 +321,10 @@ class NotificationDriverPageState extends State<NotificationDriverPage> {
     );
   }
 
-  // ... (Rest of the widget methods: _buildPillTab, _sectionTitle, _buildSectionList remain unchanged)
   Widget _buildPillTab(String title, bool active, bool isSmall) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() => activeTab = title);
-        },
+        onTap: () => setState(() => activeTab = title),
         child: Container(
           padding: EdgeInsets.symmetric(vertical: isSmall ? 10 : 12),
           decoration: BoxDecoration(
