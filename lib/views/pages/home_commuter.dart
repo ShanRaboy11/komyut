@@ -525,7 +525,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  Widget _buildPromoCard() {
+  /*Widget _buildPromoCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -563,7 +563,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
         ],
       ),
     );
-  }
+  }*/
 
   Widget _buildQuickActions() {
     return Container(
