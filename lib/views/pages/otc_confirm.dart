@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OtcConfirmationPage extends StatefulWidget {
   final String amount;
@@ -21,7 +22,6 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
   @override
   void initState() {
     super.initState();
-    // The K0MYUT code is generated once, here.
     _transactionCode = _generateTransactionCode();
   }
 
@@ -37,13 +37,11 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
     return 'K0MYUT-XHS$part1'.substring(0, 25);
   }
 
-  // This is where the transaction is finally created in the database.
   Future<void> _onConfirmPressed() async {
     final provider = Provider.of<WalletProvider>(context, listen: false);
     final amountValue = double.tryParse(widget.amount);
 
     if (amountValue == null) {
-      // Handle potential parsing error, though it shouldn't happen with the text field formatters
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Invalid amount format.'),
@@ -53,17 +51,16 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
       return;
     }
 
-    // FIX: Calling the correct method name from the provider
     final success = await provider.createOtcTransaction(
       amount: amountValue,
       transactionCode: _transactionCode,
     );
 
     if (success && mounted) {
-      // Pass the newly created transaction data from the provider to the next screen
-      Navigator.of(
-        context,
-      ).pushNamed('/otc_instructions', arguments: provider.pendingTransaction);
+      CommuterApp.navigatorKey.currentState?.pushNamed(
+        '/otc_instructions',
+        arguments: provider.pendingTransaction,
+      );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -78,7 +75,6 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Data is calculated locally for display
     final double amountValue = double.tryParse(widget.amount) ?? 0.0;
     final double totalValue = amountValue + 5.00;
     final now = DateTime.now();
@@ -98,13 +94,13 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Cash In',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -119,7 +115,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             Text(
               'Over-the-Counter',
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -133,8 +129,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               time: time,
               amount: formattedAmount,
               total: formattedTotal,
-              transactionCode:
-                  _transactionCode, // Use the code generated in initState
+              transactionCode: _transactionCode,
               brandColor: brandColor,
             ),
             const SizedBox(height: 24),
@@ -166,7 +161,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
             ),
             child: provider.isCashInLoading
                 ? const SizedBox(
@@ -178,7 +173,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
                     'Confirm',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -240,7 +235,7 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
               Text(
                 transactionCode,
                 style: GoogleFonts.sourceCodePro(
-                  fontSize: 14,
+                  fontSize: 11,
                   color: Colors.black54,
                   letterSpacing: 1.5,
                 ),
@@ -252,9 +247,9 @@ class _OtcConfirmationPageState extends State<OtcConfirmationPage> {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                Navigator.of(
-                  context,
-                ).popUntil((route) => route.settings.name == '/wallet');
+                CommuterApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(2),

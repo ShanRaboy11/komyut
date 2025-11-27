@@ -613,9 +613,20 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4FF),
       appBar: AppBar(
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            child: const Icon(
+              Icons.chevron_left_rounded,
+              size: 28,
+              color: Color(0xFF2D3436),
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           'Route ${widget.routeCode}',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -688,7 +699,7 @@ class _RouteDetailsPageState extends State<RouteDetailsPage> {
                             TextFormField(
                               controller: _codeController,
                               style: GoogleFonts.manrope(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -1274,14 +1285,14 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Manage Routes',
+                              'Routes',
                               style: GoogleFonts.manrope(
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'View and organize all routes',
+                              'View and manage all routes',
                               style: GoogleFonts.nunito(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -1311,7 +1322,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                         child: Text(
                           '${_routes.length} routes',
                           style: GoogleFonts.manrope(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -1326,6 +1337,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                       hintText: 'Search by code or name...',
                       hintStyle: GoogleFonts.nunito(
                         color: Colors.grey.shade500,
+                        fontSize: 12,
                       ),
                       prefixIcon: Icon(
                         Icons.search,
@@ -1350,7 +1362,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                       fillColor: const Color(0xFFF7F4FF),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 14,
+                        vertical: 10,
                       ),
                     ),
                     onChanged: (value) {
@@ -1373,7 +1385,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF5B53C2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1387,7 +1399,7 @@ class _AdminRoutesPageState extends State<AdminRoutesPage> {
                         'Add New Route',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 12,
                           color: Colors.white,
                         ),
                       ),
@@ -1515,14 +1527,10 @@ class _RouteCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFB945AA), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFB945AA).withAlpha(26),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(
+            color: Color.fromRGBO(156, 39, 176, 0.5),
+            width: 1.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1576,7 +1584,7 @@ class _RouteCard extends StatelessWidget {
               Text(
                 routeName!,
                 style: GoogleFonts.manrope(
-                  fontSize: 17,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   height: 1.3,
                 ),
@@ -1587,7 +1595,7 @@ class _RouteCard extends StatelessWidget {
               Text(
                 description!,
                 style: GoogleFonts.nunito(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Colors.grey.shade600,
                   height: 1.4,
                 ),
@@ -1620,7 +1628,7 @@ class _RouteCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Icon(
-                    Icons.arrow_forward_ios,
+                    Icons.chevron_right_rounded,
                     size: 14,
                     color: Colors.grey.shade500,
                   ),

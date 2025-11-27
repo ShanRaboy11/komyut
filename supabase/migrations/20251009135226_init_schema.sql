@@ -96,6 +96,7 @@ CREATE TABLE drivers (
   current_qr text UNIQUE, 
   vehicle_plate text,
   route_code text,
+  puv_type text,
   active boolean DEFAULT true,
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
@@ -439,37 +440,537 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses();
+DROP FUNCTION IF EXISTS public.get_weekly_fare_expenses(integer);
 
-CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses()
+CREATE OR REPLACE FUNCTION public.get_weekly_fare_expenses(week_offset integer DEFAULT 0)
 RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    target_week_start date;
 BEGIN
-  RETURN QUERY
-  
-  WITH days AS (
-    SELECT 
-      to_char(d, 'Dy') as day_name_short, 
-      d::date as full_date
-    FROM generate_series(
-      date_trunc('day', now() - interval '6 days'),
-      date_trunc('day', now()),
-      '1 day'
-    ) as d
-  )
-  
-  SELECT
-    d.day_name_short,
-    COALESCE(SUM(t.amount), 0) AS total
-  FROM days d
-  LEFT JOIN transactions t ON date_trunc('day', t.created_at) = d.full_date
-    AND t.type = 'fare_payment'
-    AND t.wallet_id = (
-      SELECT w.id FROM wallets w
-      JOIN profiles p ON w.owner_profile_id = p.id
-      WHERE p.user_id = auth.uid()
-      LIMIT 1
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT
+            to_char(d, 'Dy') as day_name_short,
+            d::date as full_date
+        FROM generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        ) as d
     )
-  GROUP BY d.day_name_short, d.full_date
-  ORDER BY d.full_date;
+    SELECT
+        wd.day_name_short,
+        COALESCE(SUM(t.amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN transactions t
+        ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.full_date
+        AND t.type = 'fare_payment'
+        AND t.wallet_id = (
+            SELECT w.id FROM wallets w
+            JOIN profiles p ON w.owner_profile_id = p.id
+            WHERE p.user_id = auth.uid()
+            LIMIT 1
+        )
+    GROUP BY wd.day_name_short, wd.full_date
+    ORDER BY wd.full_date;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_driver_weekly_earnings(week_offset integer DEFAULT 0)
+RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    v_driver_id uuid;
+    target_week_start date;
+BEGIN
+    SELECT d.id INTO v_driver_id
+    FROM public.profiles p
+    JOIN public.drivers d ON p.id = d.profile_id
+    WHERE p.user_id = auth.uid()
+    LIMIT 1;
+
+    IF v_driver_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        )::date AS day
+    )
+    SELECT
+        to_char(wd.day, 'Dy') AS day_name,
+        COALESCE(SUM(t.fare_amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN trips t
+        ON date_trunc('day', t.started_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
+        AND t.driver_id = v_driver_id
+        AND t.status = 'completed'
+    GROUP BY wd.day
+    ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+ALTER TABLE transactions 
+DROP CONSTRAINT IF EXISTS transactions_transaction_number_key;
+
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'remittance';
+
+CREATE OR REPLACE FUNCTION process_driver_remittance(
+  amount_to_remit numeric, 
+  transaction_code text
+)
+RETURNS void AS $$
+DECLARE
+  v_driver_user_id uuid;
+  v_driver_profile_id uuid;
+  v_driver_wallet_id uuid;
+  
+  v_operator_id uuid;
+  v_operator_profile_id uuid;
+  v_operator_wallet_id uuid;
+  
+  v_current_balance numeric;
+BEGIN
+  v_driver_user_id := auth.uid();
+
+  SELECT p.id, w.id, d.operator_id
+  INTO v_driver_profile_id, v_driver_wallet_id, v_operator_id
+  FROM profiles p
+  JOIN drivers d ON p.id = d.profile_id
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_driver_user_id;
+
+  IF v_driver_wallet_id IS NULL THEN RAISE EXCEPTION 'Driver wallet not found.'; END IF;
+  IF v_operator_id IS NULL THEN RAISE EXCEPTION 'You are not linked to an operator.'; END IF;
+
+  SELECT profile_id INTO v_operator_profile_id
+  FROM operators 
+  WHERE id = v_operator_id;
+
+  IF v_operator_profile_id IS NULL THEN RAISE EXCEPTION 'Linked Operator profile does not exist.'; END IF;
+
+  SELECT id INTO v_operator_wallet_id 
+  FROM wallets 
+  WHERE owner_profile_id = v_operator_profile_id;
+
+  IF v_operator_wallet_id IS NULL THEN
+      INSERT INTO wallets (owner_profile_id, balance)
+      VALUES (v_operator_profile_id, 0)
+      RETURNING id INTO v_operator_wallet_id;
+  END IF;
+
+  SELECT balance INTO v_current_balance 
+  FROM wallets 
+  WHERE id = v_driver_wallet_id 
+  FOR UPDATE;
+  
+  IF v_current_balance < amount_to_remit THEN 
+    RAISE EXCEPTION 'Insufficient balance.'; 
+  END IF;
+
+  UPDATE wallets 
+  SET balance = balance - amount_to_remit, updated_at = now() 
+  WHERE id = v_driver_wallet_id;
+
+  UPDATE wallets 
+  SET balance = balance + amount_to_remit, updated_at = now() 
+  WHERE id = v_operator_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, 
+    initiated_by_profile_id, 
+    type, 
+    amount, 
+    status, 
+    transaction_number, 
+    metadata
+  ) VALUES (
+    v_driver_wallet_id,       
+    v_driver_profile_id,      
+    'remittance', 
+    amount_to_remit,          
+    'completed', 
+    transaction_code,         
+    jsonb_build_object(
+      'recipient_operator_table_id', v_operator_id,
+      'recipient_profile_id', v_operator_profile_id,
+      'recipient_wallet_id', v_operator_wallet_id
+    )
+  );
 
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+INSERT INTO public.operators (profile_id, company_name)
+SELECT id, (first_name || ' ' || last_name)
+FROM public.profiles
+WHERE role = 'operator'
+ON CONFLICT (profile_id) DO NOTHING;
+
+UPDATE public.drivers d
+SET operator_id = o.id
+FROM public.operators o
+WHERE d.operator_name = o.company_name
+  AND d.operator_id IS NULL;
+
+DO $$
+DECLARE 
+  unlinked_count int;
+BEGIN
+  SELECT count(*) INTO unlinked_count FROM drivers WHERE operator_id IS NULL;
+  IF unlinked_count > 0 THEN
+    RAISE NOTICE 'Warning: % drivers could not be matched to a profile by name. Please check spelling.', unlinked_count;
+  ELSE
+    RAISE NOTICE 'Success! All drivers matched to Operator Profiles.';
+  END IF;
+END $$;
+
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'cash_out';
+
+CREATE OR REPLACE FUNCTION request_driver_cash_out(
+  amount_val numeric,
+  fee_val numeric,
+  transaction_code text
+)
+RETURNS void AS $$
+DECLARE
+  v_user_id uuid;
+  v_profile_id uuid;
+  v_wallet_id uuid;
+  v_current_balance numeric;
+  v_total_deduction numeric;
+BEGIN
+  v_user_id := auth.uid();
+  
+  SELECT p.id, w.id INTO v_profile_id, v_wallet_id
+  FROM profiles p
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_user_id;
+
+  IF v_wallet_id IS NULL THEN RAISE EXCEPTION 'Wallet not found.'; END IF;
+
+  SELECT balance INTO v_current_balance FROM wallets WHERE id = v_wallet_id FOR UPDATE;
+
+  v_total_deduction := amount_val + fee_val;
+
+  IF v_current_balance < v_total_deduction THEN
+    RAISE EXCEPTION 'Insufficient balance.';
+  END IF;
+
+  UPDATE wallets SET balance = balance - v_total_deduction, updated_at = now() WHERE id = v_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, initiated_by_profile_id, type, amount, fee, status, transaction_number, metadata
+  ) VALUES (
+    v_wallet_id, v_profile_id, 'cash_out', amount_val, fee_val, 'pending', transaction_code, jsonb_build_object('description', 'Cash Withdrawal Request')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION complete_driver_cash_out(transaction_code_arg text)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.transactions
+  SET status = 'completed', processed_at = now()
+  WHERE transaction_number = transaction_code_arg AND type = 'cash_out';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_weekly_earnings(week_offset integer DEFAULT 0)
+RETURNS TABLE(day_name text, total numeric) AS $$
+DECLARE
+    v_operator_profile_id uuid;
+    v_wallet_id uuid;
+    target_week_start date;
+BEGIN
+    SELECT w.id INTO v_wallet_id
+    FROM wallets w
+    JOIN profiles p ON w.owner_profile_id = p.id
+    WHERE p.user_id = auth.uid();
+
+    IF v_wallet_id IS NULL THEN RETURN; END IF;
+
+    target_week_start := date_trunc('week', now() + (week_offset * 7 || ' days')::interval)::date;
+
+    RETURN QUERY
+    WITH week_days AS (
+        SELECT generate_series(
+            target_week_start,
+            target_week_start + interval '6 days',
+            '1 day'::interval
+        )::date AS day
+    )
+    SELECT
+        to_char(wd.day, 'Dy') AS day_name,
+        COALESCE(SUM(t.amount), 0) AS total
+    FROM week_days wd
+    LEFT JOIN transactions t
+        ON date_trunc('day', t.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date = wd.day
+        AND t.status = 'completed'
+        AND (
+            (t.type = 'remittance' AND (t.metadata->>'recipient_wallet_id')::uuid = v_wallet_id)
+        )
+    GROUP BY wd.day
+    ORDER BY wd.day;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_transactions(p_limit integer DEFAULT 20)
+RETURNS TABLE (
+  id uuid,
+  transaction_number text,
+  type transaction_type,
+  amount numeric,
+  status transaction_status,
+  created_at timestamptz,
+  metadata jsonb,
+  driver_name text,
+  vehicle_plate text
+) AS $$
+DECLARE
+  v_op_wallet_id uuid;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  RETURN QUERY
+  SELECT 
+    t.id,
+    t.transaction_number,
+    t.type,
+    t.amount,
+    t.status,
+    t.created_at,
+    t.metadata,
+    CASE 
+      WHEN t.type = 'remittance' THEN (p.first_name || ' ' || p.last_name)
+      ELSE NULL 
+    END,
+    CASE 
+      WHEN t.type = 'remittance' THEN d.vehicle_plate
+      ELSE NULL 
+    END
+  FROM transactions t
+  LEFT JOIN profiles p ON t.initiated_by_profile_id = p.id
+  LEFT JOIN drivers d ON p.id = d.profile_id
+  WHERE 
+    t.wallet_id = v_op_wallet_id 
+    OR 
+    ((t.metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id AND t.type = 'remittance')
+  ORDER BY t.created_at DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_operator_todays_revenue()
+RETURNS numeric AS $$
+DECLARE
+  v_op_wallet_id uuid;
+  v_total numeric;
+  v_start_date timestamptz;
+  v_end_date timestamptz;
+BEGIN
+  SELECT w.id INTO v_op_wallet_id
+  FROM wallets w
+  JOIN profiles p ON w.owner_profile_id = p.id
+  WHERE p.user_id = auth.uid();
+
+  IF v_op_wallet_id IS NULL THEN RETURN 0; END IF;
+
+  v_start_date := date_trunc('day', now() AT TIME ZONE 'Asia/Manila');
+  v_end_date := v_start_date + interval '1 day';
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_total
+  FROM transactions
+  WHERE status = 'completed'
+  AND created_at >= v_start_date
+  AND created_at < v_end_date
+  AND type = 'remittance'
+  AND (metadata->>'recipient_wallet_id')::uuid = v_op_wallet_id;
+
+  RETURN v_total;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION request_operator_cash_out(
+  amount_val numeric,
+  fee_val numeric,
+  transaction_code text
+)
+RETURNS void AS $$
+DECLARE
+  v_user_id uuid;
+  v_profile_id uuid;
+  v_wallet_id uuid;
+  v_current_balance numeric;
+  v_total_deduction numeric;
+BEGIN
+  v_user_id := auth.uid();
+  
+  SELECT p.id, w.id INTO v_profile_id, v_wallet_id
+  FROM profiles p
+  JOIN wallets w ON p.id = w.owner_profile_id
+  WHERE p.user_id = v_user_id;
+
+  IF v_wallet_id IS NULL THEN 
+    RAISE EXCEPTION 'Operator wallet not found.'; 
+  END IF;
+
+  SELECT balance INTO v_current_balance 
+  FROM wallets 
+  WHERE id = v_wallet_id 
+  FOR UPDATE;
+
+  v_total_deduction := amount_val + fee_val;
+
+  IF v_current_balance < v_total_deduction THEN
+    RAISE EXCEPTION 'Insufficient balance to cover amount and fee.';
+  END IF;
+
+  UPDATE wallets 
+  SET balance = balance - v_total_deduction, 
+      updated_at = now() 
+  WHERE id = v_wallet_id;
+
+  INSERT INTO transactions (
+    wallet_id, 
+    initiated_by_profile_id, 
+    type, 
+    amount, 
+    fee, 
+    status, 
+    transaction_number, 
+    metadata
+  ) VALUES (
+    v_wallet_id, 
+    v_profile_id, 
+    'cash_out', 
+    amount_val, 
+    fee_val, 
+    'pending',
+    transaction_code, 
+    jsonb_build_object('description', 'Operator Cash Withdrawal Request')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION complete_operator_cash_out(transaction_code_arg text)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.transactions
+  SET status = 'completed', processed_at = now()
+  WHERE transaction_number = transaction_code_arg 
+  AND type = 'cash_out';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION handle_trip_notification()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_driver_profile_id uuid;
+  v_plate text;
+BEGIN
+  SELECT profile_id, vehicle_plate 
+  INTO v_driver_profile_id, v_plate
+  FROM drivers
+  WHERE id = NEW.driver_id;
+
+  IF (TG_OP = 'INSERT' AND NEW.status = 'ongoing') OR 
+     (TG_OP = 'UPDATE' AND OLD.status != 'ongoing' AND NEW.status = 'ongoing') THEN
+     
+    IF v_driver_profile_id IS NOT NULL THEN
+        INSERT INTO notifications (
+            recipient_profile_id, 
+            type, 
+            title, 
+            message, 
+            payload, 
+            read, 
+            created_at
+        )
+        VALUES (
+          v_driver_profile_id, 
+          'trip', 
+          'Trip Started',
+          'Your trip with vehicle ' || COALESCE(v_plate, 'Jeep') || ' has started.',
+          jsonb_build_object('trip_id', NEW.id, 'status', 'ongoing'), 
+          false,
+          NEW.started_at
+        );
+    END IF;
+  END IF;
+
+  IF (TG_OP = 'UPDATE' AND OLD.status != 'completed' AND NEW.status = 'completed') THEN
+    
+    IF v_driver_profile_id IS NOT NULL THEN
+        INSERT INTO notifications (
+            recipient_profile_id, 
+            type, 
+            title, 
+            message, 
+            payload, 
+            read, 
+            created_at
+        )
+        VALUES (
+          v_driver_profile_id, 
+          'trip', 
+          'Trip Ended',
+          'Trip ended. Total passengers: ' || NEW.passengers_count,
+          jsonb_build_object('trip_id', NEW.id, 'status', 'completed'), 
+          false,
+          NEW.ended_at
+        );
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_trip_notifications ON trips;
+
+CREATE TRIGGER trg_trip_notifications
+AFTER INSERT OR UPDATE ON trips
+FOR EACH ROW
+EXECUTE FUNCTION handle_trip_notification();
+
+INSERT INTO notifications (
+    recipient_profile_id, 
+    type, 
+    title, 
+    message, 
+    payload, 
+    read, 
+    created_at
+)
+SELECT 
+    t.created_by_profile_id,
+    'trip'::notification_type,
+    CASE 
+        WHEN t.status = 'ongoing' THEN 'Trip Started'
+        ELSE 'Trip Ended'
+    END,
+    CASE 
+        WHEN t.status = 'ongoing' THEN 'Your jeepney with Plate ' || COALESCE(d.vehicle_plate, 'Jeep') || ' has started its trip.'
+        ELSE 'Trip ended. Thank you for riding!'
+    END,
+    jsonb_build_object('trip_id', t.id, 'status', t.status),
+    true,
+    COALESCE(t.ended_at, t.started_at, t.created_at)
+FROM trips t
+LEFT JOIN drivers d ON t.driver_id = d.id
+WHERE t.status IN ('ongoing', 'completed')
+AND NOT EXISTS (
+    SELECT 1 FROM notifications n 
+    WHERE (n.payload->>'trip_id')::uuid = t.id
+);

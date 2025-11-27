@@ -1,16 +1,17 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class DwConfirmationPage extends StatelessWidget {
   final String name;
   final String email;
   final String amount;
   final String source;
+  final String transactionCode;
 
   const DwConfirmationPage({
     super.key,
@@ -18,19 +19,8 @@ class DwConfirmationPage extends StatelessWidget {
     required this.email,
     required this.amount,
     required this.source,
+    required this.transactionCode,
   });
-
-  String _generateTransactionCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
-    final part1 = String.fromCharCodes(
-      Iterable.generate(
-        15,
-        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
-      ),
-    );
-    return 'K0MYUT-XHS$part1'.substring(0, 25);
-  }
 
   Future<void> _onConfirmPressed(
     BuildContext context,
@@ -41,17 +31,16 @@ class DwConfirmationPage extends StatelessWidget {
 
     if (amountValue == null) return;
 
-    // --- FIX: Call the updated provider method with all the data ---
     final success = await provider.createDigitalWalletTransaction(
       amount: amountValue,
       source: source,
       transactionCode: transactionCode,
-      payerName: name, // Pass the inputted name
-      payerEmail: email, // Pass the inputted email
+      payerName: name,
+      payerEmail: email,
     );
 
     if (success && context.mounted) {
-      Navigator.of(context).pushNamed('/dw_success');
+      CommuterApp.navigatorKey.currentState?.pushNamed('/dw_success');
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -71,7 +60,6 @@ class DwConfirmationPage extends StatelessWidget {
     final time = DateFormat('hh:mm a').format(now);
     final double amountValue = double.tryParse(amount) ?? 0.0;
     final double totalValue = amountValue + 10.00;
-    final transactionCode = _generateTransactionCode();
 
     final currencyFormat = NumberFormat.currency(locale: 'en_PH', symbol: 'P');
     final String formattedAmount = currencyFormat.format(amountValue);
@@ -117,14 +105,11 @@ class DwConfirmationPage extends StatelessWidget {
             const SizedBox(height: 40),
             Consumer<WalletProvider>(
               builder: (context, provider, child) {
-                // Get the raw user ID from the provider's state
                 final userId =
                     provider.userProfile?['user_id']?.toString() ?? 'N/A';
-
-                // Pass the raw ID to the build method
                 return _buildTransactionCard(
                   context: context,
-                  userId: userId, // Pass the fetched User ID
+                  userId: userId,
                   date: date,
                   time: time,
                   amount: formattedAmount,
@@ -254,9 +239,9 @@ class DwConfirmationPage extends StatelessWidget {
             right: -12,
             child: GestureDetector(
               onTap: () {
-                Navigator.of(
-                  context,
-                ).popUntil((route) => route.settings.name == '/wallet');
+                CommuterApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(2),

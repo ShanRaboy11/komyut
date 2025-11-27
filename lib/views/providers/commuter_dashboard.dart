@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/commuter_dashboard.dart';
+import '../services/auth_service.dart';
 
 class CommuterDashboardProvider extends ChangeNotifier {
   final CommuterDashboardService _dashboardService = CommuterDashboardService();
@@ -72,6 +75,52 @@ class CommuterDashboardProvider extends ChangeNotifier {
   // Notifications getter
   int get unreadNotifications => _unreadNotifications;
 
+  StreamSubscription? _authSub;
+
+  CommuterDashboardProvider() {
+    // Listen to auth changes and load only for commuter role
+    final AuthService authService = AuthService();
+    _authSub = authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearData();
+      } else {
+        _maybeLoadForUser(user.id);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching role for user $userId: $e');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    debugPrint('CommuterDashboardProvider: user $userId role=$role');
+    if (role == 'commuter') {
+      await loadDashboardData();
+    } else {
+      clearData();
+    }
+  }
+
   /// Load all dashboard data
   Future<void> loadDashboardData() async {
     try {
@@ -82,9 +131,10 @@ class CommuterDashboardProvider extends ChangeNotifier {
       final data = await _dashboardService.getDashboardData();
 
       // Update profile data
-      _firstName = data['profile']['first_name'] ?? '';
-      _lastName = data['profile']['last_name'] ?? '';
-      _isVerified = data['profile']['is_verified'] ?? false;
+      final profile = data['profile'] as Map<String, dynamic>?;
+      _firstName = profile?['first_name'] ?? '';
+      _lastName = profile?['last_name'] ?? '';
+      _isVerified = profile?['is_verified'] ?? false;
 
       // Update commuter details
       final commuterDetails = data['commuterDetails'];

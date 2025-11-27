@@ -1,14 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:komyut/views/pages/dw.dart';
-import 'package:komyut/views/pages/wt.dart';
-import 'package:provider/provider.dart';
-import 'wallet_history.dart';
-import 'otc.dart';
-import 'dart:math';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
+import 'wallet_history_commuter.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -20,6 +18,7 @@ class WalletPage extends StatefulWidget {
 class _WalletPageState extends State<WalletPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _selectedWeekOffset = 0;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -55,6 +54,20 @@ class _WalletPageState extends State<WalletPage>
       ),
     );
     return 'K0MYUT-XHS$part1'.substring(0, 25);
+  }
+
+  String _getMonthAndYear(int offset) {
+    final now = DateTime.now();
+    final dayInSelectedWeek = now.subtract(Duration(days: -offset * 7));
+    return DateFormat('MMM yyyy').format(dayInSelectedWeek);
+  }
+
+  List<DateTime> _getWeekDates(int offset) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(
+      Duration(days: now.weekday - 1 + (-offset * 7)),
+    );
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
   void _showTransactionDetailModal(
@@ -432,17 +445,11 @@ class _WalletPageState extends State<WalletPage>
     if (!mounted) return;
 
     if (optionText == 'Over-the-Counter') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const OverTheCounterPage()),
-      );
+      CommuterApp.navigatorKey.currentState?.pushNamed('/otc');
     } else if (optionText == 'Digital Wallet') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const DigitalWalletPage()),
-      );
+      CommuterApp.navigatorKey.currentState?.pushNamed('/digital_wallet');
     } else if (optionText == 'Wheel Tokens') {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const RedeemTokensPage()));
+      CommuterApp.navigatorKey.currentState?.pushNamed('/redeem_tokens');
     }
   }
 
@@ -467,12 +474,13 @@ class _WalletPageState extends State<WalletPage>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Center(
+                      Align(
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           'Deposit to komyut',
                           style: GoogleFonts.manrope(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -560,7 +568,7 @@ class _WalletPageState extends State<WalletPage>
             Text(
               text,
               style: GoogleFonts.manrope(
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: gradientColors[1],
               ),
@@ -580,13 +588,13 @@ class _WalletPageState extends State<WalletPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Wallet',
+          'My Wallet',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -642,6 +650,7 @@ class _WalletPageState extends State<WalletPage>
             Tab(text: 'Tokens'),
           ],
         ),
+        const SizedBox(height: 20),
         if (_tabController.index == 0)
           _buildTransactionsList(provider.recentTransactions)
         else
@@ -721,7 +730,7 @@ class _WalletPageState extends State<WalletPage>
                 '₱${currencyFormat.format(provider.balance)}',
                 style: GoogleFonts.manrope(
                   color: Colors.white,
-                  fontSize: 34,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -756,9 +765,19 @@ class _WalletPageState extends State<WalletPage>
   }
 
   Widget _buildFareExpensesCard(Map<String, double> expenses) {
-    const double chartHeight = 110;
+    final provider = Provider.of<WalletProvider>(context, listen: false);
+    final brandColor = const Color(0xFF8E4CB6);
+    const double chartHeight = 130;
+
+    final double maxWeeklyExpense = expenses.values.isEmpty
+        ? 0.0
+        : expenses.values.reduce(max);
+    final double dynamicMaxValue = maxWeeklyExpense > 0
+        ? maxWeeklyExpense
+        : 100.0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -771,82 +790,160 @@ class _WalletPageState extends State<WalletPage>
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Fare Expenses',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Fare Expenses',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      setState(() => _selectedWeekOffset--);
+                      provider.fetchFareExpensesForWeek(_selectedWeekOffset);
+                    },
+                    color: brandColor,
+                    splashRadius: 20,
+                  ),
+                  Text(
+                    _getMonthAndYear(_selectedWeekOffset),
+                    style: GoogleFonts.nunito(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: brandColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _selectedWeekOffset < 0
+                        ? () {
+                            setState(() => _selectedWeekOffset++);
+                            provider.fetchFareExpensesForWeek(
+                              _selectedWeekOffset,
+                            );
+                          }
+                        : null,
+                    color: brandColor,
+                    disabledColor: brandColor.withValues(alpha: 0.3),
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: chartHeight + 24,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: ['100', '75', '50', '25', '0']
-                      .map(
-                        (e) => Text(
-                          e,
-                          style: GoogleFonts.nunito(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: _buildBarChart(chartHeight, expenses)),
-              ],
-            ),
+          Consumer<WalletProvider>(
+            builder: (context, walletProvider, child) {
+              if (walletProvider.isFareExpensesLoading) {
+                return SizedBox(
+                  height: chartHeight + 48,
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              }
+              return Column(
+                children: [
+                  SizedBox(
+                    height: chartHeight,
+                    child: _buildBarChart(
+                      chartHeight,
+                      walletProvider.fareExpenses,
+                      dynamicMaxValue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildXAxisLabels(),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBarChart(double chartHeight, Map<String, double> weeklyData) {
-    final double maxVal = weeklyData.values.fold(
-      100.0,
-      (max, v) => v > max ? v : max,
-    );
+  Widget _buildBarChart(
+    double chartHeight,
+    Map<String, double> weeklyData,
+    double maxVal,
+  ) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final effectiveMaxVal = maxVal * 1.20;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: days.map((day) {
+      children: List.generate(days.length, (index) {
+        final day = days[index];
         final value = weeklyData[day] ?? 0.0;
+        final barHeight = (value / effectiveMaxVal) * chartHeight;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            Text(
+              value > 0 ? value.toInt().toString() : '',
+              style: GoogleFonts.nunito(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 2),
             Container(
-              height: (value / maxVal) * chartHeight,
-              width: 20,
+              height: barHeight,
+              width: 18,
               decoration: BoxDecoration(
                 color: const Color(0xFFFBC02D),
                 borderRadius: BorderRadius.circular(5),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              day,
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
           ],
         );
-      }).toList(),
+      }),
+    );
+  }
+
+  Widget _buildXAxisLabels() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDates = _getWeekDates(_selectedWeekOffset);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(days.length, (index) {
+        return SizedBox(
+          width: 28,
+          child: Column(
+            children: [
+              Text(
+                days[index],
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+              ),
+              Text(
+                DateFormat('dd').format(weekDates[index]),
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -856,17 +953,20 @@ class _WalletPageState extends State<WalletPage>
         final type = _tabController.index == 0
             ? HistoryType.transactions
             : HistoryType.tokens;
-        Navigator.of(context).pushNamed('/history', arguments: type);
+        CommuterApp.navigatorKey.currentState?.pushNamed(
+          '/history',
+          arguments: type,
+        );
       },
       style: OutlinedButton.styleFrom(
-        foregroundColor: gradientColors[1],
-        side: BorderSide(color: gradientColors[1]),
+        foregroundColor: const Color(0xFF5B53C2),
+        side: const BorderSide(color: Color(0xFF5B53C2)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
       ),
       child: Text(
         'View All',
-        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
@@ -879,12 +979,10 @@ class _WalletPageState extends State<WalletPage>
       );
     }
     return Column(
-      children: transactions.asMap().entries.map((entry) {
-        int idx = entry.key;
-        Map<String, dynamic> transaction = entry.value;
-        return _buildTransactionItem(
-          transaction,
-          isLast: idx == transactions.length - 1,
+      children: transactions.map((transaction) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: _buildTransactionItem(transaction),
         );
       }).toList(),
     );
@@ -898,47 +996,43 @@ class _WalletPageState extends State<WalletPage>
       );
     }
     return Column(
-      children: tokenHistory.asMap().entries.map((entry) {
-        int idx = entry.key;
-        Map<String, dynamic> tokenData = entry.value;
-        return _buildTokenItem(
-          tokenData,
-          isLast: idx == tokenHistory.length - 1,
+      children: tokenHistory.map((tokenData) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: _buildTokenItem(tokenData),
         );
       }).toList(),
     );
   }
 
-  Widget _buildTransactionItem(
-    Map<String, dynamic> transaction, {
-    bool isLast = false,
-  }) {
-    final bool isCredit = (transaction['amount'] as num) > 0;
+  Widget _buildTransactionItem(Map<String, dynamic> transaction) {
     final String type = transaction['type'] as String;
+    final double rawAmount = (transaction['amount'] as num).toDouble();
+
+    final bool isExpense = type == 'fare_payment' || rawAmount < 0;
 
     final String title = type
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
-    final String amount = NumberFormat.currency(
+    final String amountText = NumberFormat.currency(
       locale: 'en_PH',
       symbol: '₱',
-    ).format(transaction['amount']);
+    ).format(rawAmount.abs());
+
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(transaction['created_at']));
 
     return InkWell(
       onTap: () => _showTransactionDetailModal(context, transaction),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -949,25 +1043,29 @@ class _WalletPageState extends State<WalletPage>
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
             Text(
-              (isCredit ? '+' : '') + amount,
+              // Show sign based on isExpense
+              '${isExpense ? '-' : '+'}$amountText',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isCredit
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFFC62828),
+                fontSize: 14,
+                color: isExpense
+                    ? const Color(0xFFC62828) // Red for expenses
+                    : const Color(0xFF2E7D32), // Green for income
               ),
             ),
           ],
@@ -976,29 +1074,24 @@ class _WalletPageState extends State<WalletPage>
     );
   }
 
-  Widget _buildTokenItem(
-    Map<String, dynamic> tokenData, {
-    bool isLast = false,
-  }) {
+  Widget _buildTokenItem(Map<String, dynamic> tokenData) {
     final bool isCredit = (tokenData['amount'] as num) > 0;
     final String title = (tokenData['type'] as String) == 'redemption'
         ? 'Token Redemption'
         : 'Token Reward';
     final double amount = (tokenData['amount'] as num).toDouble();
     final String date = DateFormat(
-      'MM/d/yy hh:mm a',
+      'MMM d, hh:mm a',
     ).format(DateTime.parse(tokenData['created_at']));
 
     return InkWell(
       onTap: () => _showTokenActivityModal(context, tokenData),
       child: Container(
-        padding: const EdgeInsets.only(top: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isLast ? Colors.transparent : Colors.grey[200]!,
-            ),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1009,14 +1102,17 @@ class _WalletPageState extends State<WalletPage>
                 Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.nunito(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.nunito(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -1026,7 +1122,7 @@ class _WalletPageState extends State<WalletPage>
                   '${isCredit ? '+' : ''}${amount.toStringAsFixed(1)}',
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                     color: isCredit
                         ? const Color(0xFF2E7D32)
                         : const Color(0xFFC62828),

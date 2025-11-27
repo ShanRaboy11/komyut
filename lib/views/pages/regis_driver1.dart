@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import '../widgets/text_field.dart';
 import '../widgets/dropdown.dart';
@@ -30,11 +31,11 @@ class RegistrationDriverPersonalInfoState
       TextEditingController();
   final TextEditingController _assignedOperatorController =
       TextEditingController();
-  // ✨ NEW Controllers
   final TextEditingController _vehiclePlateController = TextEditingController();
 
   String? _selectedSex;
-  String? _selectedRouteCode; // ✨ NEW
+  String? _selectedRouteCode;
+  String? _selectedPuvType; // ✨ NEW - PUV Type
   String? _uploadedLicenseFileName;
   File? _driverLicenseFile;
 
@@ -54,7 +55,6 @@ class RegistrationDriverPersonalInfoState
         listen: false,
       );
 
-      // ✨ Load available routes
       registrationProvider.loadAvailableRoutes();
 
       final data = registrationProvider.registrationData;
@@ -82,14 +82,18 @@ class RegistrationDriverPersonalInfoState
       if (data['assigned_operator'] != null) {
         _assignedOperatorController.text = data['assigned_operator'];
       }
-      // ✨ NEW: Load vehicle plate
       if (data['vehicle_plate'] != null) {
         _vehiclePlateController.text = data['vehicle_plate'];
       }
-      // ✨ NEW: Load route code
       if (data['route_code'] != null) {
         setState(() {
           _selectedRouteCode = data['route_code'];
+        });
+      }
+      // ✨ NEW: Load PUV type
+      if (data['puv_type'] != null) {
+        setState(() {
+          _selectedPuvType = data['puv_type'];
         });
       }
       if (data['driver_license_path'] != null) {
@@ -111,7 +115,7 @@ class RegistrationDriverPersonalInfoState
     _addressController.dispose();
     _licenseNumberController.dispose();
     _assignedOperatorController.dispose();
-    _vehiclePlateController.dispose(); // ✨ NEW
+    _vehiclePlateController.dispose();
     super.dispose();
   }
 
@@ -138,13 +142,81 @@ class RegistrationDriverPersonalInfoState
       return;
     }
 
+    // Explicit null checks for required fields
+    if (_selectedPuvType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select PUV type'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedSex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select sex'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedRouteCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select route'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (isFormValid) {
+      // Explicit null checks to prevent runtime exceptions
+      if (_selectedSex == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your sex'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedRouteCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a route code'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a PUV type')),
+        );
+      }
+      if (_selectedSex == null ||
+          _selectedRouteCode == null ||
+          _selectedPuvType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all required fields correctly!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final registrationProvider = Provider.of<RegistrationProvider>(
         context,
         listen: false,
       );
 
-      // ✨ UPDATED: Include vehicle plate and route code
       registrationProvider
           .saveDriverPersonalInfo(
             firstName: _firstNameController.text.trim(),
@@ -157,10 +229,9 @@ class RegistrationDriverPersonalInfoState
                 ? null
                 : _assignedOperatorController.text.trim(),
             driverLicenseFile: _driverLicenseFile!,
-            vehiclePlate: _vehiclePlateController.text
-                .trim()
-                .toUpperCase(), // ✨ NEW
-            routeCode: _selectedRouteCode!, // ✨ NEW
+            vehiclePlate: _vehiclePlateController.text.trim().toUpperCase(),
+            routeCode: _selectedRouteCode!,
+            puvType: _selectedPuvType!,
           )
           .then((success) {
             if (success && mounted) {
@@ -246,28 +317,27 @@ class RegistrationDriverPersonalInfoState
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 30),
                       ProgressBar(steps: _registrationSteps),
                       const SizedBox(height: 30),
 
-                      const Text(
-                        'Driver Personal Information',
-                        style: TextStyle(
+                      Text(
+                        'Tell Us About You',
+                        style: GoogleFonts.manrope(
                           color: Color.fromRGBO(18, 18, 18, 1),
-                          fontFamily: 'Manrope',
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Please provide your details to complete registration.',
-                        style: TextStyle(
+                      Text(
+                        'Provide some basic details so we can set up your account',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
                           color: Color.fromRGBO(127, 127, 127, 1),
-                          fontFamily: 'Nunito',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -280,7 +350,7 @@ class RegistrationDriverPersonalInfoState
                             CustomTextField(
                               labelText: 'First Name',
                               controller: _firstNameController,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -306,7 +376,7 @@ class RegistrationDriverPersonalInfoState
                             CustomTextField(
                               labelText: 'Last Name',
                               controller: _lastNameController,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -336,7 +406,7 @@ class RegistrationDriverPersonalInfoState
                                     labelText: 'Age',
                                     controller: _ageController,
                                     keyboardType: TextInputType.number,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -369,7 +439,7 @@ class RegistrationDriverPersonalInfoState
                                   child: CustomDropdownField<String>(
                                     labelText: 'Sex',
                                     initialValue: _selectedSex,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -421,7 +491,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Full Address',
                               controller: _addressController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -447,7 +517,7 @@ class RegistrationDriverPersonalInfoState
                               labelText: 'Assigned Operator (optional)',
                               controller: _assignedOperatorController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -461,28 +531,26 @@ class RegistrationDriverPersonalInfoState
                                 1,
                               ),
                             ),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 30),
 
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'Driver\'s License',
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: Color.fromRGBO(18, 18, 18, 1),
-                                  fontFamily: 'Manrope',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 10),
 
-                            // 🪪 Driver’s License Section
                             CustomTextField(
                               labelText: 'Driver\'s License Number *',
                               controller: _licenseNumberController,
                               width: fieldWidth,
-                              height: 60,
+                              height: 50,
                               borderColor: const Color.fromRGBO(
                                 200,
                                 200,
@@ -502,7 +570,7 @@ class RegistrationDriverPersonalInfoState
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 15),
 
                             Align(
                               alignment: Alignment.centerLeft,
@@ -530,9 +598,9 @@ class RegistrationDriverPersonalInfoState
                                     child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
-                                      children: const [
+                                      children: [
                                         Icon(
-                                          Icons.image,
+                                          Icons.image_rounded,
                                           color: Color.fromRGBO(
                                             185,
                                             69,
@@ -543,14 +611,13 @@ class RegistrationDriverPersonalInfoState
                                         SizedBox(width: 6),
                                         Text(
                                           'Attach Image',
-                                          style: TextStyle(
+                                          style: GoogleFonts.nunito(
                                             color: Color.fromRGBO(
                                               185,
                                               69,
                                               170,
                                               1,
                                             ),
-                                            fontFamily: 'Manrope',
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -589,31 +656,55 @@ class RegistrationDriverPersonalInfoState
                             const SizedBox(height: 30),
 
                             // 🚘 Vehicle Information Section
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'Vehicle Information',
-                                style: TextStyle(
+                                style: GoogleFonts.manrope(
                                   color: Color.fromRGBO(18, 18, 18, 1),
-                                  fontFamily: 'Manrope',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 15),
 
+                            CustomTextField(
+                              labelText: 'Plate Number *',
+                              hintText: 'Enter plate number',
+                              controller: _vehiclePlateController,
+                              height: 50,
+                              borderColor: const Color.fromRGBO(
+                                200,
+                                200,
+                                200,
+                                1,
+                              ),
+                              focusedBorderColor: const Color.fromRGBO(
+                                185,
+                                69,
+                                170,
+                                1,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter vehicle plate number';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 15),
+
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Vehicle Plate Number — wider
                                 Expanded(
                                   flex: 3,
-                                  child: CustomTextField(
-                                    labelText: 'Plate Number *',
-                                    hintText: 'Enter plate number',
-                                    controller: _vehiclePlateController,
-                                    height: 60,
+                                  child: CustomDropdownField<String>(
+                                    labelText: 'PUV Type *',
+                                    initialValue: _selectedPuvType,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -626,24 +717,42 @@ class RegistrationDriverPersonalInfoState
                                       170,
                                       1,
                                     ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'modern',
+                                        child: Text('Modern'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'traditional',
+                                        child: Text('Traditional'),
+                                      ),
+                                    ],
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedPuvType = newValue;
+                                      });
+                                    },
                                     validator: (value) {
-                                      if (value == null ||
-                                          value.trim().isEmpty) {
-                                        return 'Please enter vehicle plate number';
+                                      if (value == null) {
+                                        return 'Please select PUV type';
                                       }
                                       return null;
                                     },
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Color.fromRGBO(185, 69, 170, 1),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 15),
 
-                                // Route Code — narrower
+                                // Route Code
                                 Expanded(
                                   flex: 2,
                                   child: CustomDropdownField<String>(
                                     labelText: 'Route',
                                     initialValue: _selectedRouteCode,
-                                    height: 60,
+                                    height: 50,
                                     borderColor: const Color.fromRGBO(
                                       200,
                                       200,
@@ -656,62 +765,41 @@ class RegistrationDriverPersonalInfoState
                                       170,
                                       1,
                                     ),
-                                    items:
-                                        registrationProvider
-                                            .availableRoutes
-                                            .isEmpty
+                                    items: registrationProvider.isLoading
                                         ? [
                                             const DropdownMenuItem(
                                               value: null,
                                               enabled: false,
-                                              child: Text('routes...'),
+                                              child: Text('Loading...'),
                                             ),
                                           ]
-                                        : registrationProvider.availableRoutes
-                                              .map((route) {
-                                                final code =
-                                                    route['code'] as String;
-                                                final name =
-                                                    route['name'] as String?;
+                                        : (registrationProvider.availableRoutes.isEmpty
+                                            ? [
+                                                const DropdownMenuItem(
+                                                  value: null,
+                                                  enabled: false,
+                                                  child: Text('No routes available'),
+                                                ),
+                                              ]
+                                            : registrationProvider.availableRoutes.map((route) {
+                                                final code = route['code'] as String;
                                                 return DropdownMenuItem<String>(
                                                   value: code,
                                                   child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       Text(
                                                         code,
                                                         style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w800,
+                                                          fontWeight: FontWeight.w400,
                                                           fontFamily: 'Manrope',
                                                         ),
                                                       ),
-                                                      if (name != null &&
-                                                          name.isNotEmpty)
-                                                        Text(
-                                                          name,
-                                                          style: const TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                Color.fromRGBO(
-                                                                  127,
-                                                                  127,
-                                                                  127,
-                                                                  1,
-                                                                ),
-                                                            fontFamily:
-                                                                'Nunito',
-                                                          ),
-                                                        ),
                                                     ],
                                                   ),
                                                 );
-                                              })
-                                              .toList(),
+                                              }).toList()),
                                     onChanged: (String? newValue) {
                                       setState(() {
                                         _selectedRouteCode = newValue;
@@ -743,7 +831,6 @@ class RegistrationDriverPersonalInfoState
                                   onPressed: _onBackPressed,
                                   isFilled: false,
                                   width: buttonWidth,
-                                  height: 60,
                                   borderRadius: 15,
                                   strokeColor: const Color.fromRGBO(
                                     176,
@@ -770,7 +857,6 @@ class RegistrationDriverPersonalInfoState
                                       : _onNextPressed,
                                   isFilled: true,
                                   width: buttonWidth,
-                                  height: 60,
                                   borderRadius: 15,
                                   textColor: Colors.white,
                                   hasShadow: true,

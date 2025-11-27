@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class TokenConfirmationPage extends StatefulWidget {
   final String tokenAmount;
@@ -56,9 +57,9 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
     );
 
     if (success && context.mounted) {
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/token_success', (route) => false);
+      CommuterApp.navigatorKey.currentState?.pushReplacementNamed(
+        '/token_success',
+      );
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -88,13 +89,13 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Redeem Tokens',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -109,7 +110,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             Text(
               'Wheel Tokens',
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -150,7 +151,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 50,
-                        vertical: 14,
+                        vertical: 10,
                       ),
                     ),
                     child: provider.isCompletionLoading
@@ -166,7 +167,7 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
                             'Confirm',
                             style: GoogleFonts.manrope(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                           ),
                   );
@@ -260,9 +261,11 @@ class _TokenConfirmationPageState extends State<TokenConfirmationPage> {
             top: -12,
             right: -12,
             child: GestureDetector(
-              onTap: () => Navigator.of(
-                context,
-              ).popUntil((route) => route.settings.name == '/wallet'),
+              onTap: () {
+                CommuterApp.navigatorKey.currentState?.popUntil(
+                  ModalRoute.withName('/'),
+                );
+              },
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(

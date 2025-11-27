@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/button.dart';
+import 'commuter_app.dart';
 
 class TokenSuccessPage extends StatefulWidget {
   const TokenSuccessPage({super.key});
@@ -58,14 +59,14 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
               'Redemption Complete!',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
-                fontSize: 24,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 150),
+            const SizedBox(height: 100),
             _buildHomeButton(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
             _buildWalletButton(context),
           ],
         ),
@@ -108,7 +109,10 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Home",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        CommuterApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       },
       isFilled: true,
       textColor: Colors.white,
@@ -119,7 +123,9 @@ class _TokenSuccessPageState extends State<TokenSuccessPage>
     return CustomButton(
       text: "Wallet",
       onPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil('/wallet', (route) => false);
+        CommuterApp.navigatorKey.currentState?.popUntil(
+          ModalRoute.withName('/'),
+        );
       },
       isFilled: false,
     );

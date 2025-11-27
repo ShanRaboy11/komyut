@@ -161,7 +161,7 @@ class DriverActivityPage extends StatelessWidget {
   }
 }
 
-class DriverFeedbackPage extends StatelessWidget {
+/*class DriverFeedbackPage extends StatelessWidget {
   const DriverFeedbackPage({super.key});
 
   @override
@@ -190,7 +190,7 @@ class DriverFeedbackPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class DriverNotificationsPage extends StatelessWidget {
   const DriverNotificationsPage({super.key});
@@ -223,7 +223,7 @@ class DriverNotificationsPage extends StatelessWidget {
   }
 }
 
-class DriverProfilePage extends StatelessWidget {
+/*class DriverProfilePage extends StatelessWidget {
   const DriverProfilePage({super.key});
 
   @override
@@ -256,7 +256,7 @@ class DriverProfilePage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 // ============= OPERATOR PLACEHOLDERS =============
 class OperatorDashboardPage extends StatelessWidget {
@@ -290,7 +290,7 @@ class OperatorDashboardPage extends StatelessWidget {
   }
 }
 
-class OperatorDriversPage extends StatelessWidget {
+/*class OperatorDriversPage extends StatelessWidget {
   const OperatorDriversPage({super.key});
 
   @override
@@ -319,7 +319,7 @@ class OperatorDriversPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class OperatorTransactionsPage extends StatelessWidget {
   const OperatorTransactionsPage({super.key});
@@ -352,7 +352,7 @@ class OperatorTransactionsPage extends StatelessWidget {
   }
 }
 
-class OperatorReportsPage extends StatelessWidget {
+/*class OperatorReportsPage extends StatelessWidget {
   const OperatorReportsPage({super.key});
 
   @override
@@ -381,9 +381,9 @@ class OperatorReportsPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
-class OperatorProfilePage extends StatelessWidget {
+/*class OperatorProfilePage extends StatelessWidget {
   const OperatorProfilePage({super.key});
 
   @override
@@ -416,7 +416,7 @@ class OperatorProfilePage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 // ============= ADMIN PLACEHOLDERS =============
 class AdminDashboardPage extends StatelessWidget {
@@ -454,7 +454,7 @@ class AdminDashboardPage extends StatelessWidget {
   }
 }
 
-class AdminVerifiedPage extends StatelessWidget {
+/*class AdminVerifiedPage extends StatelessWidget {
   const AdminVerifiedPage({super.key});
 
   @override
@@ -483,9 +483,9 @@ class AdminVerifiedPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
-class AdminActivityPage extends StatelessWidget {
+/*class AdminActivityPage extends StatelessWidget {
   const AdminActivityPage({super.key});
 
   @override
@@ -514,9 +514,9 @@ class AdminActivityPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
-class AdminReportsPage extends StatelessWidget {
+/*class AdminReportsPage extends StatelessWidget {
   const AdminReportsPage({super.key});
 
   @override
@@ -545,4 +545,4 @@ class AdminReportsPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/

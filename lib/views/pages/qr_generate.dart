@@ -1,46 +1,19 @@
+import 'dart:ui' as ui;
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'dart:ui' as ui;
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
+
 import '../services/qr_service.dart';
-import '../widgets/navbar.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
-
-class DriverQRGenerateNav extends StatefulWidget {
-  const DriverQRGenerateNav({super.key});
-
-  @override
-  State<DriverQRGenerateNav> createState() => _DriverQRGenerateNavState();
-}
-
-class _DriverQRGenerateNavState extends State<DriverQRGenerateNav> {
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBottomNavBar(
-      pages: const [
-        DriverQRGeneratePage(),
-        Center(child: Text("📋 Activity")),
-        Center(child: Text("✍️ Feedback")),
-        Center(child: Text("🔔 Notifications")),
-        Center(child: Text("👤 Profile")),
-      ],
-      items: const [
-        NavItem(icon: Icons.home_rounded, label: 'Home'),
-        NavItem(icon: Symbols.overview_rounded, label: 'Activity'),
-        NavItem(icon: Symbols.rate_review_rounded, label: 'Feedback'),
-        NavItem(icon: Icons.notifications_rounded, label: 'Notification'),
-        NavItem(icon: Icons.person_rounded, label: 'Profile'),
-      ],
-    );
-  }
-}
 
 class DriverQRGeneratePage extends StatefulWidget {
-  const DriverQRGeneratePage({super.key});
+  final VoidCallback? onBack;
+
+  const DriverQRGeneratePage({super.key, this.onBack});
 
   @override
   State<DriverQRGeneratePage> createState() => _DriverQRGeneratePageState();
@@ -57,6 +30,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   String? _qrCode;
   Map<String, dynamic>? _driverData;
   String? _errorMessage;
+  bool _isVerified = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -86,6 +60,17 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
   Future<void> _checkExistingQR() async {
     final result = await _qrService.getCurrentQRCode();
+    // always capture verification status if returned
+    final isVerified =
+        result['isVerified'] as bool? ??
+        result['data']?['isVerified'] as bool? ??
+        false;
+    if (mounted) {
+      setState(() {
+        _isVerified = isVerified;
+      });
+    }
+
     if (result['success'] && result['hasQR']) {
       setState(() {
         _qrGenerated = true;
@@ -102,7 +87,6 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
       _errorMessage = null;
     });
 
-    // Simulate generation time for better UX
     await Future.delayed(const Duration(milliseconds: 1500));
 
     final result = await _qrService.generateQRCode();
@@ -116,14 +100,12 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
           _isLoading = false;
         });
         _animationController.forward(from: 0.0);
-
         _showSnackBar('QR Code generated successfully!', Colors.green);
       } else {
         setState(() {
           _errorMessage = result['message'];
           _isLoading = false;
         });
-
         _showSnackBar(
           result['message'] ?? 'Failed to generate QR code',
           Colors.red,
@@ -134,74 +116,41 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
   Future<void> _downloadQRCode() async {
     if (_qrCode == null) return;
-
-    setState(() {
-      _isDownloading = true;
-    });
+    setState(() => _isDownloading = true);
 
     try {
-      // Capture QR code as image
       final boundary =
           _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Save to temporary directory first
-        final directory = await getTemporaryDirectory();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final driverName = _driverData?['driverName'] ?? 'Driver';
-        final fileName =
-            'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
-        final filePath = '${directory.path}/$fileName';
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final driverName = _driverData?['driverName'] ?? 'Driver';
+      final fileName =
+          'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
+      final filePath = '${directory.path}/$fileName';
 
-        // Write file
-        final file = File(filePath);
-        await file.writeAsBytes(pngBytes);
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+      await Gal.putImage(filePath);
 
-        // Save to gallery using gal - handles all permissions automatically
-        await Gal.putImage(filePath);
-
-        _showSnackBar('QR Code saved to gallery!', Colors.green);
-      } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-        final directory = await getDownloadsDirectory();
-        if (directory != null) {
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final driverName = _driverData?['driverName'] ?? 'Driver';
-          final fileName =
-              'QRCode_${driverName.replaceAll(' ', '_')}_$timestamp.png';
-          final filePath = '${directory.path}/$fileName';
-
-          final file = File(filePath);
-          await file.writeAsBytes(pngBytes);
-
-          _showSnackBar('QR Code saved to Downloads folder!', Colors.green);
-        } else {
-          _showSnackBar('Could not access Downloads folder', Colors.red);
-        }
-      } else {
-        _showSnackBar('Platform not supported', Colors.orange);
-      }
+      _showSnackBar('QR Code saved to gallery!', Colors.green);
     } catch (e) {
-      debugPrint('Error downloading QR code: $e');
       _showSnackBar('Failed to download QR code: $e', Colors.red);
     } finally {
-      setState(() {
-        _isDownloading = false;
-      });
+      setState(() => _isDownloading = false);
     }
   }
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -234,25 +183,33 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             children: [
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 28,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: () {
+                          if (widget.onBack != null) {
+                            widget.onBack!();
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        tooltip: 'Back',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                      tooltip: 'Back',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(width: 12),
                     Text(
                       'QR Code',
                       style: GoogleFonts.manrope(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -261,7 +218,6 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                 ),
               ),
 
-              // Main Content
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -277,23 +233,19 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                     ),
                   ),
                   child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: isTablet ? 500 : double.infinity,
-                      ),
-                      child: Padding(
-                        // Add padding directly if needed, instead of in scroll view
-                        padding: const EdgeInsets.fromLTRB(
-                          30,
-                          30,
-                          30,
-                          30,
-                        ), // Adjusted padding
-                        child: _isLoading
-                            ? _buildLoadingState()
-                            : _qrGenerated
-                            ? _buildQRDisplay()
-                            : _buildInitialState(),
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isTablet ? 500 : double.infinity,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(30),
+                          child: _isLoading
+                              ? _buildLoadingState()
+                              : _qrGenerated
+                              ? _buildQRDisplay()
+                              : _buildInitialState(),
+                        ),
                       ),
                     ),
                   ),
@@ -407,7 +359,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
         Text(
           'No QR Code Yet',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1F2937),
           ),
@@ -421,17 +373,17 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             'Generate a QR code for passengers to scan and pay their fare',
             textAlign: TextAlign.center,
             style: GoogleFonts.nunito(
-              fontSize: 16,
+              fontSize: 12,
               color: Colors.grey[600],
               height: 1.5,
             ),
           ),
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 20),
 
         ElevatedButton(
-          onPressed: _generateQRCode,
+          onPressed: _isVerified ? _generateQRCode : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF8E4CB6),
             foregroundColor: Colors.white,
@@ -449,13 +401,41 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
               Text(
                 'Generate QR Code',
                 style: GoogleFonts.manrope(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
         ),
+
+        // If driver isn't verified, show an informational message
+        if (!_isVerified) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.yellow[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.yellow[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange[700]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your account must be verified by an administrator before you can generate a QR code.',
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      color: Colors.orange[800],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         if (_errorMessage != null) ...[
           const SizedBox(height: 20),
@@ -536,7 +516,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                           child: const Icon(
                             Icons.person_rounded,
                             color: Colors.white,
-                            size: 32,
+                            size: 25,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -548,7 +528,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                                 _driverData?['driverName'] ?? 'Juan Dela Cruz',
                                 style: GoogleFonts.manrope(
                                   color: Color(0xFF5B53C2),
-                                  fontSize: 18,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -559,7 +539,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
                                     _driverData?['plateNumber'] ?? 'ABC-1234',
                                     Icons.directions_bus_rounded,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 10),
                                   _buildInfoChip(
                                     _driverData?['routeNumber'] ?? 'Route 101',
                                     Icons.route_rounded,
@@ -695,7 +675,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
 
   Widget _buildInfoChip(String text, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Color(0xFF8E4CB6).withAlpha(51),
         borderRadius: BorderRadius.circular(20),
@@ -709,7 +689,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
             text,
             style: GoogleFonts.nunito(
               color: Color(0xFF5B53C2),
-              fontSize: 13,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -719,7 +699,7 @@ class _DriverQRGeneratePageState extends State<DriverQRGeneratePage>
   }
 }
 
-// Custom painter for loading animation
+// Custom painter for loading animation (Unchanged)
 class QRLoadingPainter extends CustomPainter {
   final double animationValue;
 

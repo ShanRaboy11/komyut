@@ -257,7 +257,7 @@ class CommuterDashboardService {
           )
           .eq('wallet_id', wallet['id'])
           .order('created_at', ascending: false)
-          .limit(10);
+          .limit(5);
 
       debugPrint('✅ Recent transactions fetched: ${transactions.length}');
       return transactions;
@@ -268,7 +268,7 @@ class CommuterDashboardService {
   }
 
   Future<List<Map<String, dynamic>>> getRecentTokens() async {
-    return getAllTokens(limit: 10);
+    return getAllTokens(limit: 5);
   }
 
   /// Get total trips count
@@ -363,24 +363,36 @@ class CommuterDashboardService {
     }
   }
 
-  Future<Map<String, double>> getFareExpensesWeekly() async {
+  Future<Map<String, double>> getFareExpensesWeekly({
+    int weekOffset = 0,
+  }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return {};
-
-      final response = await _supabase.rpc('get_weekly_fare_expenses');
+      final response = await _supabase.rpc(
+        'get_weekly_fare_expenses',
+        params: {'week_offset': weekOffset},
+      );
 
       if (response is List) {
-        final weeklyExpenses = {
+        final orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final expenseMap = {
           for (var item in response)
             (item['day_name'] as String): (item['total'] as num).toDouble(),
         };
-        debugPrint('✅ Weekly fare expenses fetched: $weeklyExpenses');
+
+        final weeklyExpenses = {
+          for (var day in orderedDays) day: expenseMap[day] ?? 0.0,
+        };
+
+        debugPrint(
+          '✅ Weekly fare expenses for offset $weekOffset fetched: $weeklyExpenses',
+        );
         return weeklyExpenses;
       }
       return {};
     } catch (e) {
-      debugPrint('❌ Error fetching weekly fare expenses: $e');
+      debugPrint(
+        '❌ Error fetching weekly fare expenses for offset $weekOffset: $e',
+      );
       return {};
     }
   }

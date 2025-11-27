@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class RedeemTokensPage extends StatefulWidget {
   const RedeemTokensPage({super.key});
@@ -98,13 +99,16 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black54),
+              icon: const Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.black54,
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
               'Redeem Tokens',
               style: GoogleFonts.manrope(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -150,7 +154,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         Text(
           'Wheel Tokens',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -292,7 +296,7 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
         child: ElevatedButton(
           onPressed: _isButtonEnabled
               ? () {
-                  Navigator.of(context).pushNamed(
+                  CommuterApp.navigatorKey.currentState?.pushNamed(
                     '/token_confirmation',
                     arguments: _tokenController.text,
                   );
@@ -304,13 +308,13 @@ class _RedeemTokensPageState extends State<RedeemTokensPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
           ),
           child: Text(
             'Next',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 14,
               color: Colors.white,
             ),
           ),

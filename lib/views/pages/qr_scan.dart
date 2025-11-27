@@ -2,13 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import '../widgets/background_circles.dart';
 import './fare_payment.dart';
+import './ongoing_trip.dart';
 
 class QRScannerScreen extends StatefulWidget {
   final VoidCallback? onScanComplete;
+  final String? tripId;
+  final bool isArrivalScan;
+  final int passengerCount;
 
-  const QRScannerScreen({super.key, this.onScanComplete});
+  const QRScannerScreen({
+    super.key,
+    this.onScanComplete,
+    this.tripId,
+    this.isArrivalScan = false,
+    this.passengerCount = 1,
+  });
 
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
@@ -38,14 +51,13 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       end: 1.0,
     ).animate(_animationController);
 
-    // Ensure camera starts when screen initializes
     cameraController.start();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    cameraController.stop(); // Explicitly stop the camera
+    cameraController.stop();
     cameraController.dispose();
     super.dispose();
   }
@@ -58,10 +70,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       final String? code = barcodes.first.rawValue;
       if (code != null) {
         final cleanCode = code.trim();
-        debugPrint('📱 QR Code detected (raw): "$code"');
-        debugPrint('📱 QR Code detected (clean): "$cleanCode"');
+        debugPrint('📱 QR Code detected: "$cleanCode"');
 
-        // Pause camera immediately to prevent multiple detections
         cameraController.stop();
 
         setState(() {
@@ -78,12 +88,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     _animationController.stop();
 
     try {
-      // ... (your existing Supabase logic for handling scanned QR code) ...
       final trimmedQR = qrCode.trim();
       final normalizedQR = trimmedQR.toUpperCase();
 
       debugPrint('🔍 ============ QR CODE SCAN DEBUG ============');
-      // ... (rest of your debug prints) ...
 
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
@@ -96,7 +104,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final profileResponse = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, role')
           .eq('user_id', userId)
           .maybeSingle();
 
@@ -107,98 +115,20 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       }
 
       final profileId = profileResponse['id'] as String;
-      debugPrint('✅ Profile ID: $profileId');
+      final role = profileResponse['role'] as String;
 
-      debugPrint('🔍 Querying drivers with route join...');
-
-      final allDriversResponse = await supabase
-          .from('drivers')
-          .select('''
-            id, 
-            profile_id,
-            current_qr,
-            route_id,
-            vehicle_plate,
-            operator_name,
-            active,
-            routes:route_id (
-              id,
-              code,
-              name
-            )
-          ''')
-          .eq('active', true)
-          .not('current_qr', 'is', null);
-
-      debugPrint(
-        '📊 Total active drivers with QR codes: ${allDriversResponse.length}',
-      );
-
-      if (allDriversResponse.isEmpty) {
-        debugPrint('⚠️ No active drivers with QR codes found!');
-        _showError('No active drivers available. Please try again later.');
+      if (role != 'commuter') {
+        _showError('This feature is only available for commuters');
         _resetScanner();
         return;
       }
 
-      // ✅ Try multiple matching strategies
-      Map<String, dynamic>? driverResponse;
-      String matchStrategy = '';
+      debugPrint('✅ Profile ID: $profileId');
 
-      // Strategy 1: Exact match (case-sensitive, trimmed)
-      for (var driver in allDriversResponse) {
-        final dbQR = (driver['current_qr'] as String?)?.trim() ?? '';
-        if (dbQR == trimmedQR) {
-          driverResponse = driver;
-          matchStrategy = 'Exact match (case-sensitive)';
-          debugPrint('✅ Match found: $matchStrategy');
-          break;
-        }
-      }
-
-      // Strategy 2: Case-insensitive match
-      if (driverResponse == null) {
-        for (var driver in allDriversResponse) {
-          final dbQR =
-              (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
-          if (dbQR == normalizedQR) {
-            driverResponse = driver;
-            matchStrategy = 'Case-insensitive match';
-            debugPrint('✅ Match found: $matchStrategy');
-            break;
-          }
-        }
-      }
-
-      // Strategy 3: Contains match (for partial QR codes)
-      if (driverResponse == null && trimmedQR.length >= 8) {
-        for (var driver in allDriversResponse) {
-          final dbQR =
-              (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
-          if (dbQR.contains(normalizedQR) || normalizedQR.contains(dbQR)) {
-            driverResponse = driver;
-            matchStrategy = 'Partial match';
-            debugPrint('✅ Match found: $matchStrategy');
-            break;
-          }
-        }
-      }
+      // Get driver information with route stops
+      final driverResponse = await _findDriver(trimmedQR, normalizedQR);
 
       if (driverResponse == null) {
-        // ... (error handling for no match) ...
-        debugPrint('❌ NO MATCH FOUND!');
-        debugPrint('📊 All QR codes in database:');
-        for (var driver in allDriversResponse) {
-          final dbQR = driver['current_qr'] as String?;
-          debugPrint('   Driver ${driver['id']}:');
-          debugPrint('     Raw: "$dbQR"');
-          debugPrint('     Trimmed: "${dbQR?.trim()}"');
-          debugPrint('     Normalized: "${dbQR?.trim().toUpperCase()}"');
-          debugPrint('     Length: ${dbQR?.length}');
-          debugPrint('     Active: ${driver['active']}');
-          debugPrint('     Route: ${driver['routes']}');
-        }
-
         _showError(
           'Invalid QR code\n\n'
           'Scanned: "$trimmedQR"\n'
@@ -212,14 +142,41 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       final driverId = driverResponse['id'] as String;
       final routeId = driverResponse['route_id'] as String?;
+      final puvType = driverResponse['puv_type'] as String? ?? 'traditional';
 
-      // Check for existing ongoing trip
-      final existingTrip = await supabase
-          .from('trips')
-          .select('id, origin_stop_id, started_at, driver_id, route_id')
-          .eq('created_by_profile_id', profileId)
-          .eq('status', 'ongoing')
-          .maybeSingle();
+      if (routeId == null) {
+        _showError('This driver is not assigned to any route');
+        _resetScanner();
+        return;
+      }
+
+      // Load route stops
+      final routeStops = await _loadRouteStops(routeId);
+
+      if (routeStops.isEmpty) {
+        _showError('Route has no stops configured');
+        _resetScanner();
+        return;
+      }
+
+      // Check for existing ongoing trip or if this is a continuation
+      final existingTrip = widget.isArrivalScan && widget.tripId != null
+          ? await supabase
+                .from('trips')
+                .select(
+                  'id, origin_stop_id, started_at, driver_id, route_id, metadata, passengers_count',
+                )
+                .eq('id', widget.tripId!)
+                .eq('status', 'ongoing')
+                .maybeSingle()
+          : await supabase
+                .from('trips')
+                .select(
+                  'id, origin_stop_id, started_at, driver_id, route_id, metadata, passengers_count',
+                )
+                .eq('created_by_profile_id', profileId)
+                .eq('status', 'ongoing')
+                .maybeSingle();
 
       if (existingTrip != null) {
         debugPrint('🔄 Existing trip found: ${existingTrip['id']}');
@@ -227,14 +184,23 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         await _handleArrivalScan(
           existingTrip['id'],
           existingTrip['origin_stop_id'],
-          existingTrip['route_id'],
-          trimmedQR,
+          existingTrip['metadata'],
+          routeStops,
+          puvType,
           profileId,
+          existingTrip['passengers_count'] ?? 1,
         );
       } else {
         debugPrint('🚌 First scan - Creating new trip');
         // FIRST SCAN - Boarding/Takeoff
-        await _handleTakeoffScan(driverId, routeId, profileId, trimmedQR);
+        await _handleTakeoffScan(
+          driverId,
+          routeId,
+          profileId,
+          trimmedQR,
+          puvType,
+          routeStops,
+        );
       }
     } catch (e, stackTrace) {
       debugPrint('❌ ============ ERROR ============');
@@ -245,110 +211,219 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }
   }
 
+  Future<Map<String, dynamic>?> _findDriver(
+    String trimmedQR,
+    String normalizedQR,
+  ) async {
+    final supabase = Supabase.instance.client;
+
+    final allDriversResponse = await supabase
+        .from('drivers')
+        .select('''
+        id,
+        profile_id,
+        current_qr,
+        route_id,
+        vehicle_plate,
+        operator_name,
+        puv_type,
+        active,
+        routes:route_id (
+          id,
+          code,
+          name
+        ),
+        profiles:profile_id (
+          first_name,
+          last_name
+        )
+      ''')
+        .eq('active', true)
+        .not('current_qr', 'is', null);
+
+    if (allDriversResponse.isEmpty) {
+      return null;
+    }
+
+    // Try exact match
+    for (var driver in allDriversResponse) {
+      final dbQR = (driver['current_qr'] as String?)?.trim() ?? '';
+      if (dbQR == trimmedQR) {
+        return driver;
+      }
+    }
+
+    // Try case-insensitive match
+    for (var driver in allDriversResponse) {
+      final dbQR =
+          (driver['current_qr'] as String?)?.trim().toUpperCase() ?? '';
+      if (dbQR == normalizedQR) {
+        return driver;
+      }
+    }
+
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> _loadRouteStops(String routeId) async {
+    final supabase = Supabase.instance.client;
+
+    final stopsResponse = await supabase
+        .from('route_stops')
+        .select('id, name, sequence, latitude, longitude')
+        .eq('route_id', routeId)
+        .order('sequence', ascending: true);
+
+    return List<Map<String, dynamic>>.from(stopsResponse);
+  }
+
+  // Find the closest stop to a given location
+  Map<String, dynamic>? _findClosestStop(
+    double lat,
+    double lng,
+    List<Map<String, dynamic>> stops,
+  ) {
+    if (stops.isEmpty) return null;
+
+    Map<String, dynamic>? closestStop;
+    double minDistance = double.infinity;
+
+    for (var stop in stops) {
+      final stopLat = stop['latitude'] as double;
+      final stopLng = stop['longitude'] as double;
+
+      final distance = Geolocator.distanceBetween(lat, lng, stopLat, stopLng);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestStop = stop;
+      }
+    }
+
+    // Only return if within 500 meters
+    if (minDistance <= 500) {
+      debugPrint(
+        '📍 Closest stop: ${closestStop!['name']} (${minDistance.toStringAsFixed(0)}m away)',
+      );
+      return closestStop;
+    }
+
+    return null;
+  }
+
+  // Calculate route distance between two stops
+  double _calculateRouteDistance(
+    String? originStopId,
+    String? destinationStopId,
+    List<Map<String, dynamic>> stops,
+  ) {
+    if (originStopId == null || destinationStopId == null || stops.isEmpty) {
+      return 0.0;
+    }
+
+    // Find origin and destination stops
+    final originIndex = stops.indexWhere((s) => s['id'] == originStopId);
+    final destIndex = stops.indexWhere((s) => s['id'] == destinationStopId);
+
+    if (originIndex == -1 || destIndex == -1) {
+      return 0.0;
+    }
+
+    // Allow same stop (minimum fare applies)
+    if (originIndex == destIndex) {
+      debugPrint('📏 Same stop - applying minimum fare');
+      return 0.0;
+    }
+
+    // Calculate cumulative distance along the route
+    // Support both forward and backward travel
+    double totalDistance = 0.0;
+
+    if (originIndex < destIndex) {
+      // Forward direction: origin → destination
+      for (int i = originIndex; i < destIndex; i++) {
+        final currentStop = stops[i];
+        final nextStop = stops[i + 1];
+
+        final distance = Geolocator.distanceBetween(
+          currentStop['latitude'],
+          currentStop['longitude'],
+          nextStop['latitude'],
+          nextStop['longitude'],
+        );
+
+        totalDistance += distance;
+      }
+      debugPrint(
+        '📏 Forward route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m',
+      );
+    } else {
+      // Backward direction: destination ← origin (for return trips)
+      for (int i = originIndex; i > destIndex; i--) {
+        final currentStop = stops[i];
+        final prevStop = stops[i - 1];
+
+        final distance = Geolocator.distanceBetween(
+          currentStop['latitude'],
+          currentStop['longitude'],
+          prevStop['latitude'],
+          prevStop['longitude'],
+        );
+
+        totalDistance += distance;
+      }
+      debugPrint(
+        '📏 Backward route distance from stop ${originIndex + 1} to ${destIndex + 1}: ${totalDistance.toStringAsFixed(2)}m',
+      );
+    }
+
+    return totalDistance;
+  }
+
+  Future<Position?> _getCurrentPosition() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        final requested = await Geolocator.requestPermission();
+        if (requested == LocationPermission.denied) {
+          return null;
+        }
+      }
+
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      debugPrint('❌ Error getting location: $e');
+      return null;
+    }
+  }
+
   void _resetScanner() {
     setState(() {
       isScanning = true;
       _isProcessing = false;
     });
     _animationController.repeat(reverse: true);
-    cameraController.start(); // Restart camera scanning
+    cameraController.start();
   }
 
-  // ✨ NEW METHOD: Modal with gradient border
-  Future<void> _showSuccessModal({
-    required String title,
-    required String message,
-  }) async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFB945AA),
-                  Color(0xFF8E4CB6),
-                  Color(0xFF5B53C2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            padding: const EdgeInsets.all(3),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(21),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: Image.asset(
-                      'assets/images/logo.png', // Replace with your image asset path
-                      width: 50, // Set the desired width
-                      height: 50,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF8E4CB6),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    //width: double.infinity,
-                    width: 90,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        backgroundColor: const Color(0xFF8E4CB6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+  void _showError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -357,42 +432,188 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     String? routeId,
     String profileId,
     String qrCode,
+    String puvType,
+    List<Map<String, dynamic>> routeStops,
   ) async {
     final supabase = Supabase.instance.client;
 
     debugPrint('🚀 Creating trip for driver: $driverId, route: $routeId');
 
     try {
+      // Step 3: initial payment will be handled when the commuter confirms passenger count
+      const double initialPaymentPerPerson = 10.00;
+
+      // Step 5: Get current location
+      final position = await _getCurrentPosition();
+
+      if (position == null) {
+        _showError(
+          'Unable to get your location. Please enable location services.',
+        );
+        _resetScanner();
+        return;
+      }
+
+      // Find closest stop to boarding location
+      final originStop = _findClosestStop(
+        position.latitude,
+        position.longitude,
+        routeStops,
+      );
+
+      if (originStop == null) {
+        _showError(
+          'You are too far from the route!\n\n'
+          'Please board at a designated stop along the route.',
+        );
+        _resetScanner();
+        return;
+      }
+
+      final boardingLocation = {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+        'closest_stop_id': originStop['id'],
+        'closest_stop_name': originStop['name'],
+      };
+
+      debugPrint('📍 Boarding at stop: ${originStop['name']}');
+
+        // NOTE: initial payment deduction and transaction creation moved to the
+        // commuter confirmation flow in `OngoingTripScreen` so the user can
+        // confirm passenger count before funds are captured.
+
+      // ==========================================
+      // FETCH DRIVER INFO WITH PROFILE
+      // ==========================================
+      debugPrint('🔍 Fetching driver info for ID: $driverId');
+
+      String driverName = 'Driver';
+      String driverFirstName = '';
+      String driverLastName = '';
+      String? driverProfileId;
+      String routeCodeStr = '';
+
+      try {
+        // Fetch driver with profile data using join
+        final driverWithProfile = await supabase
+            .from('drivers')
+            .select('''
+            profile_id,
+            route_id,
+            profiles!drivers_profile_id_fkey (
+              first_name,
+              last_name
+            )
+          ''')
+            .eq('id', driverId)
+            .maybeSingle();
+
+        if (driverWithProfile != null) {
+          driverProfileId = driverWithProfile['profile_id'] as String?;
+          final profileData = driverWithProfile['profiles'];
+
+          if (profileData != null) {
+            Map<String, dynamic>? profile;
+            if (profileData is Map<String, dynamic>) {
+              profile = profileData;
+            } else if (profileData is List && profileData.isNotEmpty) {
+              profile = profileData.first as Map<String, dynamic>;
+            }
+
+            if (profile != null) {
+              driverFirstName =
+                  (profile['first_name'] as String?)?.trim() ?? '';
+              driverLastName = (profile['last_name'] as String?)?.trim() ?? '';
+              if (driverFirstName.isNotEmpty || driverLastName.isNotEmpty) {
+                driverName = '$driverFirstName $driverLastName'.trim();
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Error fetching driver info: $e');
+      }
+
+      // Get route code
+      if (routeId != null) {
+        try {
+          final routeData = await supabase
+              .from('routes')
+              .select('code')
+              .eq('id', routeId)
+              .maybeSingle();
+
+          if (routeData != null) {
+            routeCodeStr = routeData['code'] as String? ?? '';
+          }
+        } catch (e) {
+          debugPrint('❌ Error fetching route: $e');
+        }
+      }
+
+      debugPrint('👤 Driver: "$driverName" | Route: $routeCodeStr');
+
+      // Step 6: Create trip with ongoing status and store driver name in metadata
       final result = await supabase
           .from('trips')
           .insert({
             'driver_id': driverId,
             'route_id': routeId,
+            'origin_stop_id': originStop['id'],
             'created_by_profile_id': profileId,
             'status': 'ongoing',
+            'fare_amount': 0.0,
+            'passengers_count':
+                1, // Default, will be updated when user confirms
             'started_at': DateTime.now().toIso8601String(),
-            'metadata': {'takeoff_qr': qrCode},
+            'metadata': {
+              'takeoff_qr': qrCode,
+              'boarding_location': boardingLocation,
+              'initial_payment': 0.0,
+              'initial_payment_per_person': initialPaymentPerPerson,
+              'puv_type': puvType,
+              'driver_name': driverName,
+              'driver_first_name': driverFirstName,
+              'driver_last_name': driverLastName,
+              'driver_profile_id': driverProfileId,
+              'route_code': routeCodeStr,
+            },
           })
           .select()
           .single();
 
-      debugPrint('✅ Trip created successfully: ${result['id']}');
+      final tripId = result['id'] as String;
+
+      debugPrint('✅ Trip created successfully: $tripId');
+      debugPrint('📍 Boarding location: ${position.latitude}, ${position.longitude}');
+      debugPrint('🚏 Origin stop: ${originStop['name']}');
+      debugPrint('👤 Driver name stored: "$driverName"');
 
       if (!mounted) return;
 
-      // ✨ CHANGED: Modal instead of snackbar
-      await _showSuccessModal(
-        title: 'Boarding Recorded',
-        message:
-            'Your trip has started.\nScan again when you arrive at your destination.',
+      // Navigate to ongoing trip screen with all required parameters
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OngoingTripScreen(
+            tripId: tripId,
+            driverName: driverName,
+            routeCode: routeCodeStr,
+            originStopName: originStop['name'],
+            currentLocation: LatLng(position.latitude, position.longitude),
+            routeStops: routeStops,
+            originStopId: originStop['id'],
+            initialPayment: initialPaymentPerPerson,
+          ),
+        ),
       );
 
-      // Notify parent widget if a callback is provided
       widget.onScanComplete?.call();
-      // ✨ CHANGED: Reset scanner instead of Navigator.pop
-      _resetScanner();
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error creating trip: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       _showError('Failed to create trip: ${e.toString()}');
       _resetScanner();
     }
@@ -401,73 +622,307 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   Future<void> _handleArrivalScan(
     String tripId,
     String? originStopId,
-    String? routeId,
-    String qrCode,
+    Map<String, dynamic> tripMetadata,
+    List<Map<String, dynamic>> routeStops,
+    String puvType,
     String profileId,
+    int passengerCount,
   ) async {
     final supabase = Supabase.instance.client;
 
     debugPrint('🏁 Completing trip: $tripId');
+    debugPrint('👥 Passenger count: $passengerCount');
 
     try {
-      // ... (your existing logic for calculating fare and updating trip) ...
-      // Get destination stop (for now, we'll use a placeholder approach)
-      String? destinationStopId;
-      if (routeId != null && originStopId != null) {
-        // Get the next stop in sequence after origin
-        final originStop = await supabase
-            .from('route_stops')
-            .select('sequence, route_id')
-            .eq('id', originStopId)
-            .maybeSingle();
+      // Step 7: Get current location for destination
+      final position = await _getCurrentPosition();
 
-        if (originStop != null) {
-          // Get the next stop after the origin
-          final nextStop = await supabase
-              .from('route_stops')
-              .select('id')
-              .eq('route_id', originStop['route_id'])
-              .gt('sequence', originStop['sequence'])
-              .order('sequence')
-              .limit(1)
-              .maybeSingle();
-
-          destinationStopId = nextStop?['id'];
-        }
+      if (position == null) {
+        _showError(
+          'Unable to get your location. Please enable location services.',
+        );
+        _resetScanner();
+        return;
       }
 
-      // Placeholder values (you can calculate these properly later)
-      const int distanceMeters = 5000;
-      const double fareAmount = 15.00;
+      // Find closest stop to arrival location
+      final destinationStop = _findClosestStop(
+        position.latitude,
+        position.longitude,
+        routeStops,
+      );
 
-      debugPrint('📍 Destination stop: $destinationStopId');
-      debugPrint('💰 Fare: ₱$fareAmount');
+      if (destinationStop == null) {
+        _showError(
+          'You are too far from the route!\n\n'
+          'Please scan at a designated stop along the route.',
+        );
+        _resetScanner();
+        return;
+      }
 
-      // Update the trip with destination and fare
+      final arrivalLocation = {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+        'closest_stop_id': destinationStop['id'],
+        'closest_stop_name': destinationStop['name'],
+      };
+
+      debugPrint('📍 Arrived at stop: ${destinationStop['name']}');
+
+      final initialPaymentPerPerson =
+          (tripMetadata['initial_payment_per_person'] as num?)?.toDouble() ??
+          10.0;
+
+      // Step 8: Calculate distance using route stops
+      final distanceInMeters = _calculateRouteDistance(
+        originStopId,
+        destinationStop['id'],
+        routeStops,
+      );
+
+      if (distanceInMeters == 0 && originStopId != destinationStop['id']) {
+        _showError(
+          'Error calculating distance!\n\n'
+          'Please try scanning again.',
+        );
+        _resetScanner();
+        return;
+      }
+
+      final distanceInKm = distanceInMeters / 1000;
+
+      debugPrint(
+        '📏 Route distance traveled: ${distanceInKm.toStringAsFixed(2)} km',
+      );
+
+      // NEW: Check discount eligibility
+      final discountInfo = await _checkDiscountEligibility(profileId);
+      final isDiscountEligible = discountInfo['eligible'] as bool;
+      final discountRate = (discountInfo['discount_rate'] as num).toDouble();
+
+      // Calculate fare per person with discount if eligible
+      double farePerPerson = _calculateFare(
+        distanceInKm,
+        puvType,
+        discountRate: discountRate,
+      );
+
+      // Calculate original fare (without discount) for display
+      double originalFarePerPerson = _calculateFare(
+        distanceInKm,
+        puvType,
+        discountRate: 0.0,
+      );
+      double originalFareTotal = originalFarePerPerson * passengerCount;
+
+      // Calculate total fare for all passengers (with discount applied)
+      double totalFare = farePerPerson * passengerCount;
+
+      // Calculate initial payment made (per person * passenger count)
+      double initialPaymentTotal = initialPaymentPerPerson * passengerCount;
+
+      // Subtract initial payment already made
+      double additionalFare = totalFare - initialPaymentTotal;
+      if (additionalFare < 0) additionalFare = 0;
+
+      debugPrint(
+        '💰 Fare per person (original): ₱${originalFarePerPerson.toStringAsFixed(2)}',
+      );
+      if (isDiscountEligible) {
+        debugPrint(
+          '🎫 Discount applied: ${(discountRate * 100).toStringAsFixed(0)}%',
+        );
+        debugPrint(
+          '💰 Fare per person (discounted): ₱${farePerPerson.toStringAsFixed(2)}',
+        );
+      }
+      debugPrint('👥 Passengers: $passengerCount');
+      debugPrint(
+        '💰 Original total fare: ₱${originalFareTotal.toStringAsFixed(2)}',
+      );
+      debugPrint('💰 Final total fare: ₱${totalFare.toStringAsFixed(2)}');
+      debugPrint('💰 Already paid: ₱${initialPaymentTotal.toStringAsFixed(2)}');
+      debugPrint('💰 Additional fare: ₱${additionalFare.toStringAsFixed(2)}');
+
+      // Step 9: Process payment if there's additional fare
+      if (additionalFare > 0) {
+        final walletResponse = await supabase
+            .from('wallets')
+            .select('id, balance')
+            .eq('owner_profile_id', profileId)
+            .single();
+
+        final walletId = walletResponse['id'] as String;
+        final balance = (walletResponse['balance'] as num).toDouble();
+
+        if (balance < additionalFare) {
+          _showError(
+            'Insufficient balance for additional fare!\n\n'
+            'Current balance: ₱${balance.toStringAsFixed(2)}\n'
+            'Required: ₱${additionalFare.toStringAsFixed(2)}',
+          );
+          _resetScanner();
+          return;
+        }
+
+        // Deduct additional fare
+        await supabase
+            .from('wallets')
+            .update({'balance': balance - additionalFare})
+            .eq('id', walletId);
+
+        // Step 10: Create transaction with barcode
+        final transactionNumber =
+            'KOMYUT-${DateTime.now().millisecondsSinceEpoch}';
+
+        await supabase.from('transactions').insert({
+          'transaction_number': transactionNumber,
+          'wallet_id': walletId,
+          'initiated_by_profile_id': profileId,
+          'type': 'fare_payment',
+          'amount': additionalFare,
+          'status': 'completed',
+          'related_trip_id': tripId,
+          'processed_at': DateTime.now().toIso8601String(),
+          'metadata': {
+            'payment_type': 'additional_fare',
+            'distance_km': distanceInKm,
+            'puv_type': puvType,
+            'passengers': passengerCount,
+            'fare_per_person': farePerPerson,
+            'discount_applied': isDiscountEligible,
+          },
+        });
+      }
+
+      // Step 11 & 12: Update trip and complete transaction
+      final tripResponse = await supabase
+          .from('trips')
+          .select('driver_id')
+          .eq('id', tripId)
+          .single();
+
+      final driverId = tripResponse['driver_id'] as String;
+
+      // Get driver's profile to find their wallet
+      final driverProfileResponse = await supabase
+          .from('drivers')
+          .select('profile_id')
+          .eq('id', driverId)
+          .single();
+
+      final driverProfileId = driverProfileResponse['profile_id'] as String;
+
+      // Step 12: Transfer only the additional fare (total - initial) to driver via DB function (RPC)
+      final double rpcAmount = additionalFare;
+      if (rpcAmount > 0) {
+        try {
+          final rpcParams = {
+            'p_trip_id': tripId,
+            'p_driver_profile_id': driverProfileId,
+            'p_amount': rpcAmount,
+            'p_commuter_profile_id': profileId,
+          };
+
+          await supabase.rpc('transfer_trip_fare', params: rpcParams);
+
+          debugPrint('✅ Called transfer_trip_fare RPC for trip $tripId (additional ₱${rpcAmount.toStringAsFixed(2)})');
+        } catch (e) {
+          debugPrint('⚠️ transfer_trip_fare RPC failed: $e');
+          // Record failure into trip metadata so it can be reviewed/processed later
+          try {
+            await supabase
+                .from('trips')
+                .update({
+                  'metadata': {
+                    ...tripMetadata,
+                    'payout_failed': true,
+                    'payout_error': e.toString(),
+                    'payout_amount': rpcAmount,
+                    'payout_driver_profile_id': driverProfileId,
+                  }
+                })
+                .eq('id', tripId);
+            debugPrint('ℹ️ Marked trip $tripId metadata with payout failure info');
+          } catch (e2) {
+            debugPrint('❌ Failed to record payout failure on trip $tripId: $e2');
+          }
+        }
+      } else {
+        debugPrint('ℹ️ No additional fare to transfer for trip $tripId (initial payment already transferred)');
+      }
+
+      // Step 13: Update trip as completed with discount information
       await supabase
           .from('trips')
           .update({
-            'destination_stop_id': destinationStopId,
-            'distance_meters': distanceMeters,
-            'fare_amount': fareAmount,
             'status': 'completed',
+            'destination_stop_id': destinationStop['id'],
+            'distance_meters': distanceInMeters.round(),
+            'fare_amount': totalFare,
+            'passengers_count': passengerCount,
             'ended_at': DateTime.now().toIso8601String(),
-            'metadata': {'arrival_qr': qrCode},
+            'metadata': {
+              ...tripMetadata,
+              'arrival_location': arrivalLocation,
+              'total_fare': totalFare,
+              'fare_per_person': farePerPerson,
+              'additional_fare': additionalFare,
+              'passengers': passengerCount,
+              'discount_applied': isDiscountEligible,
+              'discount_rate': discountRate,
+              'original_fare': originalFareTotal,
+              'category': discountInfo['category'],
+            },
           })
           .eq('id', tripId);
 
+      // Mark initial transaction as completed
+      await supabase
+          .from('transactions')
+          .update({
+            'status': 'completed',
+            'processed_at': DateTime.now().toIso8601String(),
+            'metadata': {
+              'payment_type': 'initial_boarding',
+              'puv_type': puvType,
+              'passengers': passengerCount,
+              'initial_payment_per_person': initialPaymentPerPerson,
+            },
+          })
+          .eq('related_trip_id', tripId)
+          .eq('status', 'pending');
+
+      // NEW: Award wheel tokens for completed trip
+      await _awardWheelTokens(profileId, tripId);
+
       debugPrint('✅ Trip completed successfully');
+      debugPrint('🎁 Wheel token awarded');
 
       if (!mounted) return;
 
-      // Navigate to the fare payment screen
+      // Get origin stop name from metadata
+      final originStopName =
+          tripMetadata['boarding_location']?['closest_stop_name'] ?? 'Unknown';
+
+      // Navigate to payment summary screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => RideBookingScreen(
             tripId: tripId,
-            fareAmount: fareAmount,
-            distanceMeters: distanceMeters,
+            fareAmount: totalFare,
+            distanceMeters: distanceInMeters.round(),
+            boardingLocation: LatLng(
+              tripMetadata['boarding_location']['latitude'],
+              tripMetadata['boarding_location']['longitude'],
+            ),
+            arrivalLocation: LatLng(position.latitude, position.longitude),
+            routeStops: routeStops,
+            originStopName: originStopName,
+            destinationStopName: destinationStop['name'],
           ),
         ),
       );
@@ -478,21 +933,47 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
+  // Step 8: Calculate fare based on distance and PUV type (per person)
+  double _calculateFare(
+    double distanceKm,
+    String puvType, {
+    double discountRate = 0.0,
+  }) {
+    double baseFare;
+    double baseDistance;
+    double perKmRate = 1.0;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (puvType.toLowerCase() == 'modern') {
+      baseFare = 15.0;
+      baseDistance = 4.0;
+    } else {
+      // traditional
+      baseFare = 13.0;
+      baseDistance = 4.0;
+    }
+
+    double fare;
+    if (distanceKm <= baseDistance) {
+      fare = baseFare;
+    } else {
+      double additionalDistance = distanceKm - baseDistance;
+      double additionalFare = additionalDistance * perKmRate;
+      fare = baseFare + additionalFare;
+    }
+
+    // Apply discount if eligible
+    if (discountRate > 0) {
+      fare = fare * (1 - discountRate);
+      debugPrint(
+        '💰 Discount applied: ${(discountRate * 100).toStringAsFixed(0)}% off',
+      );
+    }
+
+    return fare;
   }
 
   Future<void> _pickImageFromGallery() async {
     try {
-      // Pause scanning while picking image
       cameraController.stop();
 
       final XFile? image = await _imagePicker.pickImage(
@@ -500,7 +981,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       );
 
       if (image != null) {
-        // Analyze the picked image for QR codes
         final BarcodeCapture? barcodes = await cameraController.analyzeImage(
           image.path,
         );
@@ -523,10 +1003,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               ),
             );
           }
-          _resetScanner(); // Resume camera if no QR found
+          _resetScanner();
         }
       } else {
-        _resetScanner(); // Resume camera if image picker cancelled
+        _resetScanner();
       }
     } catch (e) {
       debugPrint('❌ Error picking image: $e');
@@ -538,7 +1018,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           ),
         );
       }
-      _resetScanner(); // Resume camera on error
+      _resetScanner();
     }
   }
 
@@ -548,7 +1028,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       canPop: true,
       child: Scaffold(
         body: Container(
-          // ... (your existing UI code for the scanner) ...
           width: double.infinity,
           height: double.infinity,
           decoration: const BoxDecoration(
@@ -564,7 +1043,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               SafeArea(
                 child: Column(
                   children: [
-                    // Header
                     Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Row(
@@ -573,23 +1051,24 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                             onPressed: () async {
                               Navigator.pop(context);
                             },
-                            icon: const Icon(Icons.arrow_back, size: 28),
+                            icon: const Icon(
+                              Icons.chevron_left_rounded,
+                              size: 28,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'QR Scan',
-                            style: TextStyle(
-                              fontSize: 28,
+                            style: GoogleFonts.manrope(
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    // Instructions
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 40.0),
                       child: Text(
@@ -602,10 +1081,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 30),
-
-                    // Camera Scanner
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -613,20 +1089,14 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           borderRadius: BorderRadius.circular(25.0),
                           child: Stack(
                             children: [
-                              // Camera View
                               MobileScanner(
                                 controller: cameraController,
                                 onDetect: _onDetect,
-                                // No startDelay needed here if you explicitly call controller.start() in initState
                               ),
-
-                              // Scanning Overlay
                               CustomPaint(
                                 painter: ScannerOverlay(),
                                 child: const SizedBox.expand(),
                               ),
-
-                              // Animated Scanning Line
                               AnimatedBuilder(
                                 animation: _animation,
                                 builder: (context, child) {
@@ -638,8 +1108,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                                   );
                                 },
                               ),
-
-                              // Center Icon
                               Center(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(5.0),
@@ -673,8 +1141,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                                   ),
                                 ),
                               ),
-
-                              // Bottom controls
                               Positioned(
                                 bottom: 20,
                                 left: 0,
@@ -706,8 +1172,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                                   ],
                                 ),
                               ),
-
-                              // Processing overlay
                               if (_isProcessing)
                                 Container(
                                   color: Colors.black54,
@@ -735,10 +1199,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 25),
-
-                    // Upload QR Button
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: OutlinedButton.icon(
@@ -767,7 +1228,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -779,7 +1239,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     );
   }
 
-  // ... (your existing _buildCorner, ScannerOverlay, ScannerLinePainter classes) ...
   Widget _buildCorner(bool isTop, bool isLeft) {
     return Container(
       width: 40,
@@ -874,5 +1333,83 @@ class ScannerLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(ScannerLinePainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;
+  }
+}
+
+// Check if commuter is eligible for 20% discount
+Future<Map<String, dynamic>> _checkDiscountEligibility(String profileId) async {
+  try {
+    final supabase = Supabase.instance.client;
+
+    final commuterResponse = await supabase
+        .from('commuters')
+        .select('category, id_verified')
+        .eq('profile_id', profileId)
+        .maybeSingle();
+
+    if (commuterResponse == null) {
+      return {'eligible': false, 'discount_rate': 0.0, 'category': 'regular'};
+    }
+
+    final category = commuterResponse['category'] as String;
+    final isVerified = commuterResponse['id_verified'] == true;
+
+    // Eligible if: (senior OR student OR pwd) AND id_verified
+    final isEligible =
+        isVerified &&
+        (category == 'senior' || category == 'student' || category == 'pwd');
+
+    debugPrint(
+      '🎫 Discount check - Category: $category, Verified: $isVerified, Eligible: $isEligible',
+    );
+
+    return {
+      'eligible': isEligible,
+      'discount_rate': isEligible ? 0.20 : 0.0,
+      'category': category,
+    };
+  } catch (e) {
+    debugPrint('❌ Error checking discount eligibility: $e');
+    return {'eligible': false, 'discount_rate': 0.0, 'category': 'regular'};
+  }
+}
+
+// Award 1.0 wheel token for completed trip
+Future<void> _awardWheelTokens(String profileId, String tripId) async {
+  try {
+    final supabase = Supabase.instance.client;
+
+    // Get commuter ID and current tokens
+    final commuterResponse = await supabase
+        .from('commuters')
+        .select('id, wheel_tokens')
+        .eq('profile_id', profileId)
+        .single();
+
+    final commuterId = commuterResponse['id'] as String;
+    final currentTokens = (commuterResponse['wheel_tokens'] as num).toDouble();
+    final tokenReward = 0.5; // 0.5 tokens per completed trip
+    final newBalance = currentTokens + tokenReward;
+
+    // Update wheel tokens
+    await supabase
+        .from('commuters')
+        .update({'wheel_tokens': newBalance})
+        .eq('id', commuterId);
+
+    // Record transaction
+    await supabase.from('points_transactions').insert({
+      'commuter_id': commuterId,
+      'change': tokenReward,
+      'reason': 'Trip completion reward',
+      'related_transaction_id': null,
+      'balance_after': newBalance,
+      'metadata': {'trip_id': tripId, 'reward_type': 'trip_completion'},
+    });
+
+    debugPrint('🎁 Awarded $tokenReward wheel token! New balance: $newBalance');
+  } catch (e) {
+    debugPrint('❌ Error awarding wheel tokens: $e');
+    // Don't fail the trip completion if token award fails
   }
 }

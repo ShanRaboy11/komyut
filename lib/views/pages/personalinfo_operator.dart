@@ -1,34 +1,145 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class PersonalInfoPage extends StatefulWidget {
-  const PersonalInfoPage({super.key});
+class PersonalInfoOperatorPage extends StatefulWidget {
+  final Map<String, dynamic> profileData;
+
+  const PersonalInfoOperatorPage({super.key, required this.profileData});
 
   @override
-  State<PersonalInfoPage> createState() => _PersonalInfoPageState();
+  State<PersonalInfoOperatorPage> createState() =>
+      _PersonalInfoOperatorPageState();
 }
 
-class _PersonalInfoPageState extends State<PersonalInfoPage> {
+class _PersonalInfoOperatorPageState extends State<PersonalInfoOperatorPage> {
+  final _supabase = Supabase.instance.client;
   bool isEditing = false;
-
+  bool isSaving = false;
   final Color primary1 = const Color(0xFF8E4CB6);
 
-  // controllers for the text fields
-  final TextEditingController emailController = TextEditingController(
-    text: "juandelacruz@gmail.com",
-  );
-  final TextEditingController firstNameController = TextEditingController(
-    text: "Juan",
-  );
-  final TextEditingController lastNameController = TextEditingController(
-    text: "Dela Cruz",
-  );
-  final TextEditingController companyController = TextEditingController(
-    text: "El Pardo Transport",
-  );
-  final TextEditingController companyAddressController = TextEditingController(
-    text: "Bulacao, Cebu City, Cebu 6000",
-  );
+  late TextEditingController emailController;
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController companyController;
+  late TextEditingController companyAddressController;
+  late TextEditingController contactEmailController;
+  late TextEditingController contactPhoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    final profile = widget.profileData;
+    final operator = profile['operators'] is List
+        ? (profile['operators'] as List).firstOrNull
+        : profile['operators'];
+
+    emailController = TextEditingController(
+      text: _supabase.auth.currentUser?.email ?? '',
+    );
+    firstNameController = TextEditingController(
+      text: profile['first_name'] ?? '',
+    );
+    lastNameController = TextEditingController(
+      text: profile['last_name'] ?? '',
+    );
+
+    // Operator specific fields
+    if (operator != null) {
+      companyController = TextEditingController(
+        text: operator['company_name'] ?? '',
+      );
+      companyAddressController = TextEditingController(
+        text: operator['company_address'] ?? '',
+      );
+      contactEmailController = TextEditingController(
+        text: operator['contact_email'] ?? '',
+      );
+      contactPhoneController = TextEditingController(
+        text: operator['contact_phone'] ?? '',
+      );
+    } else {
+      companyController = TextEditingController();
+      companyAddressController = TextEditingController();
+      contactEmailController = TextEditingController();
+      contactPhoneController = TextEditingController();
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    setState(() => isSaving = true);
+
+    try {
+      final profileId = widget.profileData['id'];
+      final operator = widget.profileData['operators'] is List
+          ? (widget.profileData['operators'] as List).firstOrNull
+          : widget.profileData['operators'];
+
+      // Update profile
+      await _supabase
+          .from('profiles')
+          .update({
+            'first_name': firstNameController.text.trim(),
+            'last_name': lastNameController.text.trim(),
+          })
+          .eq('id', profileId);
+
+      // Update operator specific info
+      if (operator != null) {
+        await _supabase
+            .from('operators')
+            .update({
+              'company_name': companyController.text.trim(),
+              'company_address': companyAddressController.text.trim(),
+              'contact_email': contactEmailController.text.trim(),
+              'contact_phone': contactPhoneController.text.trim(),
+            })
+            .eq('id', operator['id']);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        setState(() {
+          isEditing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
+    companyController.dispose();
+    companyAddressController.dispose();
+    contactEmailController.dispose();
+    contactPhoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +147,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     final horizontalPadding = width * 0.07;
 
     return Scaffold(
-      backgroundColor: Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFFF7F4FF),
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
@@ -46,22 +157,22 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               end: Alignment.bottomRight,
             ),
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 20,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Header ---
-                Row(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 20,
+                ),
+                child: Row(
                   children: [
                     IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Center(
@@ -75,45 +186,75 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          isEditing = !isEditing;
-                        });
-                      },
-                      icon: Icon(Icons.edit_outlined, color: primary1),
-                    ),
+                    if (!isEditing)
+                      IconButton(
+                        onPressed: () => setState(() => isEditing = true),
+                        icon: Icon(Icons.edit_outlined, color: primary1),
+                      )
+                    else
+                      IconButton(
+                        onPressed: isSaving ? null : _saveChanges,
+                        icon: isSaving
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: primary1,
+                                ),
+                              )
+                            : Icon(Icons.check, color: primary1),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
+              ),
 
-                // --- Email ---
-                _buildLabel("Email Address"),
-                _buildTextField(emailController),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel("Email Address"),
+                      _buildTextField(emailController, readOnly: true),
 
-                // --- First & Last Name ---
-                _buildLabel("First Name"),
-                _buildTextField(firstNameController),
+                      _buildLabel("First Name"),
+                      _buildTextField(firstNameController),
 
-                _buildLabel("Last Name"),
-                _buildTextField(lastNameController),
+                      _buildLabel("Last Name"),
+                      _buildTextField(lastNameController),
 
-                // --- Company Name ---
-                _buildLabel("Company/Business Name "),
-                _buildTextField(companyController),
+                      _buildLabel("Company/Business Name"),
+                      _buildTextField(companyController),
 
-                // --- Company Address ---
-                _buildLabel("Company Address "),
-                _buildTextField(companyAddressController),
-              ],
-            ),
+                      _buildLabel("Company Address"),
+                      _buildTextField(companyAddressController),
+
+                      _buildLabel("Contact Email"),
+                      _buildTextField(
+                        contactEmailController,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+
+                      _buildLabel("Contact Phone"),
+                      _buildTextField(
+                        contactPhoneController,
+                        keyboardType: TextInputType.phone,
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Label Text
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 6),
@@ -128,17 +269,23 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     );
   }
 
-  // Text Field
-  Widget _buildTextField(TextEditingController controller) {
+  Widget _buildTextField(
+    TextEditingController controller, {
+    bool readOnly = false,
+    TextInputType? keyboardType,
+  }) {
+    final effectiveReadOnly = readOnly || !isEditing;
+
     return TextField(
       controller: controller,
-      readOnly: !isEditing,
+      readOnly: effectiveReadOnly,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         filled: true,
-        fillColor: isEditing ? Colors.white : Colors.transparent,
+        fillColor: effectiveReadOnly ? Colors.transparent : Colors.white,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: Color.fromARGB(255, 161, 165, 170),
             width: 1,
           ),

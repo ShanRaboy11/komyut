@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/wallet_provider.dart';
+import 'commuter_app.dart';
 
 class OverTheCounterPage extends StatefulWidget {
   const OverTheCounterPage({super.key});
@@ -12,7 +13,6 @@ class OverTheCounterPage extends StatefulWidget {
 }
 
 class _OverTheCounterPageState extends State<OverTheCounterPage> {
-  // Start with an empty controller. We will display "0" in the UI as a fallback.
   final TextEditingController _amountController = TextEditingController();
   bool _isButtonEnabled = false;
 
@@ -25,22 +25,25 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
   }
 
   void _onAmountChanged(String value) {
-    // This logic runs every time the text field's value changes.
-    // It's much faster than a listener and prevents flickering.
+    if (value.length > 1 && value.startsWith('0')) {
+      _amountController.text = value.substring(1);
+      _amountController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _amountController.text.length),
+      );
+    }
+
     setState(() {
-      final isEnabled =
-          value.isNotEmpty &&
-          int.tryParse(value) != null &&
-          int.parse(value) > 0;
-      _isButtonEnabled = isEnabled;
+      final amount = int.tryParse(_amountController.text) ?? 0;
+      _isButtonEnabled = amount > 0;
     });
   }
 
   void _onNextPressed() {
     if (!_isButtonEnabled) return;
-    Navigator.of(
-      context,
-    ).pushNamed('/otc_confirmation', arguments: _amountController.text);
+    CommuterApp.navigatorKey.currentState?.pushNamed(
+      '/otc_confirmation',
+      arguments: _amountController.text,
+    );
   }
 
   @override
@@ -52,15 +55,15 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: const Icon(Icons.chevron_left_rounded, color: Colors.black54),
           onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/wallet');
+            CommuterApp.navigatorKey.currentState?.pop();
           },
         ),
         title: Text(
           'Cash In',
           style: GoogleFonts.manrope(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -92,7 +95,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
         Text(
           'Over-the-Counter',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -157,32 +160,37 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          Divider(color: _brandColor.withValues(alpha: 0.5), height: 20),
-          const SizedBox(height: 6),
-
-          Text(
-            'PHP',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 1),
+          Divider(color: _brandColor.withValues(alpha: 0.5), height: 24),
           SizedBox(
             width: double.infinity,
             height: 80,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Text(
-                  _amountController.text.isEmpty ? "0" : _amountController.text,
-                  style: GoogleFonts.manrope(
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₱',
+                      style: GoogleFonts.manrope(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _amountController.text.isEmpty
+                          ? "0"
+                          : _amountController.text,
+                      style: GoogleFonts.manrope(
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
                 TextField(
                   controller: _amountController,
@@ -194,21 +202,18 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                   style: const TextStyle(color: Colors.transparent),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
+                    LengthLimitingTextInputFormatter(5),
                   ],
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     fillColor: Colors.transparent,
                     filled: true,
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: 30),
+          const SizedBox(height: 32),
           Text(
             'A PHP 5.00 fee will be charged per transaction.',
             style: GoogleFonts.nunito(fontSize: 13, color: Colors.black45),
@@ -239,7 +244,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
             ),
             child: provider.isCashInLoading
                 ? const SizedBox(
@@ -251,7 +256,7 @@ class _OverTheCounterPageState extends State<OverTheCounterPage> {
                     'Next',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
           ),

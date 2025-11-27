@@ -68,7 +68,7 @@ class RegistrationCommuterPersonalInfoState
         setState(() {
           // Capitalize first letter for display
           final cat = data['category'].toString();
-          _selectedCategory = cat == 'regular' ? 'regular' : 'Discounted';
+          _selectedCategory = cat == 'regular' ? 'regular' : 'discounted';
         });
       }
       if (data['id_proof_path'] != null) {
@@ -102,7 +102,7 @@ class RegistrationCommuterPersonalInfoState
       return;
     }
 
-    if (isFormValid && _selectedCategory == 'Discounted' && _idProofFile == null) {
+    if (isFormValid && _selectedCategory == 'discounted' && _idProofFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please upload proof of ID'),
@@ -406,10 +406,10 @@ class RegistrationCommuterPersonalInfoState
                           ),
                           OptionCard(
                             title: 'Student, PWD, Senior Citizen',
-                            isSelected: _selectedCategory == 'Discounted',
+                            isSelected: _selectedCategory == 'discounted',
                             onTap: () {
                               setState(() {
-                                _selectedCategory = 'Discounted';
+                                _selectedCategory = 'discounted';
                               });
                             },
                             type: OptionCardType.radio,
@@ -424,7 +424,7 @@ class RegistrationCommuterPersonalInfoState
                       ),
                       const SizedBox(height: 30), 
                       
-                      if (_selectedCategory == 'Discounted') ...[
+                      if (_selectedCategory == 'discounted') ...[
                         const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(

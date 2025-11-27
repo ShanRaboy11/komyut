@@ -35,14 +35,17 @@ class PrivacyPolicyPage extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Center(
                         child: Text(
                           "Privacy Policy",
                           style: GoogleFonts.manrope(
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -60,7 +63,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: GoogleFonts.nunito(
                     color: const Color(0xFF8E4CB6),
                     fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -71,7 +74,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: GoogleFonts.nunito(
                     color: Colors.black87,
                     height: 1.6,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.justify,
                 ),
@@ -82,7 +85,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   "Terms & Conditions",
                   style: GoogleFonts.manrope(
                     color: const Color(0xFF8E4CB6),
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -123,7 +126,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   "Updates To This Policy",
                   style: GoogleFonts.manrope(
                     color: const Color(0xFF8E4CB6),
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -133,7 +136,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: GoogleFonts.nunito(
                     color: Colors.black87,
                     height: 1.6,
-                    fontSize: 14.5,
+                    fontSize: 13,
                   ),
                   textAlign: TextAlign.justify,
                 ),
@@ -144,7 +147,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   "Contact Us",
                   style: GoogleFonts.manrope(
                     color: const Color(0xFF8E4CB6),
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -154,7 +157,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: GoogleFonts.nunito(
                     color: Colors.black87,
                     height: 1.6,
-                    fontSize: 14.5,
+                    fontSize: 13,
                   ),
                   textAlign: TextAlign.justify,
                 ),
@@ -176,7 +179,7 @@ class PrivacyPolicyPage extends StatelessWidget {
         style: GoogleFonts.nunito(
           color: Colors.black87,
           height: 1.6,
-          fontSize: 14.5,
+          fontSize: 13,
         ),
         textAlign: TextAlign.justify,
       ),

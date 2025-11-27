@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/driver_dashboard.dart';
+import '../services/auth_service.dart';
 
 class DriverDashboardProvider extends ChangeNotifier {
   final DriverDashboardService _dashboardService = DriverDashboardService();
@@ -33,6 +36,51 @@ class DriverDashboardProvider extends ChangeNotifier {
   String get routeName => _routeName;
 
   /// Load all dashboard data
+  StreamSubscription? _authSub;
+
+  DriverDashboardProvider() {
+    final AuthService authService = AuthService();
+    _authSub = authService.authStateChanges.listen((event) {
+      final user = event.session?.user;
+      if (user == null) {
+        clearData();
+      } else {
+        _maybeLoadForUser(user.id);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  Future<String?> _fetchRoleForUser(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return res['role'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching role for user $userId: $e');
+      return null;
+    }
+  }
+
+  Future<void> _maybeLoadForUser(String userId) async {
+    final role = await _fetchRoleForUser(userId);
+    debugPrint('DriverDashboardProvider: user $userId role=$role');
+    if (role == 'driver') {
+      await loadDashboardData();
+    } else {
+      clearData();
+    }
+  }
+
   Future<void> loadDashboardData() async {
     try {
       _isLoading = true;
@@ -42,8 +90,9 @@ class DriverDashboardProvider extends ChangeNotifier {
       final data = await _dashboardService.getDashboardData();
 
       // Update state with fetched data
-      _firstName = data['profile']['first_name'] ?? '';
-      _lastName = data['profile']['last_name'] ?? '';
+      final profile = data['profile'] as Map<String, dynamic>?;
+      _firstName = profile?['first_name'] ?? '';
+      _lastName = profile?['last_name'] ?? '';
       _balance = data['balance'] ?? 0.0;
       _todayEarnings = data['todayEarnings'] ?? 0.0;
       _rating = data['rating'] ?? 0.0;
@@ -52,8 +101,8 @@ class DriverDashboardProvider extends ChangeNotifier {
       // Vehicle and route info
       final vehicleInfo = data['vehicleInfo'];
       _vehiclePlate = vehicleInfo['vehicle_plate'] ?? '';
-      
-      // Route info (nested)
+
+      // Route info
       final routeData = vehicleInfo['routes'];
       if (routeData != null) {
         _routeCode = routeData['code'] ?? '';
@@ -101,7 +150,7 @@ class DriverDashboardProvider extends ChangeNotifier {
     }
   }
 
-  /// Clear all data (for logout)
+  /// Clear all data
   void clearData() {
     _firstName = '';
     _lastName = '';

@@ -4,26 +4,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:komyut/views/pages/qr_scan.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
+
 import '../widgets/button.dart';
 import '../widgets/navbar.dart';
 import '../providers/commuter_dashboard.dart';
+import '../providers/report.dart';
+
+import 'commuter_app.dart';
 import 'profile.dart';
+import 'report_commuter.dart';
 import 'notification_commuter.dart';
-import 'wallet.dart';
-import 'wallet_history.dart';
-import 'otc.dart';
-import 'otc_confirm.dart';
-import 'otc_instructions.dart';
-import 'otc_success.dart';
+import 'wallet_commuter.dart';
 import 'activity_commuter.dart';
-import 'wt.dart';
-import 'wt_confirm.dart';
-import 'wt_success.dart';
-import 'dw.dart';
-import 'dw_payment_method.dart';
-import 'dw_payment_source.dart';
-import 'dw_confirm.dart';
-import 'dw_success.dart';
 
 class CommuterDashboardNav extends StatefulWidget {
   const CommuterDashboardNav({super.key});
@@ -44,7 +37,7 @@ class _CommuterDashboardNavState extends State<CommuterDashboardNav> {
         const TripsPage(),
         const Center(child: Text("✍️ QR Scan")),
         NotificationPage(key: notificationKey),
-        const CommuterProfilePage(),
+        const ProfilePage(),
       ],
       items: const [
         NavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -85,83 +78,30 @@ class HomeTabNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.read<CommuterDashboardProvider>();
+
     return Navigator(
       initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
-        switch (settings.name) {
-          case '/wallet':
-            builder = (BuildContext context) => const WalletPage();
-            break;
-          case '/history':
-            final type = settings.arguments as HistoryType;
-            builder = (BuildContext context) =>
-                TransactionHistoryPage(type: type);
-            break;
-          case '/otc':
-            builder = (BuildContext context) => const OverTheCounterPage();
-            break;
-          case '/otc_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                OtcConfirmationPage(amount: amount);
-            break;
-          case '/otc_instructions':
-            final transaction = settings.arguments as Map<String, dynamic>;
-            builder = (BuildContext context) =>
-                OtcInstructionsPage(transaction: transaction);
-            break;
-          case '/payment_success':
-            builder = (BuildContext context) => const PaymentSuccessPage();
-            break;
-          case '/redeem_tokens':
-            builder = (BuildContext context) => const RedeemTokensPage();
-            break;
-          case '/token_confirmation':
-            final amount = settings.arguments as String;
-            builder = (BuildContext context) =>
-                TokenConfirmationPage(tokenAmount: amount);
-            break;
-          case '/token_success':
-            builder = (BuildContext context) => const TokenSuccessPage();
-            break;
-          case '/digital_wallet':
-            builder = (BuildContext context) => const DigitalWalletPage();
-            break;
-          case '/dw_payment_method':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwPaymentMethodPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
+        return MaterialPageRoute(
+          builder: (context) {
+            return ChangeNotifierProvider<CommuterDashboardProvider>.value(
+              value: provider,
+              child: Builder(
+                builder: (context) {
+                  switch (settings.name) {
+                    case '/wallet':
+                      return const WalletPage();
+                    case '/':
+                    default:
+                      return const CommuterDashboardPage();
+                  }
+                },
+              ),
             );
-            break;
-          case '/dw_payment_source':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwSourceSelectionPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              paymentMethod: args['paymentMethod']!,
-            );
-            break;
-          case '/dw_confirmation':
-            final args = settings.arguments as Map<String, String>;
-            builder = (BuildContext context) => DwConfirmationPage(
-              name: args['name']!,
-              email: args['email']!,
-              amount: args['amount']!,
-              source: args['source']!,
-            );
-            break;
-          case '/dw_success':
-            builder = (BuildContext context) => const DwSuccessPage();
-            break;
-          default:
-            builder = (BuildContext context) => const CommuterDashboardPage();
-            break;
-        }
-        return MaterialPageRoute(builder: builder, settings: settings);
+          },
+          settings: settings,
+        );
       },
     );
   }
@@ -177,8 +117,8 @@ class CommuterDashboardPage extends StatefulWidget {
 
 class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   bool showWallet = true;
-  bool _isBalanceVisible = true;
-  bool _isTokensVisible = true;
+  bool _isBalanceVisible = false;
+  bool _isTokensVisible = false;
 
   final gradientColors = const [
     Color(0xFFB945AA),
@@ -188,12 +128,13 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
   final gradientColors1 = const [Color(0xFFB945AA), Color(0xFF8E4CB6)];
   final gradientColors2 = const [Color(0xFF8E4CB6), Color(0xFF5B53C2)];
 
-  // 👇 ADD THIS - Load data when page opens
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommuterDashboardProvider>().loadDashboardData();
+      if (mounted) {
+        context.read<CommuterDashboardProvider>().loadDashboardData();
+      }
     });
   }
 
@@ -211,114 +152,123 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     return Consumer<CommuterDashboardProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          // Show a detailed shimmer skeleton while dashboard data loads
+          return Scaffold(
+            body: SafeArea(
+              child: _buildDashboardSkeleton(context),
+            ),
+          );
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(30, 30, 30, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SvgPicture.asset(
-                    'assets/images/logo.svg',
-                    height: 80,
-                    width: 80,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Hi, ${provider.firstName.isEmpty ? "User" : provider.firstName}',
-                        style: GoogleFonts.manrope(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                      Text(
-                        'Welcome back!',
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF8E4CB6),
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-
-              Row(
-                children: [
-                  _buildTabButton('Wallet', true),
-                  _buildTabButton('Tokens', false),
-                ],
-              ),
-
-              // Wallet / Tokens Animated Card
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: gradientColors),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      final inFromRight = !showWallet;
-
-                      final offsetAnimation =
-                          Tween<Offset>(
-                            begin: Offset(inFromRight ? 1.0 : -1.0, 0.0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeInOutCubic,
-                            ),
-                          );
-
-                      final fadeAnimation = CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      );
-
-                      return ClipRect(
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: FadeTransition(
-                            opacity: fadeAnimation,
-                            child: child,
+        return Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/images/logo.svg',
+                      height: 50,
+                      width: 50,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Welcome back,',
+                          style: GoogleFonts.manrope(
+                            color: const Color(0xFF8E4CB6),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      key: ValueKey<bool>(showWallet),
-                      child: showWallet
-                          ? _buildWalletCard(isSmallScreen, provider)
-                          : _buildTokensCard(isSmallScreen, provider),
+                        Text(
+                          '${provider.firstName.isEmpty ? "User" : provider.firstName}!',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+
+                Row(
+                  children: [
+                    _buildTabButton('Wallet', true),
+                    _buildTabButton('Tokens', false),
+                  ],
+                ),
+
+                // Wallet / Tokens Animated Card
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: gradientColors),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final inFromRight = !showWallet;
+
+                        final offsetAnimation =
+                            Tween<Offset>(
+                              begin: Offset(inFromRight ? 1.0 : -1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOutCubic,
+                              ),
+                            );
+
+                        final fadeAnimation = CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        );
+
+                        return ClipRect(
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: FadeTransition(
+                              opacity: fadeAnimation,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        key: ValueKey<bool>(showWallet),
+                        child: showWallet
+                            ? _buildWalletCard(isSmallScreen, provider)
+                            : _buildTokensCard(isSmallScreen, provider),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
-              _buildAnalyticsSection(isSmallScreen, provider),
-              const SizedBox(height: 20),
-              _buildPromoCard(),
-              const SizedBox(height: 20),
-              _buildQuickActions(),
-            ],
+                const SizedBox(height: 20),
+                _buildAnalyticsSection(isSmallScreen, provider),
+                const SizedBox(height: 20),
+                _buildPromoCard(),
+                const SizedBox(height: 20),
+                _buildQuickActions(),
+              ],
+            ),
           ),
         );
       },
@@ -350,7 +300,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               style: GoogleFonts.manrope(
                 color: isSelected ? Colors.white : Colors.black54,
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 16,
               ),
             ),
           ),
@@ -378,11 +328,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               children: [
                 Text(
                   _isBalanceVisible
-                      ? '₱${provider.balance.toStringAsFixed(2)}'
-                      : '₱•••',
+                      ? '₱ ${provider.balance.toStringAsFixed(2)}'
+                      : '₱ •••••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -408,11 +358,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               fillColor: Colors.white,
               textColor: const Color(0xFF5B53C2),
               iconColor: const Color(0xFF5B53C2),
-              width: 120,
+              width: 100,
               height: 45,
               borderRadius: 30,
               hasShadow: false,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ],
@@ -438,15 +388,15 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               children: [
                 Image.asset(
                   'assets/images/wheel token.png',
-                  height: 32,
-                  width: 32,
+                  height: 28,
+                  width: 28,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _isTokensVisible ? provider.wheelTokens.toString() : '•••',
+                  _isTokensVisible ? provider.wheelTokens.toString() : '••••',
                   style: GoogleFonts.manrope(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -471,11 +421,11 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               fillColor: Colors.white,
               textColor: const Color(0xFFB945AA),
               iconColor: const Color(0xFFB945AA),
-              width: 120,
+              width: 100,
               height: 45,
               borderRadius: 30,
               hasShadow: false,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               imagePath: 'assets/images/redeem.svg',
             ),
@@ -509,7 +459,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
                     'Commute Analytics',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 16,
                     ),
                   ),
                   Text(
@@ -545,14 +495,13 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
               _buildAnalyticsItem(
                 Icons.directions_bus,
                 'Trips',
-                '${provider.totalTripsCount} trips', // 👈 DYNAMIC TRIPS COUNT
-                subtitle:
-                    '12.6 mi', // Keep this static or calculate from trip data
+                '${provider.totalTripsCount} trips',
+                subtitle: '12.6 mi',
               ),
               _buildAnalyticsItem(
                 Icons.account_balance_wallet_outlined,
                 'Spend',
-                '₱${provider.totalSpent.toStringAsFixed(0)} total', // 👈 DYNAMIC TOTAL SPENT
+                '₱${provider.totalSpent.toStringAsFixed(0)} total',
               ),
             ],
           ),
@@ -576,18 +525,26 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           children: [
             Text(
               title,
-              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
-            Text(value, style: GoogleFonts.nunito(color: Colors.black87)),
+            Text(
+              value,
+              style: GoogleFonts.nunito(color: Colors.black87, fontSize: 12),
+            ),
             if (subtitle != null)
-              Text(subtitle, style: GoogleFonts.nunito(color: Colors.black54)),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(color: Colors.black54, fontSize: 11),
+              ),
           ],
         ),
       ],
     );
   }
 
-  // ---------------- Promo ----------------
   Widget _buildPromoCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -605,7 +562,10 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           Expanded(
             child: Text(
               'Get 50% off your next ride!\nUse Code: KOMYUTIE50',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.w500),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
             ),
           ),
           CustomButton(
@@ -625,7 +585,6 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
     );
   }
 
-  // ---------------- Quick Actions ----------------
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -636,15 +595,30 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
       ),
       child: Column(
         children: [
-          _buildActionButton('Find Route', Icons.route),
+          _buildActionButton('Find Route', Icons.route, () {
+            CommuterApp.navigatorKey.currentState?.pushNamed('/route_finder');
+          }),
           const SizedBox(height: 10),
-          _buildActionButton('Report an issue', Icons.report_problem_outlined),
+          _buildActionButton(
+            'Report an issue',
+            Icons.report_problem_outlined,
+            () {
+              CommuterApp.navigatorKey.currentState?.push(
+                MaterialPageRoute(
+                  builder: (ctx) => ChangeNotifierProvider(
+                    create: (_) => ReportProvider(),
+                    child: const ReportPage(),
+                  ),
+                ),
+              );
+            },
+          ), 
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon) {
+  Widget _buildActionButton(String title, IconData icon, VoidCallback? onTap) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
@@ -653,7 +627,7 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
       child: ListTile(
         title: Text(
           title,
-          style: GoogleFonts.manrope(color: Colors.white, fontSize: 18),
+          style: GoogleFonts.manrope(color: Colors.white, fontSize: 14),
         ),
         trailing: const Icon(
           Icons.arrow_forward_ios,
@@ -661,7 +635,147 @@ class _CommuterDashboardPageState extends State<CommuterDashboardPage> {
           size: 12,
         ),
         leading: Icon(icon, color: Colors.white),
-        onTap: () {},
+        onTap: onTap ?? () {},
+      ),
+    );
+  }
+
+  // ----------------- Shimmer Skeleton -----------------
+  Widget _buildDashboardSkeleton(BuildContext context) {
+    // width not used, remove to satisfy analyzer
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(30, 50, 30, 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header skeleton
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(width: 50, height: 50, color: Colors.grey[300]),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(width: 120, height: 16, color: Colors.grey[300]),
+                    const SizedBox(height: 6),
+                    Container(width: 80, height: 12, color: Colors.grey[300]),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Tabs skeleton
+            Row(children: [
+              Expanded(child: Container(height: 40, color: Colors.grey[300])),
+              const SizedBox(width: 8),
+              Expanded(child: Container(height: 40, color: Colors.grey[300])),
+            ]),
+            const SizedBox(height: 16),
+
+            // Wallet / Tokens skeleton
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 140, height: 18, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(width: 180, height: 28, color: Colors.grey[300]),
+                      Container(width: 100, height: 40, color: Colors.grey[300]),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Analytics skeleton
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFF8E4CB6)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 140, height: 18, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          const SizedBox(height: 8),
+                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(width: 80, height: 12, color: Colors.grey[300]),
+                          const SizedBox(height: 8),
+                          Container(width: 100, height: 12, color: Colors.grey[300]),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Promo skeleton
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Container(width: 32, height: 32, color: Colors.grey[300]),
+                  const SizedBox(width: 15),
+                  Expanded(child: Container(height: 36, color: Colors.grey[300])),
+                  const SizedBox(width: 12),
+                  Container(width: 70, height: 35, color: Colors.grey[300]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Quick actions skeleton
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                  const SizedBox(height: 10),
+                  Container(width: double.infinity, height: 44, color: Colors.grey[300]),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

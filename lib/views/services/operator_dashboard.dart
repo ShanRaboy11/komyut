@@ -27,10 +27,7 @@ class OperatorDashboardService {
           .maybeSingle();
 
       debugPrint('✅ Operator profile fetched: ${profileData['first_name']}');
-      return {
-        'profile': profileData,
-        'operator': operatorData,
-      };
+      return {'profile': profileData, 'operator': operatorData};
     } catch (e) {
       debugPrint('❌ Error fetching operator profile: $e');
       rethrow;
@@ -65,53 +62,14 @@ class OperatorDashboardService {
   /// Get today's revenue for the operator
   Future<double> getTodaysRevenue() async {
     try {
-      final operatorId = await _getOperatorId();
-      if (operatorId == null) return 0.0;
+      final response = await _supabase.rpc('get_operator_todays_revenue');
 
-      // Get today's start and end timestamps
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      final todayEnd = todayStart.add(const Duration(days: 1));
+      final revenue = (response as num?)?.toDouble() ?? 0.0;
 
-      // Get all drivers for this operator
-      final drivers = await _supabase
-          .from('drivers')
-          .select('id')
-          .eq('operator_id', operatorId);
-
-      if (drivers.isEmpty) return 0.0;
-
-      final driverIds = drivers.map((d) => d['id']).toList();
-
-      // Get trips for these drivers today
-      final trips = await _supabase
-          .from('trips')
-          .select('id')
-          .inFilter('driver_id', driverIds)
-          .gte('started_at', todayStart.toIso8601String())
-          .lt('started_at', todayEnd.toIso8601String());
-
-      if (trips.isEmpty) return 0.0;
-
-      final tripIds = trips.map((t) => t['id']).toList();
-
-      // Sum up fare payments for these trips
-      final transactions = await _supabase
-          .from('transactions')
-          .select('amount')
-          .inFilter('related_trip_id', tripIds)
-          .eq('type', 'fare_payment')
-          .eq('status', 'completed');
-
-      double totalRevenue = 0.0;
-      for (var transaction in transactions) {
-        totalRevenue += (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      debugPrint('✅ Today\'s revenue fetched: ₱$totalRevenue');
-      return totalRevenue;
+      debugPrint('✅ Today\'s Remittance Revenue: ₱$revenue');
+      return revenue;
     } catch (e) {
-      debugPrint('❌ Error fetching today\'s revenue: $e');
+      debugPrint('❌ Error fetching today revenue: $e');
       return 0.0;
     }
   }
@@ -168,7 +126,9 @@ class OperatorDashboardService {
   }
 
   /// Get driver performance data (top drivers by revenue with ratings)
-  Future<List<Map<String, dynamic>>> getDriverPerformance({int limit = 10}) async {
+  Future<List<Map<String, dynamic>>> getDriverPerformance({
+    int limit = 10,
+  }) async {
     try {
       final operatorId = await _getOperatorId();
       if (operatorId == null) return [];
@@ -196,7 +156,7 @@ class OperatorDashboardService {
       for (var driver in drivers) {
         final driverId = driver['id'];
         final profile = driver['profiles'];
-        
+
         if (profile == null) continue;
 
         final firstName = profile['first_name'] ?? '';
@@ -261,10 +221,14 @@ class OperatorDashboardService {
       }
 
       // Sort by revenue (descending) and limit
-      driverPerformance.sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+      driverPerformance.sort(
+        (a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double),
+      );
       final limitedPerformance = driverPerformance.take(limit).toList();
 
-      debugPrint('✅ Driver performance fetched: ${limitedPerformance.length} drivers');
+      debugPrint(
+        '✅ Driver performance fetched: ${limitedPerformance.length} drivers',
+      );
       return limitedPerformance;
     } catch (e) {
       debugPrint('❌ Error fetching driver performance: $e');
@@ -273,64 +237,109 @@ class OperatorDashboardService {
   }
 
   /// Get recent reports related to operator's drivers/vehicles
+  /// THIS METHOD IS NOW FIXED TO MATCH THE WORKING ONE IN OperatorReportService
   Future<List<Map<String, dynamic>>> getRecentReports({int limit = 10}) async {
     try {
-      final operatorId = await _getOperatorId();
-      if (operatorId == null) return [];
-
-      // Get all drivers for this operator
-      final drivers = await _supabase
-          .from('drivers')
-          .select('id, vehicle_plate')
-          .eq('operator_id', operatorId);
-
-      if (drivers.isEmpty) return [];
-
-      final driverIds = drivers.map((d) => d['id'] as String).toList();
-
-      // Create a map for quick vehicle plate lookup
-      final driverPlateMap = <String, String>{};
-      for (var driver in drivers) {
-        driverPlateMap[driver['id']] = driver['vehicle_plate'] ?? 'N/A';
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('❌ No authenticated user');
+        return [];
       }
 
-      // Get reports related to these drivers
-      final reports = await _supabase
+      // Get operator's profile ID
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('role', 'operator')
+          .maybeSingle();
+
+      if (profileResponse == null) {
+        debugPrint('❌ No operator profile found');
+        return [];
+      }
+
+      final profileId = profileResponse['id'] as String;
+
+      // Get operator record
+      final operatorResponse = await _supabase
+          .from('operators')
+          .select('id')
+          .eq('profile_id', profileId)
+          .maybeSingle();
+
+      if (operatorResponse == null) {
+        debugPrint('❌ No operator record found');
+        return [];
+      }
+
+      final operatorId = operatorResponse['id'] as String;
+      debugPrint('🔍 Fetching reports for operator ID: $operatorId');
+
+      // Get all driver profile IDs for this operator
+      final driversResponse = await _supabase
+          .from('drivers')
+          .select('profile_id')
+          .eq('operator_id', operatorId);
+
+      if (driversResponse.isEmpty) {
+        debugPrint('❌ No drivers found for operator');
+        return [];
+      }
+
+      final driverProfileIds = driversResponse
+          .map((d) => d['profile_id'] as String)
+          .toList();
+
+      debugPrint('🔍 Found ${driverProfileIds.length} driver profiles');
+
+      // Get reports assigned to these driver profiles
+      final reportsResponse = await _supabase
           .from('reports')
           .select('''
             id,
-            reported_entity_type,
-            reported_entity_id,
             category,
             severity,
             status,
             description,
-            created_at
+            created_at,
+            assigned_to_profile_id
           ''')
-          .inFilter('reported_entity_id', driverIds)
+          .inFilter('assigned_to_profile_id', driverProfileIds)
           .order('created_at', ascending: false)
           .limit(limit);
 
-      // Format reports with vehicle plate numbers
-      final formattedReports = reports.map((report) {
-        final entityId = report['reported_entity_id'] as String?;
-        final plate = entityId != null ? (driverPlateMap[entityId] ?? 'N/A') : 'N/A';
+      debugPrint('✅ Recent reports fetched: ${reportsResponse.length} reports');
+
+      // Get driver details for the vehicle plates
+      final reports = <Map<String, dynamic>>[];
+      
+      for (var report in reportsResponse) {
+        final driverProfileId = report['assigned_to_profile_id'];
         
-        return {
+        // Get driver details
+        final driverData = await _supabase
+            .from('drivers')
+            .select('vehicle_plate')
+            .eq('profile_id', driverProfileId)
+            .maybeSingle();
+
+        reports.add({
           'id': report['id'],
           'title': _getReportTitle(report['category']),
-          'plate': plate,
+          'plate': driverData?['vehicle_plate'] ?? 'N/A',
           'status': report['status'] ?? 'open',
           'severity': report['severity'] ?? 'medium',
           'description': report['description'],
           'created_at': report['created_at'],
-        };
-      }).toList();
+          'category': report['category'],
+        });
+      }
 
-      debugPrint('✅ Recent reports fetched: ${formattedReports.length} reports');
-      return formattedReports;
+      return reports;
     } catch (e) {
       debugPrint('❌ Error fetching recent reports: $e');
+      debugPrint('❌ Stack trace: ${StackTrace.current}');
       return [];
     }
   }
@@ -356,7 +365,10 @@ class OperatorDashboardService {
   }
 
   /// Get total revenue for a time period
-  Future<double> getTotalRevenue({DateTime? startDate, DateTime? endDate}) async {
+  Future<double> getTotalRevenue({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
       final operatorId = await _getOperatorId();
       if (operatorId == null) return 0.0;
@@ -420,7 +432,7 @@ class OperatorDashboardService {
       final totalDrivers = await getTotalDriversCount();
       final activeTrips = await getActiveTripsCount();
       final driverPerformance = await getDriverPerformance(limit: 5);
-      final recentReports = await getRecentReports(limit: 5);
+      final recentReports = await getRecentReports(limit: 3);
 
       debugPrint('✅ All operator dashboard data fetched successfully');
 
@@ -435,6 +447,121 @@ class OperatorDashboardService {
       };
     } catch (e) {
       debugPrint('❌ Error fetching dashboard data: $e');
+      rethrow;
+    }
+  }
+
+  /// Get Operator Wallet Balance
+  Future<double> getWalletBalance() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0.0;
+
+      final data = await _supabase
+          .from('wallets')
+          .select('balance, profiles!inner(user_id)')
+          .eq('profiles.user_id', userId)
+          .maybeSingle();
+
+      if (data == null) return 0.0;
+
+      return (data['balance'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      debugPrint('❌ Error fetching balance: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get Weekly Earnings
+  Future<Map<String, double>> getWeeklyEarnings({int weekOffset = 0}) async {
+    try {
+      final response = await _supabase.rpc(
+        'get_operator_weekly_earnings',
+        params: {'week_offset': weekOffset},
+      );
+
+      if (response is List) {
+        return {
+          for (var item in response)
+            (item['day_name'] as String): (item['total'] as num).toDouble(),
+        };
+      }
+      return {};
+    } catch (e) {
+      debugPrint('❌ Error fetching weekly earnings: $e');
+      return {};
+    }
+  }
+
+  /// Get Transactions
+  Future<List<Map<String, dynamic>>> getTransactions({int? limit}) async {
+    try {
+      final List<dynamic> response = await _supabase.rpc(
+        'get_operator_transactions',
+        params: {'p_limit': limit ?? 20},
+      );
+
+      return response.map((tx) {
+        String description = 'Transaction';
+
+        if (tx['type'] == 'remittance') {
+          description = 'Remittance Received';
+        } else if (tx['type'] == 'cash_out') {
+          description = 'Cash Out';
+        }
+
+        return {
+          'id': tx['id'],
+          'transaction_number': tx['transaction_number'],
+          'type': tx['type'],
+          'amount': (tx['amount'] as num).toDouble(),
+          'date': tx['created_at'],
+          'created_at': tx['created_at'],
+          'status': tx['status'],
+          'description': description,
+          'driver_name': tx['driver_name'] ?? 'Unknown Driver',
+          'vehicle_plate': tx['vehicle_plate'] ?? 'N/A',
+          'details': tx['metadata']?['description'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error fetching transactions: $e');
+      return [];
+    }
+  }
+
+  /// Request a Cash Out
+  Future<void> requestCashOut({
+    required double amount,
+    required String transactionCode,
+  }) async {
+    try {
+      final fee = 15.00;
+      await _supabase.rpc(
+        'request_operator_cash_out',
+        params: {
+          'amount_val': amount,
+          'fee_val': fee,
+          'transaction_code': transactionCode,
+        },
+      );
+      debugPrint('✅ Cash out requested successfully');
+    } catch (e) {
+      debugPrint('❌ Error requesting cash out: $e');
+      rethrow;
+    }
+  }
+
+  /// Complete Cash Out
+  Future<void> completeCashOut(String transactionCode) async {
+    try {
+      await _supabase.rpc(
+        'complete_operator_cash_out',
+        params: {'transaction_code_arg': transactionCode},
+      );
+      debugPrint('✅ Cash out completed successfully');
+    } catch (e) {
+      debugPrint('❌ Error completing cash out: $e');
       rethrow;
     }
   }
