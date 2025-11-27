@@ -206,7 +206,7 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
     final displayPuv = operatorDriver?.puvType ?? widget.puvType ?? 'Modern';
     final displayPlate = operatorDriver?.vehiclePlate ?? widget.plate ?? 'N/A';
 
-    String _formatDate(DateTime date) {
+    String formatDate(DateTime date) {
       const months = [
         "",
         "January",
@@ -226,8 +226,8 @@ class _DriverDetailsPageState extends State<DriverDetailsPage> {
     }
 
     final displayRegistered =
-        operatorDriver != null
-            ? _formatDate(operatorDriver.createdAt)
+      operatorDriver != null
+        ? formatDate(operatorDriver.createdAt)
             : (widget.registeredDate ?? 'N/A');
     final displayStatus =
         operatorDriver != null
