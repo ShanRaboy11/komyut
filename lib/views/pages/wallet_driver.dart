@@ -501,8 +501,11 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     final bool isEarning = type == 'fare_payment';
     final String title = isEarning
         ? 'Trip Earning'
-        : (type == 'cash_out' ? 'Cash Out' : 'Remittance');
-    final Color amountColor = isEarning
+        : (type == 'cash_out'
+              ? 'Cash Out'
+              : (type == 'remittance' ? 'Remittance' : 'Payout'));
+
+    final Color amountColor = isEarning || type == 'driver_payout'
         ? const Color(0xFF2E7D32)
         : const Color(0xFFC62828);
     final String date = DateFormat(
@@ -544,7 +547,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
             ),
             const SizedBox(width: 8),
             Text(
-              '${isEarning ? '+' : '-'}${currencyFormat.format(amount.abs())}',
+              '${isEarning || type == 'driver_payout' ? '+' : '-'}${currencyFormat.format(amount.abs())}',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -570,7 +573,9 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         ? 'Trip Earning'
         : (type == 'cash_out'
               ? 'Cash Out Transaction'
-              : 'Remittance Transaction');
+              : (type == 'remittance'
+                    ? 'Remittance Transaction'
+                    : 'Driver Payout'));
 
     showDialog(
       context: context,
